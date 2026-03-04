@@ -72,7 +72,8 @@ class _TurnoOrari {
         isOff = true;
 }
 
-/// TurnEngine = unico “motore turni” (rotazione + viaggio + notte cross-day + riposo post-notte)
+/// TurnEngine = unico “motore turni”
+/// (rotazione + viaggio + notte cross-day + riposo post-notte)
 class TurnEngine {
   // Turni base
   static const TimeOfDay _mattinaStart = TimeOfDay(hour: 6, minute: 0);
@@ -84,16 +85,18 @@ class TurnEngine {
   static const TimeOfDay _notteStart = TimeOfDay(hour: 22, minute: 0);
   static const TimeOfDay _notteEnd = TimeOfDay(hour: 6, minute: 0);
 
+  /// ✅ Monday di riferimento per la rotazione (settimana “0”)
+  /// NOTA: per evitare DST, le date di rotazione vengono gestite in UTC a mezzogiorno.
   final DateTime refWeekMonday;
 
-  // Matteo: NOTTE -> POMERIGGIO -> MATTINA
+  // Matteo: NOTTE -> POMERIGGIO -> MATTINA (ciclo 3 settimane)
   final List<_TurnoTipo> _cicloMatteo = const [
     _TurnoTipo.notte,
     _TurnoTipo.pomeriggio,
     _TurnoTipo.mattina,
   ];
 
-  // Chiara: POMERIGGIO -> MATTINA -> NOTTE
+  // Chiara: POMERIGGIO -> MATTINA -> NOTTE (ciclo 3 settimane)
   final List<_TurnoTipo> _cicloChiara = const [
     _TurnoTipo.pomeriggio,
     _TurnoTipo.mattina,
@@ -101,7 +104,9 @@ class TurnEngine {
   ];
 
   TurnEngine({DateTime? refWeekMonday})
-      : refWeekMonday = refWeekMonday ?? DateTime(2025, 12, 29);
+      : refWeekMonday = _mondayOf(
+          _rotUTCNoon(refWeekMonday ?? DateTime(2026, 3, 2)),
+        );
 
   /// ✅ API COMPATIBILITÀ: usata dalla UI vecchia
   TurnPlan turnPlanForPersonDay({
@@ -160,24 +165,29 @@ class TurnEngine {
   }
 
   // --------------------------
-  // Rotazione
+  // Rotazione (DST SAFE)
   // --------------------------
 
+  /// Data “solo giorno” usata per il motore (locale) per gli shift reali.
   DateTime _onlyDate(DateTime d) => DateTime(d.year, d.month, d.day);
 
   bool _isWeekend(int weekday) =>
       weekday == DateTime.saturday || weekday == DateTime.sunday;
 
-  DateTime _mondayOf(DateTime d) {
-    final sd = _onlyDate(d);
+  /// ✅ Date per calcoli rotazione: UTC a mezzogiorno (DST safe)
+  static DateTime _rotUTCNoon(DateTime d) =>
+      DateTime.utc(d.year, d.month, d.day, 12, 0);
+
+  static DateTime _mondayOf(DateTime d) {
+    final sd = _rotUTCNoon(d);
     final delta = sd.weekday - DateTime.monday;
     return sd.subtract(Duration(days: delta));
   }
 
   int _weeksBetween(DateTime aMonday, DateTime bMonday) {
-    final a = _onlyDate(aMonday);
-    final b = _onlyDate(bMonday);
-    final diffDays = b.difference(a).inDays;
+    final a = _rotUTCNoon(aMonday);
+    final b = _rotUTCNoon(bMonday);
+    final diffDays = b.difference(a).inDays; // DST safe perché UTC
     return diffDays ~/ 7;
   }
 
