@@ -4,27 +4,28 @@ import '../models/day_override.dart';
 /// Impostazioni "operative" per giorno (NON globali).
 /// - Se un valore non è presente per un giorno -> si usa il fallback globale (SettingsStore).
 ///
-/// CNC (1 Marzo 2026):
-/// - Estendiamo DaySettingsStore per supportare "finestre Alice" (logistica reale).
-/// - NON tocchiamo ancora CoverageEngine/IPS/UI.
-/// - Qui salviamo solo dati, in modo deterministico e modulare.
-///
-/// CNC (2 Marzo 2026):
-/// - Sandra NON è più solo ON/OFF "giornaliera".
-/// - Introduciamo disponibilità per FASCIA:
-///   - mattina / pranzo / sera
-/// - Fallback: se una fascia non è impostata, usa sandraForDay(day).
+/// CNC:
+/// - Sandra per fascia: mattina / pranzo / sera (fallback su legacy sandraForDay)
+/// - Decisioni scuola: ingresso + uscita (scelta esplicita: Nessuno/Matteo/Chiara/Sandra/Altro)
+/// - ✅ Decisione pranzo (solo se uscita13): 13:00–14:30 (come scuola)
 class DaySettingsStore {
   final Map<DateTime, bool> _sandraDisponibile = {};
   final Map<DateTime, bool> _uscita13 = {};
 
-  // ✅ NUOVO: Sandra per fascia (se non presente -> fallback su _sandraDisponibile)
+  // ✅ Sandra per fascia (se non presente -> fallback su _sandraDisponibile)
   final Map<DateTime, bool> _sandraMattina = {};
   final Map<DateTime, bool> _sandraPranzo = {};
   final Map<DateTime, bool> _sandraSera = {};
 
+  // ✅ Decisioni scuola per giorno (copertura esplicita)
+  final Map<DateTime, SchoolCoverChoice> _schoolInCover = {};
+  final Map<DateTime, SchoolCoverChoice> _schoolOutCover = {};
+
+  // ✅ Decisione pranzo (solo se uscita13) — 13:00–14:30
+  final Map<DateTime, SchoolCoverChoice> _lunchCover = {};
+
   // ✅ Finestre logistiche di Alice per giorno (minuti da mezzanotte)
-  // Esempio: ingresso scuola 07:30–08:25 => 450–505
+  // (rimangono per future estensioni, non usate ancora nel motore)
   final Map<DateTime, Map<AliceWindowKey, MinuteRange>> _aliceWindows = {};
 
   DateTime _k(DateTime d) => dayKey(d);
@@ -56,11 +57,9 @@ class DaySettingsStore {
   }
 
   // -------------------------
-  // ✅ Sandra per fascia (nuovo)
+  // ✅ Sandra per fascia
   // -------------------------
 
-  /// Disponibilità Sandra fascia MATTINA (05:00–06:35 di default lato UI/motore).
-  /// - Se non impostata per quel giorno -> fallback a sandraForDay(day).
   bool? sandraMattinaForDay(DateTime day) => _sandraMattina[_k(day)];
 
   bool effectiveSandraMattina(DateTime day, {required bool fallbackGlobal}) {
@@ -79,8 +78,6 @@ class DaySettingsStore {
     _sandraMattina.remove(_k(day));
   }
 
-  /// Disponibilità Sandra fascia PRANZO (13:00–14:30, solo se uscita13 attiva).
-  /// - Se non impostata per quel giorno -> fallback a sandraForDay(day).
   bool? sandraPranzoForDay(DateTime day) => _sandraPranzo[_k(day)];
 
   bool effectiveSandraPranzo(DateTime day, {required bool fallbackGlobal}) {
@@ -99,8 +96,6 @@ class DaySettingsStore {
     _sandraPranzo.remove(_k(day));
   }
 
-  /// Disponibilità Sandra fascia SERA (21:00–22:35 di default).
-  /// - Se non impostata per quel giorno -> fallback a sandraForDay(day).
   bool? sandraSeraForDay(DateTime day) => _sandraSera[_k(day)];
 
   bool effectiveSandraSera(DateTime day, {required bool fallbackGlobal}) {
@@ -128,16 +123,55 @@ class DaySettingsStore {
   }
 
   // -------------------------
+  // ✅ Decisioni scuola (ingresso / uscita)
+  // -------------------------
+
+  SchoolCoverChoice schoolInCoverForDay(DateTime day) =>
+      _schoolInCover[_k(day)] ?? SchoolCoverChoice.none;
+
+  void setSchoolInCoverForDay(DateTime day, SchoolCoverChoice choice) {
+    _schoolInCover[_k(day)] = choice;
+  }
+
+  void clearSchoolInCoverForDay(DateTime day) {
+    _schoolInCover.remove(_k(day));
+  }
+
+  SchoolCoverChoice schoolOutCoverForDay(DateTime day) =>
+      _schoolOutCover[_k(day)] ?? SchoolCoverChoice.none;
+
+  void setSchoolOutCoverForDay(DateTime day, SchoolCoverChoice choice) {
+    _schoolOutCover[_k(day)] = choice;
+  }
+
+  void clearSchoolOutCoverForDay(DateTime day) {
+    _schoolOutCover.remove(_k(day));
+  }
+
+  // -------------------------
+  // ✅ Decisione pranzo (solo se uscita13)
+  // -------------------------
+
+  SchoolCoverChoice lunchCoverForDay(DateTime day) =>
+      _lunchCover[_k(day)] ?? SchoolCoverChoice.none;
+
+  void setLunchCoverForDay(DateTime day, SchoolCoverChoice choice) {
+    _lunchCover[_k(day)] = choice;
+  }
+
+  void clearLunchCoverForDay(DateTime day) {
+    _lunchCover.remove(_k(day));
+  }
+
+  // -------------------------
   // Alice windows per giorno
   // -------------------------
 
-  /// Ritorna la finestra impostata per quel giorno, o null se non presente.
   MinuteRange? aliceWindowForDay(DateTime day, AliceWindowKey key) {
     final m = _aliceWindows[_k(day)];
     return m?[key];
   }
 
-  /// Imposta (o sovrascrive) una finestra per quel giorno.
   void setAliceWindowForDay(
     DateTime day,
     AliceWindowKey key,
@@ -149,7 +183,6 @@ class DaySettingsStore {
     _aliceWindows[dk] = existing;
   }
 
-  /// Rimuove una finestra specifica per quel giorno.
   void clearAliceWindowForDay(DateTime day, AliceWindowKey key) {
     final dk = _k(day);
     final existing = _aliceWindows[dk];
@@ -162,22 +195,22 @@ class DaySettingsStore {
     }
   }
 
-  /// Rimuove tutte le finestre Alice per quel giorno.
   void clearAllAliceWindowsForDay(DateTime day) {
     _aliceWindows.remove(_k(day));
   }
 }
 
+/// Scelta copertura scuola (CNC: predisposta ad "Altro" futuro).
+enum SchoolCoverChoice { none, matteo, chiara, sandra, altro }
+
 /// Chiavi ufficiali delle finestre logistiche di Alice (estensibile).
-/// CNC: enum (non stringhe libere) = struttura blindata.
 enum AliceWindowKey {
-  schoolMorning, // ingresso scuola (es. 07:30–08:25)
+  schoolMorning, // ingresso scuola
   schoolPickup, // ritiro scuola
-  homeSensitive, // rientro / momento delicato (se serve)
+  homeSensitive, // rientro / momento delicato
 }
 
 /// Range in minuti da mezzanotte.
-/// CNC: value object semplice e stabile.
 class MinuteRange {
   final int startMin; // incluso
   final int endMin; // escluso

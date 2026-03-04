@@ -64,6 +64,21 @@ class _CalendarioScreenStepAStabileState
     fallbackGlobal: settingsStore.isSandraDisponibile,
   );
 
+  String _schoolCoverLabel(SchoolCoverChoice c) {
+    switch (c) {
+      case SchoolCoverChoice.none:
+        return "Nessuno (BUCO)";
+      case SchoolCoverChoice.matteo:
+        return "Matteo";
+      case SchoolCoverChoice.chiara:
+        return "Chiara";
+      case SchoolCoverChoice.sandra:
+        return "Sandra";
+      case SchoolCoverChoice.altro:
+        return "Altro…";
+    }
+  }
+
   // =========================
   // EDIT RANGE (INIZIO + FINE) — EMERGENZA
   // =========================
@@ -207,7 +222,6 @@ class _CalendarioScreenStepAStabileState
     );
     if (end == null) return;
 
-    // validazione base: se uguali -> non salva
     if (start.hour == end.hour && start.minute == end.minute) return;
 
     onSave(start, end);
@@ -242,16 +256,17 @@ class _CalendarioScreenStepAStabileState
     });
   }
 
-  void _prevWeek() {
+  // ✅ A6: Navigazione GIORNO per GIORNO
+  void _prevDay() {
     setState(() {
-      _selectedDay = _onlyDate(_selectedDay.subtract(const Duration(days: 7)));
+      _selectedDay = _onlyDate(_selectedDay.subtract(const Duration(days: 1)));
       _syncWeekWithSelectedDay();
     });
   }
 
-  void _nextWeek() {
+  void _nextDay() {
     setState(() {
-      _selectedDay = _onlyDate(_selectedDay.add(const Duration(days: 7)));
+      _selectedDay = _onlyDate(_selectedDay.add(const Duration(days: 1)));
       _syncWeekWithSelectedDay();
     });
   }
@@ -271,27 +286,17 @@ class _CalendarioScreenStepAStabileState
   TimeOfDay _scuolaStart = const TimeOfDay(hour: 8, minute: 25);
   TimeOfDay _scuolaEnd = const TimeOfDay(hour: 16, minute: 30);
 
-  DateTime _onlyDate(DateTime d) => DateTime(d.year, d.month, d.day);
+  // ✅ Uscita scuola (fisso per ora, CNC: poi renderemo editabile)
+  final TimeOfDay _schoolOutStart = const TimeOfDay(hour: 16, minute: 25);
+  final TimeOfDay _schoolOutEnd = const TimeOfDay(hour: 17, minute: 15);
 
-  String _weekdayName(int weekday) {
-    const names = {
-      1: "Lun",
-      2: "Mar",
-      3: "Mer",
-      4: "Gio",
-      5: "Ven",
-      6: "Sab",
-      7: "Dom",
-    };
-    return names[weekday] ?? "???";
-  }
+  DateTime _onlyDate(DateTime d) => DateTime(d.year, d.month, d.day);
 
   String _fmtDate(DateTime d) => DateFormat('yyyy-MM-dd').format(d);
 
   String _fmt(TimeOfDay t) =>
       "${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}";
 
-  // ✅ CNC: Permesso NON deve mai creare PersonDayOverride senza permessoRange
   PersonDayOverride? _buildPersonOverrideSafe(OverrideStatus status) {
     if (status == OverrideStatus.normal) return null;
 
@@ -319,6 +324,15 @@ class _CalendarioScreenStepAStabileState
       sandraSeraOn: _effSandraSera(d0),
       schoolStart: _scuolaStart,
       overrides: ov,
+
+      // ✅ Decisioni scuola dal DaySettingsStore
+      schoolInCover: daySettingsStore.schoolInCoverForDay(d0),
+      schoolOutCover: daySettingsStore.schoolOutCoverForDay(d0),
+      schoolOutStart: _schoolOutStart,
+      schoolOutEnd: _schoolOutEnd,
+
+      // ✅ NUOVO: decisione pranzo (solo se uscita13)
+      lunchCover: daySettingsStore.lunchCoverForDay(d0),
     );
 
     final ok = gaps.isEmpty;
@@ -599,7 +613,6 @@ class _CalendarioScreenStepAStabileState
     _syncWeekWithSelectedDay();
   }
 
-  // ✅ Layout “come prima”: 3 blocchi + colonna destra
   Widget _layoutRow3({
     required Widget leftA,
     required Widget leftB,
@@ -706,20 +719,12 @@ class _CalendarioScreenStepAStabileState
             const SizedBox(height: 8),
             _buildIpsPressureLine(ipsCoverage30),
             const SizedBox(height: 8),
-
             _weekNavBar(),
             const SizedBox(height: 8),
-
             _buildEmergencyBannerDebug(),
-
-            // Se vuoi anche la tabella settimanale qui sopra (come “stato settimana”),
-            // la rimettiamo dopo: ora ti riporto la posizione “a 3 blocchi + Sandra”
-            // _weekGrid4Col(),
-            // const SizedBox(height: 12),
             if (!isEmergency) _buildDayGapsBox(cov),
             if (!isEmergency) _banner(cov.ok, cov.bannerText),
             const SizedBox(height: 12),
-
             _layoutRow3(
               leftA: _cardTurni(),
               leftB: _cardScuola(),
@@ -728,7 +733,6 @@ class _CalendarioScreenStepAStabileState
                   ? _buildEmergencyPanelPlaceholder()
                   : _cardCopertura(cov),
             ),
-
             const SizedBox(height: 18),
           ],
         ),
@@ -745,8 +749,8 @@ class _CalendarioScreenStepAStabileState
     return Row(
       children: [
         IconButton(
-          tooltip: "Settimana precedente",
-          onPressed: _prevWeek,
+          tooltip: "Giorno precedente",
+          onPressed: _prevDay,
           icon: const Icon(Icons.chevron_left),
         ),
         Expanded(
@@ -758,8 +762,8 @@ class _CalendarioScreenStepAStabileState
           ),
         ),
         IconButton(
-          tooltip: "Settimana successiva",
-          onPressed: _nextWeek,
+          tooltip: "Giorno successivo",
+          onPressed: _nextDay,
           icon: const Icon(Icons.chevron_right),
         ),
       ],
@@ -767,7 +771,7 @@ class _CalendarioScreenStepAStabileState
   }
 
   // =========================
-  // ✅ CARD TURNI (come prima)
+  // ✅ CARD TURNI
   // =========================
   Widget _cardTurni() {
     final m = _turns.turnPlanForPersonDay(
@@ -837,21 +841,9 @@ class _CalendarioScreenStepAStabileState
     }
   }
 
-  String _overrideLabelShort(OverrideStatus s) {
-    switch (s) {
-      case OverrideStatus.normal:
-        return "Normal";
-      case OverrideStatus.ferie:
-        return "Ferie";
-      case OverrideStatus.permesso:
-        return "Permesso";
-      case OverrideStatus.malattiaLeggera:
-        return "M. leggera";
-      case OverrideStatus.malattiaALetto:
-        return "A letto";
-    }
-  }
-
+  // =========================
+  // ✅ OVERRIDE STEP B
+  // =========================
   Widget _cardOverrideStepB(DayOverrides ovSelected) {
     return _card(
       title: "Override (Step B)",
@@ -956,7 +948,16 @@ class _CalendarioScreenStepAStabileState
     }
   }
 
+  // =========================
+  // ✅ SCUOLA (con decisioni + pranzo uscita13)
+  // =========================
   Widget _cardScuola() {
+    final inChoice = daySettingsStore.schoolInCoverForDay(_selectedDay);
+    final outChoice = daySettingsStore.schoolOutCoverForDay(_selectedDay);
+
+    final uscita13Eff = _effUscita13(_selectedDay);
+    final lunchChoice = daySettingsStore.lunchCoverForDay(_selectedDay);
+
     return _card(
       title: "Alice / Scuola",
       subtitle: "Orari scuola + uscita anticipata (attiva finestra pranzo).",
@@ -984,11 +985,148 @@ class _CalendarioScreenStepAStabileState
             icon: const Icon(Icons.edit),
             label: const Text("Modifica scuola"),
           ),
+          const SizedBox(height: 14),
+          const Divider(),
+          const SizedBox(height: 10),
+          const Text(
+            "Decisione scuola (copertura)",
+            style: TextStyle(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<SchoolCoverChoice>(
+            value: inChoice,
+            isExpanded: true,
+            decoration: InputDecoration(
+              labelText: "Ingresso 07:30–${_fmt(_scuolaStart)}",
+            ),
+            items: SchoolCoverChoice.values.map((c) {
+              return DropdownMenuItem(
+                value: c,
+                child: Text(_schoolCoverLabel(c)),
+              );
+            }).toList(),
+            onChanged: (v) {
+              if (v == null) return;
+              setState(
+                () => daySettingsStore.setSchoolInCoverForDay(_selectedDay, v),
+              );
+              if (v == SchoolCoverChoice.altro) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      "Altro: lista persone arriverà dopo (placeholder).",
+                    ),
+                  ),
+                );
+              }
+              ipsStore.refresh(now: _selectedDay);
+            },
+          ),
+          if (inChoice == SchoolCoverChoice.altro)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                "Altro: (da selezionare)",
+                style: TextStyle(color: Colors.black.withOpacity(0.65)),
+              ),
+            ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<SchoolCoverChoice>(
+            value: outChoice,
+            isExpanded: true,
+            decoration: InputDecoration(
+              labelText:
+                  "Uscita ${_fmt(_schoolOutStart)}–${_fmt(_schoolOutEnd)}",
+            ),
+            items: SchoolCoverChoice.values.map((c) {
+              return DropdownMenuItem(
+                value: c,
+                child: Text(_schoolCoverLabel(c)),
+              );
+            }).toList(),
+            onChanged: (v) {
+              if (v == null) return;
+              setState(
+                () => daySettingsStore.setSchoolOutCoverForDay(_selectedDay, v),
+              );
+              if (v == SchoolCoverChoice.altro) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      "Altro: lista persone arriverà dopo (placeholder).",
+                    ),
+                  ),
+                );
+              }
+              ipsStore.refresh(now: _selectedDay);
+            },
+          ),
+          if (outChoice == SchoolCoverChoice.altro)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                "Altro: (da selezionare)",
+                style: TextStyle(color: Colors.black.withOpacity(0.65)),
+              ),
+            ),
+
+          // ✅ NUOVO: Decisione pranzo (solo se uscita13)
+          if (uscita13Eff) ...[
+            const SizedBox(height: 14),
+            const Divider(),
+            const SizedBox(height: 10),
+            const Text(
+              "Decisione pranzo (uscita 13)",
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<SchoolCoverChoice>(
+              value: lunchChoice,
+              isExpanded: true,
+              decoration: InputDecoration(
+                labelText:
+                    "Pranzo ${_fmt(_engine.sandraPranzoStart)}–${_fmt(_engine.sandraPranzoEnd)}",
+              ),
+              items: SchoolCoverChoice.values.map((c) {
+                return DropdownMenuItem(
+                  value: c,
+                  child: Text(_schoolCoverLabel(c)),
+                );
+              }).toList(),
+              onChanged: (v) {
+                if (v == null) return;
+                setState(
+                  () => daySettingsStore.setLunchCoverForDay(_selectedDay, v),
+                );
+                if (v == SchoolCoverChoice.altro) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        "Altro: lista persone arriverà dopo (placeholder).",
+                      ),
+                    ),
+                  );
+                }
+                ipsStore.refresh(now: _selectedDay);
+              },
+            ),
+            if (lunchChoice == SchoolCoverChoice.altro)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  "Altro: (da selezionare)",
+                  style: TextStyle(color: Colors.black.withOpacity(0.65)),
+                ),
+              ),
+          ],
         ],
       ),
     );
   }
 
+  // =========================
+  // ✅ COPERTURA
+  // =========================
   Widget _cardCopertura(CoverageResultStepA cov) {
     final uscita13Eff = _effUscita13(_selectedDay);
 
@@ -1018,9 +1156,8 @@ class _CalendarioScreenStepAStabileState
             },
           ),
           const Divider(),
-
           _sandraWindowRow(
-            title: "Cambio turno mattina (IN CASA, Sandra NON copre)",
+            title: "Cambio turno mattina (IN CASA)",
             start: _engine.sandraCambioMattinaStart,
             end: _engine.sandraCambioMattinaEnd,
             onEdit: () {
@@ -1060,12 +1197,10 @@ class _CalendarioScreenStepAStabileState
               );
             },
           ),
-
           const Divider(),
-
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text("Sandra – Fascia mattina (ingresso scuola)"),
+            title: const Text("Sandra – Fascia mattina"),
             value: effMattina,
             onChanged: (v) {
               setState(

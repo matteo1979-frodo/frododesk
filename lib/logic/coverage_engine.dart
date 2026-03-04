@@ -6,6 +6,7 @@ import '../models/person_availability.dart';
 import 'coverage_logic.dart';
 import 'override_apply.dart';
 import 'turn_engine.dart';
+import 'day_settings_store.dart';
 
 class CoverageEngine {
   final TurnEngine turnEngine;
@@ -82,28 +83,42 @@ class CoverageEngine {
     required bool sandraSeraOn,
     required TimeOfDay schoolStart,
     required DayOverrides overrides,
+
+    // ✅ decisioni scuola (default = Nessuno ⇒ BUCO decisione richiesta)
+    SchoolCoverChoice schoolInCover = SchoolCoverChoice.none,
+    SchoolCoverChoice schoolOutCover = SchoolCoverChoice.none,
+    TimeOfDay schoolOutStart = const TimeOfDay(hour: 16, minute: 25),
+    TimeOfDay schoolOutEnd = const TimeOfDay(hour: 17, minute: 15),
+
+    // ✅ NUOVO: decisione pranzo (solo se uscita13) — come scuola
+    SchoolCoverChoice lunchCover = SchoolCoverChoice.none,
   }) {
     final d0 = _onlyDate(day);
     final buchi = <String>[];
 
-    // 1) Alice ingresso 07:30 -> schoolStart (LOGISTICA ESTERNA)
-    final schoolInStart = DateTime(d0.year, d0.month, d0.day, 7, 30);
-    final schoolInEnd = _atTime(d0, schoolStart);
-
-    final okSchoolIn = _isFasciaCovered(
-      day: d0,
-      fasciaStart: schoolInStart,
-      fasciaEnd: schoolInEnd,
-      allowSandra: true,
-      sandraAvailable: sandraMattinaOn,
-      isHomePresenceWindow: false,
-      overrides: overrides,
-    );
-
+    // 1) Alice ingresso 07:30 -> schoolStart (DECISIONE)
     final labelSchoolIn = "Alice ingresso: 07:30–${_fmt(schoolStart)}";
-    if (!okSchoolIn) buchi.add(labelSchoolIn);
+    if (schoolInCover == SchoolCoverChoice.none) {
+      buchi.add(labelSchoolIn);
+    }
 
-    // 2) 05:00–06:35 (IN CASA) Sandra NON conta
+    // 1b) Alice uscita 16:25 -> 17:15 (DECISIONE)
+    final labelSchoolOut =
+        "Alice uscita: ${_fmt(schoolOutStart)}–${_fmt(schoolOutEnd)}";
+    if (schoolOutCover == SchoolCoverChoice.none) {
+      buchi.add(labelSchoolOut);
+    }
+
+    // ✅ 1c) Pranzo (solo se uscita13) — DECISIONE come scuola
+    if (uscita13) {
+      final labelLunch =
+          "Alice pranzo: ${_fmt(sandraPranzoStart)}–${_fmt(sandraPranzoEnd)}";
+      if (lunchCover == SchoolCoverChoice.none) {
+        buchi.add(labelLunch);
+      }
+    }
+
+    // 2) 05:00–06:35 (IN CASA) — copertura calcolata (genitori + malattia + Sandra)
     final fMattinaStart = _atTime(d0, sandraCambioMattinaStart);
     final fMattinaEnd = _atTime(d0, sandraCambioMattinaEnd);
 
@@ -111,8 +126,8 @@ class CoverageEngine {
       day: d0,
       fasciaStart: fMattinaStart,
       fasciaEnd: fMattinaEnd,
-      allowSandra: false,
-      sandraAvailable: false,
+      allowSandra: true,
+      sandraAvailable: sandraMattinaOn,
       isHomePresenceWindow: true,
       overrides: overrides,
     );
@@ -121,25 +136,10 @@ class CoverageEngine {
       buchi.add(_labelRange(sandraCambioMattinaStart, sandraCambioMattinaEnd));
     }
 
-    // 3) 13:00–14:30 (LOGISTICA ESTERNA) solo se uscita13
-    if (uscita13) {
-      final fPranzoStart = _atTime(d0, sandraPranzoStart);
-      final fPranzoEnd = _atTime(d0, sandraPranzoEnd);
+    // 3) (prima era calcolo automatico) → ORA è decisione (vedi sopra)
+    //    quindi NON aggiungiamo più qui logica di copertura per 13:00–14:30.
 
-      final okPranzo = _isFasciaCovered(
-        day: d0,
-        fasciaStart: fPranzoStart,
-        fasciaEnd: fPranzoEnd,
-        allowSandra: true,
-        sandraAvailable: sandraPranzoOn,
-        isHomePresenceWindow: false,
-        overrides: overrides,
-      );
-
-      if (!okPranzo) buchi.add(_labelRange(sandraPranzoStart, sandraPranzoEnd));
-    }
-
-    // 4) 21:00–22:35 (IN CASA) Sandra conta solo se toggle ON
+    // 4) 21:00–22:35 (IN CASA) — copertura calcolata
     final fSeraStart = _atTime(d0, sandraSeraStart);
     final fSeraEnd = _atTime(d0, sandraSeraEnd);
 
