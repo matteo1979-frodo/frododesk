@@ -15,6 +15,8 @@ import '../logic/settings_store.dart';
 import '../logic/ips_store.dart';
 import '../logic/day_settings_store.dart';
 
+import '../widgets/stepb_override_panel.dart';
+
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
   final DateTime? initialSelectedDay;
@@ -296,19 +298,6 @@ class _CalendarioScreenStepAStabileState
 
   String _fmt(TimeOfDay t) =>
       "${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}";
-
-  PersonDayOverride? _buildPersonOverrideSafe(OverrideStatus status) {
-    if (status == OverrideStatus.normal) return null;
-
-    if (status == OverrideStatus.permesso) {
-      return PersonDayOverride(
-        status: OverrideStatus.permesso,
-        permessoRange: TimeRangeMinutes(startMin: 9 * 60, endMin: 10 * 60),
-      );
-    }
-
-    return PersonDayOverride(status: status);
-  }
 
   CoverageResultStepA _computeCoverageStepA(DateTime day) {
     final d0 = _onlyDate(day);
@@ -842,7 +831,7 @@ class _CalendarioScreenStepAStabileState
   }
 
   // =========================
-  // ✅ OVERRIDE STEP B
+  // ✅ OVERRIDE STEP B (ORA MODULO ESTERNO)
   // =========================
   Widget _cardOverrideStepB(DayOverrides ovSelected) {
     return _card(
@@ -851,30 +840,13 @@ class _CalendarioScreenStepAStabileState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _overrideRow(
-            label: "Matteo",
-            value: ovSelected.matteo?.status ?? OverrideStatus.normal,
-            onChanged: (newStatus) {
-              final updated = DayOverrides(
-                day: _selectedDay,
-                matteo: _buildPersonOverrideSafe(newStatus),
-                chiara: ovSelected.chiara,
-              );
+          StepBOverridePanel(
+            day: _selectedDay,
+            current: ovSelected,
+            onSave: (updated) {
               setState(() => _setOverridesForDay(_selectedDay, updated));
-              ipsStore.refresh(now: _selectedDay);
             },
-          ),
-          const SizedBox(height: 12),
-          _overrideRow(
-            label: "Chiara",
-            value: ovSelected.chiara?.status ?? OverrideStatus.normal,
-            onChanged: (newStatus) {
-              final updated = DayOverrides(
-                day: _selectedDay,
-                matteo: ovSelected.matteo,
-                chiara: _buildPersonOverrideSafe(newStatus),
-              );
-              setState(() => _setOverridesForDay(_selectedDay, updated));
+            onAfterChange: () {
               ipsStore.refresh(now: _selectedDay);
             },
           ),
@@ -889,63 +861,6 @@ class _CalendarioScreenStepAStabileState
         ],
       ),
     );
-  }
-
-  Widget _overrideRow({
-    required String label,
-    required OverrideStatus value,
-    required ValueChanged<OverrideStatus> onChanged,
-  }) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 70,
-          child: Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.w800),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: DropdownButtonFormField<OverrideStatus>(
-            value: value,
-            isExpanded: true,
-            items: OverrideStatus.values.map((s) {
-              return DropdownMenuItem(value: s, child: Text(_overrideLabel(s)));
-            }).toList(),
-            onChanged: (v) {
-              if (v == null) return;
-              onChanged(v);
-
-              if (v == OverrideStatus.permesso) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      "Permesso: default 09:00–10:00 (TODO: editor orario).",
-                    ),
-                  ),
-                );
-              }
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _overrideLabel(OverrideStatus s) {
-    switch (s) {
-      case OverrideStatus.normal:
-        return "Normal";
-      case OverrideStatus.ferie:
-        return "Ferie (disponibile)";
-      case OverrideStatus.permesso:
-        return "Permesso (default 09:00–10:00)";
-      case OverrideStatus.malattiaLeggera:
-        return "Malattia leggera";
-      case OverrideStatus.malattiaALetto:
-        return "Malattia a letto";
-    }
   }
 
   // =========================
@@ -1070,7 +985,7 @@ class _CalendarioScreenStepAStabileState
               ),
             ),
 
-          // ✅ NUOVO: Decisione pranzo (solo se uscita13)
+          // ✅ Decisione pranzo (solo se uscita13)
           if (uscita13Eff) ...[
             const SizedBox(height: 14),
             const Divider(),

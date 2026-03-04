@@ -13,6 +13,29 @@ enum OverrideStatus {
 /// Helper: normalizza una data alla "chiave giorno" (00:00) per usare mappe stabili.
 DateTime dayKey(DateTime d) => DateTime(d.year, d.month, d.day);
 
+String _two(int n) => n.toString().padLeft(2, '0');
+
+String _fmtMin(int minutes) {
+  final h = (minutes ~/ 60).clamp(0, 23);
+  final m = (minutes % 60).clamp(0, 59);
+  return "${_two(h)}:${_two(m)}";
+}
+
+String _statusLabel(OverrideStatus s) {
+  switch (s) {
+    case OverrideStatus.normal:
+      return "Normal";
+    case OverrideStatus.ferie:
+      return "Ferie";
+    case OverrideStatus.permesso:
+      return "Permesso";
+    case OverrideStatus.malattiaLeggera:
+      return "MalattiaLeggera";
+    case OverrideStatus.malattiaALetto:
+      return "MalattiaALetto";
+  }
+}
+
 /// Intervallo orario nello stesso giorno (in minuti da mezzanotte).
 /// Esempio: 10:30 => 630
 @immutable
@@ -33,6 +56,11 @@ class TimeRangeMinutes {
   }
 
   bool containsMinute(int m) => m >= startMin && m < endMin;
+
+  String toDisplayString() => "${_fmtMin(startMin)}–${_fmtMin(endMin)}";
+
+  @override
+  String toString() => toDisplayString();
 }
 
 /// Override di una singola persona per un giorno
@@ -48,7 +76,9 @@ class PersonDayOverride {
       throw ArgumentError('permessoRange required when status is permesso');
     }
     if (status != OverrideStatus.permesso && permessoRange != null) {
-      throw ArgumentError('permessoRange must be null unless status is permesso');
+      throw ArgumentError(
+        'permessoRange must be null unless status is permesso',
+      );
     }
   }
 
@@ -61,6 +91,14 @@ class PersonDayOverride {
   /// NOTA: malattiaALetto non è “mai disponibile” in assoluto:
   /// la logica reale (casa vs esterno) vive nel CoverageEngine.
   bool get isNeverAvailable => status == OverrideStatus.malattiaALetto;
+
+  @override
+  String toString() {
+    if (status == OverrideStatus.permesso) {
+      return "${_statusLabel(status)}(${permessoRange!.toDisplayString()})";
+    }
+    return _statusLabel(status);
+  }
 }
 
 /// ✅ COMPATIBILITÀ CNC
@@ -91,5 +129,13 @@ class DayOverrides {
   /// Crea un DayOverrides "vuoto" (nessun override) per quel giorno.
   factory DayOverrides.empty(DateTime day) {
     return DayOverrides(day: dayKey(day));
+  }
+
+  @override
+  String toString() {
+    final d = "${day.year}-${_two(day.month)}-${_two(day.day)}";
+    final m = matteo?.toString() ?? "Normal";
+    final c = chiara?.toString() ?? "Normal";
+    return "DayOverrides($d, Matteo=$m, Chiara=$c)";
   }
 }
