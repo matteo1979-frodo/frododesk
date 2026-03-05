@@ -1,4 +1,3 @@
-// lib/screens/calendario_screen_stepa.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -16,6 +15,9 @@ import '../logic/ips_store.dart';
 import '../logic/day_settings_store.dart';
 
 import '../widgets/stepb_override_panel.dart';
+
+// ✅ NEW: Ferie lunghe panel
+import '../widgets/ferie_period_panel.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -313,6 +315,9 @@ class _CalendarioScreenStepAStabileState
       sandraSeraOn: _effSandraSera(d0),
       schoolStart: _scuolaStart,
       overrides: ov,
+
+      // ✅ NEW: ferie lunghe → CoverageEngine
+      ferieStore: coreStore.feriePeriodStore,
 
       // ✅ Decisioni scuola dal DaySettingsStore
       schoolInCover: daySettingsStore.schoolInCoverForDay(d0),
@@ -668,7 +673,10 @@ class _CalendarioScreenStepAStabileState
 
   @override
   Widget build(BuildContext context) {
-    final ovSelected = _getOverridesForDay(_selectedDay);
+    final ovSelected = overrideStore.getEffectiveForDay(
+      day: _selectedDay,
+      ferieStore: coreStore.feriePeriodStore,
+    );
     final cov = _computeCoverageStepA(_selectedDay);
     final isEmergency = _isEmergencyActive();
 
@@ -714,14 +722,23 @@ class _CalendarioScreenStepAStabileState
             if (!isEmergency) _buildDayGapsBox(cov),
             if (!isEmergency) _banner(cov.ok, cov.bannerText),
             const SizedBox(height: 12),
+
+            // ✅ UI: Ferie lunghe spostate sotto Override (Step B) (stato persone / eccezioni)
             _layoutRow3(
               leftA: _cardTurni(),
               leftB: _cardScuola(),
-              leftC: _cardOverrideStepB(ovSelected),
+              leftC: Column(
+                children: [
+                  _cardOverrideStepB(ovSelected),
+                  const SizedBox(height: 12),
+                  FeriePeriodPanel(store: coreStore.feriePeriodStore),
+                ],
+              ),
               right: isEmergency
                   ? _buildEmergencyPanelPlaceholder()
                   : _cardCopertura(cov),
             ),
+
             const SizedBox(height: 18),
           ],
         ),
@@ -984,8 +1001,6 @@ class _CalendarioScreenStepAStabileState
                 style: TextStyle(color: Colors.black.withOpacity(0.65)),
               ),
             ),
-
-          // ✅ Decisione pranzo (solo se uscita13)
           if (uscita13Eff) ...[
             const SizedBox(height: 14),
             const Divider(),

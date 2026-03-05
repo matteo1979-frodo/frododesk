@@ -1,8 +1,7 @@
-// lib/logic/core_store.dart
-
 import 'settings_store.dart';
 import 'override_store.dart';
 import 'day_settings_store.dart';
+import 'ferie_period_store.dart';
 
 import 'turn_engine.dart'; // ✅ NEW
 
@@ -23,6 +22,9 @@ class CoreStore {
 
   // ✅ impostazioni per giorno (Sandra / Uscita13)
   late final DaySettingsStore daySettingsStore;
+
+  // ✅ NEW: Ferie lunghe (periodi)
+  late final FeriePeriodStore feriePeriodStore;
 
   // ✅ NEW: unico motore turni (standard + 4a squadra)
   late final TurnEngine turnEngine;
@@ -55,6 +57,9 @@ class CoreStore {
     settingsStore = SettingsStore();
     overrideStore = OverrideStore();
     daySettingsStore = DaySettingsStore();
+
+    // ✅ NEW: Ferie lunghe (periodi)
+    feriePeriodStore = FeriePeriodStore();
 
     // 2) TurnEngine (stato reale centrale)
     turnEngine = TurnEngine();

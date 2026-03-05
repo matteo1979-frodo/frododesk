@@ -1,3 +1,4 @@
+// lib/logic/coverage_engine.dart
 import 'package:flutter/material.dart';
 
 import '../models/day_override.dart';
@@ -7,6 +8,9 @@ import 'coverage_logic.dart';
 import 'override_apply.dart';
 import 'turn_engine.dart';
 import 'day_settings_store.dart';
+
+// ✅ NEW: Ferie lunghe
+import 'ferie_period_store.dart';
 
 class CoverageEngine {
   final TurnEngine turnEngine;
@@ -29,18 +33,18 @@ class CoverageEngine {
     TimeOfDay? sandraPranzoEnd,
     TimeOfDay? sandraSeraStart,
     TimeOfDay? sandraSeraEnd,
-  }) : turnEngine = turnEngine ?? TurnEngine(),
-       sandraCambioMattinaStart =
-           sandraCambioMattinaStart ?? const TimeOfDay(hour: 5, minute: 0),
-       sandraCambioMattinaEnd =
-           sandraCambioMattinaEnd ?? const TimeOfDay(hour: 6, minute: 35),
-       sandraPranzoStart =
-           sandraPranzoStart ?? const TimeOfDay(hour: 13, minute: 0),
-       sandraPranzoEnd =
-           sandraPranzoEnd ?? const TimeOfDay(hour: 14, minute: 30),
-       sandraSeraStart =
-           sandraSeraStart ?? const TimeOfDay(hour: 21, minute: 0),
-       sandraSeraEnd = sandraSeraEnd ?? const TimeOfDay(hour: 22, minute: 35);
+  })  : turnEngine = turnEngine ?? TurnEngine(),
+        sandraCambioMattinaStart =
+            sandraCambioMattinaStart ?? const TimeOfDay(hour: 5, minute: 0),
+        sandraCambioMattinaEnd =
+            sandraCambioMattinaEnd ?? const TimeOfDay(hour: 6, minute: 35),
+        sandraPranzoStart =
+            sandraPranzoStart ?? const TimeOfDay(hour: 13, minute: 0),
+        sandraPranzoEnd =
+            sandraPranzoEnd ?? const TimeOfDay(hour: 14, minute: 30),
+        sandraSeraStart =
+            sandraSeraStart ?? const TimeOfDay(hour: 21, minute: 0),
+        sandraSeraEnd = sandraSeraEnd ?? const TimeOfDay(hour: 22, minute: 35);
 
   // Pennina UI
   void setSandraCambioMattina(TimeOfDay start, TimeOfDay end) {
@@ -63,6 +67,9 @@ class CoverageEngine {
     required bool uscita13,
     required bool sandraAvailable,
     required DayOverrides overrides,
+
+    // ✅ NEW: ferie lunghe (periodi)
+    FeriePeriodStore? ferieStore,
   }) {
     return gapsForDayV2(
       day: day,
@@ -72,6 +79,7 @@ class CoverageEngine {
       sandraSeraOn: sandraAvailable,
       schoolStart: const TimeOfDay(hour: 8, minute: 25),
       overrides: overrides,
+      ferieStore: ferieStore,
     );
   }
 
@@ -83,6 +91,9 @@ class CoverageEngine {
     required bool sandraSeraOn,
     required TimeOfDay schoolStart,
     required DayOverrides overrides,
+
+    // ✅ NEW: ferie lunghe (periodi)
+    FeriePeriodStore? ferieStore,
 
     // ✅ decisioni scuola (default = Nessuno ⇒ BUCO decisione richiesta)
     SchoolCoverChoice schoolInCover = SchoolCoverChoice.none,
@@ -130,6 +141,7 @@ class CoverageEngine {
       sandraAvailable: sandraMattinaOn,
       isHomePresenceWindow: true,
       overrides: overrides,
+      ferieStore: ferieStore,
     );
 
     if (!okCambioMattina) {
@@ -151,6 +163,7 @@ class CoverageEngine {
       sandraAvailable: sandraSeraOn,
       isHomePresenceWindow: true,
       overrides: overrides,
+      ferieStore: ferieStore,
     );
 
     if (!okSera) buchi.add(_labelRange(sandraSeraStart, sandraSeraEnd));
@@ -166,18 +179,34 @@ class CoverageEngine {
     required bool sandraAvailable,
     required bool isHomePresenceWindow,
     required DayOverrides overrides,
+
+    // ✅ NEW: ferie lunghe (periodi)
+    FeriePeriodStore? ferieStore,
   }) {
+    // ✅ PRIORITÀ: Override manuale (Step B) > Ferie lunghe
+    final matteoHasManual = overrides.matteo != null;
+    final chiaraHasManual = overrides.chiara != null;
+
+    final matteoHoliday = (!matteoHasManual) &&
+        (ferieStore?.isOnHoliday(FeriePerson.matteo, day) ?? false);
+    final chiaraHoliday = (!chiaraHasManual) &&
+        (ferieStore?.isOnHoliday(FeriePerson.chiara, day) ?? false);
+
     // 1) busy base da TurnEngine
-    final baseBusyMatteo = turnEngine.busyShiftsForPerson(
+    var baseBusyMatteo = turnEngine.busyShiftsForPerson(
       person: TurnPerson.matteo,
       day: day,
     );
-    final baseBusyChiara = turnEngine.busyShiftsForPerson(
+    var baseBusyChiara = turnEngine.busyShiftsForPerson(
       person: TurnPerson.chiara,
       day: day,
     );
 
-    // 2) override Step B
+    // ✅ Se ferie lunghe attive (e NON c'è override manuale): persona libera
+    if (matteoHoliday) baseBusyMatteo = [];
+    if (chiaraHoliday) baseBusyChiara = [];
+
+    // 2) override Step B (se presente)
     final matteoBusy = OverrideApply.applyToBusyShifts(
       day: day,
       baseBusy: baseBusyMatteo,
@@ -192,21 +221,22 @@ class CoverageEngine {
     // 3) genitori coprono se uno è libero per tutta la fascia
     final coveredByParents =
         isTimeCovered(fasciaStart, fasciaEnd, <PersonAvailability>[
-          PersonAvailability(busyShifts: matteoBusy),
-          PersonAvailability(busyShifts: chiaraBusy),
-        ]);
+      PersonAvailability(busyShifts: matteoBusy),
+      PersonAvailability(busyShifts: chiaraBusy),
+    ]);
     if (coveredByParents) return true;
 
     // 4) regole malattia (dominanti)
-    final m = overrides.matteo?.status ?? OverrideStatus.normal;
-    final c = overrides.chiara?.status ?? OverrideStatus.normal;
+    // ✅ ferie lunghe: se NON c'è override manuale, lo status effettivo è "ferie"
+    final m = overrides.matteo?.status ??
+        (matteoHoliday ? OverrideStatus.ferie : OverrideStatus.normal);
+    final c = overrides.chiara?.status ??
+        (chiaraHoliday ? OverrideStatus.ferie : OverrideStatus.normal);
 
-    final hasLeggera =
-        (m == OverrideStatus.malattiaLeggera) ||
+    final hasLeggera = (m == OverrideStatus.malattiaLeggera) ||
         (c == OverrideStatus.malattiaLeggera);
 
-    final hasALetto =
-        (m == OverrideStatus.malattiaALetto) ||
+    final hasALetto = (m == OverrideStatus.malattiaALetto) ||
         (c == OverrideStatus.malattiaALetto);
 
     final overlapsImps = _overlapsImps(

@@ -5,6 +5,10 @@ import '../models/day_override.dart';
 
 /// Pannello UI Step B: selezione override per Matteo/Chiara.
 /// Non contiene logica motore: scrive solo DayOverrides tramite callback.
+///
+/// ✅ NEW (zero rischio):
+/// - può mostrare una piccola etichetta "(periodo)" quando lo stato Ferie
+///   NON viene da override manuale ma da ferie lunghe (periodi).
 class StepBOverridePanel extends StatelessWidget {
   final DateTime day;
   final DayOverrides current;
@@ -15,12 +19,18 @@ class StepBOverridePanel extends StatelessWidget {
   /// Callback opzionale dopo una modifica (es: refresh IPS)
   final VoidCallback? onAfterChange;
 
+  /// ✅ NEW: true = Ferie arriva da ferie lunghe (periodi), non da override manuale
+  final bool matteoFerieFromPeriod;
+  final bool chiaraFerieFromPeriod;
+
   const StepBOverridePanel({
     super.key,
     required this.day,
     required this.current,
     required this.onSave,
     this.onAfterChange,
+    this.matteoFerieFromPeriod = false,
+    this.chiaraFerieFromPeriod = false,
   });
 
   PersonDayOverride? _buildPersonOverrideSafe(OverrideStatus status) {
@@ -90,9 +100,12 @@ class StepBOverridePanel extends StatelessWidget {
     required BuildContext context,
     required String label,
     required OverrideStatus value,
+    required bool ferieFromPeriod,
     required ValueChanged<OverrideStatus> onChanged,
   }) {
     final s = _styleFor(value);
+
+    final showBadge = value == OverrideStatus.ferie && ferieFromPeriod;
 
     return Row(
       children: [
@@ -124,6 +137,26 @@ class StepBOverridePanel extends StatelessWidget {
                 horizontal: 12,
                 vertical: 10,
               ),
+
+              // ✅ NEW: badge "(periodo)" a destra
+              suffixIcon: showBadge
+                  ? Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: Center(
+                        widthFactor: 1,
+                        child: Text(
+                          "(periodo)",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12,
+                            color: s.text.withOpacity(0.75),
+                          ),
+                        ),
+                      ),
+                    )
+                  : null,
+              suffixIconConstraints:
+                  const BoxConstraints(minWidth: 0, minHeight: 0),
             ),
             style: TextStyle(color: s.text, fontWeight: FontWeight.w800),
             items: OverrideStatus.values.map((st) {
@@ -164,6 +197,7 @@ class StepBOverridePanel extends StatelessWidget {
           context: context,
           label: "Matteo",
           value: matteoStatus,
+          ferieFromPeriod: matteoFerieFromPeriod,
           onChanged: (newStatus) {
             final updated = DayOverrides(
               day: day,
@@ -179,6 +213,7 @@ class StepBOverridePanel extends StatelessWidget {
           context: context,
           label: "Chiara",
           value: chiaraStatus,
+          ferieFromPeriod: chiaraFerieFromPeriod,
           onChanged: (newStatus) {
             final updated = DayOverrides(
               day: day,
