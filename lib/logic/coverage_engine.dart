@@ -70,6 +70,17 @@ class CoverageEngine {
 
     // ✅ NEW: ferie lunghe (periodi)
     FeriePeriodStore? ferieStore,
+
+    // ✅ STEP 1: Uscita scuola modificabile per giorno (opzionale)
+    TimeOfDay? schoolOutStart,
+    TimeOfDay? schoolOutEnd,
+
+    // ✅ NEW: orario uscita anticipata (se uscita13 = true)
+    TimeOfDay? uscitaAnticipataAt,
+
+    SchoolCoverChoice schoolInCover = SchoolCoverChoice.none,
+    SchoolCoverChoice schoolOutCover = SchoolCoverChoice.none,
+    SchoolCoverChoice lunchCover = SchoolCoverChoice.none,
   }) {
     return gapsForDayV2(
       day: day,
@@ -80,6 +91,12 @@ class CoverageEngine {
       schoolStart: const TimeOfDay(hour: 8, minute: 25),
       overrides: overrides,
       ferieStore: ferieStore,
+      schoolInCover: schoolInCover,
+      schoolOutCover: schoolOutCover,
+      lunchCover: lunchCover,
+      schoolOutStart: schoolOutStart ?? const TimeOfDay(hour: 16, minute: 25),
+      schoolOutEnd: schoolOutEnd ?? const TimeOfDay(hour: 17, minute: 15),
+      uscitaAnticipataAt: uscitaAnticipataAt,
     );
   }
 
@@ -103,6 +120,9 @@ class CoverageEngine {
 
     // ✅ NUOVO: decisione pranzo (solo se uscita13) — come scuola
     SchoolCoverChoice lunchCover = SchoolCoverChoice.none,
+
+    // ✅ NEW: orario uscita anticipata (se uscita13 = true)
+    TimeOfDay? uscitaAnticipataAt,
   }) {
     final d0 = _onlyDate(day);
     final buchi = <String>[];
@@ -113,23 +133,28 @@ class CoverageEngine {
       buchi.add(labelSchoolIn);
     }
 
-    // 1b) Alice uscita 16:25 -> 17:15 (DECISIONE)
-    final labelSchoolOut =
-        "Alice uscita: ${_fmt(schoolOutStart)}–${_fmt(schoolOutEnd)}";
-    if (schoolOutCover == SchoolCoverChoice.none) {
-      buchi.add(labelSchoolOut);
+    // ✅ 1b) Alice uscita (DECISIONE)
+    // REGOLA CNC: se uscita13 è attiva, l'uscita "standard" (16:25–17:15)
+    // NON deve generare buco. La logistica passa sulla finestra pranzo (13:00–14:30).
+    if (!uscita13) {
+      final labelSchoolOut =
+          "Alice uscita: ${_fmt(schoolOutStart)}–${_fmt(schoolOutEnd)}";
+      if (schoolOutCover == SchoolCoverChoice.none) {
+        buchi.add(labelSchoolOut);
+      }
     }
 
     // ✅ 1c) Pranzo (solo se uscita13) — DECISIONE come scuola
     if (uscita13) {
+      final startLunch = uscitaAnticipataAt ?? sandraPranzoStart;
       final labelLunch =
-          "Alice pranzo: ${_fmt(sandraPranzoStart)}–${_fmt(sandraPranzoEnd)}";
+          "Alice pranzo: ${_fmt(startLunch)}–${_fmt(sandraPranzoEnd)}";
       if (lunchCover == SchoolCoverChoice.none) {
         buchi.add(labelLunch);
       }
     }
 
-    // 2) 05:00–06:35 (IN CASA) — copertura calcolata (genitori + malattia + Sandra)
+    // 2) 05:00–06:35 (IN CASA) — copertura calcolata
     final fMattinaStart = _atTime(d0, sandraCambioMattinaStart);
     final fMattinaEnd = _atTime(d0, sandraCambioMattinaEnd);
 
@@ -148,8 +173,7 @@ class CoverageEngine {
       buchi.add(_labelRange(sandraCambioMattinaStart, sandraCambioMattinaEnd));
     }
 
-    // 3) (prima era calcolo automatico) → ORA è decisione (vedi sopra)
-    //    quindi NON aggiungiamo più qui logica di copertura per 13:00–14:30.
+    // 3) Pranzo: ora è DECISIONE (vedi sopra) → niente calcolo automatico qui.
 
     // 4) 21:00–22:35 (IN CASA) — copertura calcolata
     final fSeraStart = _atTime(d0, sandraSeraStart);
@@ -227,7 +251,6 @@ class CoverageEngine {
     if (coveredByParents) return true;
 
     // 4) regole malattia (dominanti)
-    // ✅ ferie lunghe: se NON c'è override manuale, lo status effettivo è "ferie"
     final m = overrides.matteo?.status ??
         (matteoHoliday ? OverrideStatus.ferie : OverrideStatus.normal);
     final c = overrides.chiara?.status ??

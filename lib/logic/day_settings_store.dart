@@ -1,4 +1,6 @@
 // lib/logic/day_settings_store.dart
+import 'package:flutter/material.dart';
+
 import '../models/day_override.dart';
 
 /// Impostazioni "operative" per giorno (NON globali).
@@ -7,10 +9,15 @@ import '../models/day_override.dart';
 /// CNC:
 /// - Sandra per fascia: mattina / pranzo / sera (fallback su legacy sandraForDay)
 /// - Decisioni scuola: ingresso + uscita (scelta esplicita: Nessuno/Matteo/Chiara/Sandra/Altro)
-/// - ✅ Decisione pranzo (solo se uscita13): 13:00–14:30 (come scuola)
+/// - ✅ Decisione pranzo (solo se uscita anticipata): finestra pranzo
+/// - ✅ STEP 1: Uscita scuola ORARIO modificabile per giorno (start+end)
+/// - ✅ NEW: Uscita anticipata ORARIO per giorno (non più solo bool)
 class DaySettingsStore {
   final Map<DateTime, bool> _sandraDisponibile = {};
-  final Map<DateTime, bool> _uscita13 = {};
+
+  // ✅ NEW: uscita anticipata ORARIO (minuti da mezzanotte)
+  // Se presente => uscita anticipata attiva per quel giorno.
+  final Map<DateTime, int> _uscitaAnticipataMin = {};
 
   // ✅ Sandra per fascia (se non presente -> fallback su _sandraDisponibile)
   final Map<DateTime, bool> _sandraMattina = {};
@@ -21,14 +28,32 @@ class DaySettingsStore {
   final Map<DateTime, SchoolCoverChoice> _schoolInCover = {};
   final Map<DateTime, SchoolCoverChoice> _schoolOutCover = {};
 
-  // ✅ Decisione pranzo (solo se uscita13) — 13:00–14:30
+  // ✅ Decisione pranzo (solo se uscita anticipata) — come scuola
   final Map<DateTime, SchoolCoverChoice> _lunchCover = {};
 
   // ✅ Finestre logistiche di Alice per giorno (minuti da mezzanotte)
   // (rimangono per future estensioni, non usate ancora nel motore)
   final Map<DateTime, Map<AliceWindowKey, MinuteRange>> _aliceWindows = {};
 
+  // ✅ STEP 1: uscita scuola orario variabile per giorno (minuti da mezzanotte)
+  final Map<DateTime, int> _schoolOutStartMin = {};
+  final Map<DateTime, int> _schoolOutEndMin = {};
+
   DateTime _k(DateTime d) => dayKey(d);
+
+  // -------------------------
+  // Helpers time
+  // -------------------------
+
+  int _toMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
+
+  TimeOfDay _fromMinutes(int m) {
+    final hh = (m ~/ 60).clamp(0, 23);
+    final mm = (m % 60).clamp(0, 59);
+    return TimeOfDay(hour: hh, minute: mm);
+  }
+
+  bool _isValidMinute(int m) => m >= 0 && m <= 24 * 60;
 
   // -------------------------
   // Flags per giorno (legacy / compatibilità)
@@ -38,22 +63,52 @@ class DaySettingsStore {
   /// Resta utile come fallback per le fasce se queste non sono impostate.
   bool? sandraForDay(DateTime day) => _sandraDisponibile[_k(day)];
 
-  bool? uscita13ForDay(DateTime day) => _uscita13[_k(day)];
-
   void setSandraForDay(DateTime day, bool value) {
     _sandraDisponibile[_k(day)] = value;
-  }
-
-  void setUscita13ForDay(DateTime day, bool value) {
-    _uscita13[_k(day)] = value;
   }
 
   void clearSandraForDay(DateTime day) {
     _sandraDisponibile.remove(_k(day));
   }
 
-  void clearUscita13ForDay(DateTime day) {
-    _uscita13.remove(_k(day));
+  // -------------------------
+  // ✅ Uscita anticipata (NEW: ORARIO per giorno)
+  // -------------------------
+
+  /// Legacy bool: true se esiste un orario di uscita anticipata per quel giorno.
+  /// (Serve per compatibilità col codice che ragiona ancora "uscita13" come bool)
+  bool? uscita13ForDay(DateTime day) => _uscitaAnticipataMin.containsKey(_k(day)) ? true : null;
+
+  /// Legacy setter: se true setta 13:00, se false pulisce.
+  /// (Consigliato usare setUscitaAnticipataTimeForDay)
+  void setUscita13ForDay(DateTime day, bool value) {
+    final dk = _k(day);
+    if (value) {
+      _uscitaAnticipataMin[dk] = 13 * 60;
+    } else {
+      _uscitaAnticipataMin.remove(dk);
+    }
+  }
+
+  /// ✅ NEW: orario uscita anticipata per giorno (TimeOfDay), null se non attiva.
+  TimeOfDay? uscitaAnticipataTimeForDay(DateTime day) {
+    final m = _uscitaAnticipataMin[_k(day)];
+    if (m == null) return null;
+    if (!_isValidMinute(m)) return null;
+    return _fromMinutes(m);
+  }
+
+  /// ✅ NEW: imposta orario uscita anticipata per giorno (attiva la funzione).
+  void setUscitaAnticipataTimeForDay(DateTime day, TimeOfDay time) {
+    final dk = _k(day);
+    final m = _toMinutes(time);
+    if (!_isValidMinute(m)) return;
+    _uscitaAnticipataMin[dk] = m;
+  }
+
+  /// ✅ NEW: disattiva uscita anticipata per giorno.
+  void clearUscitaAnticipataForDay(DateTime day) {
+    _uscitaAnticipataMin.remove(_k(day));
   }
 
   // -------------------------
@@ -149,7 +204,41 @@ class DaySettingsStore {
   }
 
   // -------------------------
-  // ✅ Decisione pranzo (solo se uscita13)
+  // ✅ STEP 1: Orario uscita scuola per giorno
+  // -------------------------
+
+  TimeOfDay? schoolOutStartForDay(DateTime day) {
+    final m = _schoolOutStartMin[_k(day)];
+    if (m == null) return null;
+    if (!_isValidMinute(m)) return null;
+    return _fromMinutes(m);
+  }
+
+  TimeOfDay? schoolOutEndForDay(DateTime day) {
+    final m = _schoolOutEndMin[_k(day)];
+    if (m == null) return null;
+    if (!_isValidMinute(m)) return null;
+    return _fromMinutes(m);
+  }
+
+  void setSchoolOutTimesForDay(DateTime day, TimeOfDay start, TimeOfDay end) {
+    final dk = _k(day);
+    final a = _toMinutes(start);
+    final b = _toMinutes(end);
+    if (!_isValidMinute(a) || !_isValidMinute(b)) return;
+    if (b <= a) return;
+    _schoolOutStartMin[dk] = a;
+    _schoolOutEndMin[dk] = b;
+  }
+
+  void clearSchoolOutTimesForDay(DateTime day) {
+    final dk = _k(day);
+    _schoolOutStartMin.remove(dk);
+    _schoolOutEndMin.remove(dk);
+  }
+
+  // -------------------------
+  // ✅ Decisione pranzo (solo se uscita anticipata)
   // -------------------------
 
   SchoolCoverChoice lunchCoverForDay(DateTime day) =>
@@ -216,17 +305,17 @@ class MinuteRange {
   final int endMin; // escluso
 
   const MinuteRange({required this.startMin, required this.endMin})
-    : assert(startMin >= 0),
-      assert(endMin >= 0),
-      assert(endMin > startMin),
-      assert(endMin <= 24 * 60);
+      : assert(startMin >= 0),
+        assert(endMin >= 0),
+        assert(endMin > startMin),
+        assert(endMin <= 24 * 60);
 
   int get durationMin => endMin - startMin;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-    'startMin': startMin,
-    'endMin': endMin,
-  };
+        'startMin': startMin,
+        'endMin': endMin,
+      };
 
   static MinuteRange? fromJson(dynamic json) {
     if (json is! Map) return null;

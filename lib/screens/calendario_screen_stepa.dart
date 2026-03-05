@@ -1,3 +1,4 @@
+// lib/screens/calendario_screen_stepa.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -49,24 +50,120 @@ class _CalendarioScreenStepAStabileState
   CoverageEngine get _engine => coreStore.coverageEngine;
   TurnEngine get _turns => coreStore.turnEngine;
 
-  bool _effUscita13(DateTime day) =>
-      daySettingsStore.uscita13ForDay(day) ?? settingsStore.isUscita13;
+  // ✅ NEW: uscita anticipata ORARIO effettivo per giorno (fallback su default globale)
+  TimeOfDay? _effUscitaAnticipataAt(DateTime day) {
+    final t = daySettingsStore.uscitaAnticipataTimeForDay(day);
+    if (t != null) return t;
 
-  bool _effSandraMattina(DateTime day) =>
-      daySettingsStore.effectiveSandraMattina(
+    // fallback legacy: se globale attivo, usa default (13:00)
+    if (settingsStore.isUscita13) {
+      return settingsStore.uscitaAnticipataDefaultTime;
+    }
+
+    return null;
+  }
+
+  bool _effUscita13(DateTime day) => _effUscitaAnticipataAt(day) != null;
+
+  bool _effSandraMattina(DateTime day) => daySettingsStore.effectiveSandraMattina(
         day,
         fallbackGlobal: settingsStore.isSandraDisponibile,
       );
 
   bool _effSandraPranzo(DateTime day) => daySettingsStore.effectiveSandraPranzo(
-    day,
-    fallbackGlobal: settingsStore.isSandraDisponibile,
-  );
+        day,
+        fallbackGlobal: settingsStore.isSandraDisponibile,
+      );
 
   bool _effSandraSera(DateTime day) => daySettingsStore.effectiveSandraSera(
-    day,
-    fallbackGlobal: settingsStore.isSandraDisponibile,
-  );
+        day,
+        fallbackGlobal: settingsStore.isSandraDisponibile,
+      );
+
+  // =========================
+  // ✅ STEP 1: Uscita scuola per giorno (fallback default)
+  // =========================
+  static const TimeOfDay _schoolOutDefaultStart =
+      TimeOfDay(hour: 16, minute: 25);
+  static const TimeOfDay _schoolOutDefaultEnd = TimeOfDay(hour: 17, minute: 15);
+
+  TimeOfDay _effSchoolOutStart(DateTime day) =>
+      daySettingsStore.schoolOutStartForDay(day) ?? _schoolOutDefaultStart;
+
+  TimeOfDay _effSchoolOutEnd(DateTime day) =>
+      daySettingsStore.schoolOutEndForDay(day) ?? _schoolOutDefaultEnd;
+
+  Future<void> _editSchoolOutTimesForDay() async {
+    final start0 = _effSchoolOutStart(_selectedDay);
+    final end0 = _effSchoolOutEnd(_selectedDay);
+
+    final start = await showTimePicker(
+      context: context,
+      initialTime: start0,
+      helpText: "Uscita scuola • INIZIO",
+      cancelText: "Annulla",
+      confirmText: "OK",
+    );
+    if (start == null) return;
+
+    final end = await showTimePicker(
+      context: context,
+      initialTime: end0,
+      helpText: "Uscita scuola • FINE",
+      cancelText: "Annulla",
+      confirmText: "OK",
+    );
+    if (end == null) return;
+
+    final startMin = start.hour * 60 + start.minute;
+    final endMin = end.hour * 60 + end.minute;
+    if (endMin <= startMin) return;
+
+    setState(() {
+      daySettingsStore.setSchoolOutTimesForDay(_selectedDay, start, end);
+    });
+    ipsStore.refresh(now: _selectedDay);
+  }
+
+  // (non usato dopo rimozione UI reset — lasciato qui per eventuale futuro)
+  void _resetSchoolOutTimesForDay() {
+    setState(() {
+      daySettingsStore.clearSchoolOutTimesForDay(_selectedDay);
+    });
+    ipsStore.refresh(now: _selectedDay);
+  }
+
+  // =========================
+  // ✅ NEW: toggle uscita anticipata con scelta orario
+  // =========================
+  Future<void> _toggleUscitaAnticipata(bool enabled) async {
+    if (!enabled) {
+      setState(() {
+        daySettingsStore.clearUscitaAnticipataForDay(_selectedDay);
+      });
+      ipsStore.refresh(now: _selectedDay);
+      return;
+    }
+
+    final initial =
+        _effUscitaAnticipataAt(_selectedDay) ?? settingsStore.uscitaAnticipataDefaultTime;
+
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: initial,
+      helpText: "Uscita anticipata • ORARIO",
+      cancelText: "Annulla",
+      confirmText: "OK",
+    );
+
+    // Se annulli, NON attiviamo nulla (resta OFF)
+    if (picked == null) return;
+
+    setState(() {
+      daySettingsStore.setUscitaAnticipataTimeForDay(_selectedDay, picked);
+    });
+    ipsStore.refresh(now: _selectedDay);
+  }
 
   String _schoolCoverLabel(SchoolCoverChoice c) {
     switch (c) {
@@ -279,8 +376,7 @@ class _CalendarioScreenStepAStabileState
   final EmergencyStore emergencyStore = EmergencyStore();
   final EmergencyDayLogic emergencyLogic = EmergencyDayLogic();
 
-  DayOverrides _getOverridesForDay(DateTime day) =>
-      overrideStore.getForDay(day);
+  DayOverrides _getOverridesForDay(DateTime day) => overrideStore.getForDay(day);
 
   void _setOverridesForDay(DateTime day, DayOverrides ov) {
     overrideStore.setForDay(day, ov);
@@ -289,10 +385,6 @@ class _CalendarioScreenStepAStabileState
   // ---- Scuola ----
   TimeOfDay _scuolaStart = const TimeOfDay(hour: 8, minute: 25);
   TimeOfDay _scuolaEnd = const TimeOfDay(hour: 16, minute: 30);
-
-  // ✅ Uscita scuola (fisso per ora, CNC: poi renderemo editabile)
-  final TimeOfDay _schoolOutStart = const TimeOfDay(hour: 16, minute: 25);
-  final TimeOfDay _schoolOutEnd = const TimeOfDay(hour: 17, minute: 15);
 
   DateTime _onlyDate(DateTime d) => DateTime(d.year, d.month, d.day);
 
@@ -305,7 +397,12 @@ class _CalendarioScreenStepAStabileState
     final d0 = _onlyDate(day);
 
     final ov = _getOverridesForDay(d0);
-    final uscita13Eff = _effUscita13(d0);
+
+    final uscitaAt = _effUscitaAnticipataAt(d0);
+    final uscita13Eff = uscitaAt != null;
+
+    final outStart = _effSchoolOutStart(d0);
+    final outEnd = _effSchoolOutEnd(d0);
 
     final gaps = _engine.gapsForDayV2(
       day: d0,
@@ -322,11 +419,14 @@ class _CalendarioScreenStepAStabileState
       // ✅ Decisioni scuola dal DaySettingsStore
       schoolInCover: daySettingsStore.schoolInCoverForDay(d0),
       schoolOutCover: daySettingsStore.schoolOutCoverForDay(d0),
-      schoolOutStart: _schoolOutStart,
-      schoolOutEnd: _schoolOutEnd,
+      schoolOutStart: outStart,
+      schoolOutEnd: outEnd,
 
-      // ✅ NUOVO: decisione pranzo (solo se uscita13)
+      // ✅ NUOVO: decisione pranzo (solo se uscita anticipata)
       lunchCover: daySettingsStore.lunchCoverForDay(d0),
+
+      // ✅ NEW: orario uscita anticipata (inizio finestra pranzo)
+      uscitaAnticipataAt: uscitaAt,
     );
 
     final ok = gaps.isEmpty;
@@ -340,9 +440,8 @@ class _CalendarioScreenStepAStabileState
       }
     }
 
-    final bannerText = ok
-        ? "Copertura OK"
-        : "BUCO (${gaps.length}): ${gaps.join(' • ')}";
+    final bannerText =
+        ok ? "Copertura OK" : "BUCO (${gaps.length}): ${gaps.join(' • ')}";
 
     return CoverageResultStepA(
       ok: ok,
@@ -467,10 +566,7 @@ class _CalendarioScreenStepAStabileState
                       title: "Modifica orario pomeriggio",
                       currentRange: settings.afternoonRange,
                       onSave: (newRange) {
-                        emergencyStore.setAfternoonRange(
-                          _selectedDay,
-                          newRange,
-                        );
+                        emergencyStore.setAfternoonRange(_selectedDay, newRange);
                         setState(() {});
                       },
                     );
@@ -530,9 +626,8 @@ class _CalendarioScreenStepAStabileState
     if (cov.ok) return const SizedBox.shrink();
 
     final firstLine = cov.bannerText.split('\n').first;
-    final gapsText = firstLine.startsWith('BUCO')
-        ? firstLine
-        : 'BUCO: controlla copertura';
+    final gapsText =
+        firstLine.startsWith('BUCO') ? firstLine : 'BUCO: controlla copertura';
 
     return Container(
       width: double.infinity,
@@ -572,9 +667,7 @@ class _CalendarioScreenStepAStabileState
             : Colors.red.withOpacity(0.12),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: ok
-              ? Colors.green.withOpacity(0.4)
-              : Colors.red.withOpacity(0.4),
+          color: ok ? Colors.green.withOpacity(0.4) : Colors.red.withOpacity(0.4),
         ),
       ),
       child: Row(
@@ -722,8 +815,6 @@ class _CalendarioScreenStepAStabileState
             if (!isEmergency) _buildDayGapsBox(cov),
             if (!isEmergency) _banner(cov.ok, cov.bannerText),
             const SizedBox(height: 12),
-
-            // ✅ UI: Ferie lunghe spostate sotto Override (Step B) (stato persone / eccezioni)
             _layoutRow3(
               leftA: _cardTurni(),
               leftB: _cardScuola(),
@@ -738,7 +829,6 @@ class _CalendarioScreenStepAStabileState
                   ? _buildEmergencyPanelPlaceholder()
                   : _cardCopertura(cov),
             ),
-
             const SizedBox(height: 18),
           ],
         ),
@@ -848,7 +938,7 @@ class _CalendarioScreenStepAStabileState
   }
 
   // =========================
-  // ✅ OVERRIDE STEP B (ORA MODULO ESTERNO)
+  // ✅ OVERRIDE STEP B
   // =========================
   Widget _cardOverrideStepB(DayOverrides ovSelected) {
     return _card(
@@ -881,42 +971,80 @@ class _CalendarioScreenStepAStabileState
   }
 
   // =========================
-  // ✅ SCUOLA (con decisioni + pranzo uscita13)
+  // ✅ SCUOLA (uscita anticipata con ORARIO)
   // =========================
   Widget _cardScuola() {
     final inChoice = daySettingsStore.schoolInCoverForDay(_selectedDay);
     final outChoice = daySettingsStore.schoolOutCoverForDay(_selectedDay);
 
-    final uscita13Eff = _effUscita13(_selectedDay);
+    final uscitaAt = _effUscitaAnticipataAt(_selectedDay);
+    final uscita13Eff = uscitaAt != null;
+
     final lunchChoice = daySettingsStore.lunchCoverForDay(_selectedDay);
+
+    final outStart = _effSchoolOutStart(_selectedDay);
+    final outEnd = _effSchoolOutEnd(_selectedDay);
+
+    final bool hasCustomOut =
+        daySettingsStore.schoolOutStartForDay(_selectedDay) != null ||
+            daySettingsStore.schoolOutEndForDay(_selectedDay) != null;
 
     return _card(
       title: "Alice / Scuola",
-      subtitle: "Orari scuola + uscita anticipata (attiva finestra pranzo).",
+      subtitle: "Orari scuola + uscita anticipata rapida (con orario).",
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text("Orario: ${_fmt(_scuolaStart)}–${_fmt(_scuolaEnd)}"),
           const SizedBox(height: 12),
+
+          // ✅ Toggle + orario
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text("Uscita anticipata alle 13:00"),
-            value:
-                daySettingsStore.uscita13ForDay(_selectedDay) ??
-                settingsStore.isUscita13,
-            onChanged: (v) {
-              setState(
-                () => daySettingsStore.setUscita13ForDay(_selectedDay, v),
-              );
-              ipsStore.refresh(now: _selectedDay);
+            title: Text(
+              uscita13Eff
+                  ? "Uscita anticipata: ${_fmt(uscitaAt!)}"
+                  : "Uscita anticipata (tocca per impostare orario)",
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            value: uscita13Eff,
+            onChanged: (v) async {
+              await _toggleUscitaAnticipata(v);
             },
           ),
+
           const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: _pickSchoolTimes,
             icon: const Icon(Icons.edit),
             label: const Text("Modifica scuola"),
           ),
+
+          // ✅ MODIFICA RICHIESTA:
+          // Se uscita anticipata è attiva, NASCONDIAMO completamente:
+          // - "Uscita: 16:25–17:15"
+          // - "Modifica uscita"
+          // - (e sotto anche il dropdown decisione uscita normale)
+          if (!uscita13Eff) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    "Uscita: ${_fmt(outStart)}–${_fmt(outEnd)}${hasCustomOut ? " (personalizzata)" : ""}",
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _editSchoolOutTimesForDay,
+              icon: const Icon(Icons.edit_calendar),
+              label: const Text("Modifica uscita"),
+            ),
+          ],
+
           const SizedBox(height: 14),
           const Divider(),
           const SizedBox(height: 10),
@@ -939,83 +1067,27 @@ class _CalendarioScreenStepAStabileState
             }).toList(),
             onChanged: (v) {
               if (v == null) return;
-              setState(
-                () => daySettingsStore.setSchoolInCoverForDay(_selectedDay, v),
-              );
+              setState(() =>
+                  daySettingsStore.setSchoolInCoverForDay(_selectedDay, v));
               if (v == SchoolCoverChoice.altro) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text(
-                      "Altro: lista persone arriverà dopo (placeholder).",
-                    ),
+                    content: Text("Altro: lista persone arriverà dopo (placeholder)."),
                   ),
                 );
               }
               ipsStore.refresh(now: _selectedDay);
             },
           ),
-          if (inChoice == SchoolCoverChoice.altro)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                "Altro: (da selezionare)",
-                style: TextStyle(color: Colors.black.withOpacity(0.65)),
-              ),
-            ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<SchoolCoverChoice>(
-            value: outChoice,
-            isExpanded: true,
-            decoration: InputDecoration(
-              labelText:
-                  "Uscita ${_fmt(_schoolOutStart)}–${_fmt(_schoolOutEnd)}",
-            ),
-            items: SchoolCoverChoice.values.map((c) {
-              return DropdownMenuItem(
-                value: c,
-                child: Text(_schoolCoverLabel(c)),
-              );
-            }).toList(),
-            onChanged: (v) {
-              if (v == null) return;
-              setState(
-                () => daySettingsStore.setSchoolOutCoverForDay(_selectedDay, v),
-              );
-              if (v == SchoolCoverChoice.altro) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      "Altro: lista persone arriverà dopo (placeholder).",
-                    ),
-                  ),
-                );
-              }
-              ipsStore.refresh(now: _selectedDay);
-            },
-          ),
-          if (outChoice == SchoolCoverChoice.altro)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                "Altro: (da selezionare)",
-                style: TextStyle(color: Colors.black.withOpacity(0.65)),
-              ),
-            ),
-          if (uscita13Eff) ...[
-            const SizedBox(height: 14),
-            const Divider(),
-            const SizedBox(height: 10),
-            const Text(
-              "Decisione pranzo (uscita 13)",
-              style: TextStyle(fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 10),
+
+          // ✅ Uscita normale: solo se NON c’è uscita anticipata
+          if (!uscita13Eff) ...[
+            const SizedBox(height: 12),
             DropdownButtonFormField<SchoolCoverChoice>(
-              value: lunchChoice,
+              value: outChoice,
               isExpanded: true,
               decoration: InputDecoration(
-                labelText:
-                    "Pranzo ${_fmt(_engine.sandraPranzoStart)}–${_fmt(_engine.sandraPranzoEnd)}",
+                labelText: "Uscita ${_fmt(outStart)}–${_fmt(outEnd)}",
               ),
               items: SchoolCoverChoice.values.map((c) {
                 return DropdownMenuItem(
@@ -1025,29 +1097,55 @@ class _CalendarioScreenStepAStabileState
               }).toList(),
               onChanged: (v) {
                 if (v == null) return;
-                setState(
-                  () => daySettingsStore.setLunchCoverForDay(_selectedDay, v),
-                );
+                setState(() =>
+                    daySettingsStore.setSchoolOutCoverForDay(_selectedDay, v));
                 if (v == SchoolCoverChoice.altro) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text(
-                        "Altro: lista persone arriverà dopo (placeholder).",
-                      ),
+                      content: Text("Altro: lista persone arriverà dopo (placeholder)."),
                     ),
                   );
                 }
                 ipsStore.refresh(now: _selectedDay);
               },
             ),
-            if (lunchChoice == SchoolCoverChoice.altro)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text(
-                  "Altro: (da selezionare)",
-                  style: TextStyle(color: Colors.black.withOpacity(0.65)),
-                ),
+          ],
+
+          if (uscita13Eff) ...[
+            const SizedBox(height: 14),
+            const Divider(),
+            const SizedBox(height: 10),
+            const Text(
+              "Decisione pranzo (uscita anticipata)",
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 10),
+            DropdownButtonFormField<SchoolCoverChoice>(
+              value: lunchChoice,
+              isExpanded: true,
+              decoration: InputDecoration(
+                labelText: "Pranzo ${_fmt(uscitaAt!)}–${_fmt(_engine.sandraPranzoEnd)}",
               ),
+              items: SchoolCoverChoice.values.map((c) {
+                return DropdownMenuItem(
+                  value: c,
+                  child: Text(_schoolCoverLabel(c)),
+                );
+              }).toList(),
+              onChanged: (v) {
+                if (v == null) return;
+                setState(() =>
+                    daySettingsStore.setLunchCoverForDay(_selectedDay, v));
+                if (v == SchoolCoverChoice.altro) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Altro: lista persone arriverà dopo (placeholder)."),
+                    ),
+                  );
+                }
+                ipsStore.refresh(now: _selectedDay);
+              },
+            ),
           ],
         ],
       ),
@@ -1101,7 +1199,7 @@ class _CalendarioScreenStepAStabileState
           ),
           const SizedBox(height: 8),
           _sandraWindowRow(
-            title: "Pranzo (solo se uscita 13, LOGISTICA ESTERNA)",
+            title: "Pranzo (LOGISTICA ESTERNA se uscita anticipata)",
             start: _engine.sandraPranzoStart,
             end: _engine.sandraPranzoEnd,
             onEdit: () {
@@ -1133,20 +1231,18 @@ class _CalendarioScreenStepAStabileState
             title: const Text("Sandra – Fascia mattina"),
             value: effMattina,
             onChanged: (v) {
-              setState(
-                () => daySettingsStore.setSandraMattinaForDay(_selectedDay, v),
-              );
+              setState(() =>
+                  daySettingsStore.setSandraMattinaForDay(_selectedDay, v));
               ipsStore.refresh(now: _selectedDay);
             },
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text("Sandra – Fascia pranzo (solo se uscita 13)"),
+            title: const Text("Sandra – Fascia pranzo"),
             value: effPranzo,
             onChanged: (v) {
-              setState(
-                () => daySettingsStore.setSandraPranzoForDay(_selectedDay, v),
-              );
+              setState(() =>
+                  daySettingsStore.setSandraPranzoForDay(_selectedDay, v));
               ipsStore.refresh(now: _selectedDay);
             },
           ),
@@ -1155,15 +1251,14 @@ class _CalendarioScreenStepAStabileState
             title: const Text("Sandra – Fascia sera (21:00–22:35)"),
             value: effSera,
             onChanged: (v) {
-              setState(
-                () => daySettingsStore.setSandraSeraForDay(_selectedDay, v),
-              );
+              setState(() =>
+                  daySettingsStore.setSandraSeraForDay(_selectedDay, v));
               ipsStore.refresh(now: _selectedDay);
             },
           ),
           const Divider(),
           Text(
-            uscita13Eff ? "Uscita 13:00 attiva" : "Uscita 13:00 non attiva",
+            uscita13Eff ? "Uscita anticipata attiva" : "Uscita anticipata non attiva",
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 10),
