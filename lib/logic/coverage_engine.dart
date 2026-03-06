@@ -1,4 +1,3 @@
-// lib/logic/coverage_engine.dart
 import 'package:flutter/material.dart';
 
 import '../models/day_override.dart';
@@ -12,8 +11,20 @@ import 'day_settings_store.dart';
 // ✅ NEW: Ferie lunghe
 import 'ferie_period_store.dart';
 
+// ✅ NEW: Eventi Alice
+import 'alice_event_store.dart';
+
+// ✅ NEW: Centro estivo settimanale
+import 'summer_camp_schedule_store.dart';
+
 class CoverageEngine {
   final TurnEngine turnEngine;
+
+  // ✅ NEW: Eventi Alice (aggancio strutturale)
+  final AliceEventStore aliceEventStore;
+
+  // ✅ NEW: Centro estivo settimanale (aggancio strutturale)
+  final SummerCampScheduleStore summerCampScheduleStore;
 
   // Finestre Sandra (mutabili: UI le edita)
   TimeOfDay sandraCambioMattinaStart;
@@ -27,24 +38,29 @@ class CoverageEngine {
 
   CoverageEngine({
     TurnEngine? turnEngine,
+    AliceEventStore? aliceEventStore,
+    SummerCampScheduleStore? summerCampScheduleStore,
     TimeOfDay? sandraCambioMattinaStart,
     TimeOfDay? sandraCambioMattinaEnd,
     TimeOfDay? sandraPranzoStart,
     TimeOfDay? sandraPranzoEnd,
     TimeOfDay? sandraSeraStart,
     TimeOfDay? sandraSeraEnd,
-  })  : turnEngine = turnEngine ?? TurnEngine(),
-        sandraCambioMattinaStart =
-            sandraCambioMattinaStart ?? const TimeOfDay(hour: 5, minute: 0),
-        sandraCambioMattinaEnd =
-            sandraCambioMattinaEnd ?? const TimeOfDay(hour: 6, minute: 35),
-        sandraPranzoStart =
-            sandraPranzoStart ?? const TimeOfDay(hour: 13, minute: 0),
-        sandraPranzoEnd =
-            sandraPranzoEnd ?? const TimeOfDay(hour: 14, minute: 30),
-        sandraSeraStart =
-            sandraSeraStart ?? const TimeOfDay(hour: 21, minute: 0),
-        sandraSeraEnd = sandraSeraEnd ?? const TimeOfDay(hour: 22, minute: 35);
+  }) : turnEngine = turnEngine ?? TurnEngine(),
+       aliceEventStore = aliceEventStore ?? AliceEventStore(),
+       summerCampScheduleStore =
+           summerCampScheduleStore ?? SummerCampScheduleStore(),
+       sandraCambioMattinaStart =
+           sandraCambioMattinaStart ?? const TimeOfDay(hour: 5, minute: 0),
+       sandraCambioMattinaEnd =
+           sandraCambioMattinaEnd ?? const TimeOfDay(hour: 6, minute: 35),
+       sandraPranzoStart =
+           sandraPranzoStart ?? const TimeOfDay(hour: 13, minute: 0),
+       sandraPranzoEnd =
+           sandraPranzoEnd ?? const TimeOfDay(hour: 14, minute: 30),
+       sandraSeraStart =
+           sandraSeraStart ?? const TimeOfDay(hour: 21, minute: 0),
+       sandraSeraEnd = sandraSeraEnd ?? const TimeOfDay(hour: 22, minute: 35);
 
   // Pennina UI
   void setSandraCambioMattina(TimeOfDay start, TimeOfDay end) {
@@ -62,21 +78,47 @@ class CoverageEngine {
     sandraSeraEnd = end;
   }
 
+  bool isAliceAtHomeDay(DateTime day) {
+    return aliceEventStore.isAliceAtHomeDay(day);
+  }
+
+  bool isAliceExternalActivityDay(DateTime day) {
+    return aliceEventStore.isExternalActivityDay(day);
+  }
+
+  bool isAliceSchoolNormalDay(DateTime day) {
+    return aliceEventStore.isSchoolNormalDay(day);
+  }
+
+  bool isAliceSummerCampOperationalDay(DateTime day) {
+    return aliceEventStore.hasSummerCampPeriodForDay(day);
+  }
+
+  AliceEventType? getAliceEventTypeForDay(DateTime day) {
+    return aliceEventStore.getEventTypeForDay(day);
+  }
+
+  AliceEventPeriod? getSummerCampPeriodForDay(DateTime day) {
+    return aliceEventStore.getSummerCampPeriodForDay(day);
+  }
+
+  SummerCampDayConfig getSummerCampConfigForDay(DateTime day) {
+    return summerCampScheduleStore.getConfigForDay(day);
+  }
+
   List<String> gapsForDay({
     required DateTime day,
     required bool uscita13,
     required bool sandraAvailable,
     required DayOverrides overrides,
-
-    // ✅ NEW: ferie lunghe (periodi)
     FeriePeriodStore? ferieStore,
-
-    // ✅ STEP 1: Uscita scuola modificabile per giorno (opzionale)
     TimeOfDay? schoolOutStart,
     TimeOfDay? schoolOutEnd,
-
-    // ✅ NEW: orario uscita anticipata (se uscita13 = true)
     TimeOfDay? uscitaAnticipataAt,
+
+    // ✅ opzionali: se passati, prevalgono sullo store
+    TimeOfDay? summerCampStart,
+    TimeOfDay? summerCampEnd,
 
     SchoolCoverChoice schoolInCover = SchoolCoverChoice.none,
     SchoolCoverChoice schoolOutCover = SchoolCoverChoice.none,
@@ -97,6 +139,8 @@ class CoverageEngine {
       schoolOutStart: schoolOutStart ?? const TimeOfDay(hour: 16, minute: 25),
       schoolOutEnd: schoolOutEnd ?? const TimeOfDay(hour: 17, minute: 15),
       uscitaAnticipataAt: uscitaAnticipataAt,
+      summerCampStart: summerCampStart,
+      summerCampEnd: summerCampEnd,
     );
   }
 
@@ -108,53 +152,109 @@ class CoverageEngine {
     required bool sandraSeraOn,
     required TimeOfDay schoolStart,
     required DayOverrides overrides,
-
-    // ✅ NEW: ferie lunghe (periodi)
     FeriePeriodStore? ferieStore,
-
-    // ✅ decisioni scuola (default = Nessuno ⇒ BUCO decisione richiesta)
     SchoolCoverChoice schoolInCover = SchoolCoverChoice.none,
     SchoolCoverChoice schoolOutCover = SchoolCoverChoice.none,
     TimeOfDay schoolOutStart = const TimeOfDay(hour: 16, minute: 25),
     TimeOfDay schoolOutEnd = const TimeOfDay(hour: 17, minute: 15),
-
-    // ✅ NUOVO: decisione pranzo (solo se uscita13) — come scuola
     SchoolCoverChoice lunchCover = SchoolCoverChoice.none,
-
-    // ✅ NEW: orario uscita anticipata (se uscita13 = true)
     TimeOfDay? uscitaAnticipataAt,
+    TimeOfDay? summerCampStart,
+    TimeOfDay? summerCampEnd,
   }) {
     final d0 = _onlyDate(day);
     final buchi = <String>[];
+    final bool aliceAtHome = isAliceAtHomeDay(d0);
+    final bool aliceSchoolNormal = isAliceSchoolNormalDay(d0);
+    final bool aliceSummerCamp = isAliceSummerCampOperationalDay(d0);
 
-    // 1) Alice ingresso 07:30 -> schoolStart (DECISIONE)
-    final labelSchoolIn = "Alice ingresso: 07:30–${_fmt(schoolStart)}";
-    if (schoolInCover == SchoolCoverChoice.none) {
-      buchi.add(labelSchoolIn);
-    }
+    final AliceEventPeriod? activeSummerCampPeriod = getSummerCampPeriodForDay(
+      d0,
+    );
 
-    // ✅ 1b) Alice uscita (DECISIONE)
-    // REGOLA CNC: se uscita13 è attiva, l'uscita "standard" (16:25–17:15)
-    // NON deve generare buco. La logistica passa sulla finestra pranzo (13:00–14:30).
-    if (!uscita13) {
-      final labelSchoolOut =
-          "Alice uscita: ${_fmt(schoolOutStart)}–${_fmt(schoolOutEnd)}";
-      if (schoolOutCover == SchoolCoverChoice.none) {
-        buchi.add(labelSchoolOut);
+    // ✅ Alice a casa = finestra domestica dedicata
+    if (aliceAtHome) {
+      final aliceHomeStart = DateTime(d0.year, d0.month, d0.day, 7, 30);
+      final aliceHomeEnd = DateTime(d0.year, d0.month, d0.day, 16, 25);
+
+      final okAliceHome = _isFasciaCovered(
+        day: d0,
+        fasciaStart: aliceHomeStart,
+        fasciaEnd: aliceHomeEnd,
+        allowSandra: true,
+        sandraAvailable: sandraMattinaOn || sandraPranzoOn || sandraSeraOn,
+        isHomePresenceWindow: true,
+        overrides: overrides,
+        ferieStore: ferieStore,
+      );
+
+      if (!okAliceHome) {
+        buchi.add("Alice a casa: 07:30–16:25");
       }
     }
 
-    // ✅ 1c) Pranzo (solo se uscita13) — DECISIONE come scuola
-    if (uscita13) {
-      final startLunch = uscitaAnticipataAt ?? sandraPranzoStart;
-      final labelLunch =
-          "Alice pranzo: ${_fmt(startLunch)}–${_fmt(sandraPranzoEnd)}";
-      if (lunchCover == SchoolCoverChoice.none) {
-        buchi.add(labelLunch);
+    // ✅ Scuola normale implicita
+    if (aliceSchoolNormal) {
+      final labelSchoolIn = "Alice ingresso: 07:30–${_fmt(schoolStart)}";
+      if (schoolInCover == SchoolCoverChoice.none) {
+        buchi.add(labelSchoolIn);
+      }
+
+      if (!uscita13) {
+        final labelSchoolOut =
+            "Alice uscita: ${_fmt(schoolOutStart)}–${_fmt(schoolOutEnd)}";
+        if (schoolOutCover == SchoolCoverChoice.none) {
+          buchi.add(labelSchoolOut);
+        }
+      }
+
+      if (uscita13) {
+        final startLunch = uscitaAnticipataAt ?? sandraPranzoStart;
+        final labelLunch =
+            "Alice pranzo: ${_fmt(startLunch)}–${_fmt(sandraPranzoEnd)}";
+        if (lunchCover == SchoolCoverChoice.none) {
+          buchi.add(labelLunch);
+        }
       }
     }
 
-    // 2) 05:00–06:35 (IN CASA) — copertura calcolata
+    // ✅ Centro estivo: adesso legge davvero dallo store settimanale
+    if (aliceSummerCamp && activeSummerCampPeriod != null) {
+      final dayConfig = getSummerCampConfigForDay(d0);
+
+      if (dayConfig.enabled) {
+        final campStart = summerCampStart ?? dayConfig.start;
+        final campEnd = summerCampEnd ?? dayConfig.end;
+
+        final labelCampIn =
+            "Alice centro estivo ingresso: 07:30–${_fmt(campStart)}";
+        buchi.add(labelCampIn);
+
+        final labelCampOut =
+            "Alice centro estivo uscita: ${_fmt(campEnd)}–18:00";
+        buchi.add(labelCampOut);
+      } else {
+        final aliceHomeStart = DateTime(d0.year, d0.month, d0.day, 7, 30);
+        final aliceHomeEnd = DateTime(d0.year, d0.month, d0.day, 16, 25);
+
+        final okAliceHome = _isFasciaCovered(
+          day: d0,
+          fasciaStart: aliceHomeStart,
+          fasciaEnd: aliceHomeEnd,
+          allowSandra: true,
+          sandraAvailable: sandraMattinaOn || sandraPranzoOn || sandraSeraOn,
+          isHomePresenceWindow: true,
+          overrides: overrides,
+          ferieStore: ferieStore,
+        );
+
+        if (!okAliceHome) {
+          buchi.add("Alice a casa: 07:30–16:25");
+        }
+      }
+    }
+
+    // 2) 05:00–06:35 (IN CASA)
     final fMattinaStart = _atTime(d0, sandraCambioMattinaStart);
     final fMattinaEnd = _atTime(d0, sandraCambioMattinaEnd);
 
@@ -173,9 +273,7 @@ class CoverageEngine {
       buchi.add(_labelRange(sandraCambioMattinaStart, sandraCambioMattinaEnd));
     }
 
-    // 3) Pranzo: ora è DECISIONE (vedi sopra) → niente calcolo automatico qui.
-
-    // 4) 21:00–22:35 (IN CASA) — copertura calcolata
+    // 4) 21:00–22:35 (IN CASA)
     final fSeraStart = _atTime(d0, sandraSeraStart);
     final fSeraEnd = _atTime(d0, sandraSeraEnd);
 
@@ -203,20 +301,18 @@ class CoverageEngine {
     required bool sandraAvailable,
     required bool isHomePresenceWindow,
     required DayOverrides overrides,
-
-    // ✅ NEW: ferie lunghe (periodi)
     FeriePeriodStore? ferieStore,
   }) {
-    // ✅ PRIORITÀ: Override manuale (Step B) > Ferie lunghe
     final matteoHasManual = overrides.matteo != null;
     final chiaraHasManual = overrides.chiara != null;
 
-    final matteoHoliday = (!matteoHasManual) &&
+    final matteoHoliday =
+        (!matteoHasManual) &&
         (ferieStore?.isOnHoliday(FeriePerson.matteo, day) ?? false);
-    final chiaraHoliday = (!chiaraHasManual) &&
+    final chiaraHoliday =
+        (!chiaraHasManual) &&
         (ferieStore?.isOnHoliday(FeriePerson.chiara, day) ?? false);
 
-    // 1) busy base da TurnEngine
     var baseBusyMatteo = turnEngine.busyShiftsForPerson(
       person: TurnPerson.matteo,
       day: day,
@@ -226,11 +322,9 @@ class CoverageEngine {
       day: day,
     );
 
-    // ✅ Se ferie lunghe attive (e NON c'è override manuale): persona libera
     if (matteoHoliday) baseBusyMatteo = [];
     if (chiaraHoliday) baseBusyChiara = [];
 
-    // 2) override Step B (se presente)
     final matteoBusy = OverrideApply.applyToBusyShifts(
       day: day,
       baseBusy: baseBusyMatteo,
@@ -242,24 +336,26 @@ class CoverageEngine {
       personOverride: overrides.chiara,
     );
 
-    // 3) genitori coprono se uno è libero per tutta la fascia
     final coveredByParents =
         isTimeCovered(fasciaStart, fasciaEnd, <PersonAvailability>[
-      PersonAvailability(busyShifts: matteoBusy),
-      PersonAvailability(busyShifts: chiaraBusy),
-    ]);
+          PersonAvailability(busyShifts: matteoBusy),
+          PersonAvailability(busyShifts: chiaraBusy),
+        ]);
     if (coveredByParents) return true;
 
-    // 4) regole malattia (dominanti)
-    final m = overrides.matteo?.status ??
+    final m =
+        overrides.matteo?.status ??
         (matteoHoliday ? OverrideStatus.ferie : OverrideStatus.normal);
-    final c = overrides.chiara?.status ??
+    final c =
+        overrides.chiara?.status ??
         (chiaraHoliday ? OverrideStatus.ferie : OverrideStatus.normal);
 
-    final hasLeggera = (m == OverrideStatus.malattiaLeggera) ||
+    final hasLeggera =
+        (m == OverrideStatus.malattiaLeggera) ||
         (c == OverrideStatus.malattiaLeggera);
 
-    final hasALetto = (m == OverrideStatus.malattiaALetto) ||
+    final hasALetto =
+        (m == OverrideStatus.malattiaALetto) ||
         (c == OverrideStatus.malattiaALetto);
 
     final overlapsImps = _overlapsImps(
@@ -268,10 +364,8 @@ class CoverageEngine {
       end: fasciaEnd,
     );
 
-    // Malattia a letto: copre SOLO presenza in casa
     if (hasALetto && isHomePresenceWindow) return true;
 
-    // Malattia leggera: copre tutto, ma NON logistica esterna durante IMPS
     if (hasLeggera) {
       if (!isHomePresenceWindow && overlapsImps) {
         // vincolo: deve stare a casa
@@ -280,7 +374,6 @@ class CoverageEngine {
       }
     }
 
-    // 5) Sandra
     if (allowSandra && sandraAvailable) return true;
 
     return false;

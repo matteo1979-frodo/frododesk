@@ -2,6 +2,8 @@ import 'settings_store.dart';
 import 'override_store.dart';
 import 'day_settings_store.dart';
 import 'ferie_period_store.dart';
+import 'alice_event_store.dart';
+import 'summer_camp_schedule_store.dart';
 
 import 'turn_engine.dart'; // ✅ NEW
 
@@ -25,6 +27,12 @@ class CoreStore {
 
   // ✅ NEW: Ferie lunghe (periodi)
   late final FeriePeriodStore feriePeriodStore;
+
+  // ✅ NEW: Eventi Alice (periodi)
+  late final AliceEventStore aliceEventStore;
+
+  // ✅ NEW: Centro estivo settimanale
+  late final SummerCampScheduleStore summerCampScheduleStore;
 
   // ✅ NEW: unico motore turni (standard + 4a squadra)
   late final TurnEngine turnEngine;
@@ -61,16 +69,27 @@ class CoreStore {
     // ✅ NEW: Ferie lunghe (periodi)
     feriePeriodStore = FeriePeriodStore();
 
+    // ✅ NEW: Eventi Alice (periodi)
+    aliceEventStore = AliceEventStore();
+
+    // ✅ NEW: Centro estivo settimanale
+    summerCampScheduleStore = SummerCampScheduleStore();
+
     // 2) TurnEngine (stato reale centrale)
     turnEngine = TurnEngine();
 
-    // 3) Motore copertura: ora usa TurnEngine (unico motore turni)
-    coverageEngine = CoverageEngine(turnEngine: turnEngine);
+    // 3) Motore copertura: TurnEngine + AliceEventStore + SummerCampScheduleStore
+    coverageEngine = CoverageEngine(
+      turnEngine: turnEngine,
+      aliceEventStore: aliceEventStore,
+      summerCampScheduleStore: summerCampScheduleStore,
+    );
 
     // 4) Adapter Copertura: legge SettingsStore + OverrideStore + DaySettingsStore
     coverageAdapter = CoverageAdapter(
       overrideStore: overrideStore,
       engine: coverageEngine,
+      ferieStore: feriePeriodStore,
       sandraDisponibileForDay: (day) =>
           daySettingsStore.sandraForDay(day) ??
           settingsStore.isSandraDisponibile,

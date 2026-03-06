@@ -1,12 +1,14 @@
 import '../models/day_override.dart';
 import 'override_store.dart';
 import 'coverage_engine.dart';
+import 'ferie_period_store.dart';
 
 /// Adapter certificato: usa CoverageEngine + OverrideStore (+ flags per giorno)
 /// per calcolare rischio su orizzonte (es. 30 giorni).
 class CoverageAdapter {
   final OverrideStore overrideStore;
   final CoverageEngine engine;
+  final FeriePeriodStore ferieStore;
 
   /// Sandra globale per giorno (legacy: unico toggle)
   final bool Function(DateTime day) sandraDisponibileForDay;
@@ -17,6 +19,7 @@ class CoverageAdapter {
   CoverageAdapter({
     required this.overrideStore,
     required this.engine,
+    required this.ferieStore,
     required this.sandraDisponibileForDay,
     required this.uscita13ForDay,
   });
@@ -34,6 +37,7 @@ class CoverageAdapter {
       uscita13: uscita13,
       sandraAvailable: sandraOn,
       overrides: ov,
+      ferieStore: ferieStore,
     );
   }
 
