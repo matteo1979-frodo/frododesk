@@ -4,8 +4,9 @@ import 'day_settings_store.dart';
 import 'ferie_period_store.dart';
 import 'alice_event_store.dart';
 import 'summer_camp_schedule_store.dart';
+import 'support_network_store.dart';
 
-import 'turn_engine.dart'; // ✅ NEW
+import 'turn_engine.dart';
 
 import 'coverage_engine.dart';
 import 'coverage_adapter.dart';
@@ -15,7 +16,7 @@ import 'system_event_store.dart';
 
 import 'ips/ips_detail_snapshot.dart';
 import 'ips/ips_module_status.dart';
-import 'ips/ips_types.dart' as types; // alias anti-ambiguità
+import 'ips/ips_types.dart' as types;
 import '../models/ips_snapshot.dart' as snap;
 
 class CoreStore {
@@ -33,6 +34,9 @@ class CoreStore {
 
   // ✅ NEW: Centro estivo settimanale
   late final SummerCampScheduleStore summerCampScheduleStore;
+
+  // ✅ NEW: Rete di supporto
+  late final SupportNetworkStore supportNetworkStore;
 
   // ✅ NEW: unico motore turni (standard + 4a squadra)
   late final TurnEngine turnEngine;
@@ -75,14 +79,19 @@ class CoreStore {
     // ✅ NEW: Centro estivo settimanale
     summerCampScheduleStore = SummerCampScheduleStore();
 
+    // ✅ NEW: Rete di supporto
+    supportNetworkStore = SupportNetworkStore();
+
     // 2) TurnEngine (stato reale centrale)
     turnEngine = TurnEngine();
 
-    // 3) Motore copertura: TurnEngine + AliceEventStore + SummerCampScheduleStore
+    // 3) Motore copertura: TurnEngine + AliceEventStore + SummerCampScheduleStore + SupportNetworkStore + DaySettingsStore
     coverageEngine = CoverageEngine(
       turnEngine: turnEngine,
       aliceEventStore: aliceEventStore,
       summerCampScheduleStore: summerCampScheduleStore,
+      supportNetworkStore: supportNetworkStore,
+      daySettingsStore: daySettingsStore,
     );
 
     // 4) Adapter Copertura: legge SettingsStore + OverrideStore + DaySettingsStore
@@ -146,7 +155,7 @@ class CoreStore {
       case snap.IpsModule.auto:
         return types.IpsModuleId.auto;
       case snap.IpsModule.unknown:
-        return types.IpsModuleId.coverage; // fallback safe
+        return types.IpsModuleId.coverage;
     }
   }
 
@@ -188,8 +197,8 @@ class CoreStore {
     final CoverageReasonCode reason = (score >= 80)
         ? CoverageReasonCode.gapWithin7Days
         : (score >= 60)
-        ? CoverageReasonCode.gapWithin30Days
-        : CoverageReasonCode.noGaps30Days;
+            ? CoverageReasonCode.gapWithin30Days
+            : CoverageReasonCode.noGaps30Days;
 
     return IpsModuleStatus(
       moduleId: types.IpsModuleId.coverage,

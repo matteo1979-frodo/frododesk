@@ -12,6 +12,7 @@ import '../models/day_override.dart';
 /// - ✅ Decisione pranzo (solo se uscita anticipata): finestra pranzo
 /// - ✅ STEP 1: Uscita scuola ORARIO modificabile per giorno (start+end)
 /// - ✅ NEW: Uscita anticipata ORARIO per giorno (non più solo bool)
+/// - ✅ NEW: Attivazione giornaliera rete di supporto (per personId)
 class DaySettingsStore {
   final Map<DateTime, bool> _sandraDisponibile = {};
 
@@ -38,6 +39,10 @@ class DaySettingsStore {
   // ✅ STEP 1: uscita scuola orario variabile per giorno (minuti da mezzanotte)
   final Map<DateTime, int> _schoolOutStartMin = {};
   final Map<DateTime, int> _schoolOutEndMin = {};
+
+  // ✅ NEW: Rete di supporto attiva per giorno
+  // Chiave = giorno, Valore = insieme degli id persona attivi quel giorno
+  final Map<DateTime, Set<String>> _supportPeopleEnabledForDay = {};
 
   DateTime _k(DateTime d) => dayKey(d);
 
@@ -77,7 +82,8 @@ class DaySettingsStore {
 
   /// Legacy bool: true se esiste un orario di uscita anticipata per quel giorno.
   /// (Serve per compatibilità col codice che ragiona ancora "uscita13" come bool)
-  bool? uscita13ForDay(DateTime day) => _uscitaAnticipataMin.containsKey(_k(day)) ? true : null;
+  bool? uscita13ForDay(DateTime day) =>
+      _uscitaAnticipataMin.containsKey(_k(day)) ? true : null;
 
   /// Legacy setter: se true setta 13:00, se false pulisce.
   /// (Consigliato usare setUscitaAnticipataTimeForDay)
@@ -250,6 +256,51 @@ class DaySettingsStore {
 
   void clearLunchCoverForDay(DateTime day) {
     _lunchCover.remove(_k(day));
+  }
+
+  // -------------------------
+  // ✅ NEW: Rete di supporto per giorno
+  // -------------------------
+
+  Set<String> supportPeopleEnabledIdsForDay(DateTime day) {
+    final ids = _supportPeopleEnabledForDay[_k(day)];
+    if (ids == null) return <String>{};
+    return Set<String>.from(ids);
+  }
+
+  bool isSupportPersonEnabledForDay(DateTime day, String personId) {
+    final ids = _supportPeopleEnabledForDay[_k(day)];
+    if (ids == null) return false;
+    return ids.contains(personId);
+  }
+
+  void setSupportPersonEnabledForDay(
+    DateTime day,
+    String personId,
+    bool enabled,
+  ) {
+    final dk = _k(day);
+    final current = Set<String>.from(_supportPeopleEnabledForDay[dk] ?? <String>{});
+
+    if (enabled) {
+      current.add(personId);
+    } else {
+      current.remove(personId);
+    }
+
+    if (current.isEmpty) {
+      _supportPeopleEnabledForDay.remove(dk);
+    } else {
+      _supportPeopleEnabledForDay[dk] = current;
+    }
+  }
+
+  void clearSupportPersonForDay(DateTime day, String personId) {
+    setSupportPersonEnabledForDay(day, personId, false);
+  }
+
+  void clearAllSupportPeopleForDay(DateTime day) {
+    _supportPeopleEnabledForDay.remove(_k(day));
   }
 
   // -------------------------

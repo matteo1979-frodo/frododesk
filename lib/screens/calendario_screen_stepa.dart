@@ -16,9 +16,14 @@ import '../logic/ips_store.dart';
 import '../logic/day_settings_store.dart';
 
 import '../widgets/stepb_override_panel.dart';
+import '../widgets/alice_event_panel.dart';
+import '../widgets/support_network_panel.dart';
 
 // ✅ NEW: Ferie lunghe panel
 import '../widgets/ferie_period_panel.dart';
+
+// ✅ NEW: Eventi speciali centro estivo
+import '../logic/summer_camp_special_event_store.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -50,12 +55,10 @@ class _CalendarioScreenStepAStabileState
   CoverageEngine get _engine => coreStore.coverageEngine;
   TurnEngine get _turns => coreStore.turnEngine;
 
-  // ✅ NEW: uscita anticipata ORARIO effettivo per giorno (fallback su default globale)
   TimeOfDay? _effUscitaAnticipataAt(DateTime day) {
     final t = daySettingsStore.uscitaAnticipataTimeForDay(day);
     if (t != null) return t;
 
-    // fallback legacy: se globale attivo, usa default (13:00)
     if (settingsStore.isUscita13) {
       return settingsStore.uscitaAnticipataDefaultTime;
     }
@@ -65,26 +68,34 @@ class _CalendarioScreenStepAStabileState
 
   bool _effUscita13(DateTime day) => _effUscitaAnticipataAt(day) != null;
 
-  bool _effSandraMattina(DateTime day) => daySettingsStore.effectiveSandraMattina(
-        day,
-        fallbackGlobal: settingsStore.isSandraDisponibile,
-      );
+  bool _effSandraMattina(DateTime day) =>
+      daySettingsStore.sandraMattinaForDay(day) ?? false;
 
-  bool _effSandraPranzo(DateTime day) => daySettingsStore.effectiveSandraPranzo(
-        day,
-        fallbackGlobal: settingsStore.isSandraDisponibile,
-      );
+  bool _effSandraPranzo(DateTime day) =>
+      daySettingsStore.sandraPranzoForDay(day) ?? false;
 
-  bool _effSandraSera(DateTime day) => daySettingsStore.effectiveSandraSera(
-        day,
-        fallbackGlobal: settingsStore.isSandraDisponibile,
-      );
+  bool _effSandraSera(DateTime day) =>
+      daySettingsStore.sandraSeraForDay(day) ?? false;
 
-  // =========================
-  // ✅ STEP 1: Uscita scuola per giorno (fallback default)
-  // =========================
-  static const TimeOfDay _schoolOutDefaultStart =
-      TimeOfDay(hour: 16, minute: 25);
+  CoverageSandraDecision _sandraDecisionForDay(DateTime day) {
+    final d0 = _onlyDate(day);
+    final ov = _getOverridesForDay(d0);
+    final uscitaAt = _effUscitaAnticipataAt(d0);
+
+    return _engine.sandraDecisionForDay(
+      day: d0,
+      uscita13: uscitaAt != null,
+      overrides: ov,
+      ferieStore: coreStore.feriePeriodStore,
+      lunchCover: _effectiveLunchCover(d0),
+      uscitaAnticipataAt: uscitaAt,
+    );
+  }
+
+  static const TimeOfDay _schoolOutDefaultStart = TimeOfDay(
+    hour: 16,
+    minute: 25,
+  );
   static const TimeOfDay _schoolOutDefaultEnd = TimeOfDay(hour: 17, minute: 15);
 
   TimeOfDay _effSchoolOutStart(DateTime day) =>
@@ -125,7 +136,6 @@ class _CalendarioScreenStepAStabileState
     ipsStore.refresh(now: _selectedDay);
   }
 
-  // (non usato dopo rimozione UI reset — lasciato qui per eventuale futuro)
   void _resetSchoolOutTimesForDay() {
     setState(() {
       daySettingsStore.clearSchoolOutTimesForDay(_selectedDay);
@@ -133,9 +143,6 @@ class _CalendarioScreenStepAStabileState
     ipsStore.refresh(now: _selectedDay);
   }
 
-  // =========================
-  // ✅ NEW: toggle uscita anticipata con scelta orario
-  // =========================
   Future<void> _toggleUscitaAnticipata(bool enabled) async {
     if (!enabled) {
       setState(() {
@@ -146,7 +153,8 @@ class _CalendarioScreenStepAStabileState
     }
 
     final initial =
-        _effUscitaAnticipataAt(_selectedDay) ?? settingsStore.uscitaAnticipataDefaultTime;
+        _effUscitaAnticipataAt(_selectedDay) ??
+        settingsStore.uscitaAnticipataDefaultTime;
 
     final picked = await showTimePicker(
       context: context,
@@ -156,7 +164,6 @@ class _CalendarioScreenStepAStabileState
       confirmText: "OK",
     );
 
-    // Se annulli, NON attiviamo nulla (resta OFF)
     if (picked == null) return;
 
     setState(() {
@@ -180,9 +187,96 @@ class _CalendarioScreenStepAStabileState
     }
   }
 
-  // =========================
-  // EDIT RANGE (INIZIO + FINE) — EMERGENZA
-  // =========================
+  bool _supportNetworkCoversRange({
+    required DateTime day,
+    required TimeOfDay start,
+    required TimeOfDay end,
+  }) {
+    final d0 = _onlyDate(day);
+
+    final fasciaStart = DateTime(
+      d0.year,
+      d0.month,
+      d0.day,
+      start.hour,
+      start.minute,
+    );
+
+    final fasciaEnd = DateTime(d0.year, d0.month, d0.day, end.hour, end.minute);
+
+    for (final person in coreStore.supportNetworkStore.people) {
+      if (!person.enabled) continue;
+
+      final supportStart = DateTime(
+        d0.year,
+        d0.month,
+        d0.day,
+        person.start.hour,
+        person.start.minute,
+      );
+
+      final supportEnd = DateTime(
+        d0.year,
+        d0.month,
+        d0.day,
+        person.end.hour,
+        person.end.minute,
+      );
+
+      final coversFullRange =
+          !supportStart.isAfter(fasciaStart) && !supportEnd.isBefore(fasciaEnd);
+
+      if (coversFullRange) return true;
+    }
+
+    return false;
+  }
+
+  SchoolCoverChoice _effectiveSchoolInCover(DateTime day) {
+    final saved = daySettingsStore.schoolInCoverForDay(day);
+    if (saved != SchoolCoverChoice.none) return saved;
+
+    final coveredBySupport = _supportNetworkCoversRange(
+      day: day,
+      start: const TimeOfDay(hour: 7, minute: 30),
+      end: _scuolaStart,
+    );
+
+    return coveredBySupport ? SchoolCoverChoice.altro : SchoolCoverChoice.none;
+  }
+
+  SchoolCoverChoice _effectiveSchoolOutCover(DateTime day) {
+    final saved = daySettingsStore.schoolOutCoverForDay(day);
+    if (saved != SchoolCoverChoice.none) return saved;
+
+    final outStart = _effSchoolOutStart(day);
+    final outEnd = _effSchoolOutEnd(day);
+
+    final coveredBySupport = _supportNetworkCoversRange(
+      day: day,
+      start: outStart,
+      end: outEnd,
+    );
+
+    return coveredBySupport ? SchoolCoverChoice.altro : SchoolCoverChoice.none;
+  }
+
+  SchoolCoverChoice _effectiveLunchCover(DateTime day) {
+    final saved = daySettingsStore.lunchCoverForDay(day);
+    if (saved != SchoolCoverChoice.none) return saved;
+
+    final uscitaAt = _effUscitaAnticipataAt(day);
+    if (uscitaAt == null) return SchoolCoverChoice.none;
+
+    final coveredBySupport = _supportNetworkCoversRange(
+      day: day,
+      start: uscitaAt,
+      end: _engine.sandraPranzoEnd,
+    );
+
+    return coveredBySupport ? SchoolCoverChoice.altro : SchoolCoverChoice.none;
+  }
+
   Future<void> _editEmergencyTimeRange({
     required String title,
     required EmergencyTimeRange currentRange,
@@ -296,9 +390,6 @@ class _CalendarioScreenStepAStabileState
     endMinCtrl.dispose();
   }
 
-  // =========================
-  // ✅ EDIT ORARI SANDRA (penna)
-  // =========================
   Future<void> _editSandraWindow({
     required String title,
     required TimeOfDay currentStart,
@@ -330,7 +421,97 @@ class _CalendarioScreenStepAStabileState
     ipsStore.refresh(now: _selectedDay);
   }
 
-  // Giorno selezionato
+  bool _selectedDayIsSummerCampDay() {
+    return _engine.isAliceSummerCampOperationalDay(_selectedDay);
+  }
+
+  SummerCampSpecialEvent? _selectedDaySpecialCampEvent() {
+    return _engine.getSummerCampSpecialEventForDay(_selectedDay);
+  }
+
+  Future<void> _editSummerCampSpecialEventForSelectedDay() async {
+    final current = _selectedDaySpecialCampEvent();
+
+    final labelCtrl = TextEditingController(text: current?.label ?? "");
+
+    final savedLabel = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Evento speciale centro estivo"),
+          content: TextField(
+            controller: labelCtrl,
+            decoration: const InputDecoration(
+              labelText: "Nome evento",
+              hintText: "Es. Gita / Mare / Uscita speciale",
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Annulla"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final text = labelCtrl.text.trim();
+                Navigator.of(context).pop(text);
+              },
+              child: const Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
+
+    labelCtrl.dispose();
+
+    if (savedLabel == null) return;
+
+    final initialStart = current?.start ?? const TimeOfDay(hour: 8, minute: 30);
+    final pickedStart = await showTimePicker(
+      context: context,
+      initialTime: initialStart,
+      helpText: "Evento speciale • INIZIO",
+      cancelText: "Annulla",
+      confirmText: "OK",
+    );
+    if (pickedStart == null) return;
+
+    final initialEnd = current?.end ?? const TimeOfDay(hour: 17, minute: 30);
+    final pickedEnd = await showTimePicker(
+      context: context,
+      initialTime: initialEnd,
+      helpText: "Evento speciale • FINE",
+      cancelText: "Annulla",
+      confirmText: "OK",
+    );
+    if (pickedEnd == null) return;
+
+    final startMin = pickedStart.hour * 60 + pickedStart.minute;
+    final endMin = pickedEnd.hour * 60 + pickedEnd.minute;
+    if (endMin <= startMin) return;
+
+    setState(() {
+      _engine.summerCampSpecialEventStore.setForDay(
+        _selectedDay,
+        SummerCampSpecialEvent(
+          enabled: true,
+          label: savedLabel.isEmpty ? "Evento speciale" : savedLabel,
+          start: pickedStart,
+          end: pickedEnd,
+        ),
+      );
+    });
+    ipsStore.refresh(now: _selectedDay);
+  }
+
+  void _removeSummerCampSpecialEventForSelectedDay() {
+    setState(() {
+      _engine.summerCampSpecialEventStore.removeForDay(_selectedDay);
+    });
+    ipsStore.refresh(now: _selectedDay);
+  }
+
   late DateTime _selectedDay;
 
   void _syncWeekWithSelectedDay() {
@@ -357,7 +538,6 @@ class _CalendarioScreenStepAStabileState
     });
   }
 
-  // ✅ A6: Navigazione GIORNO per GIORNO
   void _prevDay() {
     setState(() {
       _selectedDay = _onlyDate(_selectedDay.subtract(const Duration(days: 1)));
@@ -372,17 +552,16 @@ class _CalendarioScreenStepAStabileState
     });
   }
 
-  // Emergency (PRO)
   final EmergencyStore emergencyStore = EmergencyStore();
   final EmergencyDayLogic emergencyLogic = EmergencyDayLogic();
 
-  DayOverrides _getOverridesForDay(DateTime day) => overrideStore.getForDay(day);
+  DayOverrides _getOverridesForDay(DateTime day) =>
+      overrideStore.getForDay(day);
 
   void _setOverridesForDay(DateTime day, DayOverrides ov) {
     overrideStore.setForDay(day, ov);
   }
 
-  // ---- Scuola ----
   TimeOfDay _scuolaStart = const TimeOfDay(hour: 8, minute: 25);
   TimeOfDay _scuolaEnd = const TimeOfDay(hour: 16, minute: 30);
 
@@ -404,7 +583,9 @@ class _CalendarioScreenStepAStabileState
     final outStart = _effSchoolOutStart(d0);
     final outEnd = _effSchoolOutEnd(d0);
 
-    final gaps = _engine.gapsForDayV2(
+    final sandraDecision = _sandraDecisionForDay(d0);
+
+    final analysis = _engine.analyzeDayV2(
       day: d0,
       uscita13: uscita13Eff,
       sandraMattinaOn: _effSandraMattina(d0),
@@ -412,40 +593,43 @@ class _CalendarioScreenStepAStabileState
       sandraSeraOn: _effSandraSera(d0),
       schoolStart: _scuolaStart,
       overrides: ov,
-
-      // ✅ NEW: ferie lunghe → CoverageEngine
       ferieStore: coreStore.feriePeriodStore,
-
-      // ✅ Decisioni scuola dal DaySettingsStore
-      schoolInCover: daySettingsStore.schoolInCoverForDay(d0),
-      schoolOutCover: daySettingsStore.schoolOutCoverForDay(d0),
+      schoolInCover: _effectiveSchoolInCover(d0),
+      schoolOutCover: _effectiveSchoolOutCover(d0),
       schoolOutStart: outStart,
       schoolOutEnd: outEnd,
-
-      // ✅ NUOVO: decisione pranzo (solo se uscita anticipata)
-      lunchCover: daySettingsStore.lunchCoverForDay(d0),
-
-      // ✅ NEW: orario uscita anticipata (inizio finestra pranzo)
+      lunchCover: _effectiveLunchCover(d0),
       uscitaAnticipataAt: uscitaAt,
     );
 
+    final gaps = analysis.gaps;
     final ok = gaps.isEmpty;
 
-    final details = <String>[];
-    if (ok) {
-      details.add("OK Nessun buco rilevato dal motore.");
-    } else {
-      for (final g in gaps) {
-        details.add("BUCO $g (serve decisione: genitore / Sandra / extra).");
-      }
+    final summaryDetails = <String>[];
+    if (sandraDecision.serveSandraMattina) {
+      summaryDetails.add("Sandra serve in fascia mattina.");
+    }
+    if (sandraDecision.serveSandraPranzo) {
+      summaryDetails.add("Sandra serve in fascia pranzo.");
+    }
+    if (sandraDecision.serveSandraSera) {
+      summaryDetails.add("Sandra serve in fascia sera.");
     }
 
-    final bannerText =
-        ok ? "Copertura OK" : "BUCO (${gaps.length}): ${gaps.join(' • ')}";
+    if (ok) {
+      summaryDetails.add("OK Nessun buco rilevato dal motore.");
+    } else {
+      summaryDetails.add("Il motore ha rilevato ${gaps.length} buco/i reali.");
+    }
+
+    final bannerText = ok
+        ? "Copertura OK"
+        : "BUCO (${gaps.length}): ${gaps.join(' • ')}";
 
     return CoverageResultStepA(
       ok: ok,
-      details: details,
+      details: summaryDetails,
+      gapDetails: analysis.details,
       bannerText: bannerText,
     );
   }
@@ -566,7 +750,10 @@ class _CalendarioScreenStepAStabileState
                       title: "Modifica orario pomeriggio",
                       currentRange: settings.afternoonRange,
                       onSave: (newRange) {
-                        emergencyStore.setAfternoonRange(_selectedDay, newRange);
+                        emergencyStore.setAfternoonRange(
+                          _selectedDay,
+                          newRange,
+                        );
                         setState(() {});
                       },
                     );
@@ -625,10 +812,6 @@ class _CalendarioScreenStepAStabileState
   Widget _buildDayGapsBox(CoverageResultStepA cov) {
     if (cov.ok) return const SizedBox.shrink();
 
-    final firstLine = cov.bannerText.split('\n').first;
-    final gapsText =
-        firstLine.startsWith('BUCO') ? firstLine : 'BUCO: controlla copertura';
-
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 12),
@@ -645,13 +828,24 @@ class _CalendarioScreenStepAStabileState
             "BUCHI DEL GIORNO",
             style: TextStyle(fontWeight: FontWeight.w900),
           ),
-          const SizedBox(height: 6),
-          Text(gapsText, style: const TextStyle(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 6),
-          Text(
-            "Vai alla card Copertura per vedere le fasce e decidere l’azione.",
-            style: TextStyle(color: Colors.black.withOpacity(0.65)),
-          ),
+          const SizedBox(height: 8),
+          for (int i = 0; i < cov.gapDetails.length; i++) ...[
+            Text(
+              "BUCO (${i + 1}): ${cov.gapDetails[i].label}",
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 6),
+            ...cov.gapDetails[i].lines.map(
+              (line) => Padding(
+                padding: const EdgeInsets.only(left: 8, bottom: 4),
+                child: Text(
+                  "⚠ $line",
+                  style: TextStyle(color: Colors.black.withOpacity(0.72)),
+                ),
+              ),
+            ),
+            if (i != cov.gapDetails.length - 1) const SizedBox(height: 10),
+          ],
         ],
       ),
     );
@@ -667,7 +861,9 @@ class _CalendarioScreenStepAStabileState
             : Colors.red.withOpacity(0.12),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: ok ? Colors.green.withOpacity(0.4) : Colors.red.withOpacity(0.4),
+          color: ok
+              ? Colors.green.withOpacity(0.4)
+              : Colors.red.withOpacity(0.4),
         ),
       ),
       child: Row(
@@ -700,65 +896,199 @@ class _CalendarioScreenStepAStabileState
     _syncWeekWithSelectedDay();
   }
 
-  Widget _layoutRow3({
-    required Widget leftA,
-    required Widget leftB,
-    required Widget leftC,
-    required Widget right,
+  Widget _buildAliceArea(bool showSummerCampSpecialCard) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AliceEventPanel(
+          selectedDay: _selectedDay,
+          store: coreStore.aliceEventStore,
+          onChanged: () {
+            setState(() {});
+            ipsStore.refresh(now: _selectedDay);
+          },
+        ),
+        if (showSummerCampSpecialCard) ...[
+          const SizedBox(height: 12),
+          _cardSummerCampSpecialEvent(),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildDesktopThreeColumns({
+    required DayOverrides ovSelected,
+    required CoverageResultStepA cov,
+    required bool showSummerCampSpecialCard,
+    required bool isEmergency,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _cardTurni(),
+              const SizedBox(height: 12),
+              _cardOverrideStepB(ovSelected),
+              const SizedBox(height: 12),
+              FeriePeriodPanel(store: coreStore.feriePeriodStore),
+              const SizedBox(height: 12),
+              SupportNetworkPanel(
+                selectedDay: _selectedDay,
+                store: coreStore.supportNetworkStore,
+                daySettingsStore: daySettingsStore,
+                onChanged: () {
+                  setState(() {});
+                  ipsStore.refresh(now: _selectedDay);
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _cardScuola(),
+              const SizedBox(height: 12),
+              _buildAliceArea(showSummerCampSpecialCard),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        SizedBox(
+          width: 360,
+          child: isEmergency
+              ? _buildEmergencyPanelPlaceholder()
+              : _cardCopertura(cov),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTabletLayout({
+    required DayOverrides ovSelected,
+    required CoverageResultStepA cov,
+    required bool showSummerCampSpecialCard,
+    required bool isEmergency,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _cardTurni(),
+                  const SizedBox(height: 12),
+                  _cardOverrideStepB(ovSelected),
+                  const SizedBox(height: 12),
+                  FeriePeriodPanel(store: coreStore.feriePeriodStore),
+                  const SizedBox(height: 12),
+                  SupportNetworkPanel(
+                    selectedDay: _selectedDay,
+                    store: coreStore.supportNetworkStore,
+                    daySettingsStore: daySettingsStore,
+                    onChanged: () {
+                      setState(() {});
+                      ipsStore.refresh(now: _selectedDay);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _cardScuola(),
+                  const SizedBox(height: 12),
+                  _buildAliceArea(showSummerCampSpecialCard),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        isEmergency ? _buildEmergencyPanelPlaceholder() : _cardCopertura(cov),
+      ],
+    );
+  }
+
+  Widget _buildMobileLayout({
+    required DayOverrides ovSelected,
+    required CoverageResultStepA cov,
+    required bool showSummerCampSpecialCard,
+    required bool isEmergency,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _cardTurni(),
+        const SizedBox(height: 12),
+        _cardOverrideStepB(ovSelected),
+        const SizedBox(height: 12),
+        FeriePeriodPanel(store: coreStore.feriePeriodStore),
+        const SizedBox(height: 12),
+        SupportNetworkPanel(
+          selectedDay: _selectedDay,
+          store: coreStore.supportNetworkStore,
+          daySettingsStore: daySettingsStore,
+          onChanged: () {
+            setState(() {});
+            ipsStore.refresh(now: _selectedDay);
+          },
+        ),
+        const SizedBox(height: 12),
+        _cardScuola(),
+        const SizedBox(height: 12),
+        _buildAliceArea(showSummerCampSpecialCard),
+        const SizedBox(height: 12),
+        isEmergency ? _buildEmergencyPanelPlaceholder() : _cardCopertura(cov),
+      ],
+    );
+  }
+
+  Widget _buildMainLayout({
+    required DayOverrides ovSelected,
+    required CoverageResultStepA cov,
+    required bool showSummerCampSpecialCard,
+    required bool isEmergency,
   }) {
     return LayoutBuilder(
       builder: (context, c) {
         final w = c.maxWidth;
 
-        if (w >= 900) {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: leftA),
-              const SizedBox(width: 12),
-              Expanded(child: leftB),
-              const SizedBox(width: 12),
-              Expanded(child: leftC),
-              const SizedBox(width: 12),
-              SizedBox(width: 360, child: right),
-            ],
+        if (w >= 1100) {
+          return _buildDesktopThreeColumns(
+            ovSelected: ovSelected,
+            cov: cov,
+            showSummerCampSpecialCard: showSummerCampSpecialCard,
+            isEmergency: isEmergency,
           );
         }
 
         if (w >= 800) {
-          return Column(
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: leftA),
-                  const SizedBox(width: 12),
-                  Expanded(child: leftB),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(child: leftC),
-                  const SizedBox(width: 12),
-                  Expanded(child: right),
-                ],
-              ),
-            ],
+          return _buildTabletLayout(
+            ovSelected: ovSelected,
+            cov: cov,
+            showSummerCampSpecialCard: showSummerCampSpecialCard,
+            isEmergency: isEmergency,
           );
         }
 
-        return Column(
-          children: [
-            leftA,
-            const SizedBox(height: 12),
-            leftB,
-            const SizedBox(height: 12),
-            leftC,
-            const SizedBox(height: 12),
-            right,
-          ],
+        return _buildMobileLayout(
+          ovSelected: ovSelected,
+          cov: cov,
+          showSummerCampSpecialCard: showSummerCampSpecialCard,
+          isEmergency: isEmergency,
         );
       },
     );
@@ -772,6 +1102,7 @@ class _CalendarioScreenStepAStabileState
     );
     final cov = _computeCoverageStepA(_selectedDay);
     final isEmergency = _isEmergencyActive();
+    final bool showSummerCampSpecialCard = _selectedDayIsSummerCampDay();
 
     final int ipsCoverage30 = coreStore.coverageAdapter.riskScore30Days(
       startDay: _selectedDay,
@@ -805,6 +1136,7 @@ class _CalendarioScreenStepAStabileState
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(12),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 8),
             _buildIpsPressureLine(ipsCoverage30),
@@ -815,19 +1147,11 @@ class _CalendarioScreenStepAStabileState
             if (!isEmergency) _buildDayGapsBox(cov),
             if (!isEmergency) _banner(cov.ok, cov.bannerText),
             const SizedBox(height: 12),
-            _layoutRow3(
-              leftA: _cardTurni(),
-              leftB: _cardScuola(),
-              leftC: Column(
-                children: [
-                  _cardOverrideStepB(ovSelected),
-                  const SizedBox(height: 12),
-                  FeriePeriodPanel(store: coreStore.feriePeriodStore),
-                ],
-              ),
-              right: isEmergency
-                  ? _buildEmergencyPanelPlaceholder()
-                  : _cardCopertura(cov),
+            _buildMainLayout(
+              ovSelected: ovSelected,
+              cov: cov,
+              showSummerCampSpecialCard: showSummerCampSpecialCard,
+              isEmergency: isEmergency,
             ),
             const SizedBox(height: 18),
           ],
@@ -866,9 +1190,6 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
-  // =========================
-  // ✅ CARD TURNI
-  // =========================
   Widget _cardTurni() {
     final m = _turns.turnPlanForPersonDay(
       person: TurnPerson.matteo,
@@ -937,9 +1258,6 @@ class _CalendarioScreenStepAStabileState
     }
   }
 
-  // =========================
-  // ✅ OVERRIDE STEP B
-  // =========================
   Widget _cardOverrideStepB(DayOverrides ovSelected) {
     return _card(
       title: "Override (Step B)",
@@ -970,9 +1288,75 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
-  // =========================
-  // ✅ SCUOLA (uscita anticipata con ORARIO)
-  // =========================
+  Widget _cardSummerCampSpecialEvent() {
+    final isCampDay = _selectedDayIsSummerCampDay();
+    final current = _selectedDaySpecialCampEvent();
+
+    return _card(
+      title: "Centro estivo – Evento speciale",
+      subtitle:
+          "Override giornaliero del centro estivo per la data selezionata.",
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Data: ${DateFormat('EEEE d MMMM yyyy', 'it_IT').format(_selectedDay)}",
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 10),
+          if (!isCampDay)
+            Text(
+              "Nessun centro estivo attivo in questo giorno. L’override speciale si usa solo nei giorni di centro estivo.",
+              style: TextStyle(color: Colors.black.withOpacity(0.65)),
+            ),
+          if (isCampDay && current == null) ...[
+            const Text(
+              "Nessun evento speciale impostato per questo giorno.",
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: _editSummerCampSpecialEventForSelectedDay,
+              icon: const Icon(Icons.add),
+              label: const Text("Aggiungi evento speciale"),
+            ),
+          ],
+          if (isCampDay && current != null) ...[
+            Text(
+              "Evento: ${current.label}",
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              "Orario: ${_fmt(current.start)}–${_fmt(current.end)}",
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _editSummerCampSpecialEventForSelectedDay,
+                    icon: const Icon(Icons.edit),
+                    label: const Text("Modifica"),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _removeSummerCampSpecialEventForSelectedDay,
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text("Rimuovi"),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _cardScuola() {
     final inChoice = daySettingsStore.schoolInCoverForDay(_selectedDay);
     final outChoice = daySettingsStore.schoolOutCoverForDay(_selectedDay);
@@ -987,7 +1371,7 @@ class _CalendarioScreenStepAStabileState
 
     final bool hasCustomOut =
         daySettingsStore.schoolOutStartForDay(_selectedDay) != null ||
-            daySettingsStore.schoolOutEndForDay(_selectedDay) != null;
+        daySettingsStore.schoolOutEndForDay(_selectedDay) != null;
 
     return _card(
       title: "Alice / Scuola",
@@ -997,8 +1381,6 @@ class _CalendarioScreenStepAStabileState
         children: [
           Text("Orario: ${_fmt(_scuolaStart)}–${_fmt(_scuolaEnd)}"),
           const SizedBox(height: 12),
-
-          // ✅ Toggle + orario
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(
@@ -1012,19 +1394,12 @@ class _CalendarioScreenStepAStabileState
               await _toggleUscitaAnticipata(v);
             },
           ),
-
           const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: _pickSchoolTimes,
             icon: const Icon(Icons.edit),
             label: const Text("Modifica scuola"),
           ),
-
-          // ✅ MODIFICA RICHIESTA:
-          // Se uscita anticipata è attiva, NASCONDIAMO completamente:
-          // - "Uscita: 16:25–17:15"
-          // - "Modifica uscita"
-          // - (e sotto anche il dropdown decisione uscita normale)
           if (!uscita13Eff) ...[
             const SizedBox(height: 10),
             Row(
@@ -1044,7 +1419,6 @@ class _CalendarioScreenStepAStabileState
               label: const Text("Modifica uscita"),
             ),
           ],
-
           const SizedBox(height: 14),
           const Divider(),
           const SizedBox(height: 10),
@@ -1067,20 +1441,21 @@ class _CalendarioScreenStepAStabileState
             }).toList(),
             onChanged: (v) {
               if (v == null) return;
-              setState(() =>
-                  daySettingsStore.setSchoolInCoverForDay(_selectedDay, v));
+              setState(
+                () => daySettingsStore.setSchoolInCoverForDay(_selectedDay, v),
+              );
               if (v == SchoolCoverChoice.altro) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text("Altro: lista persone arriverà dopo (placeholder)."),
+                    content: Text(
+                      "Altro: lista persone arriverà dopo (placeholder).",
+                    ),
                   ),
                 );
               }
               ipsStore.refresh(now: _selectedDay);
             },
           ),
-
-          // ✅ Uscita normale: solo se NON c’è uscita anticipata
           if (!uscita13Eff) ...[
             const SizedBox(height: 12),
             DropdownButtonFormField<SchoolCoverChoice>(
@@ -1097,12 +1472,16 @@ class _CalendarioScreenStepAStabileState
               }).toList(),
               onChanged: (v) {
                 if (v == null) return;
-                setState(() =>
-                    daySettingsStore.setSchoolOutCoverForDay(_selectedDay, v));
+                setState(
+                  () =>
+                      daySettingsStore.setSchoolOutCoverForDay(_selectedDay, v),
+                );
                 if (v == SchoolCoverChoice.altro) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text("Altro: lista persone arriverà dopo (placeholder)."),
+                      content: Text(
+                        "Altro: lista persone arriverà dopo (placeholder).",
+                      ),
                     ),
                   );
                 }
@@ -1110,7 +1489,6 @@ class _CalendarioScreenStepAStabileState
               },
             ),
           ],
-
           if (uscita13Eff) ...[
             const SizedBox(height: 14),
             const Divider(),
@@ -1124,7 +1502,8 @@ class _CalendarioScreenStepAStabileState
               value: lunchChoice,
               isExpanded: true,
               decoration: InputDecoration(
-                labelText: "Pranzo ${_fmt(uscitaAt!)}–${_fmt(_engine.sandraPranzoEnd)}",
+                labelText:
+                    "Pranzo ${_fmt(uscitaAt!)}–${_fmt(_engine.sandraPranzoEnd)}",
               ),
               items: SchoolCoverChoice.values.map((c) {
                 return DropdownMenuItem(
@@ -1134,12 +1513,15 @@ class _CalendarioScreenStepAStabileState
               }).toList(),
               onChanged: (v) {
                 if (v == null) return;
-                setState(() =>
-                    daySettingsStore.setLunchCoverForDay(_selectedDay, v));
+                setState(
+                  () => daySettingsStore.setLunchCoverForDay(_selectedDay, v),
+                );
                 if (v == SchoolCoverChoice.altro) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text("Altro: lista persone arriverà dopo (placeholder)."),
+                      content: Text(
+                        "Altro: lista persone arriverà dopo (placeholder).",
+                      ),
                     ),
                   );
                 }
@@ -1152,38 +1534,20 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
-  // =========================
-  // ✅ COPERTURA
-  // =========================
   Widget _cardCopertura(CoverageResultStepA cov) {
     final uscita13Eff = _effUscita13(_selectedDay);
+    final sandraDecision = _sandraDecisionForDay(_selectedDay);
 
-    final effMattina = _effSandraMattina(_selectedDay);
-    final effPranzo = _effSandraPranzo(_selectedDay);
-    final effSera = _effSandraSera(_selectedDay);
-
-    final bool sandraGlobaleOn = effMattina && effPranzo && effSera;
+    final manualMattina = _effSandraMattina(_selectedDay);
+    final manualPranzo = _effSandraPranzo(_selectedDay);
+    final manualSera = _effSandraSera(_selectedDay);
 
     return _card(
       title: "Copertura (Step A)",
-      subtitle: "Sandra (toggle) + fasce orarie editabili (penna).",
+      subtitle: "Motore informativo + scelta manuale umana.",
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text("Sandra – Globale (mattina + pranzo + sera)"),
-            value: sandraGlobaleOn,
-            onChanged: (v) {
-              setState(() {
-                daySettingsStore.setSandraMattinaForDay(_selectedDay, v);
-                daySettingsStore.setSandraPranzoForDay(_selectedDay, v);
-                daySettingsStore.setSandraSeraForDay(_selectedDay, v);
-              });
-              ipsStore.refresh(now: _selectedDay);
-            },
-          ),
-          const Divider(),
           _sandraWindowRow(
             title: "Cambio turno mattina (IN CASA)",
             start: _engine.sandraCambioMattinaStart,
@@ -1229,36 +1593,53 @@ class _CalendarioScreenStepAStabileState
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text("Sandra – Fascia mattina"),
-            value: effMattina,
+            subtitle: _sandraNeedText(
+              serve: sandraDecision.serveSandraMattina,
+              manual: manualMattina,
+            ),
+            value: manualMattina,
             onChanged: (v) {
-              setState(() =>
-                  daySettingsStore.setSandraMattinaForDay(_selectedDay, v));
+              setState(
+                () => daySettingsStore.setSandraMattinaForDay(_selectedDay, v),
+              );
               ipsStore.refresh(now: _selectedDay);
             },
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text("Sandra – Fascia pranzo"),
-            value: effPranzo,
+            subtitle: _sandraNeedText(
+              serve: sandraDecision.serveSandraPranzo,
+              manual: manualPranzo,
+            ),
+            value: manualPranzo,
             onChanged: (v) {
-              setState(() =>
-                  daySettingsStore.setSandraPranzoForDay(_selectedDay, v));
+              setState(
+                () => daySettingsStore.setSandraPranzoForDay(_selectedDay, v),
+              );
               ipsStore.refresh(now: _selectedDay);
             },
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text("Sandra – Fascia sera (21:00–22:35)"),
-            value: effSera,
+            subtitle: _sandraNeedText(
+              serve: sandraDecision.serveSandraSera,
+              manual: manualSera,
+            ),
+            value: manualSera,
             onChanged: (v) {
-              setState(() =>
-                  daySettingsStore.setSandraSeraForDay(_selectedDay, v));
+              setState(
+                () => daySettingsStore.setSandraSeraForDay(_selectedDay, v),
+              );
               ipsStore.refresh(now: _selectedDay);
             },
           ),
           const Divider(),
           Text(
-            uscita13Eff ? "Uscita anticipata attiva" : "Uscita anticipata non attiva",
+            uscita13Eff
+                ? "Uscita anticipata attiva"
+                : "Uscita anticipata non attiva",
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 10),
@@ -1270,6 +1651,30 @@ class _CalendarioScreenStepAStabileState
           ),
         ],
       ),
+    );
+  }
+
+  Widget _sandraNeedText({required bool serve, required bool manual}) {
+    String text;
+    Color color;
+
+    if (serve && manual) {
+      text = "Serve dal motore • attivata manualmente";
+      color = Colors.orange;
+    } else if (serve) {
+      text = "Serve dal motore";
+      color = Colors.red;
+    } else if (manual) {
+      text = "Attivata manualmente";
+      color = Colors.blueGrey;
+    } else {
+      text = "Non serve dal motore";
+      color = Colors.green;
+    }
+
+    return Text(
+      text,
+      style: TextStyle(color: color, fontWeight: FontWeight.w700),
     );
   }
 
@@ -1348,11 +1753,13 @@ class _CalendarioScreenStepAStabileState
 class CoverageResultStepA {
   final bool ok;
   final List<String> details;
+  final List<CoverageGapDetail> gapDetails;
   final String bannerText;
 
   const CoverageResultStepA({
     required this.ok,
     required this.details,
+    required this.gapDetails,
     required this.bannerText,
   });
 }
