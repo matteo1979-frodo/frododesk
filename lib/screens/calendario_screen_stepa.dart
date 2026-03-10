@@ -242,6 +242,88 @@ class _CalendarioScreenStepAStabileState
     return false;
   }
 
+  List<String> _supportNetworkCoverageLines({
+    required DateTime day,
+    required TimeOfDay start,
+    required TimeOfDay end,
+    required String contextLabel,
+  }) {
+    final d0 = _onlyDate(day);
+
+    final fasciaStart = DateTime(
+      d0.year,
+      d0.month,
+      d0.day,
+      start.hour,
+      start.minute,
+    );
+
+    final fasciaEnd = DateTime(d0.year, d0.month, d0.day, end.hour, end.minute);
+
+    final lines = <String>[];
+
+    for (final person in coreStore.supportNetworkStore.people) {
+      if (!person.enabled) continue;
+
+      final enabledForDay = daySettingsStore.isSupportPersonEnabledForDay(
+        d0,
+        person.id,
+      );
+      if (!enabledForDay) continue;
+
+      final supportStart = DateTime(
+        d0.year,
+        d0.month,
+        d0.day,
+        person.start.hour,
+        person.start.minute,
+      );
+
+      final supportEnd = DateTime(
+        d0.year,
+        d0.month,
+        d0.day,
+        person.end.hour,
+        person.end.minute,
+      );
+
+      final coversFullRange =
+          !supportStart.isAfter(fasciaStart) && !supportEnd.isBefore(fasciaEnd);
+
+      if (!coversFullRange) continue;
+
+      lines.add(
+        "• Supporto $contextLabel: ${person.name} ${_fmt(person.start)}–${_fmt(person.end)}",
+      );
+    }
+
+    return lines;
+  }
+
+  String? _supportCoverageSummaryLine({
+    required List<String> lines,
+    required String label,
+  }) {
+    if (lines.isEmpty) return null;
+
+    final first = lines.first;
+    final prefixEnd = first.indexOf(':');
+    if (prefixEnd == -1 || prefixEnd + 1 >= first.length) return null;
+
+    final payload = first.substring(prefixEnd + 1).trim();
+    final parts = payload.split(' ');
+    if (parts.length < 2) return null;
+
+    final name = parts.first;
+    final time = parts.sublist(1).join(' ');
+
+    final prettyName = name.isEmpty
+        ? name
+        : "${name[0].toUpperCase()}${name.substring(1)}";
+
+    return "• $label coperto da $prettyName ($time)";
+  }
+
   SchoolCoverChoice _effectiveSchoolInCover(DateTime day) {
     final saved = daySettingsStore.schoolInCoverForDay(day);
     if (saved != SchoolCoverChoice.none) return saved;
@@ -680,6 +762,34 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
+  DayGapVisualState _dayGapVisualState(CoverageResultStepA cov) {
+    if (!cov.ok) return DayGapVisualState.realGap;
+
+    final d0 = _selectedDay;
+    final sandraDecision = _sandraDecisionForDay(d0);
+    final uscita13Eff = _effUscita13(d0);
+
+    final bool sandraHelps =
+        (sandraDecision.serveSandraMattina && _effSandraMattina(d0)) ||
+        (sandraDecision.serveSandraPranzo && _effSandraPranzo(d0)) ||
+        (sandraDecision.serveSandraSera && _effSandraSera(d0));
+
+    final bool schoolInHelp =
+        _effectiveSchoolInCover(d0) != SchoolCoverChoice.none;
+
+    final bool schoolOutHelp =
+        !uscita13Eff && _effectiveSchoolOutCover(d0) != SchoolCoverChoice.none;
+
+    final bool lunchHelp =
+        uscita13Eff && _effectiveLunchCover(d0) != SchoolCoverChoice.none;
+
+    if (sandraHelps || schoolInHelp || schoolOutHelp || lunchHelp) {
+      return DayGapVisualState.coveredNeed;
+    }
+
+    return DayGapVisualState.noProblem;
+  }
+
   bool _isEmergencyActive() {
     final settings = emergencyStore.getForDay(_selectedDay);
 
@@ -856,7 +966,81 @@ class _CalendarioScreenStepAStabileState
   }
 
   Widget _buildDayGapsBox(CoverageResultStepA cov) {
-    final color = cov.ok ? Colors.green : Colors.red;
+    final state = _dayGapVisualState(cov);
+
+    late final Color color;
+    late final IconData icon;
+    late final String headline;
+    late final String subline;
+
+    switch (state) {
+      case DayGapVisualState.noProblem:
+        color = Colors.green;
+        icon = Icons.check_circle;
+        headline = "✓ Nessun problema oggi";
+        subline = "Nessun buco rilevato dal motore.";
+        break;
+
+      case DayGapVisualState.coveredNeed:
+        color = Colors.orange;
+        icon = Icons.warning_amber_rounded;
+        headline = "⚠ Copertura necessaria ma risolta";
+        subline =
+            "La giornata è coperta, ma solo grazie a supporti o decisioni manuali.";
+        break;
+
+      case DayGapVisualState.realGap:
+        color = Colors.red;
+        icon = Icons.error;
+        headline = "❗ Buco reale da risolvere";
+        subline = "Esistono fasce senza copertura reale.";
+        break;
+    }
+
+    final d0 = _selectedDay;
+    final sandraDecision = _sandraDecisionForDay(d0);
+    final uscita13Eff = _effUscita13(d0);
+    final inCover = _effectiveSchoolInCover(d0);
+    final outCover = _effectiveSchoolOutCover(d0);
+    final lunchCover = _effectiveLunchCover(d0);
+
+    final supportInLines = _supportNetworkCoverageLines(
+      day: d0,
+      start: const TimeOfDay(hour: 7, minute: 30),
+      end: _scuolaStart,
+      contextLabel: "ingresso",
+    );
+
+    final supportOutLines = _supportNetworkCoverageLines(
+      day: d0,
+      start: _effSchoolOutStart(d0),
+      end: _effSchoolOutEnd(d0),
+      contextLabel: "uscita",
+    );
+
+    final supportLunchLines = uscita13Eff
+        ? _supportNetworkCoverageLines(
+            day: d0,
+            start: _effUscitaAnticipataAt(d0)!,
+            end: _engine.sandraPranzoEnd,
+            contextLabel: "pranzo",
+          )
+        : <String>[];
+
+    final inSupportSummary = _supportCoverageSummaryLine(
+      lines: supportInLines,
+      label: "Ingresso scuola",
+    );
+
+    final outSupportSummary = _supportCoverageSummaryLine(
+      lines: supportOutLines,
+      label: "Uscita scuola",
+    );
+
+    final lunchSupportSummary = _supportCoverageSummaryLine(
+      lines: supportLunchLines,
+      label: "Pranzo",
+    );
 
     return Container(
       width: double.infinity,
@@ -874,21 +1058,124 @@ class _CalendarioScreenStepAStabileState
             "BUCHI DEL GIORNO",
             style: TextStyle(fontWeight: FontWeight.w900),
           ),
-          const SizedBox(height: 8),
-          if (cov.ok)
-            const Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.green, size: 18),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    "Nessun buco rilevato dal motore",
-                    style: TextStyle(fontWeight: FontWeight.w800),
-                  ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      headline,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subline,
+                      style: TextStyle(
+                        color: Colors.black.withOpacity(0.68),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            )
-          else
+              ),
+            ],
+          ),
+          if (state == DayGapVisualState.coveredNeed) ...[
+            const SizedBox(height: 10),
+            if (sandraDecision.serveSandraMattina &&
+                _effSandraMattina(_selectedDay))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  "• Sandra copre la fascia mattina (${_fmt(_engine.sandraCambioMattinaStart)}–${_fmt(_engine.sandraCambioMattinaEnd)})",
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            if (sandraDecision.serveSandraPranzo &&
+                _effSandraPranzo(_selectedDay))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  "• Sandra copre la fascia pranzo (${_fmt(_engine.sandraPranzoStart)}–${_fmt(_engine.sandraPranzoEnd)})",
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            if (sandraDecision.serveSandraSera && _effSandraSera(_selectedDay))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  "• Sandra copre la fascia sera (${_fmt(_engine.sandraSeraStart)}–${_fmt(_engine.sandraSeraEnd)})",
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+
+            if (inCover != SchoolCoverChoice.none &&
+                inCover != SchoolCoverChoice.altro)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  "• Ingresso scuola coperto da ${_schoolCoverLabel(inCover)}",
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            if (inCover == SchoolCoverChoice.altro && inSupportSummary != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  inSupportSummary,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+
+            if (!uscita13Eff &&
+                outCover != SchoolCoverChoice.none &&
+                outCover != SchoolCoverChoice.altro)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  "• Uscita scuola coperta da ${_schoolCoverLabel(outCover)}",
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            if (!uscita13Eff &&
+                outCover == SchoolCoverChoice.altro &&
+                outSupportSummary != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  outSupportSummary,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+
+            if (uscita13Eff &&
+                lunchCover != SchoolCoverChoice.none &&
+                lunchCover != SchoolCoverChoice.altro)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  "• Pranzo coperto da ${_schoolCoverLabel(lunchCover)}",
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            if (uscita13Eff &&
+                lunchCover == SchoolCoverChoice.altro &&
+                lunchSupportSummary != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  lunchSupportSummary,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+          ],
+          if (state == DayGapVisualState.realGap) ...[
+            const SizedBox(height: 10),
             for (int i = 0; i < cov.gapDetails.length; i++) ...[
               Text(
                 "BUCO ${i + 1} — ${_cleanGapTitle(cov.gapDetails[i].label)}",
@@ -916,6 +1203,7 @@ class _CalendarioScreenStepAStabileState
               ),
               if (i != cov.gapDetails.length - 1) const SizedBox(height: 10),
             ],
+          ],
         ],
       ),
     );
@@ -1838,6 +2126,8 @@ class _CalendarioScreenStepAStabileState
     });
   }
 }
+
+enum DayGapVisualState { noProblem, coveredNeed, realGap }
 
 class CoverageResultStepA {
   final bool ok;
