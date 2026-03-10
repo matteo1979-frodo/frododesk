@@ -99,7 +99,7 @@ class CoreStore {
     // 2) TurnEngine (stato reale centrale)
     turnEngine = TurnEngine(fourthShiftStore: fourthShiftStore);
 
-    // 3) Motore copertura: TurnEngine + DiseasePeriodStore + AliceEventStore + SummerCampScheduleStore + SupportNetworkStore + DaySettingsStore
+    // 3) Motore copertura
     coverageEngine = CoverageEngine(
       turnEngine: turnEngine,
       daySettingsStore: daySettingsStore,
@@ -109,7 +109,7 @@ class CoreStore {
       summerCampScheduleStore: summerCampScheduleStore,
     );
 
-    // 4) Adapter Copertura: legge SettingsStore + OverrideStore + DaySettingsStore
+    // 4) Adapter Copertura
     coverageAdapter = CoverageAdapter(
       overrideStore: overrideStore,
       engine: coverageEngine,
@@ -127,6 +127,16 @@ class CoreStore {
 
     // 6) IPSStore usa coverageAdapter certificato
     ipsStore = IpsStore(coverage: coverageAdapter);
+  }
+
+  /// ✅ Bootstrap asincrono degli store persistenti
+  Future<void> init() async {
+    await overrideStore.load();
+    await daySettingsStore.load();
+    await feriePeriodStore.load();
+    await diseasePeriodStore.load();
+    await supportNetworkStore.load();
+    await fourthShiftStore.load();
   }
 
   /// Risolve una navigationKey (da IpsDetail) in una destinazione logica.
@@ -199,10 +209,6 @@ class CoreStore {
         return CoverageReasonCode.noGaps30Days;
     }
   }
-
-  // ----------------------------
-  // STATUS MODULI (placeholder)
-  // ----------------------------
 
   IpsModuleStatus _statusCoverage() {
     final int score = coverageAdapter.riskScore30Days();

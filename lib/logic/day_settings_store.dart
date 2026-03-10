@@ -1,7 +1,10 @@
 // lib/logic/day_settings_store.dart
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../models/day_override.dart';
+import 'persistence_store.dart';
 
 /// Impostazioni "operative" per giorno (NON globali).
 /// - Se un valore non è presente per un giorno -> si usa il fallback globale (SettingsStore).
@@ -14,6 +17,10 @@ import '../models/day_override.dart';
 /// - ✅ NEW: Uscita anticipata ORARIO per giorno (non più solo bool)
 /// - ✅ NEW: Attivazione giornaliera rete di supporto (per personId)
 class DaySettingsStore {
+  DaySettingsStore();
+
+  static const String _storageKey = 'day_settings_store_v1';
+
   final Map<DateTime, bool> _sandraDisponibile = {};
 
   // ✅ NEW: uscita anticipata ORARIO (minuti da mezzanotte)
@@ -46,6 +53,248 @@ class DaySettingsStore {
 
   DateTime _k(DateTime d) => dayKey(d);
 
+  String _dateKey(DateTime d) {
+    final k = _k(d);
+    final y = k.year.toString().padLeft(4, '0');
+    final m = k.month.toString().padLeft(2, '0');
+    final day = k.day.toString().padLeft(2, '0');
+    return '$y-$m-$day';
+  }
+
+  DateTime? _dateFromKey(String raw) {
+    try {
+      final parts = raw.split('-');
+      if (parts.length != 3) return null;
+      final y = int.parse(parts[0]);
+      final m = int.parse(parts[1]);
+      final d = int.parse(parts[2]);
+      return dayKey(DateTime(y, m, d));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // -------------------------
+  // Lifecycle persistence
+  // -------------------------
+
+  Future<void> load() async {
+    final raw = await PersistenceStore.loadString(_storageKey);
+    if (raw == null || raw.isEmpty) return;
+
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) return;
+
+      _sandraDisponibile.clear();
+      _uscitaAnticipataMin.clear();
+      _sandraMattina.clear();
+      _sandraPranzo.clear();
+      _sandraSera.clear();
+      _schoolInCover.clear();
+      _schoolOutCover.clear();
+      _lunchCover.clear();
+      _aliceWindows.clear();
+      _schoolOutStartMin.clear();
+      _schoolOutEndMin.clear();
+      _supportPeopleEnabledForDay.clear();
+
+      _loadBoolMap(decoded['sandraDisponibile'], _sandraDisponibile);
+      _loadIntMap(decoded['uscitaAnticipataMin'], _uscitaAnticipataMin);
+      _loadBoolMap(decoded['sandraMattina'], _sandraMattina);
+      _loadBoolMap(decoded['sandraPranzo'], _sandraPranzo);
+      _loadBoolMap(decoded['sandraSera'], _sandraSera);
+
+      _loadEnumMap(
+        decoded['schoolInCover'],
+        _schoolInCover,
+        SchoolCoverChoice.values,
+      );
+      _loadEnumMap(
+        decoded['schoolOutCover'],
+        _schoolOutCover,
+        SchoolCoverChoice.values,
+      );
+      _loadEnumMap(
+        decoded['lunchCover'],
+        _lunchCover,
+        SchoolCoverChoice.values,
+      );
+
+      _loadIntMap(decoded['schoolOutStartMin'], _schoolOutStartMin);
+      _loadIntMap(decoded['schoolOutEndMin'], _schoolOutEndMin);
+
+      _loadAliceWindows(decoded['aliceWindows']);
+      _loadSupportPeople(decoded['supportPeopleEnabledForDay']);
+    } catch (_) {
+      // Se il JSON è corrotto/non compatibile, ignoriamo senza rompere l'app.
+    }
+  }
+
+  Future<void> _save() async {
+    final data = <String, dynamic>{
+      'sandraDisponibile': _encodeBoolMap(_sandraDisponibile),
+      'uscitaAnticipataMin': _encodeIntMap(_uscitaAnticipataMin),
+      'sandraMattina': _encodeBoolMap(_sandraMattina),
+      'sandraPranzo': _encodeBoolMap(_sandraPranzo),
+      'sandraSera': _encodeBoolMap(_sandraSera),
+      'schoolInCover': _encodeEnumMap(_schoolInCover),
+      'schoolOutCover': _encodeEnumMap(_schoolOutCover),
+      'lunchCover': _encodeEnumMap(_lunchCover),
+      'aliceWindows': _encodeAliceWindows(),
+      'schoolOutStartMin': _encodeIntMap(_schoolOutStartMin),
+      'schoolOutEndMin': _encodeIntMap(_schoolOutEndMin),
+      'supportPeopleEnabledForDay': _encodeSupportPeople(),
+    };
+
+    await PersistenceStore.saveString(_storageKey, jsonEncode(data));
+  }
+
+  Map<String, dynamic> _encodeBoolMap(Map<DateTime, bool> source) {
+    final out = <String, dynamic>{};
+    for (final entry in source.entries) {
+      out[_dateKey(entry.key)] = entry.value;
+    }
+    return out;
+  }
+
+  Map<String, dynamic> _encodeIntMap(Map<DateTime, int> source) {
+    final out = <String, dynamic>{};
+    for (final entry in source.entries) {
+      out[_dateKey(entry.key)] = entry.value;
+    }
+    return out;
+  }
+
+  Map<String, dynamic> _encodeEnumMap<T extends Enum>(Map<DateTime, T> source) {
+    final out = <String, dynamic>{};
+    for (final entry in source.entries) {
+      out[_dateKey(entry.key)] = entry.value.name;
+    }
+    return out;
+  }
+
+  Map<String, dynamic> _encodeAliceWindows() {
+    final out = <String, dynamic>{};
+
+    for (final entry in _aliceWindows.entries) {
+      final inner = <String, dynamic>{};
+      for (final windowEntry in entry.value.entries) {
+        inner[windowEntry.key.name] = windowEntry.value.toJson();
+      }
+      out[_dateKey(entry.key)] = inner;
+    }
+
+    return out;
+  }
+
+  Map<String, dynamic> _encodeSupportPeople() {
+    final out = <String, dynamic>{};
+
+    for (final entry in _supportPeopleEnabledForDay.entries) {
+      out[_dateKey(entry.key)] = entry.value.toList()..sort();
+    }
+
+    return out;
+  }
+
+  void _loadBoolMap(dynamic raw, Map<DateTime, bool> target) {
+    if (raw is! Map) return;
+
+    for (final entry in raw.entries) {
+      final day = _dateFromKey(entry.key.toString());
+      final value = entry.value;
+      if (day != null && value is bool) {
+        target[day] = value;
+      }
+    }
+  }
+
+  void _loadIntMap(dynamic raw, Map<DateTime, int> target) {
+    if (raw is! Map) return;
+
+    for (final entry in raw.entries) {
+      final day = _dateFromKey(entry.key.toString());
+      final value = entry.value;
+      if (day != null && value is int) {
+        target[day] = value;
+      }
+    }
+  }
+
+  void _loadEnumMap<T extends Enum>(
+    dynamic raw,
+    Map<DateTime, T> target,
+    List<T> values,
+  ) {
+    if (raw is! Map) return;
+
+    for (final entry in raw.entries) {
+      final day = _dateFromKey(entry.key.toString());
+      final value = entry.value;
+      if (day == null || value is! String) continue;
+
+      try {
+        final parsed = values.firstWhere((e) => e.name == value);
+        target[day] = parsed;
+      } catch (_) {
+        // ignora valori non validi
+      }
+    }
+  }
+
+  void _loadAliceWindows(dynamic raw) {
+    if (raw is! Map) return;
+
+    for (final entry in raw.entries) {
+      final day = _dateFromKey(entry.key.toString());
+      if (day == null) continue;
+
+      final dayMap = entry.value;
+      if (dayMap is! Map) continue;
+
+      final parsed = <AliceWindowKey, MinuteRange>{};
+
+      for (final w in dayMap.entries) {
+        final keyName = w.key.toString();
+
+        AliceWindowKey? windowKey;
+        try {
+          windowKey = AliceWindowKey.values.firstWhere(
+            (e) => e.name == keyName,
+          );
+        } catch (_) {
+          windowKey = null;
+        }
+        if (windowKey == null) continue;
+
+        final range = MinuteRange.fromJson(w.value);
+        if (range != null) {
+          parsed[windowKey] = range;
+        }
+      }
+
+      if (parsed.isNotEmpty) {
+        _aliceWindows[day] = parsed;
+      }
+    }
+  }
+
+  void _loadSupportPeople(dynamic raw) {
+    if (raw is! Map) return;
+
+    for (final entry in raw.entries) {
+      final day = _dateFromKey(entry.key.toString());
+      final value = entry.value;
+      if (day == null || value is! List) continue;
+
+      final ids = value.whereType<String>().toSet();
+      if (ids.isNotEmpty) {
+        _supportPeopleEnabledForDay[day] = ids;
+      }
+    }
+  }
+
   // -------------------------
   // Helpers time
   // -------------------------
@@ -70,10 +319,12 @@ class DaySettingsStore {
 
   void setSandraForDay(DateTime day, bool value) {
     _sandraDisponibile[_k(day)] = value;
+    _save();
   }
 
   void clearSandraForDay(DateTime day) {
     _sandraDisponibile.remove(_k(day));
+    _save();
   }
 
   // -------------------------
@@ -94,6 +345,7 @@ class DaySettingsStore {
     } else {
       _uscitaAnticipataMin.remove(dk);
     }
+    _save();
   }
 
   /// ✅ NEW: orario uscita anticipata per giorno (TimeOfDay), null se non attiva.
@@ -110,11 +362,13 @@ class DaySettingsStore {
     final m = _toMinutes(time);
     if (!_isValidMinute(m)) return;
     _uscitaAnticipataMin[dk] = m;
+    _save();
   }
 
   /// ✅ NEW: disattiva uscita anticipata per giorno.
   void clearUscitaAnticipataForDay(DateTime day) {
     _uscitaAnticipataMin.remove(_k(day));
+    _save();
   }
 
   // -------------------------
@@ -133,10 +387,12 @@ class DaySettingsStore {
 
   void setSandraMattinaForDay(DateTime day, bool value) {
     _sandraMattina[_k(day)] = value;
+    _save();
   }
 
   void clearSandraMattinaForDay(DateTime day) {
     _sandraMattina.remove(_k(day));
+    _save();
   }
 
   bool? sandraPranzoForDay(DateTime day) => _sandraPranzo[_k(day)];
@@ -151,10 +407,12 @@ class DaySettingsStore {
 
   void setSandraPranzoForDay(DateTime day, bool value) {
     _sandraPranzo[_k(day)] = value;
+    _save();
   }
 
   void clearSandraPranzoForDay(DateTime day) {
     _sandraPranzo.remove(_k(day));
+    _save();
   }
 
   bool? sandraSeraForDay(DateTime day) => _sandraSera[_k(day)];
@@ -169,10 +427,12 @@ class DaySettingsStore {
 
   void setSandraSeraForDay(DateTime day, bool value) {
     _sandraSera[_k(day)] = value;
+    _save();
   }
 
   void clearSandraSeraForDay(DateTime day) {
     _sandraSera.remove(_k(day));
+    _save();
   }
 
   /// Utility: pulisce tutte e tre le fasce Sandra per quel giorno (non tocca il legacy).
@@ -181,6 +441,7 @@ class DaySettingsStore {
     _sandraMattina.remove(dk);
     _sandraPranzo.remove(dk);
     _sandraSera.remove(dk);
+    _save();
   }
 
   // -------------------------
@@ -192,10 +453,12 @@ class DaySettingsStore {
 
   void setSchoolInCoverForDay(DateTime day, SchoolCoverChoice choice) {
     _schoolInCover[_k(day)] = choice;
+    _save();
   }
 
   void clearSchoolInCoverForDay(DateTime day) {
     _schoolInCover.remove(_k(day));
+    _save();
   }
 
   SchoolCoverChoice schoolOutCoverForDay(DateTime day) =>
@@ -203,10 +466,12 @@ class DaySettingsStore {
 
   void setSchoolOutCoverForDay(DateTime day, SchoolCoverChoice choice) {
     _schoolOutCover[_k(day)] = choice;
+    _save();
   }
 
   void clearSchoolOutCoverForDay(DateTime day) {
     _schoolOutCover.remove(_k(day));
+    _save();
   }
 
   // -------------------------
@@ -235,12 +500,14 @@ class DaySettingsStore {
     if (b <= a) return;
     _schoolOutStartMin[dk] = a;
     _schoolOutEndMin[dk] = b;
+    _save();
   }
 
   void clearSchoolOutTimesForDay(DateTime day) {
     final dk = _k(day);
     _schoolOutStartMin.remove(dk);
     _schoolOutEndMin.remove(dk);
+    _save();
   }
 
   // -------------------------
@@ -252,10 +519,12 @@ class DaySettingsStore {
 
   void setLunchCoverForDay(DateTime day, SchoolCoverChoice choice) {
     _lunchCover[_k(day)] = choice;
+    _save();
   }
 
   void clearLunchCoverForDay(DateTime day) {
     _lunchCover.remove(_k(day));
+    _save();
   }
 
   // -------------------------
@@ -295,6 +564,8 @@ class DaySettingsStore {
     } else {
       _supportPeopleEnabledForDay[dk] = current;
     }
+
+    _save();
   }
 
   void clearSupportPersonForDay(DateTime day, String personId) {
@@ -303,6 +574,7 @@ class DaySettingsStore {
 
   void clearAllSupportPeopleForDay(DateTime day) {
     _supportPeopleEnabledForDay.remove(_k(day));
+    _save();
   }
 
   /// ✅ NEW: rimuove una persona supporto da TUTTI i giorni salvati.
@@ -321,6 +593,8 @@ class DaySettingsStore {
         _supportPeopleEnabledForDay[day] = current;
       }
     }
+
+    _save();
   }
 
   // -------------------------
@@ -341,6 +615,7 @@ class DaySettingsStore {
     final existing = _aliceWindows[dk] ?? <AliceWindowKey, MinuteRange>{};
     existing[key] = range;
     _aliceWindows[dk] = existing;
+    _save();
   }
 
   void clearAliceWindowForDay(DateTime day, AliceWindowKey key) {
@@ -353,10 +628,12 @@ class DaySettingsStore {
     } else {
       _aliceWindows[dk] = existing;
     }
+    _save();
   }
 
   void clearAllAliceWindowsForDay(DateTime day) {
     _aliceWindows.remove(_k(day));
+    _save();
   }
 }
 

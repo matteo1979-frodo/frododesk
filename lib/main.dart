@@ -11,11 +11,16 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('it_IT', null);
 
-  runApp(const FrodoDeskApp());
+  final coreStore = CoreStore();
+  await coreStore.init();
+
+  runApp(FrodoDeskApp(coreStore: coreStore));
 }
 
 class FrodoDeskApp extends StatefulWidget {
-  const FrodoDeskApp({super.key});
+  final CoreStore coreStore;
+
+  const FrodoDeskApp({super.key, required this.coreStore});
 
   @override
   State<FrodoDeskApp> createState() => _FrodoDeskAppState();
@@ -28,7 +33,7 @@ class _FrodoDeskAppState extends State<FrodoDeskApp> {
   @override
   void initState() {
     super.initState();
-    coreStore = CoreStore();
+    coreStore = widget.coreStore;
     ipsStore = coreStore.ipsStore;
   }
 
@@ -39,7 +44,6 @@ class _FrodoDeskAppState extends State<FrodoDeskApp> {
       title: 'FrodoDesk',
       theme: ThemeData(useMaterial3: true),
 
-      // ✅ FIX DatePicker/MaterialLocalizations + lingua italiana
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
