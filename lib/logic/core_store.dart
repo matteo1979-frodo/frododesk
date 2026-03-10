@@ -5,6 +5,8 @@ import 'ferie_period_store.dart';
 import 'alice_event_store.dart';
 import 'summer_camp_schedule_store.dart';
 import 'support_network_store.dart';
+import 'disease_period_store.dart';
+import 'fourth_shift_store.dart';
 
 import 'turn_engine.dart';
 
@@ -29,6 +31,9 @@ class CoreStore {
   // ✅ NEW: Ferie lunghe (periodi)
   late final FeriePeriodStore feriePeriodStore;
 
+  // ✅ NEW: Malattia a periodo
+  late final DiseasePeriodStore diseasePeriodStore;
+
   // ✅ NEW: Eventi Alice (periodi)
   late final AliceEventStore aliceEventStore;
 
@@ -37,6 +42,9 @@ class CoreStore {
 
   // ✅ NEW: Rete di supporto
   late final SupportNetworkStore supportNetworkStore;
+
+  // ✅ NEW: Quarta Squadra
+  late final FourthShiftStore fourthShiftStore;
 
   // ✅ NEW: unico motore turni (standard + 4a squadra)
   late final TurnEngine turnEngine;
@@ -73,6 +81,9 @@ class CoreStore {
     // ✅ NEW: Ferie lunghe (periodi)
     feriePeriodStore = FeriePeriodStore();
 
+    // ✅ NEW: Malattia a periodo
+    diseasePeriodStore = DiseasePeriodStore();
+
     // ✅ NEW: Eventi Alice (periodi)
     aliceEventStore = AliceEventStore();
 
@@ -82,16 +93,20 @@ class CoreStore {
     // ✅ NEW: Rete di supporto
     supportNetworkStore = SupportNetworkStore();
 
-    // 2) TurnEngine (stato reale centrale)
-    turnEngine = TurnEngine();
+    // ✅ NEW: Quarta Squadra
+    fourthShiftStore = FourthShiftStore();
 
-    // 3) Motore copertura: TurnEngine + AliceEventStore + SummerCampScheduleStore + SupportNetworkStore + DaySettingsStore
+    // 2) TurnEngine (stato reale centrale)
+    turnEngine = TurnEngine(fourthShiftStore: fourthShiftStore);
+
+    // 3) Motore copertura: TurnEngine + DiseasePeriodStore + AliceEventStore + SummerCampScheduleStore + SupportNetworkStore + DaySettingsStore
     coverageEngine = CoverageEngine(
       turnEngine: turnEngine,
+      daySettingsStore: daySettingsStore,
+      supportNetworkStore: supportNetworkStore,
+      diseasePeriodStore: diseasePeriodStore,
       aliceEventStore: aliceEventStore,
       summerCampScheduleStore: summerCampScheduleStore,
-      supportNetworkStore: supportNetworkStore,
-      daySettingsStore: daySettingsStore,
     );
 
     // 4) Adapter Copertura: legge SettingsStore + OverrideStore + DaySettingsStore
@@ -197,8 +212,8 @@ class CoreStore {
     final CoverageReasonCode reason = (score >= 80)
         ? CoverageReasonCode.gapWithin7Days
         : (score >= 60)
-            ? CoverageReasonCode.gapWithin30Days
-            : CoverageReasonCode.noGaps30Days;
+        ? CoverageReasonCode.gapWithin30Days
+        : CoverageReasonCode.noGaps30Days;
 
     return IpsModuleStatus(
       moduleId: types.IpsModuleId.coverage,

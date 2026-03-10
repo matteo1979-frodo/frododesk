@@ -1,6 +1,9 @@
 // lib/logic/turn_engine.dart
 import 'package:flutter/material.dart';
 import '../models/work_shift.dart';
+import '../models/fourth_shift_period.dart';
+import 'fourth_shift_store.dart';
+import 'fourth_shift_cycle_logic.dart';
 
 enum TurnPerson { matteo, chiara }
 
@@ -24,36 +27,36 @@ class TurnPlan {
   });
 
   const TurnPlan.mattina()
-      : this._(
-          type: TurnType.mattina,
-          start: const TimeOfDay(hour: 6, minute: 0),
-          end: const TimeOfDay(hour: 14, minute: 0),
-          isOff: false,
-        );
+    : this._(
+        type: TurnType.mattina,
+        start: const TimeOfDay(hour: 6, minute: 0),
+        end: const TimeOfDay(hour: 14, minute: 0),
+        isOff: false,
+      );
 
   const TurnPlan.pomeriggio()
-      : this._(
-          type: TurnType.pomeriggio,
-          start: const TimeOfDay(hour: 14, minute: 0),
-          end: const TimeOfDay(hour: 22, minute: 0),
-          isOff: false,
-        );
+    : this._(
+        type: TurnType.pomeriggio,
+        start: const TimeOfDay(hour: 14, minute: 0),
+        end: const TimeOfDay(hour: 22, minute: 0),
+        isOff: false,
+      );
 
   const TurnPlan.notte()
-      : this._(
-          type: TurnType.notte,
-          start: const TimeOfDay(hour: 22, minute: 0),
-          end: const TimeOfDay(hour: 6, minute: 0),
-          isOff: false,
-        );
+    : this._(
+        type: TurnType.notte,
+        start: const TimeOfDay(hour: 22, minute: 0),
+        end: const TimeOfDay(hour: 6, minute: 0),
+        isOff: false,
+      );
 
   const TurnPlan.off()
-      : this._(
-          type: TurnType.off,
-          start: const TimeOfDay(hour: 0, minute: 0),
-          end: const TimeOfDay(hour: 0, minute: 0),
-          isOff: true,
-        );
+    : this._(
+        type: TurnType.off,
+        start: const TimeOfDay(hour: 0, minute: 0),
+        end: const TimeOfDay(hour: 0, minute: 0),
+        isOff: true,
+      );
 }
 
 /// Interno: tipo rotazione
@@ -67,9 +70,9 @@ class _TurnoOrari {
   const _TurnoOrari({required this.start, required this.end}) : isOff = false;
 
   const _TurnoOrari.off()
-      : start = const TimeOfDay(hour: 0, minute: 0),
-        end = const TimeOfDay(hour: 0, minute: 0),
-        isOff = true;
+    : start = const TimeOfDay(hour: 0, minute: 0),
+      end = const TimeOfDay(hour: 0, minute: 0),
+      isOff = true;
 }
 
 /// TurnEngine = unico “motore turni”
@@ -89,6 +92,10 @@ class TurnEngine {
   /// NOTA: per evitare DST, le date di rotazione vengono gestite in UTC a mezzogiorno.
   final DateTime refWeekMonday;
 
+  /// ✅ NEW: Quarta Squadra
+  final FourthShiftStore fourthShiftStore;
+  final FourthShiftCycleLogic fourthShiftCycleLogic;
+
   // Matteo: NOTTE -> POMERIGGIO -> MATTINA (ciclo 3 settimane)
   final List<_TurnoTipo> _cicloMatteo = const [
     _TurnoTipo.notte,
@@ -103,10 +110,16 @@ class TurnEngine {
     _TurnoTipo.notte,
   ];
 
-  TurnEngine({DateTime? refWeekMonday})
-      : refWeekMonday = _mondayOf(
-          _rotUTCNoon(refWeekMonday ?? DateTime(2026, 3, 2)),
-        );
+  TurnEngine({
+    DateTime? refWeekMonday,
+    FourthShiftStore? fourthShiftStore,
+    FourthShiftCycleLogic? fourthShiftCycleLogic,
+  }) : refWeekMonday = _mondayOf(
+         _rotUTCNoon(refWeekMonday ?? DateTime(2026, 3, 2)),
+       ),
+       fourthShiftStore = fourthShiftStore ?? FourthShiftStore(),
+       fourthShiftCycleLogic =
+           fourthShiftCycleLogic ?? const FourthShiftCycleLogic();
 
   /// ✅ API COMPATIBILITÀ: usata dalla UI vecchia
   TurnPlan turnPlanForPersonDay({
@@ -205,7 +218,43 @@ class TurnEngine {
     return _cicloChiara[idx];
   }
 
+  String _personIdFor(TurnPerson p) {
+    switch (p) {
+      case TurnPerson.matteo:
+        return 'matteo';
+      case TurnPerson.chiara:
+        return 'chiara';
+    }
+  }
+
+  _TurnoTipo _turnoTipoFromTurnType(TurnType t) {
+    switch (t) {
+      case TurnType.mattina:
+        return _TurnoTipo.mattina;
+      case TurnType.pomeriggio:
+        return _TurnoTipo.pomeriggio;
+      case TurnType.notte:
+        return _TurnoTipo.notte;
+      case TurnType.off:
+        return _TurnoTipo.off;
+    }
+  }
+
+  _TurnoTipo? _turnoTipoFourthShift(TurnPerson p, DateTime day) {
+    final personId = _personIdFor(p);
+    final FourthShiftPeriod? period = fourthShiftStore
+        .activePeriodForPersonOnDay(personId, day);
+
+    if (period == null) return null;
+
+    final turnType = fourthShiftCycleLogic.turnTypeForDay(period, day);
+    return _turnoTipoFromTurnType(turnType);
+  }
+
   _TurnoTipo _turnoTipoGiorno(TurnPerson p, DateTime day) {
+    final fourthShiftTipo = _turnoTipoFourthShift(p, day);
+    if (fourthShiftTipo != null) return fourthShiftTipo;
+
     if (_isWeekend(day.weekday)) return _TurnoTipo.off;
     return (p == TurnPerson.matteo)
         ? _turnoSettimanaMatteo(day)

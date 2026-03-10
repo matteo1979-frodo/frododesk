@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../models/day_override.dart';
 import '../models/person_availability.dart';
+import '../models/disease_period.dart';
 
 import 'coverage_logic.dart';
 import 'override_apply.dart';
 import 'turn_engine.dart';
 import 'day_settings_store.dart';
 import 'support_network_store.dart';
+import 'disease_period_store.dart';
 
 // ✅ NEW: Ferie lunghe
 import 'ferie_period_store.dart';
@@ -25,6 +27,7 @@ class CoverageEngine {
   final TurnEngine turnEngine;
   final DaySettingsStore daySettingsStore;
   final SupportNetworkStore supportNetworkStore;
+  final DiseasePeriodStore diseasePeriodStore;
 
   // ✅ NEW: Eventi Alice (aggancio strutturale)
   final AliceEventStore aliceEventStore;
@@ -49,6 +52,7 @@ class CoverageEngine {
     TurnEngine? turnEngine,
     DaySettingsStore? daySettingsStore,
     SupportNetworkStore? supportNetworkStore,
+    DiseasePeriodStore? diseasePeriodStore,
     AliceEventStore? aliceEventStore,
     SummerCampScheduleStore? summerCampScheduleStore,
     SummerCampSpecialEventStore? summerCampSpecialEventStore,
@@ -61,6 +65,7 @@ class CoverageEngine {
   }) : turnEngine = turnEngine ?? TurnEngine(),
        daySettingsStore = daySettingsStore ?? DaySettingsStore(),
        supportNetworkStore = supportNetworkStore ?? SupportNetworkStore(),
+       diseasePeriodStore = diseasePeriodStore ?? DiseasePeriodStore(),
        aliceEventStore = aliceEventStore ?? AliceEventStore(),
        summerCampScheduleStore =
            summerCampScheduleStore ?? SummerCampScheduleStore(),
@@ -654,11 +659,20 @@ class CoverageEngine {
     final matteoHasManual = overrides.matteo != null;
     final chiaraHasManual = overrides.chiara != null;
 
+    final matteoDiseaseStatus = matteoHasManual
+        ? null
+        : _diseaseStatusForPerson(personId: 'matteo', day: day);
+    final chiaraDiseaseStatus = chiaraHasManual
+        ? null
+        : _diseaseStatusForPerson(personId: 'chiara', day: day);
+
     final matteoHoliday =
         (!matteoHasManual) &&
+        (matteoDiseaseStatus == null) &&
         (ferieStore?.isOnHoliday(FeriePerson.matteo, day) ?? false);
     final chiaraHoliday =
         (!chiaraHasManual) &&
+        (chiaraDiseaseStatus == null) &&
         (ferieStore?.isOnHoliday(FeriePerson.chiara, day) ?? false);
 
     var baseBusyMatteo = turnEngine.busyShiftsForPerson(
@@ -670,8 +684,8 @@ class CoverageEngine {
       day: day,
     );
 
-    if (matteoHoliday) baseBusyMatteo = [];
-    if (chiaraHoliday) baseBusyChiara = [];
+    if (matteoHoliday || matteoDiseaseStatus != null) baseBusyMatteo = [];
+    if (chiaraHoliday || chiaraDiseaseStatus != null) baseBusyChiara = [];
 
     final matteoBusy = OverrideApply.applyToBusyShifts(
       day: day,
@@ -686,9 +700,11 @@ class CoverageEngine {
 
     final matteoStatus =
         overrides.matteo?.status ??
+        matteoDiseaseStatus ??
         (matteoHoliday ? OverrideStatus.ferie : OverrideStatus.normal);
     final chiaraStatus =
         overrides.chiara?.status ??
+        chiaraDiseaseStatus ??
         (chiaraHoliday ? OverrideStatus.ferie : OverrideStatus.normal);
 
     lines.add(
@@ -778,7 +794,7 @@ class CoverageEngine {
       }
 
       if (overlapsImps) {
-        return "$personName ha malattia leggera ma non può uscire in questa fascia.";
+        return "$personName ha malattia leggera ma in questa fascia deve restare a casa per reperibilità INPS.";
       }
 
       return "$personName potrebbe coprire questa fascia (malattia leggera).";
@@ -826,11 +842,20 @@ class CoverageEngine {
     final matteoHasManual = overrides.matteo != null;
     final chiaraHasManual = overrides.chiara != null;
 
+    final matteoDiseaseStatus = matteoHasManual
+        ? null
+        : _diseaseStatusForPerson(personId: 'matteo', day: day);
+    final chiaraDiseaseStatus = chiaraHasManual
+        ? null
+        : _diseaseStatusForPerson(personId: 'chiara', day: day);
+
     final matteoHoliday =
         (!matteoHasManual) &&
+        (matteoDiseaseStatus == null) &&
         (ferieStore?.isOnHoliday(FeriePerson.matteo, day) ?? false);
     final chiaraHoliday =
         (!chiaraHasManual) &&
+        (chiaraDiseaseStatus == null) &&
         (ferieStore?.isOnHoliday(FeriePerson.chiara, day) ?? false);
 
     var baseBusyMatteo = turnEngine.busyShiftsForPerson(
@@ -842,8 +867,8 @@ class CoverageEngine {
       day: day,
     );
 
-    if (matteoHoliday) baseBusyMatteo = [];
-    if (chiaraHoliday) baseBusyChiara = [];
+    if (matteoHoliday || matteoDiseaseStatus != null) baseBusyMatteo = [];
+    if (chiaraHoliday || chiaraDiseaseStatus != null) baseBusyChiara = [];
 
     final matteoBusy = OverrideApply.applyToBusyShifts(
       day: day,
@@ -865,9 +890,11 @@ class CoverageEngine {
 
     final m =
         overrides.matteo?.status ??
+        matteoDiseaseStatus ??
         (matteoHoliday ? OverrideStatus.ferie : OverrideStatus.normal);
     final c =
         overrides.chiara?.status ??
+        chiaraDiseaseStatus ??
         (chiaraHoliday ? OverrideStatus.ferie : OverrideStatus.normal);
 
     final hasLeggera =
@@ -888,7 +915,7 @@ class CoverageEngine {
 
     if (hasLeggera) {
       if (!isHomePresenceWindow && overlapsImps) {
-        // vincolo: deve stare a casa
+        // vincolo INPS: deve stare a casa
       } else {
         return true;
       }
@@ -915,6 +942,21 @@ class CoverageEngine {
     }
 
     return false;
+  }
+
+  OverrideStatus? _diseaseStatusForPerson({
+    required String personId,
+    required DateTime day,
+  }) {
+    final period = diseasePeriodStore.getPeriodForDay(personId, day);
+    if (period == null) return null;
+
+    switch (period.type) {
+      case DiseaseType.mild:
+        return OverrideStatus.malattiaLeggera;
+      case DiseaseType.bed:
+        return OverrideStatus.malattiaALetto;
+    }
   }
 
   bool _isSandraWindowCoveringRange({
@@ -960,6 +1002,12 @@ class CoverageEngine {
 
     for (final person in supportNetworkStore.people) {
       if (!person.enabled) continue;
+
+      final enabledForDay = daySettingsStore.isSupportPersonEnabledForDay(
+        d0,
+        person.id,
+      );
+      if (!enabledForDay) continue;
 
       final supportStart = DateTime(
         d0.year,

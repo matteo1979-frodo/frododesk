@@ -280,7 +280,9 @@ class DaySettingsStore {
     bool enabled,
   ) {
     final dk = _k(day);
-    final current = Set<String>.from(_supportPeopleEnabledForDay[dk] ?? <String>{});
+    final current = Set<String>.from(
+      _supportPeopleEnabledForDay[dk] ?? <String>{},
+    );
 
     if (enabled) {
       current.add(personId);
@@ -301,6 +303,24 @@ class DaySettingsStore {
 
   void clearAllSupportPeopleForDay(DateTime day) {
     _supportPeopleEnabledForDay.remove(_k(day));
+  }
+
+  /// ✅ NEW: rimuove una persona supporto da TUTTI i giorni salvati.
+  void clearSupportPersonFromAllDays(String personId) {
+    final days = _supportPeopleEnabledForDay.keys.toList();
+
+    for (final day in days) {
+      final current = Set<String>.from(
+        _supportPeopleEnabledForDay[day] ?? <String>{},
+      );
+      current.remove(personId);
+
+      if (current.isEmpty) {
+        _supportPeopleEnabledForDay.remove(day);
+      } else {
+        _supportPeopleEnabledForDay[day] = current;
+      }
+    }
   }
 
   // -------------------------
@@ -344,29 +364,25 @@ class DaySettingsStore {
 enum SchoolCoverChoice { none, matteo, chiara, sandra, altro }
 
 /// Chiavi ufficiali delle finestre logistiche di Alice (estensibile).
-enum AliceWindowKey {
-  schoolMorning, // ingresso scuola
-  schoolPickup, // ritiro scuola
-  homeSensitive, // rientro / momento delicato
-}
+enum AliceWindowKey { schoolMorning, schoolPickup, homeSensitive }
 
 /// Range in minuti da mezzanotte.
 class MinuteRange {
-  final int startMin; // incluso
-  final int endMin; // escluso
+  final int startMin;
+  final int endMin;
 
   const MinuteRange({required this.startMin, required this.endMin})
-      : assert(startMin >= 0),
-        assert(endMin >= 0),
-        assert(endMin > startMin),
-        assert(endMin <= 24 * 60);
+    : assert(startMin >= 0),
+      assert(endMin >= 0),
+      assert(endMin > startMin),
+      assert(endMin <= 24 * 60);
 
   int get durationMin => endMin - startMin;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'startMin': startMin,
-        'endMin': endMin,
-      };
+    'startMin': startMin,
+    'endMin': endMin,
+  };
 
   static MinuteRange? fromJson(dynamic json) {
     if (json is! Map) return null;

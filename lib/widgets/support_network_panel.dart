@@ -23,7 +23,10 @@ class SupportNetworkPanel extends StatefulWidget {
 }
 
 class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
-  int _nextId = 1;
+  String _generateSupportId() {
+    final now = DateTime.now().microsecondsSinceEpoch;
+    return 'support_$now';
+  }
 
   String _fmt(TimeOfDay t) {
     return "${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}";
@@ -42,6 +45,8 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
     TimeOfDay start = const TimeOfDay(hour: 7, minute: 0);
     TimeOfDay end = const TimeOfDay(hour: 18, minute: 0);
 
+    final savedNames = widget.store.savedNames;
+
     final created = await showDialog<SupportPerson>(
       context: context,
       builder: (context) {
@@ -52,6 +57,31 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (savedNames.isNotEmpty)
+                    DropdownButtonFormField<String>(
+                      hint: const Text("Seleziona dalla rubrica"),
+                      items: [
+                        ...savedNames.map(
+                          (n) => DropdownMenuItem(value: n, child: Text(n)),
+                        ),
+                        const DropdownMenuItem(
+                          value: "__new__",
+                          child: Text("+ Nuova persona"),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        if (value == null) return;
+
+                        if (value == "__new__") {
+                          nameCtrl.clear();
+                        } else {
+                          nameCtrl.text = value;
+                        }
+
+                        setLocalState(() {});
+                      },
+                    ),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: nameCtrl,
                     decoration: const InputDecoration(
@@ -116,7 +146,7 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
 
                     Navigator.of(context).pop(
                       SupportPerson(
-                        id: 'support_${_nextId++}',
+                        id: _generateSupportId(),
                         name: name,
                         enabled: true,
                         start: start,
@@ -264,10 +294,14 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
   void _removePerson(SupportPerson person) {
     setState(() {
       widget.store.removePerson(person.id);
-      widget.daySettingsStore.clearSupportPersonForDay(
-        widget.selectedDay,
-        person.id,
-      );
+      widget.daySettingsStore.clearSupportPersonFromAllDays(person.id);
+    });
+    widget.onChanged();
+  }
+
+  void _removeSavedName(String name) {
+    setState(() {
+      widget.store.removeSavedName(name);
     });
     widget.onChanged();
   }
@@ -286,6 +320,7 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
   @override
   Widget build(BuildContext context) {
     final people = widget.store.people;
+    final savedNames = widget.store.savedNames;
 
     return Card(
       elevation: 0,
@@ -315,6 +350,45 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
               icon: const Icon(Icons.add),
               label: const Text("Aggiungi persona"),
             ),
+            const SizedBox(height: 16),
+            const Text(
+              "Rubrica nomi salvati",
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 8),
+            if (savedNames.isEmpty)
+              Text(
+                "Nessun nome salvato.",
+                style: TextStyle(color: Colors.black.withOpacity(0.65)),
+              ),
+            if (savedNames.isNotEmpty)
+              ...savedNames.map(
+                (name) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.black12),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          name,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => _removeSavedName(name),
+                        icon: const Icon(Icons.delete_outline),
+                        tooltip: "Rimuovi dalla rubrica",
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: 16),
+            const Divider(),
             const SizedBox(height: 12),
             if (people.isEmpty)
               Text(
@@ -350,7 +424,9 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        p.enabled ? "Presente nella rete" : "Non attiva nella rete",
+                        p.enabled
+                            ? "Presente nella rete"
+                            : "Non attiva nella rete",
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
                           color: p.enabled ? Colors.green : Colors.grey,

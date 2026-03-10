@@ -7,6 +7,7 @@ import '../logic/emergency_store.dart';
 import '../logic/emergency_day_logic.dart';
 import '../logic/coverage_engine.dart';
 import '../logic/turn_engine.dart';
+import '../logic/disease_period_store.dart';
 
 import '../models/day_override.dart';
 import '../logic/core_store.dart';
@@ -18,6 +19,8 @@ import '../logic/day_settings_store.dart';
 import '../widgets/stepb_override_panel.dart';
 import '../widgets/alice_event_panel.dart';
 import '../widgets/support_network_panel.dart';
+import '../widgets/disease_period_panel.dart';
+import '../widgets/fourth_shift_panel.dart';
 
 // ✅ NEW: Ferie lunghe panel
 import '../widgets/ferie_period_panel.dart';
@@ -51,6 +54,7 @@ class _CalendarioScreenStepAStabileState
   WeekIdentity get _activeWeek => coreStore.weekStore.activeWeek;
 
   OverrideStore get overrideStore => coreStore.overrideStore;
+  DiseasePeriodStore get diseasePeriodStore => coreStore.diseasePeriodStore;
 
   CoverageEngine get _engine => coreStore.coverageEngine;
   TurnEngine get _turns => coreStore.turnEngine;
@@ -206,6 +210,12 @@ class _CalendarioScreenStepAStabileState
 
     for (final person in coreStore.supportNetworkStore.people) {
       if (!person.enabled) continue;
+
+      final enabledForDay = daySettingsStore.isSupportPersonEnabledForDay(
+        d0,
+        person.id,
+      );
+      if (!enabledForDay) continue;
 
       final supportStart = DateTime(
         d0.year,
@@ -572,6 +582,42 @@ class _CalendarioScreenStepAStabileState
   String _fmt(TimeOfDay t) =>
       "${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}";
 
+  String _cleanGapTitle(String label) {
+    final lower = label.toLowerCase();
+
+    if (lower.contains('alice ingresso')) {
+      return 'Ingresso scuola';
+    }
+
+    if (lower.contains('alice uscita')) {
+      return 'Uscita scuola';
+    }
+
+    if (lower.contains('pranzo')) {
+      return 'Pranzo';
+    }
+
+    if (lower.contains('sera')) {
+      return 'Sera';
+    }
+
+    if (lower.contains('mattina')) {
+      return 'Mattina';
+    }
+
+    return label;
+  }
+
+  String? _extractGapTime(String label) {
+    final parts = label.split(': ');
+    if (parts.length < 2) return null;
+
+    final candidate = parts.last.trim();
+    if (candidate.contains('–')) return candidate;
+
+    return null;
+  }
+
   CoverageResultStepA _computeCoverageStepA(DateTime day) {
     final d0 = _onlyDate(day);
 
@@ -810,16 +856,16 @@ class _CalendarioScreenStepAStabileState
   }
 
   Widget _buildDayGapsBox(CoverageResultStepA cov) {
-    if (cov.ok) return const SizedBox.shrink();
+    final color = cov.ok ? Colors.green : Colors.red;
 
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.10),
+        color: color.withOpacity(0.10),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.withOpacity(0.35)),
+        border: Border.all(color: color.withOpacity(0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -829,60 +875,47 @@ class _CalendarioScreenStepAStabileState
             style: TextStyle(fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 8),
-          for (int i = 0; i < cov.gapDetails.length; i++) ...[
-            Text(
-              "BUCO (${i + 1}): ${cov.gapDetails[i].label}",
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 6),
-            ...cov.gapDetails[i].lines.map(
-              (line) => Padding(
-                padding: const EdgeInsets.only(left: 8, bottom: 4),
-                child: Text(
-                  "⚠ $line",
-                  style: TextStyle(color: Colors.black.withOpacity(0.72)),
+          if (cov.ok)
+            const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green, size: 18),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "Nessun buco rilevato dal motore",
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
+            )
+          else
+            for (int i = 0; i < cov.gapDetails.length; i++) ...[
+              Text(
+                "BUCO ${i + 1} — ${_cleanGapTitle(cov.gapDetails[i].label)}",
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              if (_extractGapTime(cov.gapDetails[i].label) != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  _extractGapTime(cov.gapDetails[i].label)!,
+                  style: TextStyle(
+                    color: Colors.black.withOpacity(0.65),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 6),
+              ...cov.gapDetails[i].lines.map(
+                (line) => Padding(
+                  padding: const EdgeInsets.only(left: 8, bottom: 4),
+                  child: Text(
+                    "⚠ $line",
+                    style: TextStyle(color: Colors.black.withOpacity(0.72)),
+                  ),
                 ),
               ),
-            ),
-            if (i != cov.gapDetails.length - 1) const SizedBox(height: 10),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _banner(bool ok, String text) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: ok
-            ? Colors.green.withOpacity(0.12)
-            : Colors.red.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: ok
-              ? Colors.green.withOpacity(0.4)
-              : Colors.red.withOpacity(0.4),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            ok ? Icons.check_circle : Icons.warning_amber_rounded,
-            color: ok ? Colors.green : Colors.red,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
-          ),
-          Text(
-            _fmtDate(_selectedDay),
-            style: TextStyle(color: Colors.black.withOpacity(0.6)),
-          ),
+              if (i != cov.gapDetails.length - 1) const SizedBox(height: 10),
+            ],
         ],
       ),
     );
@@ -934,6 +967,22 @@ class _CalendarioScreenStepAStabileState
               _cardOverrideStepB(ovSelected),
               const SizedBox(height: 12),
               FeriePeriodPanel(store: coreStore.feriePeriodStore),
+              const SizedBox(height: 12),
+              DiseasePeriodPanel(
+                store: coreStore.diseasePeriodStore,
+                onChanged: () {
+                  setState(() {});
+                  ipsStore.refresh(now: _selectedDay);
+                },
+              ),
+              const SizedBox(height: 12),
+              FourthShiftPanel(
+                store: coreStore.fourthShiftStore,
+                onChanged: () {
+                  setState(() {});
+                  ipsStore.refresh(now: _selectedDay);
+                },
+              ),
               const SizedBox(height: 12),
               SupportNetworkPanel(
                 selectedDay: _selectedDay,
@@ -991,6 +1040,22 @@ class _CalendarioScreenStepAStabileState
                   const SizedBox(height: 12),
                   FeriePeriodPanel(store: coreStore.feriePeriodStore),
                   const SizedBox(height: 12),
+                  DiseasePeriodPanel(
+                    store: coreStore.diseasePeriodStore,
+                    onChanged: () {
+                      setState(() {});
+                      ipsStore.refresh(now: _selectedDay);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  FourthShiftPanel(
+                    store: coreStore.fourthShiftStore,
+                    onChanged: () {
+                      setState(() {});
+                      ipsStore.refresh(now: _selectedDay);
+                    },
+                  ),
+                  const SizedBox(height: 12),
                   SupportNetworkPanel(
                     selectedDay: _selectedDay,
                     store: coreStore.supportNetworkStore,
@@ -1036,6 +1101,22 @@ class _CalendarioScreenStepAStabileState
         _cardOverrideStepB(ovSelected),
         const SizedBox(height: 12),
         FeriePeriodPanel(store: coreStore.feriePeriodStore),
+        const SizedBox(height: 12),
+        DiseasePeriodPanel(
+          store: coreStore.diseasePeriodStore,
+          onChanged: () {
+            setState(() {});
+            ipsStore.refresh(now: _selectedDay);
+          },
+        ),
+        const SizedBox(height: 12),
+        FourthShiftPanel(
+          store: coreStore.fourthShiftStore,
+          onChanged: () {
+            setState(() {});
+            ipsStore.refresh(now: _selectedDay);
+          },
+        ),
         const SizedBox(height: 12),
         SupportNetworkPanel(
           selectedDay: _selectedDay,
@@ -1145,7 +1226,6 @@ class _CalendarioScreenStepAStabileState
             const SizedBox(height: 8),
             _buildEmergencyBannerDebug(),
             if (!isEmergency) _buildDayGapsBox(cov),
-            if (!isEmergency) _banner(cov.ok, cov.bannerText),
             const SizedBox(height: 12),
             _buildMainLayout(
               ovSelected: ovSelected,
@@ -1202,7 +1282,8 @@ class _CalendarioScreenStepAStabileState
 
     return _card(
       title: "Turni",
-      subtitle: "Turno standard (per ora). Quarta Squadra arriva dopo.",
+      subtitle:
+          "Orari letti dal motore reale: rotazione standard oppure Quarta Squadra se attiva.",
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1211,7 +1292,15 @@ class _CalendarioScreenStepAStabileState
           _turnRow("Chiara", c),
           const SizedBox(height: 8),
           Text(
-            "Nota: il riposo post-notte fino alle 14:30 viene applicato dal motore (busy shifts).",
+            "Nota: se per Matteo o Chiara esiste un periodo attivo di Quarta Squadra, i turni mostrati qui sono già quelli della Quarta Squadra.",
+            style: TextStyle(
+              color: Colors.black.withOpacity(0.6),
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            "Il riposo post-notte fino alle 14:30 continua a essere applicato dal motore.",
             style: TextStyle(
               color: Colors.black.withOpacity(0.6),
               fontSize: 12,
@@ -1260,8 +1349,8 @@ class _CalendarioScreenStepAStabileState
 
   Widget _cardOverrideStepB(DayOverrides ovSelected) {
     return _card(
-      title: "Override (Step B)",
-      subtitle: "Imposta stato giornaliero (influenza subito la copertura).",
+      title: "Stato giornaliero",
+      subtitle: "Imposta lo stato del giorno (influenza subito la copertura).",
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1543,7 +1632,7 @@ class _CalendarioScreenStepAStabileState
     final manualSera = _effSandraSera(_selectedDay);
 
     return _card(
-      title: "Copertura (Step A)",
+      title: "Copertura Sandra / Babysitter",
       subtitle: "Motore informativo + scelta manuale umana.",
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
