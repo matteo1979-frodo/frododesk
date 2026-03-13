@@ -59,6 +59,36 @@ class TurnPlan {
       );
 }
 
+@immutable
+class TurnConflictInfo {
+  final DateTime day;
+  final TurnType matteoTurn;
+  final TurnType chiaraTurn;
+  final bool hasConflict;
+  final String? conflictCode;
+
+  const TurnConflictInfo({
+    required this.day,
+    required this.matteoTurn,
+    required this.chiaraTurn,
+    required this.hasConflict,
+    required this.conflictCode,
+  });
+
+  String get label {
+    switch (conflictCode) {
+      case 'mattina_mattina':
+        return 'Conflitto turni: mattina + mattina';
+      case 'pomeriggio_pomeriggio':
+        return 'Conflitto turni: pomeriggio + pomeriggio';
+      case 'notte_notte':
+        return 'Conflitto turni: notte + notte';
+      default:
+        return 'Nessun conflitto turni';
+    }
+  }
+}
+
 /// Interno: tipo rotazione
 enum _TurnoTipo { mattina, pomeriggio, notte, off }
 
@@ -139,6 +169,47 @@ class TurnEngine {
       case _TurnoTipo.off:
         return const TurnPlan.off();
     }
+  }
+
+  /// ✅ NEW: conflitto turni nello stesso giorno
+  TurnConflictInfo sameDayConflictFor(DateTime day) {
+    final d0 = _onlyDate(day);
+
+    final matteoPlan = turnPlanForPersonDay(person: TurnPerson.matteo, day: d0);
+    final chiaraPlan = turnPlanForPersonDay(person: TurnPerson.chiara, day: d0);
+
+    String? code;
+
+    if (!matteoPlan.isOff &&
+        !chiaraPlan.isOff &&
+        matteoPlan.type == chiaraPlan.type) {
+      switch (matteoPlan.type) {
+        case TurnType.mattina:
+          code = 'mattina_mattina';
+          break;
+        case TurnType.pomeriggio:
+          code = 'pomeriggio_pomeriggio';
+          break;
+        case TurnType.notte:
+          code = 'notte_notte';
+          break;
+        case TurnType.off:
+          code = null;
+          break;
+      }
+    }
+
+    return TurnConflictInfo(
+      day: d0,
+      matteoTurn: matteoPlan.type,
+      chiaraTurn: chiaraPlan.type,
+      hasConflict: code != null,
+      conflictCode: code,
+    );
+  }
+
+  bool hasSameDayConflict(DateTime day) {
+    return sameDayConflictFor(day).hasConflict;
   }
 
   /// API “motore”: busy shifts = turno + viaggio + riposo post-notte

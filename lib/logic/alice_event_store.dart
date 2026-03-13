@@ -1,5 +1,9 @@
 // lib/logic/alice_event_store.dart
 
+import 'dart:convert';
+
+import 'persistence_store.dart';
+
 enum AliceEventType {
   schoolNormal,
   vacation,
@@ -48,28 +52,86 @@ class AliceEventPeriod {
 }
 
 class AliceEventStore {
+  static const String _storageKey = 'alice_event_periods_v1';
+
   final List<AliceEventPeriod> _events = [];
 
   List<AliceEventPeriod> get events => List.unmodifiable(_events);
 
+  Future<void> load() async {
+    final raw = await PersistenceStore.loadString(_storageKey);
+    if (raw == null || raw.isEmpty) return;
+
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return;
+
+      _events.clear();
+
+      for (final item in decoded) {
+        if (item is! Map) continue;
+
+        final map = Map<String, dynamic>.from(item);
+
+        final startYear = map['startYear'];
+        final startMonth = map['startMonth'];
+        final startDay = map['startDay'];
+        final endYear = map['endYear'];
+        final endMonth = map['endMonth'];
+        final endDay = map['endDay'];
+        final typeIndex = map['typeIndex'];
+
+        if (startYear is! int ||
+            startMonth is! int ||
+            startDay is! int ||
+            endYear is! int ||
+            endMonth is! int ||
+            endDay is! int ||
+            typeIndex is! int) {
+          continue;
+        }
+
+        if (typeIndex < 0 || typeIndex >= AliceEventType.values.length) {
+          continue;
+        }
+
+        final event = AliceEventPeriod(
+          start: DateTime(startYear, startMonth, startDay),
+          end: DateTime(endYear, endMonth, endDay),
+          type: AliceEventType.values[typeIndex],
+        );
+
+        _events.add(event);
+      }
+
+      _sortEvents();
+    } catch (_) {
+      // dati corrotti ignorati
+    }
+  }
+
   void addEvent(AliceEventPeriod event) {
     _events.add(event);
     _sortEvents();
+    _save();
   }
 
   void updateEvent(int index, AliceEventPeriod event) {
     _checkIndex(index);
     _events[index] = event;
     _sortEvents();
+    _save();
   }
 
   void removeEventAt(int index) {
     _checkIndex(index);
     _events.removeAt(index);
+    _save();
   }
 
   void clear() {
     _events.clear();
+    _save();
   }
 
   bool hasEventForDay(DateTime day) {
@@ -201,6 +263,24 @@ class AliceEventStore {
     if (index < 0 || index >= _events.length) {
       throw RangeError.index(index, _events, 'index');
     }
+  }
+
+  Future<void> _save() async {
+    final data = _events
+        .map(
+          (event) => {
+            'startYear': event.start.year,
+            'startMonth': event.start.month,
+            'startDay': event.start.day,
+            'endYear': event.end.year,
+            'endMonth': event.end.month,
+            'endDay': event.end.day,
+            'typeIndex': event.type.index,
+          },
+        )
+        .toList();
+
+    await PersistenceStore.saveString(_storageKey, jsonEncode(data));
   }
 
   static DateTime _normalizeDay(DateTime date) {

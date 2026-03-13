@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../models/day_override.dart';
 import '../models/person_availability.dart';
 import '../models/disease_period.dart';
+import '../models/real_event.dart';
+import '../models/work_shift.dart';
 
 import 'coverage_logic.dart';
 import 'override_apply.dart';
@@ -10,6 +12,7 @@ import 'turn_engine.dart';
 import 'day_settings_store.dart';
 import 'support_network_store.dart';
 import 'disease_period_store.dart';
+import 'real_event_store.dart';
 
 // ✅ NEW: Ferie lunghe
 import 'ferie_period_store.dart';
@@ -28,6 +31,9 @@ class CoverageEngine {
   final DaySettingsStore daySettingsStore;
   final SupportNetworkStore supportNetworkStore;
   final DiseasePeriodStore diseasePeriodStore;
+
+  // ✅ NEW: Eventi reali
+  final RealEventStore realEventStore;
 
   // ✅ NEW: Eventi Alice (aggancio strutturale)
   final AliceEventStore aliceEventStore;
@@ -53,6 +59,7 @@ class CoverageEngine {
     DaySettingsStore? daySettingsStore,
     SupportNetworkStore? supportNetworkStore,
     DiseasePeriodStore? diseasePeriodStore,
+    RealEventStore? realEventStore,
     AliceEventStore? aliceEventStore,
     SummerCampScheduleStore? summerCampScheduleStore,
     SummerCampSpecialEventStore? summerCampSpecialEventStore,
@@ -66,6 +73,7 @@ class CoverageEngine {
        daySettingsStore = daySettingsStore ?? DaySettingsStore(),
        supportNetworkStore = supportNetworkStore ?? SupportNetworkStore(),
        diseasePeriodStore = diseasePeriodStore ?? DiseasePeriodStore(),
+       realEventStore = realEventStore ?? RealEventStore(),
        aliceEventStore = aliceEventStore ?? AliceEventStore(),
        summerCampScheduleStore =
            summerCampScheduleStore ?? SummerCampScheduleStore(),
@@ -299,6 +307,94 @@ class CoverageEngine {
     ).gaps;
   }
 
+  // ✅ STEP 6.1
+  // API dedicata per leggere il rischio automatico "Alice a casa"
+  bool hasAliceHomeRiskForDay({
+    required DateTime day,
+    required bool uscita13,
+    required bool sandraMattinaOn,
+    required bool sandraPranzoOn,
+    required bool sandraSeraOn,
+    required TimeOfDay schoolStart,
+    required DayOverrides overrides,
+    FeriePeriodStore? ferieStore,
+    SchoolCoverChoice schoolInCover = SchoolCoverChoice.none,
+    SchoolCoverChoice schoolOutCover = SchoolCoverChoice.none,
+    TimeOfDay schoolOutStart = const TimeOfDay(hour: 16, minute: 25),
+    TimeOfDay schoolOutEnd = const TimeOfDay(hour: 17, minute: 15),
+    SchoolCoverChoice lunchCover = SchoolCoverChoice.none,
+    TimeOfDay? uscitaAnticipataAt,
+    TimeOfDay? summerCampStart,
+    TimeOfDay? summerCampEnd,
+  }) {
+    final analysis = analyzeDayV2(
+      day: day,
+      uscita13: uscita13,
+      sandraMattinaOn: sandraMattinaOn,
+      sandraPranzoOn: sandraPranzoOn,
+      sandraSeraOn: sandraSeraOn,
+      schoolStart: schoolStart,
+      overrides: overrides,
+      ferieStore: ferieStore,
+      schoolInCover: schoolInCover,
+      schoolOutCover: schoolOutCover,
+      schoolOutStart: schoolOutStart,
+      schoolOutEnd: schoolOutEnd,
+      lunchCover: lunchCover,
+      uscitaAnticipataAt: uscitaAnticipataAt,
+      summerCampStart: summerCampStart,
+      summerCampEnd: summerCampEnd,
+    );
+
+    return analysis.details.any(
+      (detail) => detail.label.toLowerCase().startsWith('alice a casa:'),
+    );
+  }
+
+  List<CoverageGapDetail> aliceHomeRiskDetailsForDay({
+    required DateTime day,
+    required bool uscita13,
+    required bool sandraMattinaOn,
+    required bool sandraPranzoOn,
+    required bool sandraSeraOn,
+    required TimeOfDay schoolStart,
+    required DayOverrides overrides,
+    FeriePeriodStore? ferieStore,
+    SchoolCoverChoice schoolInCover = SchoolCoverChoice.none,
+    SchoolCoverChoice schoolOutCover = SchoolCoverChoice.none,
+    TimeOfDay schoolOutStart = const TimeOfDay(hour: 16, minute: 25),
+    TimeOfDay schoolOutEnd = const TimeOfDay(hour: 17, minute: 15),
+    SchoolCoverChoice lunchCover = SchoolCoverChoice.none,
+    TimeOfDay? uscitaAnticipataAt,
+    TimeOfDay? summerCampStart,
+    TimeOfDay? summerCampEnd,
+  }) {
+    final analysis = analyzeDayV2(
+      day: day,
+      uscita13: uscita13,
+      sandraMattinaOn: sandraMattinaOn,
+      sandraPranzoOn: sandraPranzoOn,
+      sandraSeraOn: sandraSeraOn,
+      schoolStart: schoolStart,
+      overrides: overrides,
+      ferieStore: ferieStore,
+      schoolInCover: schoolInCover,
+      schoolOutCover: schoolOutCover,
+      schoolOutStart: schoolOutStart,
+      schoolOutEnd: schoolOutEnd,
+      lunchCover: lunchCover,
+      uscitaAnticipataAt: uscitaAnticipataAt,
+      summerCampStart: summerCampStart,
+      summerCampEnd: summerCampEnd,
+    );
+
+    return analysis.details
+        .where(
+          (detail) => detail.label.toLowerCase().startsWith('alice a casa:'),
+        )
+        .toList(growable: false);
+  }
+
   CoverageDayAnalysis analyzeDay({
     required DateTime day,
     required bool uscita13,
@@ -378,6 +474,8 @@ class CoverageEngine {
       d0,
     );
 
+    DateTime? normalSchoolHomeWindowStart;
+
     if (aliceAtHome) {
       final aliceHomeStart = DateTime(d0.year, d0.month, d0.day, 7, 30);
       final aliceHomeEnd = DateTime(d0.year, d0.month, d0.day, 16, 25);
@@ -412,6 +510,21 @@ class CoverageEngine {
       final schoolInStart = DateTime(d0.year, d0.month, d0.day, 7, 30);
       final schoolInEnd = _atTime(d0, schoolStart);
       final labelSchoolIn = "Alice ingresso: 07:30–${_fmt(schoolStart)}";
+
+      final schoolInCoveredByChoice = _isSchoolCoverChoiceValid(
+        choice: schoolInCover,
+        day: d0,
+        fasciaStart: schoolInStart,
+        fasciaEnd: schoolInEnd,
+        allowSandra: true,
+        sandraMattinaAvailable: effSandraMattina,
+        sandraPranzoAvailable: effSandraPranzo,
+        sandraSeraAvailable: effSandraSera,
+        isHomePresenceWindow: false,
+        overrides: overrides,
+        ferieStore: ferieStore,
+      );
+
       if (schoolInCover == SchoolCoverChoice.none) {
         entries.add(
           _CoverageGapEntry(
@@ -422,6 +535,18 @@ class CoverageEngine {
             allowSandra: true,
           ),
         );
+      } else {
+        if (!schoolInCoveredByChoice) {
+          entries.add(
+            _CoverageGapEntry(
+              label: labelSchoolIn,
+              fasciaStart: schoolInStart,
+              fasciaEnd: schoolInEnd,
+              isHomePresenceWindow: false,
+              allowSandra: true,
+            ),
+          );
+        }
       }
 
       if (!uscita13) {
@@ -429,6 +554,21 @@ class CoverageEngine {
         final schoolOutEndDt = _atTime(d0, schoolOutEnd);
         final labelSchoolOut =
             "Alice uscita: ${_fmt(schoolOutStart)}–${_fmt(schoolOutEnd)}";
+
+        final schoolOutCoveredByChoice = _isSchoolCoverChoiceValid(
+          choice: schoolOutCover,
+          day: d0,
+          fasciaStart: schoolOutStartDt,
+          fasciaEnd: schoolOutEndDt,
+          allowSandra: true,
+          sandraMattinaAvailable: effSandraMattina,
+          sandraPranzoAvailable: effSandraPranzo,
+          sandraSeraAvailable: effSandraSera,
+          isHomePresenceWindow: false,
+          overrides: overrides,
+          ferieStore: ferieStore,
+        );
+
         if (schoolOutCover == SchoolCoverChoice.none) {
           entries.add(
             _CoverageGapEntry(
@@ -439,7 +579,21 @@ class CoverageEngine {
               allowSandra: true,
             ),
           );
+        } else {
+          if (!schoolOutCoveredByChoice) {
+            entries.add(
+              _CoverageGapEntry(
+                label: labelSchoolOut,
+                fasciaStart: schoolOutStartDt,
+                fasciaEnd: schoolOutEndDt,
+                isHomePresenceWindow: false,
+                allowSandra: true,
+              ),
+            );
+          }
         }
+
+        normalSchoolHomeWindowStart = schoolOutEndDt;
       }
 
       if (uscita13) {
@@ -447,21 +601,24 @@ class CoverageEngine {
         final lunchStart = _atTime(d0, startLunch);
         final lunchEnd = _atTime(d0, sandraPranzoEnd);
 
-        final lunchCoveredBySandra =
-            effSandraPranzo &&
-            _isSandraWindowCoveringRange(
-              day: d0,
-              fasciaStart: lunchStart,
-              fasciaEnd: lunchEnd,
-              sandraMattinaAvailable: effSandraMattina,
-              sandraPranzoAvailable: effSandraPranzo,
-              sandraSeraAvailable: effSandraSera,
-            );
+        final lunchCoveredByChoice = _isSchoolCoverChoiceValid(
+          choice: lunchCover,
+          day: d0,
+          fasciaStart: lunchStart,
+          fasciaEnd: lunchEnd,
+          allowSandra: true,
+          sandraMattinaAvailable: effSandraMattina,
+          sandraPranzoAvailable: effSandraPranzo,
+          sandraSeraAvailable: effSandraSera,
+          isHomePresenceWindow: false,
+          overrides: overrides,
+          ferieStore: ferieStore,
+        );
 
         final labelLunch =
             "Alice pranzo: ${_fmt(startLunch)}–${_fmt(sandraPranzoEnd)}";
 
-        if (lunchCover == SchoolCoverChoice.none && !lunchCoveredBySandra) {
+        if (lunchCover == SchoolCoverChoice.none) {
           entries.add(
             _CoverageGapEntry(
               label: labelLunch,
@@ -471,7 +628,21 @@ class CoverageEngine {
               allowSandra: true,
             ),
           );
+        } else {
+          if (!lunchCoveredByChoice) {
+            entries.add(
+              _CoverageGapEntry(
+                label: labelLunch,
+                fasciaStart: lunchStart,
+                fasciaEnd: lunchEnd,
+                isHomePresenceWindow: false,
+                allowSandra: true,
+              ),
+            );
+          }
         }
+
+        normalSchoolHomeWindowStart = lunchEnd;
       }
     }
 
@@ -505,29 +676,61 @@ class CoverageEngine {
         final campInEnd = _atTime(d0, effectiveStart);
         final labelCampIn =
             "Alice centro estivo ingresso: 07:30–${_fmt(effectiveStart)}";
-        entries.add(
-          _CoverageGapEntry(
-            label: labelCampIn,
-            fasciaStart: campInStart,
-            fasciaEnd: campInEnd,
-            isHomePresenceWindow: false,
-            allowSandra: true,
-          ),
+
+        final campInCoveredInReality = _isFasciaCovered(
+          day: d0,
+          fasciaStart: campInStart,
+          fasciaEnd: campInEnd,
+          allowSandra: true,
+          sandraMattinaAvailable: effSandraMattina,
+          sandraPranzoAvailable: effSandraPranzo,
+          sandraSeraAvailable: effSandraSera,
+          isHomePresenceWindow: false,
+          overrides: overrides,
+          ferieStore: ferieStore,
         );
+
+        if (!campInCoveredInReality) {
+          entries.add(
+            _CoverageGapEntry(
+              label: labelCampIn,
+              fasciaStart: campInStart,
+              fasciaEnd: campInEnd,
+              isHomePresenceWindow: false,
+              allowSandra: true,
+            ),
+          );
+        }
 
         final campOutStart = _atTime(d0, effectiveEnd);
         final campOutEnd = DateTime(d0.year, d0.month, d0.day, 18, 0);
         final labelCampOut =
             "Alice centro estivo uscita: ${_fmt(effectiveEnd)}–18:00";
-        entries.add(
-          _CoverageGapEntry(
-            label: labelCampOut,
-            fasciaStart: campOutStart,
-            fasciaEnd: campOutEnd,
-            isHomePresenceWindow: false,
-            allowSandra: true,
-          ),
+
+        final campOutCoveredInReality = _isFasciaCovered(
+          day: d0,
+          fasciaStart: campOutStart,
+          fasciaEnd: campOutEnd,
+          allowSandra: true,
+          sandraMattinaAvailable: effSandraMattina,
+          sandraPranzoAvailable: effSandraPranzo,
+          sandraSeraAvailable: effSandraSera,
+          isHomePresenceWindow: false,
+          overrides: overrides,
+          ferieStore: ferieStore,
         );
+
+        if (!campOutCoveredInReality) {
+          entries.add(
+            _CoverageGapEntry(
+              label: labelCampOut,
+              fasciaStart: campOutStart,
+              fasciaEnd: campOutEnd,
+              isHomePresenceWindow: false,
+              allowSandra: true,
+            ),
+          );
+        }
       } else {
         final aliceHomeStart = DateTime(d0.year, d0.month, d0.day, 7, 30);
         final aliceHomeEnd = DateTime(d0.year, d0.month, d0.day, 16, 25);
@@ -556,6 +759,29 @@ class CoverageEngine {
             ),
           );
         }
+      }
+    }
+
+    // ✅ STEP 4.2
+    // Dopo uscita/pranzo Alice è di nuovo a casa.
+    // Qui costruiamo i buchi REALI di continuità fino alla fascia sera.
+    if (normalSchoolHomeWindowStart != null) {
+      final homeWindowEnd = _atTime(d0, sandraSeraStart);
+
+      if (homeWindowEnd.isAfter(normalSchoolHomeWindowStart)) {
+        entries.addAll(
+          _uncoveredHomeSegments(
+            day: d0,
+            windowStart: normalSchoolHomeWindowStart,
+            windowEnd: homeWindowEnd,
+            labelPrefix: 'Alice a casa',
+            sandraMattinaAvailable: effSandraMattina,
+            sandraPranzoAvailable: effSandraPranzo,
+            sandraSeraAvailable: effSandraSera,
+            overrides: overrides,
+            ferieStore: ferieStore,
+          ),
+        );
       }
     }
 
@@ -642,6 +868,217 @@ class CoverageEngine {
     return CoverageDayAnalysis(gaps: gaps, details: details);
   }
 
+  List<_CoverageGapEntry> _uncoveredHomeSegments({
+    required DateTime day,
+    required DateTime windowStart,
+    required DateTime windowEnd,
+    required String labelPrefix,
+    required bool sandraMattinaAvailable,
+    required bool sandraPranzoAvailable,
+    required bool sandraSeraAvailable,
+    required DayOverrides overrides,
+    FeriePeriodStore? ferieStore,
+  }) {
+    final points = <DateTime>{windowStart, windowEnd};
+
+    void addIfInside(DateTime dt) {
+      if (!dt.isBefore(windowStart) && !dt.isAfter(windowEnd)) {
+        points.add(dt);
+      }
+    }
+
+    final matteoBusy = _effectiveBusyShiftsForPerson(
+      personKey: 'matteo',
+      person: TurnPerson.matteo,
+      day: day,
+      overrides: overrides,
+      ferieStore: ferieStore,
+    );
+
+    final chiaraBusy = _effectiveBusyShiftsForPerson(
+      personKey: 'chiara',
+      person: TurnPerson.chiara,
+      day: day,
+      overrides: overrides,
+      ferieStore: ferieStore,
+    );
+
+    for (final shift in matteoBusy) {
+      addIfInside(shift.start);
+      addIfInside(shift.end);
+    }
+
+    for (final shift in chiaraBusy) {
+      addIfInside(shift.start);
+      addIfInside(shift.end);
+    }
+
+    for (final person in supportNetworkStore.people) {
+      if (!person.enabled) continue;
+
+      final enabledForDay = daySettingsStore.isSupportPersonEnabledForDay(
+        day,
+        person.id,
+      );
+      if (!enabledForDay) continue;
+
+      final start = DateTime(
+        day.year,
+        day.month,
+        day.day,
+        person.start.hour,
+        person.start.minute,
+      );
+
+      final end = DateTime(
+        day.year,
+        day.month,
+        day.day,
+        person.end.hour,
+        person.end.minute,
+      );
+
+      addIfInside(start);
+      addIfInside(end);
+    }
+
+    if (sandraMattinaAvailable) {
+      addIfInside(_atTime(day, sandraCambioMattinaStart));
+      addIfInside(_atTime(day, sandraCambioMattinaEnd));
+    }
+
+    if (sandraPranzoAvailable) {
+      addIfInside(_atTime(day, sandraPranzoStart));
+      addIfInside(_atTime(day, sandraPranzoEnd));
+    }
+
+    if (sandraSeraAvailable) {
+      addIfInside(_atTime(day, sandraSeraStart));
+      addIfInside(_atTime(day, sandraSeraEnd));
+    }
+
+    final ordered = points.toList()..sort((a, b) => a.compareTo(b));
+
+    final result = <_CoverageGapEntry>[];
+
+    for (var i = 0; i < ordered.length - 1; i++) {
+      final segStart = ordered[i];
+      final segEnd = ordered[i + 1];
+
+      if (!segEnd.isAfter(segStart)) continue;
+
+      final covered = _isFasciaCovered(
+        day: day,
+        fasciaStart: segStart,
+        fasciaEnd: segEnd,
+        allowSandra: true,
+        sandraMattinaAvailable: sandraMattinaAvailable,
+        sandraPranzoAvailable: sandraPranzoAvailable,
+        sandraSeraAvailable: sandraSeraAvailable,
+        isHomePresenceWindow: true,
+        overrides: overrides,
+        ferieStore: ferieStore,
+      );
+
+      if (!covered) {
+        result.add(
+          _CoverageGapEntry(
+            label:
+                '$labelPrefix: ${_fmtTimeDate(segStart)}–${_fmtTimeDate(segEnd)}',
+            fasciaStart: segStart,
+            fasciaEnd: segEnd,
+            isHomePresenceWindow: true,
+            allowSandra: true,
+          ),
+        );
+      }
+    }
+
+    return _mergeAdjacentEntries(result);
+  }
+
+  List<_CoverageGapEntry> _mergeAdjacentEntries(
+    List<_CoverageGapEntry> entries,
+  ) {
+    if (entries.isEmpty) return entries;
+
+    final sorted = [...entries]
+      ..sort((a, b) => a.fasciaStart.compareTo(b.fasciaStart));
+
+    final merged = <_CoverageGapEntry>[];
+    var current = sorted.first;
+
+    for (var i = 1; i < sorted.length; i++) {
+      final next = sorted[i];
+
+      final sameKind =
+          current.isHomePresenceWindow == next.isHomePresenceWindow &&
+          current.allowSandra == next.allowSandra &&
+          current.fasciaEnd.isAtSameMomentAs(next.fasciaStart);
+
+      if (sameKind) {
+        current = _CoverageGapEntry(
+          label:
+              'Alice a casa: ${_fmtTimeDate(current.fasciaStart)}–${_fmtTimeDate(next.fasciaEnd)}',
+          fasciaStart: current.fasciaStart,
+          fasciaEnd: next.fasciaEnd,
+          isHomePresenceWindow: current.isHomePresenceWindow,
+          allowSandra: current.allowSandra,
+        );
+      } else {
+        merged.add(current);
+        current = next;
+      }
+    }
+
+    merged.add(current);
+    return merged;
+  }
+
+  List<WorkShift> _effectiveBusyShiftsForPerson({
+    required String personKey,
+    required TurnPerson person,
+    required DateTime day,
+    required DayOverrides overrides,
+    FeriePeriodStore? ferieStore,
+  }) {
+    final personOverride = personKey == 'matteo'
+        ? overrides.matteo
+        : overrides.chiara;
+    final hasManual = personOverride != null;
+
+    final diseaseStatus = hasManual
+        ? null
+        : _diseaseStatusForPerson(personId: personKey, day: day);
+
+    final isHoliday =
+        (!hasManual) &&
+        (diseaseStatus == null) &&
+        ((personKey == 'matteo'
+                ? ferieStore?.isOnHoliday(FeriePerson.matteo, day)
+                : ferieStore?.isOnHoliday(FeriePerson.chiara, day)) ??
+            false);
+
+    var baseBusy = turnEngine.busyShiftsForPerson(person: person, day: day);
+
+    if (isHoliday || diseaseStatus != null) {
+      baseBusy = [];
+    }
+
+    // ✅ Regola A:
+    // anche in malattia/ferie un evento reale con orario rende la persona fuori casa
+    final extraBusy = _busyShiftsFromRealEventsForPerson(
+      personKey: personKey,
+      day: day,
+    );
+
+    return OverrideApply.applyToBusyShifts(
+      day: day,
+      baseBusy: <WorkShift>[...baseBusy.cast<WorkShift>(), ...extraBusy],
+      personOverride: personOverride,
+    );
+  }
+
   List<String> _buildGapExplanation({
     required DateTime day,
     required DateTime fasciaStart,
@@ -687,14 +1124,30 @@ class CoverageEngine {
     if (matteoHoliday || matteoDiseaseStatus != null) baseBusyMatteo = [];
     if (chiaraHoliday || chiaraDiseaseStatus != null) baseBusyChiara = [];
 
+    final extraBusyMatteo = _busyShiftsFromRealEventsForPerson(
+      personKey: 'matteo',
+      day: day,
+    );
+
+    final extraBusyChiara = _busyShiftsFromRealEventsForPerson(
+      personKey: 'chiara',
+      day: day,
+    );
+
     final matteoBusy = OverrideApply.applyToBusyShifts(
       day: day,
-      baseBusy: baseBusyMatteo,
+      baseBusy: <WorkShift>[
+        ...baseBusyMatteo.cast<WorkShift>(),
+        ...extraBusyMatteo,
+      ],
       personOverride: overrides.matteo,
     );
     final chiaraBusy = OverrideApply.applyToBusyShifts(
       day: day,
-      baseBusy: baseBusyChiara,
+      baseBusy: <WorkShift>[
+        ...baseBusyChiara.cast<WorkShift>(),
+        ...extraBusyChiara,
+      ],
       personOverride: overrides.chiara,
     );
 
@@ -717,6 +1170,12 @@ class CoverageEngine {
         isHomePresenceWindow: isHomePresenceWindow,
         status: matteoStatus,
         busyShifts: matteoBusy,
+        overlappingRealEvent: _overlappingRealEventForPerson(
+          personKey: 'matteo',
+          day: day,
+          fasciaStart: fasciaStart,
+          fasciaEnd: fasciaEnd,
+        ),
       ),
     );
 
@@ -730,6 +1189,12 @@ class CoverageEngine {
         isHomePresenceWindow: isHomePresenceWindow,
         status: chiaraStatus,
         busyShifts: chiaraBusy,
+        overlappingRealEvent: _overlappingRealEventForPerson(
+          personKey: 'chiara',
+          day: day,
+          fasciaStart: fasciaStart,
+          fasciaEnd: fasciaEnd,
+        ),
       ),
     );
 
@@ -774,10 +1239,17 @@ class CoverageEngine {
     required bool isHomePresenceWindow,
     required OverrideStatus status,
     required List busyShifts,
+    RealEvent? overlappingRealEvent,
   }) {
     if (status == OverrideStatus.malattiaALetto) {
+      if (overlappingRealEvent != null &&
+          overlappingRealEvent.startTime != null &&
+          overlappingRealEvent.endTime != null) {
+        return "$personName è fuori casa per evento reale: ${overlappingRealEvent.title} (${_fmt(overlappingRealEvent.startTime!)}–${_fmt(overlappingRealEvent.endTime!)}).";
+      }
+
       if (isHomePresenceWindow) {
-        return "$personName è a casa ma non può coprire questa fascia perché è a letto per malattia.";
+        return "$personName è a casa e presente, ma non può fare uscite perché è a letto per malattia.";
       }
       return "$personName è a casa ma non può accompagnare Alice perché è a letto per malattia.";
     }
@@ -788,6 +1260,12 @@ class CoverageEngine {
         start: fasciaStart,
         end: fasciaEnd,
       );
+
+      if (overlappingRealEvent != null &&
+          overlappingRealEvent.startTime != null &&
+          overlappingRealEvent.endTime != null) {
+        return "$personName è fuori casa per evento reale: ${overlappingRealEvent.title} (${_fmt(overlappingRealEvent.startTime!)}–${_fmt(overlappingRealEvent.endTime!)}).";
+      }
 
       if (isHomePresenceWindow) {
         return "$personName potrebbe coprire da casa (malattia leggera).";
@@ -801,6 +1279,15 @@ class CoverageEngine {
     }
 
     if (status == OverrideStatus.ferie) {
+      final hasTimedRealEvent =
+          overlappingRealEvent != null &&
+          overlappingRealEvent.startTime != null &&
+          overlappingRealEvent.endTime != null;
+
+      if (hasTimedRealEvent) {
+        return "$personName è fuori casa per evento reale: ${overlappingRealEvent.title}.";
+      }
+
       return "$personName risulta disponibile in questa fascia (ferie).";
     }
 
@@ -810,6 +1297,12 @@ class CoverageEngine {
 
     if (isFree) {
       return "$personName risulta disponibile in questa fascia.";
+    }
+
+    if (overlappingRealEvent != null &&
+        overlappingRealEvent.startTime != null &&
+        overlappingRealEvent.endTime != null) {
+      return "$personName è occupato da evento reale: ${overlappingRealEvent.title} (${_fmt(overlappingRealEvent.startTime!)}–${_fmt(overlappingRealEvent.endTime!)}).";
     }
 
     if (_isPostNightForPersonDay(person: person, day: day)) {
@@ -870,23 +1363,35 @@ class CoverageEngine {
     if (matteoHoliday || matteoDiseaseStatus != null) baseBusyMatteo = [];
     if (chiaraHoliday || chiaraDiseaseStatus != null) baseBusyChiara = [];
 
+    // ✅ Regola A:
+    // evento reale con orario = persona fuori casa in quella fascia
+    // anche se è in ferie o malattia
+    final extraBusyMatteo = _busyShiftsFromRealEventsForPerson(
+      personKey: 'matteo',
+      day: day,
+    );
+
+    final extraBusyChiara = _busyShiftsFromRealEventsForPerson(
+      personKey: 'chiara',
+      day: day,
+    );
+
     final matteoBusy = OverrideApply.applyToBusyShifts(
       day: day,
-      baseBusy: baseBusyMatteo,
+      baseBusy: <WorkShift>[
+        ...baseBusyMatteo.cast<WorkShift>(),
+        ...extraBusyMatteo,
+      ],
       personOverride: overrides.matteo,
     );
     final chiaraBusy = OverrideApply.applyToBusyShifts(
       day: day,
-      baseBusy: baseBusyChiara,
+      baseBusy: <WorkShift>[
+        ...baseBusyChiara.cast<WorkShift>(),
+        ...extraBusyChiara,
+      ],
       personOverride: overrides.chiara,
     );
-
-    final coveredByParents =
-        isTimeCovered(fasciaStart, fasciaEnd, <PersonAvailability>[
-          PersonAvailability(busyShifts: matteoBusy),
-          PersonAvailability(busyShifts: chiaraBusy),
-        ]);
-    if (coveredByParents) return true;
 
     final m =
         overrides.matteo?.status ??
@@ -897,29 +1402,72 @@ class CoverageEngine {
         chiaraDiseaseStatus ??
         (chiaraHoliday ? OverrideStatus.ferie : OverrideStatus.normal);
 
-    final hasLeggera =
-        (m == OverrideStatus.malattiaLeggera) ||
-        (c == OverrideStatus.malattiaLeggera);
-
-    final hasALetto =
-        (m == OverrideStatus.malattiaALetto) ||
-        (c == OverrideStatus.malattiaALetto);
-
     final overlapsImps = _overlapsImps(
       day: day,
       start: fasciaStart,
       end: fasciaEnd,
     );
 
-    if (hasALetto && isHomePresenceWindow) return true;
+    bool matteoCanCover = false;
+    bool chiaraCanCover = false;
 
-    if (hasLeggera) {
-      if (!isHomePresenceWindow && overlapsImps) {
-        // vincolo INPS: deve stare a casa
+    if (m == OverrideStatus.malattiaALetto) {
+      if (isHomePresenceWindow) {
+        matteoCanCover = isTimeCovered(
+          fasciaStart,
+          fasciaEnd,
+          <PersonAvailability>[PersonAvailability(busyShifts: matteoBusy)],
+        );
       } else {
-        return true;
+        matteoCanCover = false;
       }
+    } else if (m == OverrideStatus.malattiaLeggera) {
+      if (!isHomePresenceWindow && overlapsImps) {
+        matteoCanCover = false;
+      } else {
+        matteoCanCover = isTimeCovered(
+          fasciaStart,
+          fasciaEnd,
+          <PersonAvailability>[PersonAvailability(busyShifts: matteoBusy)],
+        );
+      }
+    } else {
+      matteoCanCover = isTimeCovered(
+        fasciaStart,
+        fasciaEnd,
+        <PersonAvailability>[PersonAvailability(busyShifts: matteoBusy)],
+      );
     }
+
+    if (c == OverrideStatus.malattiaALetto) {
+      if (isHomePresenceWindow) {
+        chiaraCanCover = isTimeCovered(
+          fasciaStart,
+          fasciaEnd,
+          <PersonAvailability>[PersonAvailability(busyShifts: chiaraBusy)],
+        );
+      } else {
+        chiaraCanCover = false;
+      }
+    } else if (c == OverrideStatus.malattiaLeggera) {
+      if (!isHomePresenceWindow && overlapsImps) {
+        chiaraCanCover = false;
+      } else {
+        chiaraCanCover = isTimeCovered(
+          fasciaStart,
+          fasciaEnd,
+          <PersonAvailability>[PersonAvailability(busyShifts: chiaraBusy)],
+        );
+      }
+    } else {
+      chiaraCanCover = isTimeCovered(
+        fasciaStart,
+        fasciaEnd,
+        <PersonAvailability>[PersonAvailability(busyShifts: chiaraBusy)],
+      );
+    }
+
+    if (matteoCanCover || chiaraCanCover) return true;
 
     if (_isCoveredBySupportNetwork(
       day: day,
@@ -944,6 +1492,148 @@ class CoverageEngine {
     return false;
   }
 
+  bool _isSchoolCoverChoiceValid({
+    required SchoolCoverChoice choice,
+    required DateTime day,
+    required DateTime fasciaStart,
+    required DateTime fasciaEnd,
+    required bool allowSandra,
+    required bool sandraMattinaAvailable,
+    required bool sandraPranzoAvailable,
+    required bool sandraSeraAvailable,
+    required bool isHomePresenceWindow,
+    required DayOverrides overrides,
+    FeriePeriodStore? ferieStore,
+  }) {
+    final choiceName = choice.name.toLowerCase();
+
+    if (choiceName == 'none') return false;
+
+    if (choiceName.contains('matteo')) {
+      return _canSpecificPersonCoverRange(
+        personKey: 'matteo',
+        person: TurnPerson.matteo,
+        day: day,
+        fasciaStart: fasciaStart,
+        fasciaEnd: fasciaEnd,
+        isHomePresenceWindow: isHomePresenceWindow,
+        overrides: overrides,
+        ferieStore: ferieStore,
+      );
+    }
+
+    if (choiceName.contains('chiara')) {
+      return _canSpecificPersonCoverRange(
+        personKey: 'chiara',
+        person: TurnPerson.chiara,
+        day: day,
+        fasciaStart: fasciaStart,
+        fasciaEnd: fasciaEnd,
+        isHomePresenceWindow: isHomePresenceWindow,
+        overrides: overrides,
+        ferieStore: ferieStore,
+      );
+    }
+
+    if (choiceName.contains('sandra')) {
+      if (!allowSandra) return false;
+
+      return _isSandraWindowCoveringRange(
+        day: day,
+        fasciaStart: fasciaStart,
+        fasciaEnd: fasciaEnd,
+        sandraMattinaAvailable: sandraMattinaAvailable,
+        sandraPranzoAvailable: sandraPranzoAvailable,
+        sandraSeraAvailable: sandraSeraAvailable,
+      );
+    }
+
+    if (choice == SchoolCoverChoice.altro ||
+        choiceName.contains('support') ||
+        choiceName.contains('rete')) {
+      return _isCoveredBySupportNetwork(
+        day: day,
+        fasciaStart: fasciaStart,
+        fasciaEnd: fasciaEnd,
+      );
+    }
+
+    return false;
+  }
+
+  bool _canSpecificPersonCoverRange({
+    required String personKey,
+    required TurnPerson person,
+    required DateTime day,
+    required DateTime fasciaStart,
+    required DateTime fasciaEnd,
+    required bool isHomePresenceWindow,
+    required DayOverrides overrides,
+    FeriePeriodStore? ferieStore,
+  }) {
+    final personOverride = personKey == 'matteo'
+        ? overrides.matteo
+        : overrides.chiara;
+    final hasManual = personOverride != null;
+
+    final diseaseStatus = hasManual
+        ? null
+        : _diseaseStatusForPerson(personId: personKey, day: day);
+
+    final isHoliday =
+        (!hasManual) &&
+        (diseaseStatus == null) &&
+        ((personKey == 'matteo'
+                ? ferieStore?.isOnHoliday(FeriePerson.matteo, day)
+                : ferieStore?.isOnHoliday(FeriePerson.chiara, day)) ??
+            false);
+
+    var baseBusy = turnEngine.busyShiftsForPerson(person: person, day: day);
+
+    if (isHoliday || diseaseStatus != null) {
+      baseBusy = [];
+    }
+
+    // ✅ Regola A:
+    // evento reale con orario = persona fuori casa in quella fascia
+    final extraBusy = _busyShiftsFromRealEventsForPerson(
+      personKey: personKey,
+      day: day,
+    );
+
+    final effectiveBusy = OverrideApply.applyToBusyShifts(
+      day: day,
+      baseBusy: <WorkShift>[...baseBusy.cast<WorkShift>(), ...extraBusy],
+      personOverride: personOverride,
+    );
+
+    final effectiveStatus =
+        personOverride?.status ??
+        diseaseStatus ??
+        (isHoliday ? OverrideStatus.ferie : OverrideStatus.normal);
+
+    if (effectiveStatus == OverrideStatus.malattiaALetto) {
+      return isHomePresenceWindow &&
+          isTimeCovered(fasciaStart, fasciaEnd, <PersonAvailability>[
+            PersonAvailability(busyShifts: effectiveBusy),
+          ]);
+    }
+
+    if (effectiveStatus == OverrideStatus.malattiaLeggera) {
+      if (!isHomePresenceWindow &&
+          _overlapsImps(day: day, start: fasciaStart, end: fasciaEnd)) {
+        return false;
+      }
+      return isTimeCovered(fasciaStart, fasciaEnd, <PersonAvailability>[
+        PersonAvailability(busyShifts: effectiveBusy),
+      ]);
+    }
+
+    return isTimeCovered(fasciaStart, fasciaEnd, <PersonAvailability>[
+      PersonAvailability(busyShifts: effectiveBusy),
+    ]);
+  }
+
   OverrideStatus? _diseaseStatusForPerson({
     required String personId,
     required DateTime day,
@@ -957,6 +1647,55 @@ class CoverageEngine {
       case DiseaseType.bed:
         return OverrideStatus.malattiaALetto;
     }
+  }
+
+  List<WorkShift> _busyShiftsFromRealEventsForPerson({
+    required String personKey,
+    required DateTime day,
+  }) {
+    final d0 = _onlyDate(day);
+    final events = realEventStore.eventsForDay(d0);
+
+    final busy = <WorkShift>[];
+
+    for (final event in events) {
+      if (event.personKey != personKey) continue;
+      if (event.startTime == null || event.endTime == null) continue;
+
+      final start = _atTime(d0, event.startTime!);
+      final end = _atTime(d0, event.endTime!);
+
+      if (!end.isAfter(start)) continue;
+
+      busy.add(WorkShift(start: start, end: end));
+    }
+
+    return busy;
+  }
+
+  RealEvent? _overlappingRealEventForPerson({
+    required String personKey,
+    required DateTime day,
+    required DateTime fasciaStart,
+    required DateTime fasciaEnd,
+  }) {
+    final d0 = _onlyDate(day);
+    final events = realEventStore.eventsForDay(d0);
+
+    for (final event in events) {
+      if (event.personKey != personKey) continue;
+      if (event.startTime == null || event.endTime == null) continue;
+
+      final eventStart = _atTime(d0, event.startTime!);
+      final eventEnd = _atTime(d0, event.endTime!);
+
+      final overlaps =
+          eventStart.isBefore(fasciaEnd) && eventEnd.isAfter(fasciaStart);
+
+      if (overlaps) return event;
+    }
+
+    return null;
   }
 
   bool _isSandraWindowCoveringRange({
@@ -1064,6 +1803,12 @@ class CoverageEngine {
   String _fmt(TimeOfDay t) {
     final hh = t.hour.toString().padLeft(2, '0');
     final mm = t.minute.toString().padLeft(2, '0');
+    return "$hh:$mm";
+  }
+
+  String _fmtTimeDate(DateTime dt) {
+    final hh = dt.hour.toString().padLeft(2, '0');
+    final mm = dt.minute.toString().padLeft(2, '0');
     return "$hh:$mm";
   }
 }

@@ -18,6 +18,7 @@ import '../logic/day_settings_store.dart';
 
 import '../widgets/stepb_override_panel.dart';
 import '../widgets/alice_event_panel.dart';
+import '../widgets/real_event_panel.dart';
 import '../widgets/support_network_panel.dart';
 import '../widgets/disease_period_panel.dart';
 import '../widgets/fourth_shift_panel.dart';
@@ -757,7 +758,7 @@ class _CalendarioScreenStepAStabileState
     return CoverageResultStepA(
       ok: ok,
       details: summaryDetails,
-      gapDetails: analysis.details,
+      gapDetails: analysis.details.map((d) => d).toList(),
       bannerText: bannerText,
     );
   }
@@ -1113,7 +1114,6 @@ class _CalendarioScreenStepAStabileState
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
-
             if (inCover != SchoolCoverChoice.none &&
                 inCover != SchoolCoverChoice.altro)
               Padding(
@@ -1131,7 +1131,6 @@ class _CalendarioScreenStepAStabileState
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
-
             if (!uscita13Eff &&
                 outCover != SchoolCoverChoice.none &&
                 outCover != SchoolCoverChoice.altro)
@@ -1152,7 +1151,6 @@ class _CalendarioScreenStepAStabileState
                   style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
-
             if (uscita13Eff &&
                 lunchCover != SchoolCoverChoice.none &&
                 lunchCover != SchoolCoverChoice.altro)
@@ -1209,6 +1207,119 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
+  Widget _buildAliceHomeRiskBox() {
+    final d0 = _onlyDate(_selectedDay);
+    final ov = _getOverridesForDay(d0);
+    final uscitaAt = _effUscitaAnticipataAt(d0);
+    final uscita13Eff = uscitaAt != null;
+    final outStart = _effSchoolOutStart(d0);
+    final outEnd = _effSchoolOutEnd(d0);
+
+    final bool hasRisk = _engine.hasAliceHomeRiskForDay(
+      day: d0,
+      uscita13: uscita13Eff,
+      sandraMattinaOn: _effSandraMattina(d0),
+      sandraPranzoOn: _effSandraPranzo(d0),
+      sandraSeraOn: _effSandraSera(d0),
+      schoolStart: _scuolaStart,
+      overrides: ov,
+      ferieStore: coreStore.feriePeriodStore,
+      schoolInCover: _effectiveSchoolInCover(d0),
+      schoolOutCover: _effectiveSchoolOutCover(d0),
+      schoolOutStart: outStart,
+      schoolOutEnd: outEnd,
+      lunchCover: _effectiveLunchCover(d0),
+      uscitaAnticipataAt: uscitaAt,
+    );
+    final List<CoverageGapDetail> details = _engine.aliceHomeRiskDetailsForDay(
+      day: d0,
+      uscita13: uscita13Eff,
+      sandraMattinaOn: _effSandraMattina(d0),
+      sandraPranzoOn: _effSandraPranzo(d0),
+      sandraSeraOn: _effSandraSera(d0),
+      schoolStart: _scuolaStart,
+      overrides: ov,
+      ferieStore: coreStore.feriePeriodStore,
+      schoolInCover: _effectiveSchoolInCover(d0),
+      schoolOutCover: _effectiveSchoolOutCover(d0),
+      schoolOutStart: outStart,
+      schoolOutEnd: outEnd,
+      lunchCover: _effectiveLunchCover(d0),
+      uscitaAnticipataAt: uscitaAt,
+    );
+
+    final color = hasRisk ? Colors.red : Colors.green;
+    final icon = hasRisk ? Icons.home_work_rounded : Icons.home_outlined;
+    final title = hasRisk
+        ? "⚠ Rischio automatico: Alice a casa"
+        : "✓ Nessun rischio automatico Alice a casa";
+    final subtitle = hasRisk
+        ? "Il motore ha rilevato una situazione in cui Alice potrebbe trovarsi a casa senza adulto disponibile."
+        : "Il motore non rileva situazioni di Alice a casa senza adulto disponibile.";
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "RISCHIO ALICE A CASA",
+            style: TextStyle(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.black.withOpacity(0.68),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (details.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            ...details.map(
+              (line) => Padding(
+                padding: const EdgeInsets.only(left: 8, bottom: 4),
+                child: Text(
+                  "• $line",
+                  style: TextStyle(
+                    color: Colors.black.withOpacity(0.72),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1221,6 +1332,15 @@ class _CalendarioScreenStepAStabileState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        RealEventPanel(
+          selectedDay: _selectedDay,
+          store: coreStore.realEventStore,
+          onChanged: () {
+            setState(() {});
+            ipsStore.refresh(now: _selectedDay);
+          },
+        ),
+        const SizedBox(height: 12),
         AliceEventPanel(
           selectedDay: _selectedDay,
           store: coreStore.aliceEventStore,
@@ -1237,6 +1357,112 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
+  Widget _buildSectionBox({
+    required String title,
+    required String subtitle,
+    required Widget child,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.withOpacity(0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: Colors.black.withOpacity(0.62),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRealitySection({required bool showSummerCampSpecialCard}) {
+    return _buildSectionBox(
+      title: "REALTÀ DEL GIORNO",
+      subtitle: "Cose che descrivono cosa succede oggi nella vita reale.",
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _cardTurni(),
+          const SizedBox(height: 12),
+          _cardOverrideStepB(
+            overrideStore.getEffectiveForDay(
+              day: _selectedDay,
+              ferieStore: coreStore.feriePeriodStore,
+            ),
+          ),
+          const SizedBox(height: 12),
+          FeriePeriodPanel(store: coreStore.feriePeriodStore),
+          const SizedBox(height: 12),
+          DiseasePeriodPanel(
+            store: coreStore.diseasePeriodStore,
+            onChanged: () {
+              setState(() {});
+              ipsStore.refresh(now: _selectedDay);
+            },
+          ),
+          const SizedBox(height: 12),
+          FourthShiftPanel(
+            store: coreStore.fourthShiftStore,
+            onChanged: () {
+              setState(() {});
+              ipsStore.refresh(now: _selectedDay);
+            },
+          ),
+          const SizedBox(height: 12),
+          _cardScuola(),
+          const SizedBox(height: 12),
+          _buildAliceArea(showSummerCampSpecialCard),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCoverageSection({
+    required CoverageResultStepA cov,
+    required bool isEmergency,
+  }) {
+    return _buildSectionBox(
+      title: "COPERTURA ALICE",
+      subtitle:
+          "Buchi, supporti e decisioni operative per coprire la giornata.",
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (!isEmergency) _buildDayGapsBox(cov),
+          if (!isEmergency) _buildAliceHomeRiskBox(),
+          isEmergency ? _buildEmergencyPanelPlaceholder() : _cardCopertura(cov),
+          const SizedBox(height: 12),
+          SupportNetworkPanel(
+            selectedDay: _selectedDay,
+            store: coreStore.supportNetworkStore,
+            daySettingsStore: daySettingsStore,
+            onChanged: () {
+              setState(() {});
+              ipsStore.refresh(now: _selectedDay);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDesktopThreeColumns({
     required DayOverrides ovSelected,
     required CoverageResultStepA cov,
@@ -1247,60 +1473,15 @@ class _CalendarioScreenStepAStabileState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _cardTurni(),
-              const SizedBox(height: 12),
-              _cardOverrideStepB(ovSelected),
-              const SizedBox(height: 12),
-              FeriePeriodPanel(store: coreStore.feriePeriodStore),
-              const SizedBox(height: 12),
-              DiseasePeriodPanel(
-                store: coreStore.diseasePeriodStore,
-                onChanged: () {
-                  setState(() {});
-                  ipsStore.refresh(now: _selectedDay);
-                },
-              ),
-              const SizedBox(height: 12),
-              FourthShiftPanel(
-                store: coreStore.fourthShiftStore,
-                onChanged: () {
-                  setState(() {});
-                  ipsStore.refresh(now: _selectedDay);
-                },
-              ),
-              const SizedBox(height: 12),
-              SupportNetworkPanel(
-                selectedDay: _selectedDay,
-                store: coreStore.supportNetworkStore,
-                daySettingsStore: daySettingsStore,
-                onChanged: () {
-                  setState(() {});
-                  ipsStore.refresh(now: _selectedDay);
-                },
-              ),
-            ],
+          flex: 7,
+          child: _buildRealitySection(
+            showSummerCampSpecialCard: showSummerCampSpecialCard,
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _cardScuola(),
-              const SizedBox(height: 12),
-              _buildAliceArea(showSummerCampSpecialCard),
-            ],
-          ),
-        ),
-        const SizedBox(width: 12),
-        SizedBox(
-          width: 360,
-          child: isEmergency
-              ? _buildEmergencyPanelPlaceholder()
-              : _cardCopertura(cov),
+          flex: 5,
+          child: _buildCoverageSection(cov: cov, isEmergency: isEmergency),
         ),
       ],
     );
@@ -1315,62 +1496,11 @@ class _CalendarioScreenStepAStabileState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _cardTurni(),
-                  const SizedBox(height: 12),
-                  _cardOverrideStepB(ovSelected),
-                  const SizedBox(height: 12),
-                  FeriePeriodPanel(store: coreStore.feriePeriodStore),
-                  const SizedBox(height: 12),
-                  DiseasePeriodPanel(
-                    store: coreStore.diseasePeriodStore,
-                    onChanged: () {
-                      setState(() {});
-                      ipsStore.refresh(now: _selectedDay);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  FourthShiftPanel(
-                    store: coreStore.fourthShiftStore,
-                    onChanged: () {
-                      setState(() {});
-                      ipsStore.refresh(now: _selectedDay);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  SupportNetworkPanel(
-                    selectedDay: _selectedDay,
-                    store: coreStore.supportNetworkStore,
-                    daySettingsStore: daySettingsStore,
-                    onChanged: () {
-                      setState(() {});
-                      ipsStore.refresh(now: _selectedDay);
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _cardScuola(),
-                  const SizedBox(height: 12),
-                  _buildAliceArea(showSummerCampSpecialCard),
-                ],
-              ),
-            ),
-          ],
+        _buildRealitySection(
+          showSummerCampSpecialCard: showSummerCampSpecialCard,
         ),
         const SizedBox(height: 12),
-        isEmergency ? _buildEmergencyPanelPlaceholder() : _cardCopertura(cov),
+        _buildCoverageSection(cov: cov, isEmergency: isEmergency),
       ],
     );
   }
@@ -1384,43 +1514,11 @@ class _CalendarioScreenStepAStabileState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _cardTurni(),
-        const SizedBox(height: 12),
-        _cardOverrideStepB(ovSelected),
-        const SizedBox(height: 12),
-        FeriePeriodPanel(store: coreStore.feriePeriodStore),
-        const SizedBox(height: 12),
-        DiseasePeriodPanel(
-          store: coreStore.diseasePeriodStore,
-          onChanged: () {
-            setState(() {});
-            ipsStore.refresh(now: _selectedDay);
-          },
+        _buildRealitySection(
+          showSummerCampSpecialCard: showSummerCampSpecialCard,
         ),
         const SizedBox(height: 12),
-        FourthShiftPanel(
-          store: coreStore.fourthShiftStore,
-          onChanged: () {
-            setState(() {});
-            ipsStore.refresh(now: _selectedDay);
-          },
-        ),
-        const SizedBox(height: 12),
-        SupportNetworkPanel(
-          selectedDay: _selectedDay,
-          store: coreStore.supportNetworkStore,
-          daySettingsStore: daySettingsStore,
-          onChanged: () {
-            setState(() {});
-            ipsStore.refresh(now: _selectedDay);
-          },
-        ),
-        const SizedBox(height: 12),
-        _cardScuola(),
-        const SizedBox(height: 12),
-        _buildAliceArea(showSummerCampSpecialCard),
-        const SizedBox(height: 12),
-        isEmergency ? _buildEmergencyPanelPlaceholder() : _cardCopertura(cov),
+        _buildCoverageSection(cov: cov, isEmergency: isEmergency),
       ],
     );
   }
@@ -1513,7 +1611,6 @@ class _CalendarioScreenStepAStabileState
             _weekNavBar(),
             const SizedBox(height: 8),
             _buildEmergencyBannerDebug(),
-            if (!isEmergency) _buildDayGapsBox(cov),
             const SizedBox(height: 12),
             _buildMainLayout(
               ovSelected: ovSelected,
@@ -1567,6 +1664,7 @@ class _CalendarioScreenStepAStabileState
       person: TurnPerson.chiara,
       day: _selectedDay,
     );
+    final conflict = _turns.sameDayConflictFor(_selectedDay);
 
     return _card(
       title: "Turni",
@@ -1575,6 +1673,10 @@ class _CalendarioScreenStepAStabileState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (conflict.hasConflict) ...[
+            _turnConflictBox(conflict),
+            const SizedBox(height: 12),
+          ],
           _turnRow("Matteo", m),
           const SizedBox(height: 10),
           _turnRow("Chiara", c),
@@ -1592,6 +1694,62 @@ class _CalendarioScreenStepAStabileState
             style: TextStyle(
               color: Colors.black.withOpacity(0.6),
               fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _turnConflictBox(TurnConflictInfo conflict) {
+    String detail;
+
+    switch (conflict.conflictCode) {
+      case 'mattina_mattina':
+        detail = "Mattina + mattina";
+        break;
+      case 'pomeriggio_pomeriggio':
+        detail = "Pomeriggio + pomeriggio";
+        break;
+      case 'notte_notte':
+        detail = "Notte + notte";
+        break;
+      default:
+        detail = "Conflitto turni";
+        break;
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.withOpacity(0.45)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, size: 20),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  "Conflitto turni rilevato",
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(detail, style: const TextStyle(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 4),
+          Text(
+            "Matteo e Chiara hanno lo stesso tipo di turno nello stesso giorno.",
+            style: TextStyle(
+              color: Colors.black.withOpacity(0.7),
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

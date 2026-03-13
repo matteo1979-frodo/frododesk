@@ -3,6 +3,7 @@ import 'override_store.dart';
 import 'day_settings_store.dart';
 import 'ferie_period_store.dart';
 import 'alice_event_store.dart';
+import 'real_event_store.dart';
 import 'summer_camp_schedule_store.dart';
 import 'support_network_store.dart';
 import 'disease_period_store.dart';
@@ -36,6 +37,9 @@ class CoreStore {
 
   // ✅ NEW: Eventi Alice (periodi)
   late final AliceEventStore aliceEventStore;
+
+  // ✅ NEW: Eventi reali
+  late final RealEventStore realEventStore;
 
   // ✅ NEW: Centro estivo settimanale
   late final SummerCampScheduleStore summerCampScheduleStore;
@@ -87,6 +91,9 @@ class CoreStore {
     // ✅ NEW: Eventi Alice (periodi)
     aliceEventStore = AliceEventStore();
 
+    // ✅ NEW: Eventi reali
+    realEventStore = RealEventStore();
+
     // ✅ NEW: Centro estivo settimanale
     summerCampScheduleStore = SummerCampScheduleStore();
 
@@ -105,6 +112,7 @@ class CoreStore {
       daySettingsStore: daySettingsStore,
       supportNetworkStore: supportNetworkStore,
       diseasePeriodStore: diseasePeriodStore,
+      realEventStore: realEventStore,
       aliceEventStore: aliceEventStore,
       summerCampScheduleStore: summerCampScheduleStore,
     );
@@ -135,8 +143,10 @@ class CoreStore {
     await daySettingsStore.load();
     await feriePeriodStore.load();
     await diseasePeriodStore.load();
+    await aliceEventStore.load();
     await supportNetworkStore.load();
     await fourthShiftStore.load();
+    await realEventStore.load();
   }
 
   /// Risolve una navigationKey (da IpsDetail) in una destinazione logica.
