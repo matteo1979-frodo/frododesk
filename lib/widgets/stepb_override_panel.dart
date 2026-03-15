@@ -6,12 +6,16 @@ import '../models/day_override.dart';
 /// Pannello UI Step B: selezione override per Matteo/Chiara.
 /// Non contiene logica motore: scrive solo DayOverrides tramite callback.
 ///
-/// ✅ NEW (zero rischio):
-/// - può mostrare una piccola etichetta "(periodo)" quando lo stato Ferie
-///   NON viene da override manuale ma da ferie lunghe (periodi).
+/// STEP B pulito:
+/// - gestisce solo:
+///   - Normal
+///   - Permesso
 ///
-/// ✅ STEP 2-bis:
-/// - Se selezioni Permesso -> dialog per scegliere INIZIO + FINE (TimeOfDay)
+/// Malattia e Ferie NON stanno più qui:
+/// - Malattia -> DiseasePeriodStore
+/// - Ferie -> FeriePeriodStore
+///
+/// ✅ Se selezioni Permesso -> dialog per scegliere INIZIO + FINE (TimeOfDay)
 /// - Salva in PersonDayOverride.permessoRange (TimeRangeMinutes)
 class StepBOverridePanel extends StatelessWidget {
   final DateTime day;
@@ -23,18 +27,12 @@ class StepBOverridePanel extends StatelessWidget {
   /// Callback opzionale dopo una modifica (es: refresh IPS)
   final VoidCallback? onAfterChange;
 
-  /// ✅ NEW: true = Ferie arriva da ferie lunghe (periodi), non da override manuale
-  final bool matteoFerieFromPeriod;
-  final bool chiaraFerieFromPeriod;
-
   const StepBOverridePanel({
     super.key,
     required this.day,
     required this.current,
     required this.onSave,
     this.onAfterChange,
-    this.matteoFerieFromPeriod = false,
-    this.chiaraFerieFromPeriod = false,
   });
 
   // ----------------------------
@@ -56,10 +54,7 @@ class StepBOverridePanel extends StatelessWidget {
     BuildContext context, {
     required TimeOfDay initial,
   }) {
-    return showTimePicker(
-      context: context,
-      initialTime: initial,
-    );
+    return showTimePicker(context: context, initialTime: initial);
   }
 
   // ----------------------------
@@ -189,30 +184,27 @@ class StepBOverridePanel extends StatelessWidget {
     if (status == OverrideStatus.normal) return null;
 
     if (status == OverrideStatus.permesso) {
-      // Range è obbligatorio. Se manca, mettiamo un default ragionevole
-      // (ma in pratica lo scegliamo sempre via dialog).
       return PersonDayOverride(
         status: OverrideStatus.permesso,
-        permessoRange: permessoRange ??
+        permessoRange:
+            permessoRange ??
             TimeRangeMinutes(startMin: 12 * 60 + 45, endMin: 14 * 60 + 30),
       );
     }
 
-    return PersonDayOverride(status: status);
+    return null;
   }
 
   String _overrideLabel(OverrideStatus s) {
     switch (s) {
       case OverrideStatus.normal:
         return "Normal";
-      case OverrideStatus.ferie:
-        return "Ferie (disponibile)";
       case OverrideStatus.permesso:
         return "Permesso (con orario)";
+      case OverrideStatus.ferie:
       case OverrideStatus.malattiaLeggera:
-        return "Malattia leggera";
       case OverrideStatus.malattiaALetto:
-        return "Malattia a letto";
+        return "";
     }
   }
 
@@ -224,47 +216,43 @@ class StepBOverridePanel extends StatelessWidget {
           border: Colors.grey.withOpacity(0.35),
           text: Colors.black87,
         );
-      case OverrideStatus.ferie:
-        return (
-          bg: Colors.green.withOpacity(0.12),
-          border: Colors.green.withOpacity(0.45),
-          text: Colors.green.shade900,
-        );
       case OverrideStatus.permesso:
         return (
           bg: Colors.blue.withOpacity(0.12),
           border: Colors.blue.withOpacity(0.45),
           text: Colors.blue.shade900,
         );
+      case OverrideStatus.ferie:
       case OverrideStatus.malattiaLeggera:
-        return (
-          bg: Colors.orange.withOpacity(0.14),
-          border: Colors.orange.withOpacity(0.50),
-          text: Colors.orange.shade900,
-        );
       case OverrideStatus.malattiaALetto:
         return (
-          bg: Colors.red.withOpacity(0.12),
-          border: Colors.red.withOpacity(0.45),
-          text: Colors.red.shade900,
+          bg: Colors.grey.withOpacity(0.08),
+          border: Colors.grey.withOpacity(0.35),
+          text: Colors.black87,
         );
     }
   }
+
+  List<OverrideStatus> get _stepBAllowedStatuses => const [
+    OverrideStatus.normal,
+    OverrideStatus.permesso,
+  ];
 
   Widget _overrideRow({
     required BuildContext context,
     required String label,
     required PersonDayOverride? currentOverride,
-    required bool ferieFromPeriod,
     required ValueChanged<PersonDayOverride?> onOverrideChanged,
   }) {
-    final value = currentOverride?.status ?? OverrideStatus.normal;
+    final rawValue = currentOverride?.status ?? OverrideStatus.normal;
+    final value = _stepBAllowedStatuses.contains(rawValue)
+        ? rawValue
+        : OverrideStatus.normal;
+
     final s = _styleFor(value);
 
-    final showBadge = value == OverrideStatus.ferie && ferieFromPeriod;
-
-    // Mostra range permesso sotto, se presente
-    final showPermessoRange = value == OverrideStatus.permesso &&
+    final showPermessoRange =
+        value == OverrideStatus.permesso &&
         currentOverride?.permessoRange != null;
 
     final permessoText = showPermessoRange
@@ -304,29 +292,9 @@ class StepBOverridePanel extends StatelessWidget {
                     horizontal: 12,
                     vertical: 10,
                   ),
-
-                  // ✅ badge "(periodo)" a destra
-                  suffixIcon: showBadge
-                      ? Padding(
-                          padding: const EdgeInsets.only(right: 10),
-                          child: Center(
-                            widthFactor: 1,
-                            child: Text(
-                              "(periodo)",
-                              style: TextStyle(
-                                fontWeight: FontWeight.w900,
-                                fontSize: 12,
-                                color: s.text.withOpacity(0.75),
-                              ),
-                            ),
-                          ),
-                        )
-                      : null,
-                  suffixIconConstraints:
-                      const BoxConstraints(minWidth: 0, minHeight: 0),
                 ),
                 style: TextStyle(color: s.text, fontWeight: FontWeight.w800),
-                items: OverrideStatus.values.map((st) {
+                items: _stepBAllowedStatuses.map((st) {
                   return DropdownMenuItem(
                     value: st,
                     child: Text(_overrideLabel(st)),
@@ -335,14 +303,12 @@ class StepBOverridePanel extends StatelessWidget {
                 onChanged: (v) async {
                   if (v == null) return;
 
-                  // Se scelgo permesso -> apro dialog e salvo range
                   if (v == OverrideStatus.permesso) {
                     final picked = await _showPermessoDialog(
                       context,
                       initial: currentOverride?.permessoRange,
                     );
 
-                    // Se annulla -> non cambiare nulla
                     if (picked == null) return;
 
                     onOverrideChanged(
@@ -354,7 +320,6 @@ class StepBOverridePanel extends StatelessWidget {
                     return;
                   }
 
-                  // Altri stati: salvo diretto
                   onOverrideChanged(_buildPersonOverrideSafe(v));
                 },
               ),
@@ -388,7 +353,6 @@ class StepBOverridePanel extends StatelessWidget {
           context: context,
           label: "Matteo",
           currentOverride: current.matteo,
-          ferieFromPeriod: matteoFerieFromPeriod,
           onOverrideChanged: (newOverride) {
             final updated = DayOverrides(
               day: day,
@@ -404,7 +368,6 @@ class StepBOverridePanel extends StatelessWidget {
           context: context,
           label: "Chiara",
           currentOverride: current.chiara,
-          ferieFromPeriod: chiaraFerieFromPeriod,
           onOverrideChanged: (newOverride) {
             final updated = DayOverrides(
               day: day,

@@ -38,7 +38,7 @@ class _FourthShiftPanelState extends State<FourthShiftPanel> {
     }
   }
 
-  Future<void> _pickStartDate() async {
+  Future<void> _pickStartDateInDialog(StateSetter setLocalState) async {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
@@ -53,7 +53,7 @@ class _FourthShiftPanelState extends State<FourthShiftPanel> {
 
     if (picked == null) return;
 
-    setState(() {
+    setLocalState(() {
       _startDate = DateTime(picked.year, picked.month, picked.day);
       if (_endDate != null && _endDate!.isBefore(_startDate!)) {
         _endDate = _startDate;
@@ -61,7 +61,7 @@ class _FourthShiftPanelState extends State<FourthShiftPanel> {
     });
   }
 
-  Future<void> _pickEndDate() async {
+  Future<void> _pickEndDateInDialog(StateSetter setLocalState) async {
     final now = DateTime.now();
     final initial = _endDate ?? _startDate ?? now;
 
@@ -78,52 +78,157 @@ class _FourthShiftPanelState extends State<FourthShiftPanel> {
 
     if (picked == null) return;
 
-    setState(() {
+    setLocalState(() {
       _endDate = DateTime(picked.year, picked.month, picked.day);
     });
   }
 
-  void _addPeriod() {
-    if (_startDate == null || _endDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Seleziona data inizio e data fine.')),
-      );
-      return;
-    }
+  Future<void> _openAddPeriodDialog() async {
+    _selectedPersonId = 'chiara';
+    _selectedWeek = FourthShiftCycleWeek.week1;
+    _startDate = null;
+    _endDate = null;
 
-    if (_endDate!.isBefore(_startDate!)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('La data fine non può essere prima della data inizio.'),
-        ),
-      );
-      return;
-    }
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setLocalState) {
+            return AlertDialog(
+              title: const Text('Quarta Squadra'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: _selectedPersonId,
+                      decoration: const InputDecoration(labelText: 'Persona'),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'matteo',
+                          child: Text('Matteo'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'chiara',
+                          child: Text('Chiara'),
+                        ),
+                      ],
+                      onChanged: (v) {
+                        if (v == null) return;
+                        setLocalState(() {
+                          _selectedPersonId = v;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<FourthShiftCycleWeek>(
+                      value: _selectedWeek,
+                      decoration: const InputDecoration(
+                        labelText: 'Settimana iniziale del ciclo',
+                      ),
+                      items: FourthShiftCycleWeek.values.map((w) {
+                        return DropdownMenuItem(value: w, child: Text(w.label));
+                      }).toList(),
+                      onChanged: (v) {
+                        if (v == null) return;
+                        setLocalState(() {
+                          _selectedWeek = v;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () =>
+                                _pickStartDateInDialog(setLocalState),
+                            icon: const Icon(Icons.calendar_today),
+                            label: Text(
+                              _startDate == null
+                                  ? 'Data inizio'
+                                  : 'Dal ${_fmtDate(_startDate!)}',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () =>
+                                _pickEndDateInDialog(setLocalState),
+                            icon: const Icon(Icons.calendar_month),
+                            label: Text(
+                              _endDate == null
+                                  ? 'Data fine'
+                                  : 'Al ${_fmtDate(_endDate!)}',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Annulla'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    if (_startDate == null || _endDate == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Seleziona data inizio e data fine.'),
+                        ),
+                      );
+                      return;
+                    }
 
-    final period = FourthShiftPeriod(
-      personId: _selectedPersonId,
-      startDate: _startDate!,
-      endDate: _endDate!,
-      initialCycleWeek: _selectedWeek,
+                    if (_endDate!.isBefore(_startDate!)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'La data fine non può essere prima della data inizio.',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+
+                    final period = FourthShiftPeriod(
+                      personId: _selectedPersonId,
+                      startDate: _startDate!,
+                      endDate: _endDate!,
+                      initialCycleWeek: _selectedWeek,
+                    );
+
+                    try {
+                      widget.store.addPeriod(period);
+                      Navigator.of(context).pop(true);
+                    } catch (e) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text('Errore: $e')));
+                    }
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Salva periodo'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
 
-    try {
-      widget.store.addPeriod(period);
-
-      setState(() {
-        _startDate = null;
-        _endDate = null;
-      });
-
+    if (saved == true) {
+      setState(() {});
       widget.onChanged();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Periodo Quarta Squadra salvato.')),
       );
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Errore: $e')));
     }
   }
 
@@ -157,75 +262,16 @@ class _FourthShiftPanelState extends State<FourthShiftPanel> {
             ),
             const SizedBox(height: 6),
             Text(
-              'Inserisci i periodi attivi di Quarta Squadra. Se un periodo è attivo, il motore turni usa il ciclo a 4 settimane al posto della rotazione standard.',
+              'Gestisci i periodi attivi di Quarta Squadra. Il form di inserimento si apre solo quando serve.',
               style: TextStyle(color: Colors.black.withOpacity(0.6)),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: _selectedPersonId,
-              decoration: const InputDecoration(labelText: 'Persona'),
-              items: const [
-                DropdownMenuItem(value: 'matteo', child: Text('Matteo')),
-                DropdownMenuItem(value: 'chiara', child: Text('Chiara')),
-              ],
-              onChanged: (v) {
-                if (v == null) return;
-                setState(() {
-                  _selectedPersonId = v;
-                });
-              },
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<FourthShiftCycleWeek>(
-              value: _selectedWeek,
-              decoration: const InputDecoration(
-                labelText: 'Settimana iniziale del ciclo',
-              ),
-              items: FourthShiftCycleWeek.values.map((w) {
-                return DropdownMenuItem(value: w, child: Text(w.label));
-              }).toList(),
-              onChanged: (v) {
-                if (v == null) return;
-                setState(() {
-                  _selectedWeek = v;
-                });
-              },
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _pickStartDate,
-                    icon: const Icon(Icons.calendar_today),
-                    label: Text(
-                      _startDate == null
-                          ? 'Data inizio'
-                          : 'Dal ${_fmtDate(_startDate!)}',
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _pickEndDate,
-                    icon: const Icon(Icons.calendar_month),
-                    label: Text(
-                      _endDate == null
-                          ? 'Data fine'
-                          : 'Al ${_fmtDate(_endDate!)}',
-                    ),
-                  ),
-                ),
-              ],
             ),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _addPeriod,
-                icon: const Icon(Icons.add),
-                label: const Text('Salva periodo Quarta Squadra'),
+              child: OutlinedButton.icon(
+                onPressed: _openAddPeriodDialog,
+                icon: const Icon(Icons.open_in_new),
+                label: const Text('Apri Quarta Squadra'),
               ),
             ),
             const SizedBox(height: 16),

@@ -7,9 +7,11 @@ import '../logic/emergency_store.dart';
 import '../logic/emergency_day_logic.dart';
 import '../logic/coverage_engine.dart';
 import '../logic/turn_engine.dart';
-import '../logic/disease_period_store.dart';
+import '../logic/ferie_period_store.dart';
 
 import '../models/day_override.dart';
+import '../models/disease_period.dart';
+import '../models/real_event.dart';
 import '../logic/core_store.dart';
 import '../models/week_identity.dart';
 import '../logic/settings_store.dart';
@@ -20,11 +22,9 @@ import '../widgets/stepb_override_panel.dart';
 import '../widgets/alice_event_panel.dart';
 import '../widgets/real_event_panel.dart';
 import '../widgets/support_network_panel.dart';
-import '../widgets/disease_period_panel.dart';
 import '../widgets/fourth_shift_panel.dart';
-
-// ✅ NEW: Ferie lunghe panel
 import '../widgets/ferie_period_panel.dart';
+import '../widgets/disease_period_panel.dart';
 
 // ✅ NEW: Eventi speciali centro estivo
 import '../logic/summer_camp_special_event_store.dart';
@@ -55,7 +55,6 @@ class _CalendarioScreenStepAStabileState
   WeekIdentity get _activeWeek => coreStore.weekStore.activeWeek;
 
   OverrideStore get overrideStore => coreStore.overrideStore;
-  DiseasePeriodStore get diseasePeriodStore => coreStore.diseasePeriodStore;
 
   CoverageEngine get _engine => coreStore.coverageEngine;
   TurnEngine get _turns => coreStore.turnEngine;
@@ -697,6 +696,111 @@ class _CalendarioScreenStepAStabileState
 
     final candidate = parts.last.trim();
     if (candidate.contains('–')) return candidate;
+
+    return null;
+  }
+
+  List<RealEvent> _eventsForPersonOnDay({
+    required String personKey,
+    required DateTime day,
+  }) {
+    final events = coreStore.realEventStore.eventsForDay(_onlyDate(day));
+
+    final filtered = events.where((e) => e.personKey == personKey).toList();
+
+    filtered.sort((a, b) {
+      final aMin = a.startTime == null
+          ? 9999
+          : a.startTime!.hour * 60 + a.startTime!.minute;
+      final bMin = b.startTime == null
+          ? 9999
+          : b.startTime!.hour * 60 + b.startTime!.minute;
+      return aMin.compareTo(bMin);
+    });
+
+    return filtered;
+  }
+
+  List<RealEvent> _familyEventsOnDay(DateTime day) {
+    final events = coreStore.realEventStore.eventsForDay(_onlyDate(day));
+
+    final filtered = events
+        .where(
+          (e) =>
+              (e.personKey?.toLowerCase() == 'family') ||
+              (e.personKey?.toLowerCase() == 'generale'),
+        )
+        .toList();
+
+    filtered.sort((a, b) {
+      final aMin = a.startTime == null
+          ? 9999
+          : a.startTime!.hour * 60 + a.startTime!.minute;
+      final bMin = b.startTime == null
+          ? 9999
+          : b.startTime!.hour * 60 + b.startTime!.minute;
+      return aMin.compareTo(bMin);
+    });
+
+    return filtered;
+  }
+
+  String _realEventText(RealEvent event) {
+    if (event.startTime != null && event.endTime != null) {
+      return "${event.title} ${_fmt(event.startTime!)}–${_fmt(event.endTime!)}";
+    }
+
+    if (event.startTime != null) {
+      return "${event.title} ${_fmt(event.startTime!)}";
+    }
+
+    return "${event.title} • Tutto il giorno";
+  }
+
+  String? _personRealStatusText({
+    required String personKey,
+    required PersonDayOverride? manualOverride,
+    required DateTime day,
+  }) {
+    final d0 = _onlyDate(day);
+
+    if (manualOverride != null) {
+      switch (manualOverride.status) {
+        case OverrideStatus.normal:
+          break;
+        case OverrideStatus.permesso:
+          final range = manualOverride.permessoRange;
+          if (range != null) {
+            return "Permesso ${range.toDisplayString()}";
+          }
+          return "Permesso";
+        case OverrideStatus.ferie:
+          return "Ferie";
+        case OverrideStatus.malattiaLeggera:
+          return "Malattia leggera";
+        case OverrideStatus.malattiaALetto:
+          return "Malattia a letto";
+      }
+    }
+
+    final disease = coreStore.diseasePeriodStore.getPeriodForDay(personKey, d0);
+    if (disease != null) {
+      switch (disease.type) {
+        case DiseaseType.mild:
+          return "Malattia leggera";
+        case DiseaseType.bed:
+          return "Malattia a letto";
+      }
+    }
+
+    FeriePerson? feriePerson;
+    if (personKey == 'matteo') feriePerson = FeriePerson.matteo;
+    if (personKey == 'chiara') feriePerson = FeriePerson.chiara;
+
+    if (feriePerson != null &&
+        coreStore.feriePeriodStore.isOnHoliday(feriePerson, d0)) {
+      return "Ferie";
+    }
 
     return null;
   }
@@ -1401,23 +1505,6 @@ class _CalendarioScreenStepAStabileState
         children: [
           _cardTurni(),
           const SizedBox(height: 12),
-          _cardOverrideStepB(
-            overrideStore.getEffectiveForDay(
-              day: _selectedDay,
-              ferieStore: coreStore.feriePeriodStore,
-            ),
-          ),
-          const SizedBox(height: 12),
-          FeriePeriodPanel(store: coreStore.feriePeriodStore),
-          const SizedBox(height: 12),
-          DiseasePeriodPanel(
-            store: coreStore.diseasePeriodStore,
-            onChanged: () {
-              setState(() {});
-              ipsStore.refresh(now: _selectedDay);
-            },
-          ),
-          const SizedBox(height: 12),
           FourthShiftPanel(
             store: coreStore.fourthShiftStore,
             onChanged: () {
@@ -1425,6 +1512,19 @@ class _CalendarioScreenStepAStabileState
               ipsStore.refresh(now: _selectedDay);
             },
           ),
+          const SizedBox(height: 12),
+          FeriePeriodPanel(store: coreStore.feriePeriodStore),
+          const SizedBox(height: 12),
+          DiseasePeriodPanel(
+            selectedDay: _selectedDay,
+            store: coreStore.diseasePeriodStore,
+            onChanged: () {
+              setState(() {});
+              ipsStore.refresh(now: _selectedDay);
+            },
+          ),
+          const SizedBox(height: 12),
+          _cardOverrideStepB(_getOverridesForDay(_selectedDay)),
           const SizedBox(height: 12),
           _cardScuola(),
           const SizedBox(height: 12),
@@ -1464,7 +1564,6 @@ class _CalendarioScreenStepAStabileState
   }
 
   Widget _buildDesktopThreeColumns({
-    required DayOverrides ovSelected,
     required CoverageResultStepA cov,
     required bool showSummerCampSpecialCard,
     required bool isEmergency,
@@ -1488,7 +1587,6 @@ class _CalendarioScreenStepAStabileState
   }
 
   Widget _buildTabletLayout({
-    required DayOverrides ovSelected,
     required CoverageResultStepA cov,
     required bool showSummerCampSpecialCard,
     required bool isEmergency,
@@ -1506,7 +1604,6 @@ class _CalendarioScreenStepAStabileState
   }
 
   Widget _buildMobileLayout({
-    required DayOverrides ovSelected,
     required CoverageResultStepA cov,
     required bool showSummerCampSpecialCard,
     required bool isEmergency,
@@ -1524,7 +1621,6 @@ class _CalendarioScreenStepAStabileState
   }
 
   Widget _buildMainLayout({
-    required DayOverrides ovSelected,
     required CoverageResultStepA cov,
     required bool showSummerCampSpecialCard,
     required bool isEmergency,
@@ -1535,7 +1631,6 @@ class _CalendarioScreenStepAStabileState
 
         if (w >= 1100) {
           return _buildDesktopThreeColumns(
-            ovSelected: ovSelected,
             cov: cov,
             showSummerCampSpecialCard: showSummerCampSpecialCard,
             isEmergency: isEmergency,
@@ -1544,7 +1639,6 @@ class _CalendarioScreenStepAStabileState
 
         if (w >= 800) {
           return _buildTabletLayout(
-            ovSelected: ovSelected,
             cov: cov,
             showSummerCampSpecialCard: showSummerCampSpecialCard,
             isEmergency: isEmergency,
@@ -1552,7 +1646,6 @@ class _CalendarioScreenStepAStabileState
         }
 
         return _buildMobileLayout(
-          ovSelected: ovSelected,
           cov: cov,
           showSummerCampSpecialCard: showSummerCampSpecialCard,
           isEmergency: isEmergency,
@@ -1563,10 +1656,6 @@ class _CalendarioScreenStepAStabileState
 
   @override
   Widget build(BuildContext context) {
-    final ovSelected = overrideStore.getEffectiveForDay(
-      day: _selectedDay,
-      ferieStore: coreStore.feriePeriodStore,
-    );
     final cov = _computeCoverageStepA(_selectedDay);
     final isEmergency = _isEmergencyActive();
     final bool showSummerCampSpecialCard = _selectedDayIsSummerCampDay();
@@ -1613,7 +1702,6 @@ class _CalendarioScreenStepAStabileState
             _buildEmergencyBannerDebug(),
             const SizedBox(height: 12),
             _buildMainLayout(
-              ovSelected: ovSelected,
               cov: cov,
               showSummerCampSpecialCard: showSummerCampSpecialCard,
               isEmergency: isEmergency,
@@ -1665,6 +1753,31 @@ class _CalendarioScreenStepAStabileState
       day: _selectedDay,
     );
     final conflict = _turns.sameDayConflictFor(_selectedDay);
+    final ov = _getOverridesForDay(_selectedDay);
+
+    final matteoStatus = _personRealStatusText(
+      personKey: 'matteo',
+      manualOverride: ov.matteo,
+      day: _selectedDay,
+    );
+
+    final chiaraStatus = _personRealStatusText(
+      personKey: 'chiara',
+      manualOverride: ov.chiara,
+      day: _selectedDay,
+    );
+
+    final matteoEvents = _eventsForPersonOnDay(
+      personKey: 'matteo',
+      day: _selectedDay,
+    );
+
+    final chiaraEvents = _eventsForPersonOnDay(
+      personKey: 'chiara',
+      day: _selectedDay,
+    );
+
+    final familyEvents = _familyEventsOnDay(_selectedDay);
 
     return _card(
       title: "Turni",
@@ -1677,9 +1790,13 @@ class _CalendarioScreenStepAStabileState
             _turnConflictBox(conflict),
             const SizedBox(height: 12),
           ],
-          _turnRow("Matteo", m),
+          if (familyEvents.isNotEmpty) ...[
+            _familyEventsBlock(familyEvents),
+            const SizedBox(height: 12),
+          ],
+          _turnRow("Matteo", m, statusText: matteoStatus, events: matteoEvents),
           const SizedBox(height: 10),
-          _turnRow("Chiara", c),
+          _turnRow("Chiara", c, statusText: chiaraStatus, events: chiaraEvents),
           const SizedBox(height: 8),
           Text(
             "Nota: se per Matteo o Chiara esiste un periodo attivo di Quarta Squadra, i turni mostrati qui sono già quelli della Quarta Squadra.",
@@ -1757,10 +1874,17 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
-  Widget _turnRow(String name, TurnPlan p) {
+  Widget _turnRow(
+    String name,
+    TurnPlan p, {
+    String? statusText,
+    List<RealEvent> events = const [],
+  }) {
     final label = _turnLabel(p.type);
     final time = p.isOff ? "OFF" : "${_fmt(p.start)}–${_fmt(p.end)}";
+
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
           width: 70,
@@ -1771,12 +1895,150 @@ class _CalendarioScreenStepAStabileState
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(
-            "$label • $time",
-            style: const TextStyle(fontWeight: FontWeight.w700),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  Text(
+                    "$label • $time",
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  if (statusText != null && statusText.isNotEmpty)
+                    Text(
+                      "• Stato: $statusText",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: Colors.deepOrange.shade700,
+                      ),
+                    ),
+                ],
+              ),
+              if (events.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                _eventPill(
+                  text: _realEventText(events.first),
+                  onTap: () =>
+                      _showExtraEventsDialog(personName: name, events: events),
+                ),
+                if (events.length > 1) ...[
+                  const SizedBox(height: 4),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: InkWell(
+                      onTap: () => _showExtraEventsDialog(
+                        personName: name,
+                        events: events,
+                      ),
+                      borderRadius: BorderRadius.circular(6),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Text(
+                          "+${events.length - 1} altri eventi",
+                          style: TextStyle(
+                            color: Colors.blue.shade700,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _familyEventsBlock(List<RealEvent> events) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.teal.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.teal.withOpacity(0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Evento generale / famiglia",
+            style: TextStyle(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 8),
+          _eventPill(
+            text: _realEventText(events.first),
+            onTap: () =>
+                _showExtraEventsDialog(personName: "Famiglia", events: events),
+          ),
+          if (events.length > 1) ...[
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.only(left: 6),
+              child: InkWell(
+                onTap: () => _showExtraEventsDialog(
+                  personName: "Famiglia",
+                  events: events,
+                ),
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Text(
+                    "+${events.length - 1} altri eventi",
+                    style: TextStyle(
+                      color: Colors.teal.shade700,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _eventPill({required String text, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        margin: const EdgeInsets.only(left: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: Colors.blueGrey.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.blueGrey.withOpacity(0.16)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.event, size: 15, color: Colors.blueGrey.shade700),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(
+                  color: Colors.blueGrey.shade800,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -2070,7 +2332,6 @@ class _CalendarioScreenStepAStabileState
   }
 
   Widget _cardCopertura(CoverageResultStepA cov) {
-    final uscita13Eff = _effUscita13(_selectedDay);
     final sandraDecision = _sandraDecisionForDay(_selectedDay);
 
     final manualMattina = _effSandraMattina(_selectedDay);
@@ -2079,14 +2340,16 @@ class _CalendarioScreenStepAStabileState
 
     return _card(
       title: "Copertura Sandra / Babysitter",
-      subtitle: "Motore informativo + scelta manuale umana.",
+      subtitle: "Fasce rapide con modifica orario e attivazione manuale.",
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _sandraWindowRow(
-            title: "Cambio turno mattina (IN CASA)",
+          _sandraCompactRow(
+            title: "Mattina",
             start: _engine.sandraCambioMattinaStart,
             end: _engine.sandraCambioMattinaEnd,
+            serve: sandraDecision.serveSandraMattina,
+            manual: manualMattina,
             onEdit: () {
               _editSandraWindow(
                 title: "Cambio turno mattina",
@@ -2095,12 +2358,20 @@ class _CalendarioScreenStepAStabileState
                 onSave: (s, e) => _engine.setSandraCambioMattina(s, e),
               );
             },
+            onChanged: (v) {
+              setState(
+                () => daySettingsStore.setSandraMattinaForDay(_selectedDay, v),
+              );
+              ipsStore.refresh(now: _selectedDay);
+            },
           ),
           const SizedBox(height: 8),
-          _sandraWindowRow(
-            title: "Pranzo (LOGISTICA ESTERNA se uscita anticipata)",
+          _sandraCompactRow(
+            title: "Pranzo",
             start: _engine.sandraPranzoStart,
             end: _engine.sandraPranzoEnd,
+            serve: sandraDecision.serveSandraPranzo,
+            manual: manualPranzo,
             onEdit: () {
               _editSandraWindow(
                 title: "Pranzo",
@@ -2109,12 +2380,20 @@ class _CalendarioScreenStepAStabileState
                 onSave: (s, e) => _engine.setSandraPranzo(s, e),
               );
             },
+            onChanged: (v) {
+              setState(
+                () => daySettingsStore.setSandraPranzoForDay(_selectedDay, v),
+              );
+              ipsStore.refresh(now: _selectedDay);
+            },
           ),
           const SizedBox(height: 8),
-          _sandraWindowRow(
-            title: "Sera (IN CASA)",
+          _sandraCompactRow(
+            title: "Sera",
             start: _engine.sandraSeraStart,
             end: _engine.sandraSeraEnd,
+            serve: sandraDecision.serveSandraSera,
+            manual: manualSera,
             onEdit: () {
               _editSandraWindow(
                 title: "Sera",
@@ -2123,66 +2402,12 @@ class _CalendarioScreenStepAStabileState
                 onSave: (s, e) => _engine.setSandraSera(s, e),
               );
             },
-          ),
-          const Divider(),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text("Sandra – Fascia mattina"),
-            subtitle: _sandraNeedText(
-              serve: sandraDecision.serveSandraMattina,
-              manual: manualMattina,
-            ),
-            value: manualMattina,
-            onChanged: (v) {
-              setState(
-                () => daySettingsStore.setSandraMattinaForDay(_selectedDay, v),
-              );
-              ipsStore.refresh(now: _selectedDay);
-            },
-          ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text("Sandra – Fascia pranzo"),
-            subtitle: _sandraNeedText(
-              serve: sandraDecision.serveSandraPranzo,
-              manual: manualPranzo,
-            ),
-            value: manualPranzo,
-            onChanged: (v) {
-              setState(
-                () => daySettingsStore.setSandraPranzoForDay(_selectedDay, v),
-              );
-              ipsStore.refresh(now: _selectedDay);
-            },
-          ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text("Sandra – Fascia sera (21:00–22:35)"),
-            subtitle: _sandraNeedText(
-              serve: sandraDecision.serveSandraSera,
-              manual: manualSera,
-            ),
-            value: manualSera,
             onChanged: (v) {
               setState(
                 () => daySettingsStore.setSandraSeraForDay(_selectedDay, v),
               );
               ipsStore.refresh(now: _selectedDay);
             },
-          ),
-          const Divider(),
-          Text(
-            uscita13Eff
-                ? "Uscita anticipata attiva"
-                : "Uscita anticipata non attiva",
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 10),
-          ...cov.details.map(
-            (d) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Text("• $d"),
-            ),
           ),
         ],
       ),
@@ -2210,6 +2435,50 @@ class _CalendarioScreenStepAStabileState
     return Text(
       text,
       style: TextStyle(color: color, fontWeight: FontWeight.w700),
+    );
+  }
+
+  Widget _sandraCompactRow({
+    required String title,
+    required TimeOfDay start,
+    required TimeOfDay end,
+    required bool serve,
+    required bool manual,
+    required VoidCallback onEdit,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.03),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.black.withOpacity(0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  "$title   ${_fmt(start)}–${_fmt(end)}",
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit, size: 18),
+                tooltip: "Modifica fascia",
+                onPressed: onEdit,
+              ),
+              Switch(value: manual, onChanged: onChanged),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 2, top: 2),
+            child: _sandraNeedText(serve: serve, manual: manual),
+          ),
+        ],
+      ),
     );
   }
 
@@ -2282,6 +2551,57 @@ class _CalendarioScreenStepAStabileState
       _scuolaStart = start;
       _scuolaEnd = end;
     });
+  }
+
+  void _showExtraEventsDialog({
+    required String personName,
+    required List<RealEvent> events,
+  }) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Eventi $personName"),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: events.map((e) {
+                  String time = "";
+
+                  if (e.startTime != null && e.endTime != null) {
+                    time = "${_fmt(e.startTime!)}–${_fmt(e.endTime!)}";
+                  } else if (e.startTime != null) {
+                    time = _fmt(e.startTime!);
+                  } else {
+                    time = "Tutto il giorno";
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.event, size: 16),
+                        const SizedBox(width: 6),
+                        Expanded(child: Text("${e.title} • $time")),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: const Text("Chiudi"),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 

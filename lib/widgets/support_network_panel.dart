@@ -23,6 +23,9 @@ class SupportNetworkPanel extends StatefulWidget {
 }
 
 class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
+  final Set<String> _expandedIds = <String>{};
+  bool _showInactivePeople = false;
+
   String _generateSupportId() {
     final now = DateTime.now().microsecondsSinceEpoch;
     return 'support_$now';
@@ -169,6 +172,7 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
 
     setState(() {
       widget.store.addPerson(created);
+      _expandedIds.add(created.id);
     });
     widget.onChanged();
   }
@@ -295,13 +299,7 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
     setState(() {
       widget.store.removePerson(person.id);
       widget.daySettingsStore.clearSupportPersonFromAllDays(person.id);
-    });
-    widget.onChanged();
-  }
-
-  void _removeSavedName(String name) {
-    setState(() {
-      widget.store.removeSavedName(name);
+      _expandedIds.remove(person.id);
     });
     widget.onChanged();
   }
@@ -317,10 +315,139 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
     widget.onChanged();
   }
 
+  void _toggleExpanded(String personId) {
+    setState(() {
+      if (_expandedIds.contains(personId)) {
+        _expandedIds.remove(personId);
+      } else {
+        _expandedIds.add(personId);
+      }
+    });
+  }
+
+  Widget _personRow(SupportPerson p) {
+    final enabledToday = widget.daySettingsStore.isSupportPersonEnabledForDay(
+      widget.selectedDay,
+      p.id,
+    );
+    final isExpanded = _expandedIds.contains(p.id);
+
+    final activeColor = p.enabled ? Colors.green : Colors.grey;
+    final backgroundColor = p.enabled
+        ? Colors.black.withOpacity(0.03)
+        : Colors.grey.withOpacity(0.08);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.black.withOpacity(0.08)),
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => _toggleExpanded(p.id),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      p.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    "${_fmt(p.start)}–${_fmt(p.end)}",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black.withOpacity(0.75),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Switch(
+                    value: p.enabled ? enabledToday : false,
+                    onChanged: p.enabled
+                        ? (v) => _togglePersonForSelectedDay(p, v)
+                        : null,
+                  ),
+                  Icon(
+                    isExpanded ? Icons.expand_less : Icons.expand_more,
+                    size: 20,
+                    color: Colors.black.withOpacity(0.65),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (isExpanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Divider(height: 12),
+                  Text(
+                    p.enabled ? "Presente nella rete" : "Non attiva nella rete",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: activeColor,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _editPerson(p),
+                          icon: const Icon(Icons.edit, size: 18),
+                          label: const Text("Modifica"),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _removePerson(p),
+                          icon: const Icon(Icons.delete_outline, size: 18),
+                          label: const Text("Rimuovi"),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final people = widget.store.people;
-    final savedNames = widget.store.savedNames;
+
+    final activeToday = people.where((p) {
+      if (!p.enabled) return false;
+      return widget.daySettingsStore.isSupportPersonEnabledForDay(
+        widget.selectedDay,
+        p.id,
+      );
+    }).toList();
+
+    final inactiveToday = people.where((p) {
+      if (!p.enabled) return true;
+      return !widget.daySettingsStore.isSupportPersonEnabledForDay(
+        widget.selectedDay,
+        p.id,
+      );
+    }).toList();
 
     return Card(
       elevation: 0,
@@ -351,125 +478,50 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
               label: const Text("Aggiungi persona"),
             ),
             const SizedBox(height: 16),
-            const Text(
-              "Rubrica nomi salvati",
-              style: TextStyle(fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 8),
-            if (savedNames.isEmpty)
+            if (activeToday.isEmpty)
               Text(
-                "Nessun nome salvato.",
+                "Nessuna persona attiva oggi.",
                 style: TextStyle(color: Colors.black.withOpacity(0.65)),
               ),
-            if (savedNames.isNotEmpty)
-              ...savedNames.map(
-                (name) => Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.black12),
-                  ),
+            if (activeToday.isNotEmpty) ...activeToday.map(_personRow),
+            if (inactiveToday.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _showInactivePeople = !_showInactivePeople;
+                  });
+                },
+                borderRadius: BorderRadius.circular(10),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Row(
                     children: [
-                      Expanded(
-                        child: Text(
-                          name,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
+                      Text(
+                        _showInactivePeople
+                            ? "Nascondi persone non attive"
+                            : "Mostra persone non attive (${inactiveToday.length})",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: Colors.black.withOpacity(0.72),
                         ),
                       ),
-                      IconButton(
-                        onPressed: () => _removeSavedName(name),
-                        icon: const Icon(Icons.delete_outline),
-                        tooltip: "Rimuovi dalla rubrica",
+                      const SizedBox(width: 6),
+                      Icon(
+                        _showInactivePeople
+                            ? Icons.expand_less
+                            : Icons.expand_more,
+                        size: 20,
                       ),
                     ],
                   ),
                 ),
               ),
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 12),
-            if (people.isEmpty)
-              Text(
-                "Nessuna persona inserita.",
-                style: TextStyle(color: Colors.black.withOpacity(0.65)),
-              ),
-            if (people.isNotEmpty)
-              ...people.map((p) {
-                final enabledToday = widget.daySettingsStore
-                    .isSupportPersonEnabledForDay(widget.selectedDay, p.id);
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: p.enabled
-                        ? Colors.black.withOpacity(0.03)
-                        : Colors.grey.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.black.withOpacity(0.08)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        p.name,
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        "Disponibilità: ${_fmt(p.start)}–${_fmt(p.end)}",
-                        style: TextStyle(color: Colors.black.withOpacity(0.7)),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        p.enabled
-                            ? "Presente nella rete"
-                            : "Non attiva nella rete",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: p.enabled ? Colors.green : Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text("Attiva oggi"),
-                        subtitle: Text(
-                          p.enabled
-                              ? "Vale per ${_fmtDay(widget.selectedDay)}"
-                              : "Prima attiva la persona nella rete",
-                        ),
-                        value: p.enabled ? enabledToday : false,
-                        onChanged: p.enabled
-                            ? (v) => _togglePersonForSelectedDay(p, v)
-                            : null,
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => _editPerson(p),
-                              icon: const Icon(Icons.edit),
-                              label: const Text("Modifica"),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => _removePerson(p),
-                              icon: const Icon(Icons.delete_outline),
-                              label: const Text("Rimuovi"),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              }),
+              if (_showInactivePeople) ...[
+                const SizedBox(height: 8),
+                ...inactiveToday.map(_personRow),
+              ],
+            ],
           ],
         ),
       ),

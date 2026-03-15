@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../logic/real_event_store.dart';
 import '../models/real_event.dart';
 
-class RealEventPanel extends StatelessWidget {
+class RealEventPanel extends StatefulWidget {
   final DateTime selectedDay;
   final RealEventStore store;
   final VoidCallback onChanged;
@@ -15,9 +16,26 @@ class RealEventPanel extends StatelessWidget {
     required this.onChanged,
   });
 
+  @override
+  State<RealEventPanel> createState() => _RealEventPanelState();
+}
+
+class _RealEventPanelState extends State<RealEventPanel> {
+  bool _isExpanded = false;
+
+  DateTime get selectedDay => widget.selectedDay;
+  RealEventStore get store => widget.store;
+  VoidCallback get onChanged => widget.onChanged;
+
   String _fmt(TimeOfDay t) {
     return "${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}";
   }
+
+  String _fmtDate(DateTime d) {
+    return DateFormat('dd/MM/yyyy').format(d);
+  }
+
+  DateTime _onlyDate(DateTime d) => DateTime(d.year, d.month, d.day);
 
   String _personLabel(String? personKey) {
     switch (personKey) {
@@ -29,6 +47,8 @@ class RealEventPanel extends StatelessWidget {
         return 'Alice';
       case 'sandra':
         return 'Sandra';
+      case 'family':
+        return 'Famiglia / Generale';
       default:
         return 'Nessuna persona';
     }
@@ -44,6 +64,9 @@ class RealEventPanel extends StatelessWidget {
         TimeOfDay? start;
         TimeOfDay? end;
         String? personKey;
+        DateTime startDate = _onlyDate(selectedDay);
+        DateTime endDate = _onlyDate(selectedDay);
+        bool allDay = true;
 
         return StatefulBuilder(
           builder: (context, setLocalState) {
@@ -89,58 +112,134 @@ class RealEventPanel extends StatelessWidget {
                           value: 'sandra',
                           child: Text("Sandra"),
                         ),
+                        DropdownMenuItem<String?>(
+                          value: 'family',
+                          child: Text("Famiglia / Generale"),
+                        ),
                       ],
                       onChanged: (value) {
                         setLocalState(() => personKey = value);
                       },
                     ),
                     const SizedBox(height: 12),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text(
+                        "Tutto il giorno",
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      value: allDay,
+                      onChanged: (value) {
+                        setLocalState(() {
+                          allDay = value;
+                          if (allDay) {
+                            start = null;
+                            end = null;
+                          }
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () async {
-                              final picked = await showTimePicker(
+                              final picked = await showDatePicker(
                                 context: context,
-                                initialTime:
-                                    start ??
-                                    const TimeOfDay(hour: 9, minute: 0),
-                                helpText: "Ora INIZIO",
+                                initialDate: startDate,
+                                firstDate: DateTime(2024, 1, 1),
+                                lastDate: DateTime(2035, 12, 31),
+                                helpText: "Data INIZIO",
                                 cancelText: "Annulla",
                                 confirmText: "OK",
+                                locale: const Locale('it', 'IT'),
                               );
                               if (picked == null) return;
-                              setLocalState(() => start = picked);
+                              setLocalState(() {
+                                startDate = _onlyDate(picked);
+                                if (endDate.isBefore(startDate)) {
+                                  endDate = startDate;
+                                }
+                              });
                             },
-                            child: Text(
-                              start == null
-                                  ? "Ora inizio"
-                                  : "Inizio ${_fmt(start!)}",
-                            ),
+                            child: Text("Inizio ${_fmtDate(startDate)}"),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () async {
-                              final picked = await showTimePicker(
+                              final picked = await showDatePicker(
                                 context: context,
-                                initialTime:
-                                    end ?? const TimeOfDay(hour: 10, minute: 0),
-                                helpText: "Ora FINE",
+                                initialDate: endDate,
+                                firstDate: startDate,
+                                lastDate: DateTime(2035, 12, 31),
+                                helpText: "Data FINE",
                                 cancelText: "Annulla",
                                 confirmText: "OK",
+                                locale: const Locale('it', 'IT'),
                               );
                               if (picked == null) return;
-                              setLocalState(() => end = picked);
+                              setLocalState(() {
+                                endDate = _onlyDate(picked);
+                              });
                             },
-                            child: Text(
-                              end == null ? "Ora fine" : "Fine ${_fmt(end!)}",
-                            ),
+                            child: Text("Fine ${_fmtDate(endDate)}"),
                           ),
                         ),
                       ],
                     ),
+                    if (!allDay) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () async {
+                                final picked = await showTimePicker(
+                                  context: context,
+                                  initialTime:
+                                      start ??
+                                      const TimeOfDay(hour: 9, minute: 0),
+                                  helpText: "Ora INIZIO",
+                                  cancelText: "Annulla",
+                                  confirmText: "OK",
+                                );
+                                if (picked == null) return;
+                                setLocalState(() => start = picked);
+                              },
+                              child: Text(
+                                start == null
+                                    ? "Ora inizio"
+                                    : "Inizio ${_fmt(start!)}",
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () async {
+                                final picked = await showTimePicker(
+                                  context: context,
+                                  initialTime:
+                                      end ??
+                                      const TimeOfDay(hour: 10, minute: 0),
+                                  helpText: "Ora FINE",
+                                  cancelText: "Annulla",
+                                  confirmText: "OK",
+                                );
+                                if (picked == null) return;
+                                setLocalState(() => end = picked);
+                              },
+                              child: Text(
+                                end == null ? "Ora fine" : "Fine ${_fmt(end!)}",
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     TextField(
                       controller: notesCtrl,
@@ -163,13 +262,22 @@ class RealEventPanel extends StatelessWidget {
                     final title = titleCtrl.text.trim();
                     if (title.isEmpty) return;
 
+                    if (!allDay && start != null && end != null) {
+                      final startMin = start!.hour * 60 + start!.minute;
+                      final endMin = end!.hour * 60 + end!.minute;
+                      if (endMin <= startMin) return;
+                    }
+
                     Navigator.of(context).pop(
                       _EventDraft(
                         title: title,
                         personKey: personKey,
-                        startTime: start,
-                        endTime: end,
+                        startDate: startDate,
+                        endDate: endDate,
+                        startTime: allDay ? null : start,
+                        endTime: allDay ? null : end,
                         notes: notesCtrl.text.trim(),
+                        allDay: allDay,
                       ),
                     );
                   },
@@ -187,16 +295,10 @@ class RealEventPanel extends StatelessWidget {
 
     if (result == null) return;
 
-    final normalizedDay = DateTime(
-      selectedDay.year,
-      selectedDay.month,
-      selectedDay.day,
-    );
-
     final event = RealEvent(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
-      startDate: normalizedDay,
-      endDate: normalizedDay,
+      startDate: _onlyDate(result.startDate),
+      endDate: _onlyDate(result.endDate),
       title: result.title,
       startTime: result.startTime,
       endTime: result.endTime,
@@ -206,6 +308,12 @@ class RealEventPanel extends StatelessWidget {
 
     store.addEvent(event);
     onChanged();
+
+    if (mounted) {
+      setState(() {
+        _isExpanded = true;
+      });
+    }
   }
 
   @override
@@ -243,56 +351,81 @@ class RealEventPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Eventi del giorno",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              "Visite, viaggi, appuntamenti e impegni reali.",
-              style: TextStyle(color: Colors.black.withOpacity(0.6)),
-            ),
-            const SizedBox(height: 12),
-
-            if (hasAnyConflict) ...[
-              if (matteoConflicts.isNotEmpty)
-                _ConflictBox(personLabel: "Matteo", conflicts: matteoConflicts),
-              if (chiaraConflicts.isNotEmpty)
-                _ConflictBox(personLabel: "Chiara", conflicts: chiaraConflicts),
-              if (aliceConflicts.isNotEmpty)
-                _ConflictBox(personLabel: "Alice", conflicts: aliceConflicts),
-              if (sandraConflicts.isNotEmpty)
-                _ConflictBox(personLabel: "Sandra", conflicts: sandraConflicts),
-              const SizedBox(height: 12),
-            ],
-
-            if (events.isEmpty)
-              Text(
-                "Nessun evento reale inserito per questo giorno.",
-                style: TextStyle(
-                  color: Colors.black.withOpacity(0.65),
-                  fontWeight: FontWeight.w600,
+            ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: EdgeInsets.zero,
+              initiallyExpanded: _isExpanded,
+              onExpansionChanged: (value) {
+                setState(() {
+                  _isExpanded = value;
+                });
+              },
+              title: Text(
+                "Eventi del giorno (${events.length})",
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
-
-            if (events.isNotEmpty) ...[
-              for (int i = 0; i < events.length; i++) ...[
-                _RealEventTile(
-                  event: events[i],
-                  onDelete: () {
-                    store.removeEvent(events[i].id);
-                    onChanged();
-                  },
+              subtitle: Text(
+                "Visite, viaggi, appuntamenti e impegni reali.",
+                style: TextStyle(color: Colors.black.withOpacity(0.6)),
+              ),
+              children: [
+                const SizedBox(height: 8),
+                if (hasAnyConflict) ...[
+                  if (matteoConflicts.isNotEmpty)
+                    _ConflictBox(
+                      personLabel: "Matteo",
+                      conflicts: matteoConflicts,
+                    ),
+                  if (chiaraConflicts.isNotEmpty)
+                    _ConflictBox(
+                      personLabel: "Chiara",
+                      conflicts: chiaraConflicts,
+                    ),
+                  if (aliceConflicts.isNotEmpty)
+                    _ConflictBox(
+                      personLabel: "Alice",
+                      conflicts: aliceConflicts,
+                    ),
+                  if (sandraConflicts.isNotEmpty)
+                    _ConflictBox(
+                      personLabel: "Sandra",
+                      conflicts: sandraConflicts,
+                    ),
+                  const SizedBox(height: 12),
+                ],
+                if (events.isEmpty)
+                  Text(
+                    "Nessun evento reale inserito per questo giorno.",
+                    style: TextStyle(
+                      color: Colors.black.withOpacity(0.65),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                if (events.isNotEmpty) ...[
+                  for (int i = 0; i < events.length; i++) ...[
+                    _RealEventTile(
+                      event: events[i],
+                      onDelete: () {
+                        store.removeEvent(events[i].id);
+                        onChanged();
+                        if (mounted) {
+                          setState(() {});
+                        }
+                      },
+                    ),
+                    if (i != events.length - 1) const Divider(),
+                  ],
+                ],
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => _addSimpleEvent(context),
+                  icon: const Icon(Icons.add),
+                  label: const Text("Aggiungi evento"),
                 ),
-                if (i != events.length - 1) const Divider(),
               ],
-            ],
-
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () => _addSimpleEvent(context),
-              icon: const Icon(Icons.add),
-              label: const Text("Aggiungi evento"),
             ),
           ],
         ),
@@ -312,9 +445,13 @@ class _ConflictBox extends StatelessWidget {
   }
 
   String _eventLabel(RealEvent event) {
-    final start = event.startTime != null ? _fmt(event.startTime!) : "--:--";
-    final end = event.endTime != null ? _fmt(event.endTime!) : "--:--";
-    return "${event.title} ($start–$end)";
+    final start = event.startTime != null
+        ? _fmt(event.startTime!)
+        : "Tutto il giorno";
+    final end = event.endTime != null ? _fmt(event.endTime!) : "";
+    return end.isEmpty
+        ? "${event.title} ($start)"
+        : "${event.title} ($start–$end)";
   }
 
   @override
@@ -370,6 +507,10 @@ class _RealEventTile extends StatelessWidget {
     return "${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}";
   }
 
+  String _fmtDate(DateTime d) {
+    return DateFormat('dd/MM/yyyy').format(d);
+  }
+
   String _personLabel(String? personKey) {
     switch (personKey) {
       case 'matteo':
@@ -380,6 +521,8 @@ class _RealEventTile extends StatelessWidget {
         return 'Alice';
       case 'sandra':
         return 'Sandra';
+      case 'family':
+        return 'Famiglia / Generale';
       default:
         return 'Nessuna persona';
     }
@@ -391,6 +534,8 @@ class _RealEventTile extends StatelessWidget {
     final hasNotes = (event.notes ?? '').trim().isNotEmpty;
     final hasPerson =
         event.personKey != null && event.personKey!.trim().isNotEmpty;
+
+    final isMultiDay = event.startDate != event.endDate;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -418,16 +563,26 @@ class _RealEventTile extends StatelessWidget {
                       style: TextStyle(color: Colors.black.withOpacity(0.68)),
                     ),
                   ),
-                if (hasTimes)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      "${event.startTime != null ? _fmt(event.startTime!) : "--:--"}"
-                      " – "
-                      "${event.endTime != null ? _fmt(event.endTime!) : "--:--"}",
-                      style: TextStyle(color: Colors.black.withOpacity(0.65)),
-                    ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    isMultiDay
+                        ? "Periodo: ${_fmtDate(event.startDate)} – ${_fmtDate(event.endDate)}"
+                        : "Data: ${_fmtDate(event.startDate)}",
+                    style: TextStyle(color: Colors.black.withOpacity(0.65)),
                   ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    hasTimes
+                        ? "${event.startTime != null ? _fmt(event.startTime!) : "--:--"}"
+                              " – "
+                              "${event.endTime != null ? _fmt(event.endTime!) : "--:--"}"
+                        : "Tutto il giorno",
+                    style: TextStyle(color: Colors.black.withOpacity(0.65)),
+                  ),
+                ),
                 if (hasNotes)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
@@ -453,15 +608,21 @@ class _RealEventTile extends StatelessWidget {
 class _EventDraft {
   final String title;
   final String? personKey;
+  final DateTime startDate;
+  final DateTime endDate;
   final TimeOfDay? startTime;
   final TimeOfDay? endTime;
   final String notes;
+  final bool allDay;
 
   const _EventDraft({
     required this.title,
     required this.personKey,
+    required this.startDate,
+    required this.endDate,
     required this.startTime,
     required this.endTime,
     required this.notes,
+    required this.allDay,
   });
 }
