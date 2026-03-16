@@ -8,6 +8,8 @@ import 'summer_camp_schedule_store.dart';
 import 'support_network_store.dart';
 import 'disease_period_store.dart';
 import 'fourth_shift_store.dart';
+import 'turn_override_store.dart';
+import 'rotation_override_store.dart';
 
 import 'turn_engine.dart';
 
@@ -49,6 +51,10 @@ class CoreStore {
 
   // ✅ NEW: Quarta Squadra
   late final FourthShiftStore fourthShiftStore;
+
+  // ✅ NEW: Override turni (giornaliero / periodo / nuova rotazione)
+  late final TurnOverrideStore turnOverrideStore;
+  late final RotationOverrideStore rotationOverrideStore;
 
   // ✅ NEW: unico motore turni (standard + 4a squadra)
   late final TurnEngine turnEngine;
@@ -103,8 +109,15 @@ class CoreStore {
     // ✅ NEW: Quarta Squadra
     fourthShiftStore = FourthShiftStore();
 
+    // ✅ NEW: Override turni
+    turnOverrideStore = TurnOverrideStore();
+    rotationOverrideStore = RotationOverrideStore();
+
     // 2) TurnEngine (stato reale centrale)
-    turnEngine = TurnEngine(fourthShiftStore: fourthShiftStore);
+    turnEngine = TurnEngine(
+      fourthShiftStore: fourthShiftStore,
+      turnOverrideStore: turnOverrideStore,
+    );
 
     // 3) Motore copertura
     coverageEngine = CoverageEngine(

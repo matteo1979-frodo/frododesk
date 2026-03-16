@@ -17,6 +17,8 @@ class OverrideStore extends ChangeNotifier {
   /// Normalizza una DateTime a "solo giorno"
   DateTime _dayKey(DateTime d) => DateTime(d.year, d.month, d.day);
 
+  DateTime dayKey(DateTime d) => _dayKey(d);
+
   String _dateKey(DateTime d) {
     final k = _dayKey(d);
     final y = k.year.toString().padLeft(4, '0');
@@ -38,6 +40,72 @@ class OverrideStore extends ChangeNotifier {
     } catch (_) {
       return null;
     }
+  }
+
+  Map<String, dynamic>? _personOverrideToJson(PersonDayOverride? value) {
+    if (value == null) return null;
+
+    return {
+      'status': value.status.name,
+      'permessoRange': value.permessoRange == null
+          ? null
+          : {
+              'startMin': value.permessoRange!.startMin,
+              'endMin': value.permessoRange!.endMin,
+            },
+    };
+  }
+
+  PersonDayOverride? _personOverrideFromJson(dynamic raw) {
+    if (raw == null) return null;
+
+    if (raw is String) {
+      final status = OverrideStatus.values.firstWhere(
+        (e) => e.name == raw,
+        orElse: () => OverrideStatus.normal,
+      );
+
+      if (status == OverrideStatus.normal) return null;
+
+      if (status == OverrideStatus.permesso) {
+        return null;
+      }
+
+      return PersonDayOverride(status: status);
+    }
+
+    if (raw is! Map) return null;
+
+    final statusRaw = raw['status'];
+    if (statusRaw is! String) return null;
+
+    final status = OverrideStatus.values.firstWhere(
+      (e) => e.name == statusRaw,
+      orElse: () => OverrideStatus.normal,
+    );
+
+    if (status == OverrideStatus.normal) return null;
+
+    if (status == OverrideStatus.permesso) {
+      final pr = raw['permessoRange'];
+      if (pr is! Map) return null;
+
+      final startMin = pr['startMin'];
+      final endMin = pr['endMin'];
+
+      if (startMin is! int || endMin is! int) return null;
+
+      try {
+        return PersonDayOverride(
+          status: OverrideStatus.permesso,
+          permessoRange: TimeRangeMinutes(startMin: startMin, endMin: endMin),
+        );
+      } catch (_) {
+        return null;
+      }
+    }
+
+    return PersonDayOverride(status: status);
   }
 
   /// -------------------------
@@ -62,36 +130,10 @@ class OverrideStore extends ChangeNotifier {
         if (day == null) continue;
 
         final value = entry.value;
-
         if (value is! Map) continue;
 
-        PersonDayOverride? matteo;
-        PersonDayOverride? chiara;
-
-        final m = value['matteo'];
-        final c = value['chiara'];
-
-        if (m is String) {
-          final status = OverrideStatus.values.firstWhere(
-            (e) => e.name == m,
-            orElse: () => OverrideStatus.normal,
-          );
-
-          if (status != OverrideStatus.normal) {
-            matteo = PersonDayOverride(status: status);
-          }
-        }
-
-        if (c is String) {
-          final status = OverrideStatus.values.firstWhere(
-            (e) => e.name == c,
-            orElse: () => OverrideStatus.normal,
-          );
-
-          if (status != OverrideStatus.normal) {
-            chiara = PersonDayOverride(status: status);
-          }
-        }
+        final matteo = _personOverrideFromJson(value['matteo']);
+        final chiara = _personOverrideFromJson(value['chiara']);
 
         _byDay[dayKey(day)] = DayOverrides(
           day: dayKey(day),
@@ -116,8 +158,8 @@ class OverrideStore extends ChangeNotifier {
       final ov = entry.value;
 
       data[_dateKey(day)] = {
-        'matteo': ov.matteo?.status.name,
-        'chiara': ov.chiara?.status.name,
+        'matteo': _personOverrideToJson(ov.matteo),
+        'chiara': _personOverrideToJson(ov.chiara),
       };
     }
 

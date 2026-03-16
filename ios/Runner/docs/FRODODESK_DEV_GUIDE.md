@@ -1,6 +1,6 @@
 # FRODODESK — DEVELOPMENT GUIDE
 
-Ultimo aggiornamento: 14 Marzo 2026
+Ultimo aggiornamento: 15 Marzo 2026
 
 Questo documento spiega come lavorare sul progetto FrodoDesk.
 
@@ -80,3 +80,27 @@ Ogni modifica deve essere testata sull’app reale.
 Comando standard avvio app:
 
 flutter run -d edge --web-port 8080
+
+---
+
+# REGOLA RIAPERTURA CHAT
+
+Quando si riapre una nuova chat di sviluppo FrodoDesk, la sequenza è sempre:
+
+1. Scrivere:
+
+FRODODESK — RIPRESA SVILUPPO
+
+2. Incollare:
+
+FRODODESK_SYSTEM_STATE.md
+
+3. Indicare il file su cui si lavora
+
+4. Incollare il file reale completo
+
+5. Scrivere:
+
+OK
+
+Da quel momento lo sviluppo riprende con micro-step.

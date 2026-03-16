@@ -1,6 +1,6 @@
 # FRODODESK — PROJECT MEMORY
 
-Ultimo aggiornamento: 14 Marzo 2026
+Ultimo aggiornamento: 15 Marzo 2026
 
 ## IDENTITÀ DEL PROGETTO
 
@@ -18,7 +18,9 @@ Non è un semplice calendario o un planner turni.
 
 per offrire una visione reale della giornata e del futuro.
 
-## PERSONE MODELLO
+---
+
+# PERSONE MODELLO
 
 Famiglia principale:
 
@@ -31,7 +33,9 @@ Rete di supporto:
 Sandra  
 altri supporti configurabili
 
-## STRATI DEL SISTEMA
+---
+
+# STRATI DEL SISTEMA
 
 Work layer
 - turni lavoro
@@ -56,8 +60,44 @@ Coverage layer
 - rilevazione buchi
 - spiegazione copertura
 
-## PRINCIPIO DI SVILUPPO
+---
+
+# PRINCIPIO DI SVILUPPO
 
 Il calendario deve diventare completamente utilizzabile nella vita reale prima di espandere il sistema.
 
 Solo dopo si svilupperanno altri moduli come finanze, salute e statistiche.
+
+---
+
+# DECISIONI ARCHITETTURALI IMPORTANTI
+
+## Conflitti reali
+
+Il sistema non deve nascondere i conflitti della vita reale.
+
+Quando un evento reale cade dentro un turno di lavoro:
+
+il calendario deve segnalarlo chiaramente come **conflitto reale**.
+
+La risoluzione richiede sempre una decisione umana:
+
+- cambiare turno
+- prendere ferie o permesso
+- spostare l’evento
+
+Il sistema non decide al posto dell’utente.
+
+---
+
+## Filosofia del calendario
+
+Il calendario FrodoDesk non è solo un calendario eventi.
+
+È una **simulazione operativa della realtà familiare**.
+
+Il suo compito è:
+
+- evidenziare problemi reali
+- spiegare perché accadono
+- aiutare a prendere decisioni prima che diventino emergenze.

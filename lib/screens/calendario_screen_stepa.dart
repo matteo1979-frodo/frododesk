@@ -7,11 +7,13 @@ import '../logic/emergency_store.dart';
 import '../logic/emergency_day_logic.dart';
 import '../logic/coverage_engine.dart';
 import '../logic/turn_engine.dart';
+import '../logic/turn_override_store.dart';
 import '../logic/ferie_period_store.dart';
 
 import '../models/day_override.dart';
 import '../models/disease_period.dart';
 import '../models/real_event.dart';
+import '../models/turn_override.dart';
 import '../logic/core_store.dart';
 import '../models/week_identity.dart';
 import '../logic/settings_store.dart';
@@ -55,9 +57,37 @@ class _CalendarioScreenStepAStabileState
   WeekIdentity get _activeWeek => coreStore.weekStore.activeWeek;
 
   OverrideStore get overrideStore => coreStore.overrideStore;
+  TurnOverrideStore get turnOverrideStore => coreStore.turnOverrideStore;
 
   CoverageEngine get _engine => coreStore.coverageEngine;
   TurnEngine get _turns => coreStore.turnEngine;
+
+  late DateTime _selectedDay;
+
+  final GlobalKey _turniKey = GlobalKey();
+  final GlobalKey _overrideKey = GlobalKey();
+  final GlobalKey _eventiKey = GlobalKey();
+
+  Future<void> _scrollTo(GlobalKey key) async {
+    final ctx = key.currentContext;
+    if (ctx == null) return;
+
+    await Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeInOut,
+      alignment: 0.08,
+    );
+  }
+
+  void _closeSheetAndScrollTo(GlobalKey key) {
+    Navigator.of(context).pop();
+
+    Future.delayed(const Duration(milliseconds: 250), () {
+      if (!mounted) return;
+      _scrollTo(key);
+    });
+  }
 
   TimeOfDay? _effUscitaAnticipataAt(DateTime day) {
     final t = daySettingsStore.uscitaAnticipataTimeForDay(day);
@@ -604,7 +634,88 @@ class _CalendarioScreenStepAStabileState
     ipsStore.refresh(now: _selectedDay);
   }
 
-  late DateTime _selectedDay;
+  void _showTurnEventConflictActionsSheet({
+    required String personName,
+    required List<TurnEventConflictResolution> conflicts,
+  }) {
+    showModalBottomSheet<void>(
+      isScrollControlled: true,
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Scelte possibili — $personName",
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Il sistema ha rilevato un conflitto reale tra turno ed evento. Qui sotto vedi le strade possibili da valutare.",
+                  style: TextStyle(
+                    color: Colors.black.withOpacity(0.7),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...conflicts.map(
+                  (r) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      "• ${_realEventText(r.event)} — ${_conflictStateLabel(r.state)}${r.detailText == null ? "" : "\n${r.detailText}"}",
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.swap_horiz),
+                  title: const Text("Cambia turno"),
+                  subtitle: const Text(
+                    "Da usare se il problema si risolve spostando il turno di lavoro.",
+                  ),
+                  onTap: () {
+                    _closeSheetAndScrollTo(_turniKey);
+                  },
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.event_busy),
+                  title: const Text("Segna permesso / ferie"),
+                  subtitle: const Text(
+                    "Da usare se l’evento va mantenuto e serve liberare la fascia di lavoro.",
+                  ),
+                  onTap: () {
+                    _closeSheetAndScrollTo(_overrideKey);
+                  },
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.edit_calendar),
+                  title: const Text("Sposta evento"),
+                  subtitle: const Text(
+                    "Da usare se l’appuntamento è modificabile e conviene spostarlo fuori turno.",
+                  ),
+                  onTap: () {
+                    _closeSheetAndScrollTo(_eventiKey);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   void _syncWeekWithSelectedDay() {
     coreStore.weekStore.setFromDate(_selectedDay);
@@ -664,6 +775,585 @@ class _CalendarioScreenStepAStabileState
   String _fmt(TimeOfDay t) =>
       "${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}";
 
+  String _fmtDateTime(DateTime dt) =>
+      "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
+
+  String _fmtShortDate(DateTime dt) => DateFormat('dd/MM', 'it_IT').format(dt);
+
+  DateTime _atDayTime(DateTime day, TimeOfDay t) {
+    final d0 = _onlyDate(day);
+    return DateTime(d0.year, d0.month, d0.day, t.hour, t.minute);
+  }
+
+  TimeOfDay? _parseTimeOfDayFromText(String text) {
+    final m = RegExp(r'(\d{1,2}):(\d{2})').firstMatch(text);
+    if (m == null) return null;
+
+    final h = int.tryParse(m.group(1)!);
+    final min = int.tryParse(m.group(2)!);
+    if (h == null || min == null) return null;
+    if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+
+    return TimeOfDay(hour: h, minute: min);
+  }
+
+  _DateRange? _permessoRangeFromDisplayString(dynamic pr, DateTime day) {
+    try {
+      final dynamic displayDyn = pr.toDisplayString();
+      if (displayDyn is! String) return null;
+
+      final parts = displayDyn.split(RegExp(r'[–-]'));
+      if (parts.length != 2) return null;
+
+      final start = _parseTimeOfDayFromText(parts[0].trim());
+      final end = _parseTimeOfDayFromText(parts[1].trim());
+      if (start == null || end == null) return null;
+
+      final startDT = _atDayTime(day, start);
+      final endDT = _atDayTime(day, end);
+      if (!endDT.isAfter(startDT)) return null;
+
+      return _DateRange(start: startDT, end: endDT);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool _isSchoolInGapLabel(String label) {
+    final lower = label.toLowerCase();
+    return lower.contains('alice ingresso') ||
+        lower.contains('ingresso scuola');
+  }
+
+  bool _isSchoolOutGapLabel(String label) {
+    final lower = label.toLowerCase();
+    return lower.contains('alice uscita') || lower.contains('uscita scuola');
+  }
+
+  bool _isLunchGapLabel(String label) {
+    final lower = label.toLowerCase();
+    return lower.contains('pranzo');
+  }
+
+  _DateRange? _rangeOverlap(_DateRange a, _DateRange b) {
+    final start = a.start.isAfter(b.start) ? a.start : b.start;
+    final end = a.end.isBefore(b.end) ? a.end : b.end;
+
+    if (!end.isAfter(start)) return null;
+    return _DateRange(start: start, end: end);
+  }
+
+  _DateRange? _eventRangeForConflict(RealEvent event, DateTime day) {
+    final d0 = _onlyDate(day);
+
+    if (event.startTime == null && event.endTime == null) {
+      return _DateRange(
+        start: DateTime(d0.year, d0.month, d0.day, 0, 0),
+        end: DateTime(d0.year, d0.month, d0.day, 23, 59),
+      );
+    }
+
+    if (event.startTime != null && event.endTime != null) {
+      final start = _atDayTime(d0, event.startTime!);
+      final end = _atDayTime(d0, event.endTime!);
+
+      if (!end.isAfter(start)) return null;
+
+      return _DateRange(start: start, end: end);
+    }
+
+    if (event.startTime != null) {
+      final start = _atDayTime(d0, event.startTime!);
+      return _DateRange(
+        start: start,
+        end: start.add(const Duration(minutes: 1)),
+      );
+    }
+
+    final end = _atDayTime(d0, event.endTime!);
+    return _DateRange(
+      start: end.subtract(const Duration(minutes: 1)),
+      end: end,
+    );
+  }
+
+  _DateRange? _permessoRangeFromOverride(
+    PersonDayOverride? manualOverride,
+    DateTime day,
+  ) {
+    if (manualOverride == null) return null;
+    if (manualOverride.status != OverrideStatus.permesso) return null;
+
+    final dynamic pr = manualOverride.permessoRange;
+    if (pr == null) return null;
+
+    final parsedFromDisplay = _permessoRangeFromDisplayString(pr, day);
+    if (parsedFromDisplay != null) return parsedFromDisplay;
+
+    TimeOfDay? start;
+    TimeOfDay? end;
+
+    if (pr is Map) {
+      final dynamic s1 = pr['start'];
+      final dynamic e1 = pr['end'];
+      final dynamic s2 = pr['from'];
+      final dynamic e2 = pr['to'];
+      final dynamic s3 = pr['startTime'];
+      final dynamic e3 = pr['endTime'];
+
+      if (s1 is TimeOfDay && e1 is TimeOfDay) {
+        start = s1;
+        end = e1;
+      } else if (s2 is TimeOfDay && e2 is TimeOfDay) {
+        start = s2;
+        end = e2;
+      } else if (s3 is TimeOfDay && e3 is TimeOfDay) {
+        start = s3;
+        end = e3;
+      }
+    } else {
+      try {
+        final dynamic s1 = pr.start;
+        final dynamic e1 = pr.end;
+        if (s1 is TimeOfDay && e1 is TimeOfDay) {
+          start = s1;
+          end = e1;
+        }
+      } catch (_) {}
+
+      if (start == null || end == null) {
+        try {
+          final dynamic s2 = pr.from;
+          final dynamic e2 = pr.to;
+          if (s2 is TimeOfDay && e2 is TimeOfDay) {
+            start = s2;
+            end = e2;
+          }
+        } catch (_) {}
+      }
+
+      if (start == null || end == null) {
+        try {
+          final dynamic s3 = pr.startTime;
+          final dynamic e3 = pr.endTime;
+          if (s3 is TimeOfDay && e3 is TimeOfDay) {
+            start = s3;
+            end = e3;
+          }
+        } catch (_) {}
+      }
+    }
+
+    if (start == null || end == null) return null;
+
+    final startDT = _atDayTime(day, start);
+    final endDT = _atDayTime(day, end);
+
+    if (!endDT.isAfter(startDT)) return null;
+
+    return _DateRange(start: startDT, end: endDT);
+  }
+
+  String _rangeLabel(_DateRange range) {
+    return "${_fmtDateTime(range.start)}–${_fmtDateTime(range.end)}";
+  }
+
+  String _turnPlanSummary(TurnPlan plan) {
+    final label = _turnLabel(plan.type);
+    if (plan.isOff) return "OFF";
+    return "$label ${_fmt(plan.start)}–${_fmt(plan.end)}";
+  }
+
+  String _buildOpenConflictDetail({
+    required TurnPlan turnPlan,
+    required _DateRange overlap,
+  }) {
+    return "Evento dentro il turno di lavoro.\n"
+        "Turno: ${_turnPlanSummary(turnPlan)}\n"
+        "Fascia in conflitto: ${_rangeLabel(overlap)}";
+  }
+
+  String _buildPartialConflictDetail({
+    required TurnPlan turnPlan,
+    required _DateRange overlap,
+    required _DateRange covered,
+    required List<String> uncoveredParts,
+  }) {
+    return "Evento dentro il turno di lavoro.\n"
+        "Turno: ${_turnPlanSummary(turnPlan)}\n"
+        "Fascia in conflitto: ${_rangeLabel(overlap)}\n"
+        "Permesso copre: ${_rangeLabel(covered)}\n"
+        "Resta scoperto: ${uncoveredParts.join(" + ")}";
+  }
+
+  String _buildResolvedConflictDetail({
+    required TurnPlan turnPlan,
+    required _DateRange overlap,
+    required _DateRange covered,
+  }) {
+    return "Evento dentro il turno di lavoro.\n"
+        "Turno: ${_turnPlanSummary(turnPlan)}\n"
+        "Fascia in conflitto: ${_rangeLabel(overlap)}\n"
+        "Causa risoluzione: permesso ${_rangeLabel(covered)}";
+  }
+
+  String _conflictStateLabel(TurnEventConflictState state) {
+    switch (state) {
+      case TurnEventConflictState.open:
+        return "Conflitto aperto";
+      case TurnEventConflictState.partial:
+        return "Parzialmente coperto";
+      case TurnEventConflictState.resolved:
+        return "Risolto";
+    }
+  }
+
+  Color _conflictStateColor(TurnEventConflictState state) {
+    switch (state) {
+      case TurnEventConflictState.open:
+        return Colors.red;
+      case TurnEventConflictState.partial:
+        return Colors.orange;
+      case TurnEventConflictState.resolved:
+        return Colors.green;
+    }
+  }
+
+  TurnEventConflictState _worstConflictState(
+    List<TurnEventConflictResolution> conflicts,
+  ) {
+    if (conflicts.any((c) => c.state == TurnEventConflictState.open)) {
+      return TurnEventConflictState.open;
+    }
+
+    if (conflicts.any((c) => c.state == TurnEventConflictState.partial)) {
+      return TurnEventConflictState.partial;
+    }
+
+    return TurnEventConflictState.resolved;
+  }
+
+  TurnPersonId? _personIdFromKey(String personKey) {
+    switch (personKey) {
+      case 'matteo':
+        return TurnPersonId.matteo;
+      case 'chiara':
+        return TurnPersonId.chiara;
+      default:
+        return null;
+    }
+  }
+
+  String _turnOverrideShiftLabel(TurnOverrideShift shift) {
+    switch (shift) {
+      case TurnOverrideShift.mattina:
+        return "Mattina";
+      case TurnOverrideShift.pomeriggio:
+        return "Pomeriggio";
+      case TurnOverrideShift.notte:
+        return "Notte";
+      case TurnOverrideShift.off:
+        return "Off";
+    }
+  }
+
+  String? _turnOverrideStatusTextForPerson({
+    required String personKey,
+    required DateTime day,
+  }) {
+    final person = _personIdFromKey(personKey);
+    if (person == null) return null;
+
+    final daily = coreStore.turnOverrideStore.dailyOverrideFor(
+      person: person,
+      day: day,
+    );
+    if (daily != null && daily.shift != null) {
+      return "Turno cambiato manualmente • ${_turnOverrideShiftLabel(daily.shift!)} (solo oggi)";
+    }
+
+    final period = coreStore.turnOverrideStore.periodOverrideFor(
+      person: person,
+      day: day,
+    );
+    if (period != null && period.shift != null && period.endDate != null) {
+      return "Turno cambiato manualmente • ${_turnOverrideShiftLabel(period.shift!)} (${_fmtShortDate(period.startDate)}–${_fmtShortDate(period.endDate!)})";
+    }
+
+    return null;
+  }
+
+  void _addDailyTurnOverrideTest({
+    required TurnPersonId person,
+    required TurnOverrideShift shift,
+  }) {
+    coreStore.turnOverrideStore.add(
+      TurnOverride(
+        type: TurnOverrideType.dailyShiftChange,
+        person: person,
+        startDate: _selectedDay,
+        shift: shift,
+      ),
+    );
+    setState(() {});
+  }
+
+  void _addPeriodTurnOverrideTest({
+    required TurnPersonId person,
+    required TurnOverrideShift shift,
+  }) {
+    coreStore.turnOverrideStore.add(
+      TurnOverride(
+        type: TurnOverrideType.periodShiftChange,
+        person: person,
+        startDate: _selectedDay,
+        endDate: _selectedDay.add(const Duration(days: 2)),
+        shift: shift,
+      ),
+    );
+    setState(() {});
+  }
+
+  void _clearTurnOverrideTests() {
+    coreStore.turnOverrideStore.clearAll();
+    setState(() {});
+  }
+
+  Widget _turnOverrideDebugBox() {
+    final matteoDaily = coreStore.turnOverrideStore.dailyOverrideFor(
+      person: TurnPersonId.matteo,
+      day: _selectedDay,
+    );
+    final chiaraDaily = coreStore.turnOverrideStore.dailyOverrideFor(
+      person: TurnPersonId.chiara,
+      day: _selectedDay,
+    );
+    final matteoPeriod = coreStore.turnOverrideStore.periodOverrideFor(
+      person: TurnPersonId.matteo,
+      day: _selectedDay,
+    );
+    final chiaraPeriod = coreStore.turnOverrideStore.periodOverrideFor(
+      person: TurnPersonId.chiara,
+      day: _selectedDay,
+    );
+
+    String fmtOverride(TurnOverride? item) {
+      if (item == null || item.shift == null) return "nessuno";
+      if (item.type == TurnOverrideType.dailyShiftChange) {
+        return "${_turnOverrideShiftLabel(item.shift!)} (solo oggi)";
+      }
+      if (item.endDate != null) {
+        return "${_turnOverrideShiftLabel(item.shift!)} (${_fmtShortDate(item.startDate)}–${_fmtShortDate(item.endDate!)})";
+      }
+      return _turnOverrideShiftLabel(item.shift!);
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.indigo.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.indigo.withOpacity(0.28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "DEBUG TEST — Cambio turno",
+            style: TextStyle(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Usa questi pulsanti solo per verificare che il motore legga davvero i nuovi override turno.",
+            style: TextStyle(
+              color: Colors.black.withOpacity(0.68),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            "Matteo oggi: ${fmtOverride(matteoDaily)}",
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          Text(
+            "Chiara oggi: ${fmtOverride(chiaraDaily)}",
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          Text(
+            "Matteo periodo: ${fmtOverride(matteoPeriod)}",
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          Text(
+            "Chiara periodo: ${fmtOverride(chiaraPeriod)}",
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton(
+                onPressed: () {
+                  _addDailyTurnOverrideTest(
+                    person: TurnPersonId.matteo,
+                    shift: TurnOverrideShift.pomeriggio,
+                  );
+                },
+                child: const Text("Test Matteo oggi → Pomeriggio"),
+              ),
+              OutlinedButton(
+                onPressed: () {
+                  _addDailyTurnOverrideTest(
+                    person: TurnPersonId.chiara,
+                    shift: TurnOverrideShift.mattina,
+                  );
+                },
+                child: const Text("Test Chiara oggi → Mattina"),
+              ),
+              OutlinedButton(
+                onPressed: () {
+                  _addPeriodTurnOverrideTest(
+                    person: TurnPersonId.matteo,
+                    shift: TurnOverrideShift.notte,
+                  );
+                },
+                child: const Text("Test Matteo periodo → Notte"),
+              ),
+              OutlinedButton(
+                onPressed: () {
+                  _addPeriodTurnOverrideTest(
+                    person: TurnPersonId.chiara,
+                    shift: TurnOverrideShift.pomeriggio,
+                  );
+                },
+                child: const Text("Test Chiara periodo → Pomeriggio"),
+              ),
+              OutlinedButton(
+                onPressed: _clearTurnOverrideTests,
+                child: const Text("Pulisci test turni"),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<TurnEventConflictResolution> _turnEventResolutionsForPerson({
+    required String personKey,
+    required TurnPlan turnPlan,
+    required PersonDayOverride? manualOverride,
+    required DateTime day,
+  }) {
+    if (turnPlan.isOff) return const [];
+
+    final turnRange = _DateRange(
+      start: _atDayTime(day, turnPlan.start),
+      end: _atDayTime(day, turnPlan.end),
+    );
+
+    final permessoRange = _permessoRangeFromOverride(manualOverride, day);
+    final personEvents = _eventsForPersonOnDay(personKey: personKey, day: day);
+
+    final resolutions = <TurnEventConflictResolution>[];
+
+    for (final event in personEvents) {
+      final eventRange = _eventRangeForConflict(event, day);
+      if (eventRange == null) continue;
+
+      final overlap = _rangeOverlap(turnRange, eventRange);
+      if (overlap == null) continue;
+
+      if (permessoRange == null) {
+        resolutions.add(
+          TurnEventConflictResolution(
+            event: event,
+            state: TurnEventConflictState.open,
+            overlapRange: overlap,
+            detailText: _buildOpenConflictDetail(
+              turnPlan: turnPlan,
+              overlap: overlap,
+            ),
+          ),
+        );
+        continue;
+      }
+
+      final covered = _rangeOverlap(overlap, permessoRange);
+
+      if (covered == null) {
+        resolutions.add(
+          TurnEventConflictResolution(
+            event: event,
+            state: TurnEventConflictState.open,
+            overlapRange: overlap,
+            detailText: _buildOpenConflictDetail(
+              turnPlan: turnPlan,
+              overlap: overlap,
+            ),
+          ),
+        );
+        continue;
+      }
+
+      final fullyCovered =
+          covered.start.isAtSameMomentAs(overlap.start) &&
+          covered.end.isAtSameMomentAs(overlap.end);
+
+      if (fullyCovered) {
+        resolutions.add(
+          TurnEventConflictResolution(
+            event: event,
+            state: TurnEventConflictState.resolved,
+            overlapRange: overlap,
+            detailText: _buildResolvedConflictDetail(
+              turnPlan: turnPlan,
+              overlap: overlap,
+              covered: covered,
+            ),
+          ),
+        );
+        continue;
+      }
+
+      _DateRange? uncoveredBefore;
+      _DateRange? uncoveredAfter;
+
+      if (covered.start.isAfter(overlap.start)) {
+        uncoveredBefore = _DateRange(start: overlap.start, end: covered.start);
+      }
+      if (covered.end.isBefore(overlap.end)) {
+        uncoveredAfter = _DateRange(start: covered.end, end: overlap.end);
+      }
+
+      final uncoveredParts = <String>[];
+      if (uncoveredBefore != null) {
+        uncoveredParts.add(_rangeLabel(uncoveredBefore));
+      }
+      if (uncoveredAfter != null) {
+        uncoveredParts.add(_rangeLabel(uncoveredAfter));
+      }
+
+      resolutions.add(
+        TurnEventConflictResolution(
+          event: event,
+          state: TurnEventConflictState.partial,
+          overlapRange: overlap,
+          detailText: _buildPartialConflictDetail(
+            turnPlan: turnPlan,
+            overlap: overlap,
+            covered: covered,
+            uncoveredParts: uncoveredParts,
+          ),
+        ),
+      );
+    }
+
+    return resolutions;
+  }
+
   String _cleanGapTitle(String label) {
     final lower = label.toLowerCase();
 
@@ -695,7 +1385,8 @@ class _CalendarioScreenStepAStabileState
     if (parts.length < 2) return null;
 
     final candidate = parts.last.trim();
-    if (candidate.contains('–')) return candidate;
+    if (candidate.contains('–')) return null;
+    if (candidate.contains('-')) return null;
 
     return null;
   }
@@ -764,6 +1455,12 @@ class _CalendarioScreenStepAStabileState
   }) {
     final d0 = _onlyDate(day);
 
+    final turnOverrideText = _turnOverrideStatusTextForPerson(
+      personKey: personKey,
+      day: d0,
+    );
+    if (turnOverrideText != null) return turnOverrideText;
+
     if (manualOverride != null) {
       switch (manualOverride.status) {
         case OverrideStatus.normal:
@@ -816,6 +1513,10 @@ class _CalendarioScreenStepAStabileState
     final outStart = _effSchoolOutStart(d0);
     final outEnd = _effSchoolOutEnd(d0);
 
+    final schoolInCover = _effectiveSchoolInCover(d0);
+    final schoolOutCover = _effectiveSchoolOutCover(d0);
+    final lunchCover = _effectiveLunchCover(d0);
+
     final sandraDecision = _sandraDecisionForDay(d0);
 
     final analysis = _engine.analyzeDayV2(
@@ -827,15 +1528,38 @@ class _CalendarioScreenStepAStabileState
       schoolStart: _scuolaStart,
       overrides: ov,
       ferieStore: coreStore.feriePeriodStore,
-      schoolInCover: _effectiveSchoolInCover(d0),
-      schoolOutCover: _effectiveSchoolOutCover(d0),
+      schoolInCover: schoolInCover,
+      schoolOutCover: schoolOutCover,
       schoolOutStart: outStart,
       schoolOutEnd: outEnd,
-      lunchCover: _effectiveLunchCover(d0),
+      lunchCover: lunchCover,
       uscitaAnticipataAt: uscitaAt,
     );
 
-    final gaps = analysis.gaps;
+    final filteredGapDetails = analysis.details.where((d) {
+      final label = d.label;
+
+      if (schoolInCover != SchoolCoverChoice.none &&
+          _isSchoolInGapLabel(label)) {
+        return false;
+      }
+
+      if (!uscita13Eff &&
+          schoolOutCover != SchoolCoverChoice.none &&
+          _isSchoolOutGapLabel(label)) {
+        return false;
+      }
+
+      if (uscita13Eff &&
+          lunchCover != SchoolCoverChoice.none &&
+          _isLunchGapLabel(label)) {
+        return false;
+      }
+
+      return true;
+    }).toList();
+
+    final gaps = filteredGapDetails.map((d) => d.label).toList();
     final ok = gaps.isEmpty;
 
     final summaryDetails = <String>[];
@@ -862,7 +1586,7 @@ class _CalendarioScreenStepAStabileState
     return CoverageResultStepA(
       ok: ok,
       details: summaryDetails,
-      gapDetails: analysis.details.map((d) => d).toList(),
+      gapDetails: filteredGapDetails,
       bannerText: bannerText,
     );
   }
@@ -1283,16 +2007,6 @@ class _CalendarioScreenStepAStabileState
                 "BUCO ${i + 1} — ${_cleanGapTitle(cov.gapDetails[i].label)}",
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
-              if (_extractGapTime(cov.gapDetails[i].label) != null) ...[
-                const SizedBox(height: 2),
-                Text(
-                  _extractGapTime(cov.gapDetails[i].label)!,
-                  style: TextStyle(
-                    color: Colors.black.withOpacity(0.65),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
               const SizedBox(height: 6),
               ...cov.gapDetails[i].lines.map(
                 (line) => Padding(
@@ -1436,13 +2150,16 @@ class _CalendarioScreenStepAStabileState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        RealEventPanel(
-          selectedDay: _selectedDay,
-          store: coreStore.realEventStore,
-          onChanged: () {
-            setState(() {});
-            ipsStore.refresh(now: _selectedDay);
-          },
+        Container(
+          key: _eventiKey,
+          child: RealEventPanel(
+            selectedDay: _selectedDay,
+            store: coreStore.realEventStore,
+            onChanged: () {
+              setState(() {});
+              ipsStore.refresh(now: _selectedDay);
+            },
+          ),
         ),
         const SizedBox(height: 12),
         AliceEventPanel(
@@ -1503,7 +2220,7 @@ class _CalendarioScreenStepAStabileState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _cardTurni(),
+          Container(key: _turniKey, child: _cardTurni()),
           const SizedBox(height: 12),
           FourthShiftPanel(
             store: coreStore.fourthShiftStore,
@@ -1524,7 +2241,10 @@ class _CalendarioScreenStepAStabileState
             },
           ),
           const SizedBox(height: 12),
-          _cardOverrideStepB(_getOverridesForDay(_selectedDay)),
+          Container(
+            key: _overrideKey,
+            child: _cardOverrideStepB(_getOverridesForDay(_selectedDay)),
+          ),
           const SizedBox(height: 12),
           _cardScuola(),
           const SizedBox(height: 12),
@@ -1777,6 +2497,20 @@ class _CalendarioScreenStepAStabileState
       day: _selectedDay,
     );
 
+    final matteoEventConflicts = _turnEventResolutionsForPerson(
+      personKey: 'matteo',
+      turnPlan: m,
+      manualOverride: ov.matteo,
+      day: _selectedDay,
+    );
+
+    final chiaraEventConflicts = _turnEventResolutionsForPerson(
+      personKey: 'chiara',
+      turnPlan: c,
+      manualOverride: ov.chiara,
+      day: _selectedDay,
+    );
+
     final familyEvents = _familyEventsOnDay(_selectedDay);
 
     return _card(
@@ -1786,8 +2520,23 @@ class _CalendarioScreenStepAStabileState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _turnOverrideDebugBox(),
           if (conflict.hasConflict) ...[
             _turnConflictBox(conflict),
+            const SizedBox(height: 12),
+          ],
+          if (matteoEventConflicts.isNotEmpty) ...[
+            _turnEventConflictBox(
+              personName: "Matteo",
+              conflicts: matteoEventConflicts,
+            ),
+            const SizedBox(height: 12),
+          ],
+          if (chiaraEventConflicts.isNotEmpty) ...[
+            _turnEventConflictBox(
+              personName: "Chiara",
+              conflicts: chiaraEventConflicts,
+            ),
             const SizedBox(height: 12),
           ],
           if (familyEvents.isNotEmpty) ...[
@@ -1797,6 +2546,206 @@ class _CalendarioScreenStepAStabileState
           _turnRow("Matteo", m, statusText: matteoStatus, events: matteoEvents),
           const SizedBox(height: 10),
           _turnRow("Chiara", c, statusText: chiaraStatus, events: chiaraEvents),
+
+          const SizedBox(height: 12),
+
+          OutlinedButton.icon(
+            onPressed: () async {
+              final person = await showDialog<TurnPerson>(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: const Text("Chi cambia turno?"),
+                    actions: [
+                      TextButton(
+                        onPressed: () =>
+                            Navigator.pop(context, TurnPerson.matteo),
+                        child: const Text("Matteo"),
+                      ),
+                      TextButton(
+                        onPressed: () =>
+                            Navigator.pop(context, TurnPerson.chiara),
+                        child: const Text("Chiara"),
+                      ),
+                    ],
+                  );
+                },
+              );
+
+              if (person == null) return;
+
+              final newTurn = await showDialog<TurnType>(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: const Text("Nuovo turno"),
+                    actions: [
+                      TextButton(
+                        onPressed: () =>
+                            Navigator.pop(context, TurnType.mattina),
+                        child: const Text("Mattina"),
+                      ),
+                      TextButton(
+                        onPressed: () =>
+                            Navigator.pop(context, TurnType.pomeriggio),
+                        child: const Text("Pomeriggio"),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, TurnType.notte),
+                        child: const Text("Notte"),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, TurnType.off),
+                        child: const Text("OFF"),
+                      ),
+                    ],
+                  );
+                },
+              );
+
+              if (newTurn == null) return;
+
+              final personId = person == TurnPerson.matteo
+                  ? TurnPersonId.matteo
+                  : TurnPersonId.chiara;
+
+              final shiftId = newTurn == TurnType.mattina
+                  ? TurnOverrideShift.mattina
+                  : newTurn == TurnType.pomeriggio
+                  ? TurnOverrideShift.pomeriggio
+                  : newTurn == TurnType.notte
+                  ? TurnOverrideShift.notte
+                  : TurnOverrideShift.off;
+
+              turnOverrideStore.setDailyOverride(
+                person: personId,
+                day: _selectedDay,
+                newShift: shiftId,
+              );
+
+              setState(() {});
+            },
+            icon: const Icon(Icons.swap_horiz),
+            label: const Text("Cambio turno (solo oggi)"),
+          ),
+
+          const SizedBox(height: 8),
+
+          OutlinedButton.icon(
+            onPressed: () async {
+              final person = await showDialog<TurnPerson>(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: const Text("Chi cambia turno nel periodo?"),
+                    actions: [
+                      TextButton(
+                        onPressed: () =>
+                            Navigator.pop(context, TurnPerson.matteo),
+                        child: const Text("Matteo"),
+                      ),
+                      TextButton(
+                        onPressed: () =>
+                            Navigator.pop(context, TurnPerson.chiara),
+                        child: const Text("Chiara"),
+                      ),
+                    ],
+                  );
+                },
+              );
+
+              if (person == null) return;
+
+              final startDay = await showDatePicker(
+                context: context,
+                initialDate: _selectedDay,
+                firstDate: DateTime(2024, 1, 1),
+                lastDate: DateTime(2035, 12, 31),
+                helpText: 'Data inizio periodo',
+                cancelText: 'Annulla',
+                confirmText: 'OK',
+                locale: const Locale('it', 'IT'),
+              );
+
+              if (startDay == null) return;
+
+              final endDay = await showDatePicker(
+                context: context,
+                initialDate: startDay,
+                firstDate: startDay,
+                lastDate: DateTime(2035, 12, 31),
+                helpText: 'Data fine periodo',
+                cancelText: 'Annulla',
+                confirmText: 'OK',
+                locale: const Locale('it', 'IT'),
+              );
+
+              if (endDay == null) return;
+
+              final newTurn = await showDialog<TurnType>(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: const Text("Nuovo turno per il periodo"),
+                    actions: [
+                      TextButton(
+                        onPressed: () =>
+                            Navigator.pop(context, TurnType.mattina),
+                        child: const Text("Mattina"),
+                      ),
+                      TextButton(
+                        onPressed: () =>
+                            Navigator.pop(context, TurnType.pomeriggio),
+                        child: const Text("Pomeriggio"),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, TurnType.notte),
+                        child: const Text("Notte"),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, TurnType.off),
+                        child: const Text("OFF"),
+                      ),
+                    ],
+                  );
+                },
+              );
+
+              if (newTurn == null) return;
+
+              final personId = person == TurnPerson.matteo
+                  ? TurnPersonId.matteo
+                  : TurnPersonId.chiara;
+
+              final shiftId = newTurn == TurnType.mattina
+                  ? TurnOverrideShift.mattina
+                  : newTurn == TurnType.pomeriggio
+                  ? TurnOverrideShift.pomeriggio
+                  : newTurn == TurnType.notte
+                  ? TurnOverrideShift.notte
+                  : TurnOverrideShift.off;
+
+              turnOverrideStore.setPeriodOverride(
+                person: personId,
+                startDay: startDay,
+                endDay: endDay,
+                newShift: shiftId,
+              );
+
+              setState(() {});
+            },
+            icon: const Icon(Icons.date_range),
+            label: const Text("Cambio turno (periodo)"),
+          ),
+
+          const SizedBox(height: 8),
+
+          OutlinedButton.icon(
+            onPressed: () {},
+            icon: const Icon(Icons.autorenew),
+            label: const Text("Nuova rotazione"),
+          ),
+
           const SizedBox(height: 8),
           Text(
             "Nota: se per Matteo o Chiara esiste un periodo attivo di Quarta Squadra, i turni mostrati qui sono già quelli della Quarta Squadra.",
@@ -1874,6 +2823,128 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
+  Widget _turnEventConflictBox({
+    required String personName,
+    required List<TurnEventConflictResolution> conflicts,
+  }) {
+    final worst = _worstConflictState(conflicts);
+    final color = _conflictStateColor(worst);
+
+    final String title;
+    final String subtitle;
+
+    switch (worst) {
+      case TurnEventConflictState.open:
+        title = "Conflitto turno / evento — $personName";
+        subtitle = "Serve una decisione operativa.";
+        break;
+      case TurnEventConflictState.partial:
+        title = "Conflitto turno / evento — $personName";
+        subtitle = "Esiste una copertura parziale.";
+        break;
+      case TurnEventConflictState.resolved:
+        title = "Conflitto turno / evento — $personName";
+        subtitle = "Conflitto risolto grazie al permesso.";
+        break;
+    }
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () {
+        _showTurnEventConflictActionsSheet(
+          personName: personName,
+          conflicts: conflicts,
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.28)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.error_outline, size: 18, color: color),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(fontWeight: FontWeight.w800, color: color),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: Colors.black.withOpacity(0.68),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 10),
+            ...conflicts.map(
+              (r) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.55),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.black.withOpacity(0.06)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _realEventText(r.event),
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Stato: ${_conflictStateLabel(r.state)}",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: _conflictStateColor(r.state),
+                        ),
+                      ),
+                      if (r.detailText != null) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          r.detailText!,
+                          style: TextStyle(
+                            color: Colors.black.withOpacity(0.72),
+                            fontWeight: FontWeight.w600,
+                            height: 1.25,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              "Tocca per vedere le azioni possibili.",
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _turnRow(
     String name,
     TurnPlan p, {
@@ -1882,6 +2953,14 @@ class _CalendarioScreenStepAStabileState
   }) {
     final label = _turnLabel(p.type);
     final time = p.isOff ? "OFF" : "${_fmt(p.start)}–${_fmt(p.end)}";
+
+    final isMalattiaALetto =
+        statusText != null &&
+        statusText.toLowerCase().contains('malattia a letto');
+
+    final isTurnChanged =
+        statusText != null &&
+        statusText.toLowerCase().contains('turno cambiato manualmente');
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1912,7 +2991,11 @@ class _CalendarioScreenStepAStabileState
                       "• Stato: $statusText",
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: Colors.deepOrange.shade700,
+                        color: isMalattiaALetto
+                            ? Colors.red
+                            : isTurnChanged
+                            ? Colors.deepPurple
+                            : Theme.of(context).colorScheme.primary,
                       ),
                     ),
                 ],
@@ -2619,4 +3702,27 @@ class CoverageResultStepA {
     required this.gapDetails,
     required this.bannerText,
   });
+}
+
+enum TurnEventConflictState { open, partial, resolved }
+
+class TurnEventConflictResolution {
+  final RealEvent event;
+  final TurnEventConflictState state;
+  final _DateRange overlapRange;
+  final String? detailText;
+
+  const TurnEventConflictResolution({
+    required this.event,
+    required this.state,
+    required this.overlapRange,
+    this.detailText,
+  });
+}
+
+class _DateRange {
+  final DateTime start;
+  final DateTime end;
+
+  const _DateRange({required this.start, required this.end});
 }

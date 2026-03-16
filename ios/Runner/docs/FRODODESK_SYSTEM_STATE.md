@@ -1,28 +1,30 @@
 # FRODODESK — SYSTEM STATE
 
-Ultimo aggiornamento: 14 Marzo 2026
+Ultimo aggiornamento: 15 Marzo 2026
 
 ---
 
-# FASE ATTUALE
+# STATO GENERALE DEL PROGETTO
 
-Calendario reale – rifinitura e consolidamento UI.
+FrodoDesk è un sistema di simulazione della realtà familiare progettato per:
 
-Obiettivo della fase:
+- visualizzare la situazione reale del giorno
+- rilevare problemi prima che accadano
+- supportare decisioni operative nella gestione familiare
 
-rendere il calendario completamente utilizzabile nella vita reale prima di sviluppare altri moduli.
+Il sistema è costruito con filosofia CNC (Costruzione Non Caotica):
 
-Moduli futuri previsti ma non ancora in sviluppo:
+ogni blocco deve essere stabile prima di passare al successivo.
 
-- Finanze
-- Spese
-- Salute
-- Auto
-- Statistiche / Storico
+---
 
-Decisione strutturale confermata:
+# STATO ATTUALE DELLO SVILUPPO
 
-👉 prima completare e testare il calendario nella vita reale.
+Fase attuale:
+
+Calendario reale — consolidamento operativo.
+
+Il calendario è il cuore del sistema e deve funzionare in modo affidabile nella vita reale prima di introdurre altri moduli.
 
 ---
 
@@ -35,136 +37,89 @@ FourthShiftCycleLogic
 
 ---
 
-# STORE ATTIVI
+# STORE PRINCIPALI
 
 OverrideStore  
-DiseasePeriodStore  
-FeriePeriodStore  
-SupportNetworkStore  
 RealEventStore  
 AliceEventStore  
+SupportNetworkStore  
+FeriePeriodStore  
+DiseasePeriodStore  
+FourthShiftStore  
+SettingsStore  
 
 ---
 
-# COSA IL SISTEMA SIMULA GIÀ
+# FUNZIONALITÀ ATTUALI
 
-Il calendario oggi gestisce correttamente:
+Il sistema gestisce:
 
-- turni lavoro
+- turni lavoro automatici
 - quarta squadra
 - riposo post-notte
+- eventi reali calendario
+- eventi Alice scuola
+- rete di supporto
+- copertura Sandra
+- rilevazione buchi giornata
+- override giornalieri
 - ferie lunghe
 - malattia a periodo
-- eventi reali
-- eventi Alice / scuola
-- rete di supporto
-- copertura Sandra / Babysitter
-- buchi reali giornata
-- conflitti eventi
-- conflitti turni stesso giorno
-
-Persistenza dati verificata funzionante.
-
-Repository GitHub attivo:
-
-matteo1979-frodo/frododesk
 
 ---
 
-# FILE ATTUALMENTE IN LAVORAZIONE
+# CONFLITTO TURNO ↔ EVENTO
 
-lib/screens/calendario_screen_stepa.dart
+Il sistema rileva automaticamente quando:
 
----
+evento ∩ turno ≠ ∅
 
-# MICRO-STEP COMPLETATO IN QUESTA CHAT
-
-Popup eventi extra nei Turni.
-
-Funzione creata:
-
-_showExtraEventsDialog
-
-Posizionamento:
-
-dentro la classe
-
-_CalendarioScreenStepAStabileState
-
-subito sopra la graffa finale `}` della classe.
-
-Intervento effettuato:
-
-- solo UI
-- nessuna modifica a motori
-- nessuna modifica agli store
-- nessuna modifica alla logica di sistema
+cioè quando un evento cade dentro un turno di lavoro.
 
 ---
 
-# STATO TEST APP
+# STATI DEL CONFLITTO
 
-App avviata con:
+Decisione di progetto — 15 Marzo 2026.
 
-flutter run -d edge --web-port 8080
-
-Schermata verificata:
-
-Turni.
-
-Visualizzazione attuale:
-
-- evento principale sotto il turno
-- link `+1 altro evento`
-- popup eventi funzionante
-
-La UI non è ancora identica al mock originale ma il sistema è stabile.
-
-Decisione presa:
-
-👉 per ora lasciarla così e proseguire con i prossimi step.
+Il conflitto può avere tre stati.
 
 ---
 
-# IDEA NUOVA EMERSA IN QUESTA CHAT
+🔴 Conflitto aperto
 
-Evento generale / famiglia nel calendario.
-
-Esempio reale:
-
-Fiera dei fiori  
-17–18–19 Aprile
-
-Tipo evento previsto:
-
-personKey = family  
-oppure  
-personKey = generale
-
-Decisione architetturale:
-
-✔ usare lo stesso sistema eventi attuale  
-✔ non creare nuovi store  
-✔ riutilizzare `RealEventStore`
+Evento dentro il turno e nessuna decisione valida.
 
 ---
 
-# PROSSIMO STEP CNC
+🟠 Conflitto parzialmente coperto
 
-Integrare eventi generali / famiglia nel calendario.
+Una decisione esiste ma non copre tutta la sovrapposizione tra evento e turno.
 
-Passo operativo previsto:
+Esempio:
 
-verificare il form di creazione eventi reali per permettere:
-
-personKey = family
+Coperto con permesso 13:00–15:00  
+Resta scoperta la fascia 15:00–15:30 dentro il turno.
 
 ---
 
-# FRASE DI RIATTIVAZIONE PROSSIMA CHAT
+🟢 Conflitto risolto
 
-Ripartiamo da FrodoDesk — eventi generali/famiglia nel calendario.
+La decisione copre completamente la sovrapposizione tra evento e turno.
 
-File di lavoro previsto:
+---
 
-lib/screens/calendario_screen_stepa.dart
+# ORDINE IMPLEMENTAZIONE
+
+1. Permesso  
+2. Ferie  
+3. Turno cambiato  
+4. Evento spostato  
+
+Attualmente si sta implementando la logica completa del caso **Permesso**.
+
+---
+
+# PROSSIMO PASSO SVILUPPO
+
+Implementazione della funzione di valutazione conflitto turno ↔ evento per il caso Permesso.
