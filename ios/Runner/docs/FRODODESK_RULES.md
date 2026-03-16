@@ -285,3 +285,21 @@ Motivazione:
 una visita medica può essere compatibile con uno stato di malattia.
 
 Questa logica non è ancora implementata nel codice ma è registrata come direzione evolutiva del motore decisionale FrodoDesk.
+REGOLA — APERTURA CHAT FRODODESK
+
+Ogni nuova chat FrodoDesk deve iniziare con questa sequenza:
+
+1) Messaggio
+FRODODESK — RIPRESA SVILUPPO
+
+2) Incollare
+docs/FRODODESK_SYSTEM_STATE.md
+
+3) Incollare
+docs/FRODODESK_RULES.md
+
+4) Indicare il file su cui si lavora
+
+5) Incollare il file reale
+
+Solo dopo si riprende lo sviluppo.
