@@ -14,6 +14,8 @@ import '../models/day_override.dart';
 import '../models/disease_period.dart';
 import '../models/real_event.dart';
 import '../models/turn_override.dart';
+import '../models/work_shift.dart';
+import '../models/rotation_override.dart';
 import '../logic/core_store.dart';
 import '../models/week_identity.dart';
 import '../logic/settings_store.dart';
@@ -634,6 +636,136 @@ class _CalendarioScreenStepAStabileState
     ipsStore.refresh(now: _selectedDay);
   }
 
+  Future<void> _showNuovaRotazioneDialog() async {
+    TurnPerson selectedPerson = TurnPerson.matteo;
+    DateTime selectedStartDate = _selectedDay;
+    TurnType selectedStartShift = TurnType.mattina;
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Nuova rotazione"),
+          content: StatefulBuilder(
+            builder: (context, setStateDialog) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<TurnPerson>(
+                    value: selectedPerson,
+                    decoration: const InputDecoration(labelText: "Persona"),
+                    items: const [
+                      DropdownMenuItem(
+                        value: TurnPerson.matteo,
+                        child: Text("Matteo"),
+                      ),
+                      DropdownMenuItem(
+                        value: TurnPerson.chiara,
+                        child: Text("Chiara"),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        setStateDialog(() {
+                          selectedPerson = value;
+                        });
+                      }
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  ListTile(
+                    title: const Text("Data inizio"),
+                    subtitle: Text(
+                      "${selectedStartDate.day}/${selectedStartDate.month}/${selectedStartDate.year}",
+                    ),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedStartDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2035),
+                      );
+
+                      if (picked != null) {
+                        setStateDialog(() {
+                          selectedStartDate = picked;
+                        });
+                      }
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  DropdownButtonFormField<TurnType>(
+                    value: selectedStartShift,
+                    decoration: const InputDecoration(
+                      labelText: "Turno iniziale",
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: TurnType.mattina,
+                        child: Text("Mattina"),
+                      ),
+                      DropdownMenuItem(
+                        value: TurnType.pomeriggio,
+                        child: Text("Pomeriggio"),
+                      ),
+                      DropdownMenuItem(
+                        value: TurnType.notte,
+                        child: Text("Notte"),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        setStateDialog(() {
+                          selectedStartShift = value;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text("Chiudi"),
+            ),
+
+            ElevatedButton(
+              onPressed: () {
+                coreStore.rotationOverrideStore.add(
+                  RotationOverride(
+                    person: selectedPerson == TurnPerson.matteo
+                        ? TurnPersonId.matteo
+                        : TurnPersonId.chiara,
+                    startDate: selectedStartDate,
+                    startPoint: selectedStartShift == TurnType.mattina
+                        ? RotationStartPoint.mattina
+                        : selectedStartShift == TurnType.pomeriggio
+                        ? RotationStartPoint.pomeriggio
+                        : RotationStartPoint.notte,
+                  ),
+                );
+
+                setState(() {});
+
+                Navigator.pop(context);
+              },
+              child: const Text("Conferma"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _showTurnEventConflictActionsSheet({
     required String personName,
     required List<TurnEventConflictResolution> conflicts,
@@ -1189,6 +1321,7 @@ class _CalendarioScreenStepAStabileState
             "Chiara periodo: ${fmtOverride(chiaraPeriod)}",
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
+
           const SizedBox(height: 10),
           Wrap(
             spacing: 8,
@@ -2474,6 +2607,15 @@ class _CalendarioScreenStepAStabileState
     );
     final conflict = _turns.sameDayConflictFor(_selectedDay);
     final ov = _getOverridesForDay(_selectedDay);
+    final activeRotationMatteo = coreStore.rotationOverrideStore.activeFor(
+      person: TurnPersonId.matteo,
+      day: _selectedDay,
+    );
+
+    final activeRotationChiara = coreStore.rotationOverrideStore.activeFor(
+      person: TurnPersonId.chiara,
+      day: _selectedDay,
+    );
 
     final matteoStatus = _personRealStatusText(
       personKey: 'matteo',
@@ -2741,9 +2883,58 @@ class _CalendarioScreenStepAStabileState
           const SizedBox(height: 8),
 
           OutlinedButton.icon(
-            onPressed: () {},
+            onPressed: _showNuovaRotazioneDialog,
             icon: const Icon(Icons.autorenew),
             label: const Text("Nuova rotazione"),
+          ),
+          const SizedBox(height: 8),
+
+          OutlinedButton.icon(
+            onPressed: () async {
+              final person = await showDialog<TurnPersonId>(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: const Text("Quale nuova rotazione vuoi rimuovere?"),
+                    actions: [
+                      TextButton(
+                        onPressed: () =>
+                            Navigator.pop(context, TurnPersonId.matteo),
+                        child: const Text("Matteo"),
+                      ),
+                      TextButton(
+                        onPressed: () =>
+                            Navigator.pop(context, TurnPersonId.chiara),
+                        child: const Text("Chiara"),
+                      ),
+                    ],
+                  );
+                },
+              );
+
+              if (person == null) return;
+
+              final removed = coreStore.rotationOverrideStore.removeActiveFor(
+                person: person,
+                day: _selectedDay,
+              );
+
+              if (!mounted) return;
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    removed
+                        ? "Nuova rotazione rimossa con successo."
+                        : "Nessuna nuova rotazione attiva da rimuovere.",
+                  ),
+                ),
+              );
+
+              setState(() {});
+            },
+            icon: const Icon(Icons.restore),
+            label: const Text("Rimuovi nuova rotazione attiva"),
           ),
 
           const SizedBox(height: 8),

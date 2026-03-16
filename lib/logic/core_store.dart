@@ -117,6 +117,7 @@ class CoreStore {
     turnEngine = TurnEngine(
       fourthShiftStore: fourthShiftStore,
       turnOverrideStore: turnOverrideStore,
+      rotationOverrideStore: rotationOverrideStore,
     );
 
     // 3) Motore copertura
@@ -159,6 +160,7 @@ class CoreStore {
     await aliceEventStore.load();
     await supportNetworkStore.load();
     await fourthShiftStore.load();
+    await rotationOverrideStore.load();
     await realEventStore.load();
   }
 

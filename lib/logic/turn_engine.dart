@@ -474,14 +474,49 @@ class TurnEngine {
     );
 
     if (rotation != null) {
+      final start = DateTime(
+        rotation.startDate.year,
+        rotation.startDate.month,
+        rotation.startDate.day,
+      );
+
+      final today = DateTime(day.year, day.month, day.day);
+
+      if (_isWeekend(today.weekday)) return _TurnoTipo.off;
+
+      int workedDays = 0;
+      DateTime cursor = start;
+
+      while (cursor.isBefore(today)) {
+        if (!_isWeekend(cursor.weekday)) {
+          workedDays++;
+        }
+        cursor = cursor.add(const Duration(days: 1));
+      }
+
+      final cycle = [
+        _TurnoTipo.mattina,
+        _TurnoTipo.notte,
+        _TurnoTipo.pomeriggio,
+      ];
+
+      int startIndex;
+
       switch (rotation.startPoint) {
         case RotationStartPoint.mattina:
-          return _TurnoTipo.mattina;
+          startIndex = 0;
+          break;
         case RotationStartPoint.notte:
-          return _TurnoTipo.notte;
+          startIndex = 1;
+          break;
         case RotationStartPoint.pomeriggio:
-          return _TurnoTipo.pomeriggio;
+          startIndex = 2;
+          break;
       }
+
+      final idx = (startIndex + (workedDays ~/ 5)) % 3;
+
+      return cycle[idx];
     }
 
     final fourthShiftTipo = _turnoTipoFourthShift(p, day);
