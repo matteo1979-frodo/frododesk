@@ -32,6 +32,15 @@ Checkpoint tecnico raggiunto:
 - dialog **Nuova rotazione** collegato al sistema reale
 - `TurnEngine` collegato correttamente a `rotationOverrideStore`
 - logica rotazione nuova verificata in memoria con comportamento coerente
+- persistenza `RotationOverrideStore` implementata
+- caricamento `rotationOverrideStore.load()` collegato in `CoreStore.init()`
+- test reale completato: la nuova rotazione resta attiva dopo chiusura e riavvio app
+- aggiunto bottone UI **Rimuovi nuova rotazione attiva**
+- rimozione mirata della nuova rotazione per persona selezionata (**Matteo** / **Chiara**)
+- conflitto turno ↔ evento visibile nella card Turni
+- spiegazione conflitto attiva con stato, turno e fascia in sovrapposizione
+- segnale rapido sotto la riga turno: **⚠ Conflitto con turno**
+- commit Git creato e push GitHub completato
 
 # MOTORI ATTIVI
 
@@ -82,11 +91,15 @@ Il sistema gestisce:
 - malattia a periodo
 - override turni giornalieri
 - override turni a periodo
-- nuova rotazione turni (in memoria, non ancora persistente)
+- nuova rotazione turni persistente
+- rimozione mirata della nuova rotazione attiva
+- rilevazione conflitto turno ↔ evento
+- spiegazione del conflitto nella UI Turni
+- indicatore rapido conflitto sotto la riga del turno
 
 # GERARCHIA SISTEMA TURNI
 
-Il motore turni ora applica la seguente gerarchia:
+Il motore turni applica la seguente gerarchia:
 
 Override giornaliero  
 ↓  
@@ -102,11 +115,12 @@ Questa gerarchia garantisce che una modifica manuale abbia sempre priorità sull
 
 # GESTIONE MODIFICA TURNI
 
-La UI attuale del calendario include tre strumenti operativi:
+La UI attuale del calendario include quattro strumenti operativi:
 
 - Cambio turno (solo oggi)
 - Cambio turno (periodo)
 - Nuova rotazione
+- Rimuovi nuova rotazione attiva
 
 ### Nuova rotazione turni
 
@@ -127,9 +141,24 @@ Questa funzione è separata da:
 - Override giornalieri
 - Override periodo
 
+### Rimozione nuova rotazione attiva
+
+È stato aggiunto un comando UI dedicato:
+
+**Rimuovi nuova rotazione attiva**
+
+Comportamento:
+
+- chiede quale persona selezionare (**Matteo** / **Chiara**)
+- rimuove solo la nuova rotazione attiva della persona scelta
+- non tocca l’eventuale nuova rotazione dell’altra persona
+- dopo la rimozione, il motore torna automaticamente alla gerarchia normale del sistema turni
+
+Questa rimozione è mirata e non è un reset totale ambiguo.
+
 # LOGICA ATTUALE NUOVA ROTAZIONE
 
-La nuova rotazione è ora collegata al motore turni reale.
+La nuova rotazione è collegata al motore turni reale.
 
 Regola implementata e verificata:
 
@@ -157,12 +186,13 @@ Salvataggio nello store: ✅ completato
 Collegamento `CoreStore` → `TurnEngine`: ✅ completato  
 Lettura da parte del motore turni: ✅ completata  
 Logica 5-5-5 con weekend OFF fuori conteggio: ✅ completata  
-Test reale in app nella stessa sessione: ✅ superato  
-Persistenza dopo riavvio / riapertura app: ❌ non ancora implementata
+Persistenza dopo riavvio / riapertura app: ✅ implementata e verificata  
+Rimozione mirata da UI: ✅ implementata e verificata  
+Test reale in app: ✅ superato  
 
 Conclusione attuale:
 
-**Nuova rotazione: logica e motore OK, persistenza ancora da implementare.**
+**Nuova rotazione: funzione completa (creazione, lettura, persistenza, rimozione mirata).**
 
 # CONFLITTO TURNO ↔ EVENTO
 
@@ -171,6 +201,13 @@ Il sistema rileva automaticamente quando:
 evento ∩ turno ≠ ∅
 
 cioè quando un evento cade dentro un turno di lavoro.
+
+Il controllo è attivo nella card **Turni** e usa:
+
+- turno reale letto dal `TurnEngine`
+- eventi reali letti da `RealEventStore`
+- eventuale stato giornaliero / permesso già presente
+- calcolo della fascia reale di sovrapposizione
 
 # STATI DEL CONFLITTO
 
@@ -196,6 +233,27 @@ Resta scoperta la fascia 15:00–15:30 dentro il turno.
 
 La decisione copre completamente la sovrapposizione tra evento e turno.
 
+# STATO ATTUALE IMPLEMENTAZIONE CONFLITTO
+
+Attualmente il sistema:
+
+- rileva correttamente quando un evento cade dentro il turno
+- mostra un box conflitto dedicato nella card **Turni**
+- mostra:
+  - titolo conflitto
+  - stato del conflitto
+  - turno interessato
+  - fascia reale in conflitto
+- mostra sotto la riga del turno un indicatore rapido:
+
+**⚠ Conflitto con turno**
+
+Test reale verificato in app:
+
+- turno Matteo: **Mattina 06:00–14:00**
+- evento Matteo: **visita 12:30–13:30**
+- risultato: conflitto correttamente segnalato in UI
+
 # ORDINE IMPLEMENTAZIONE
 
 1. Permesso
@@ -203,14 +261,42 @@ La decisione copre completamente la sovrapposizione tra evento e turno.
 3. Turno cambiato
 4. Evento spostato
 
-Attualmente si sta implementando la logica completa del caso **Permesso**.
+Attualmente è attiva la base del caso **Permesso** e la rilevazione conflitto evento ↔ turno è stata verificata in UI.
 
 # PROSSIMO PASSO SVILUPPO
 
-Rendere persistente `RotationOverrideStore`, così la **Nuova rotazione** resti attiva anche dopo chiusura o riavvio dell’app.
+Prossimo step ufficiale:
 
-Successivamente verrà completata la gestione:
+**continuare il lavoro sul conflitto turno ↔ evento**
 
-- persistenza nuova rotazione
-- rimozione / reset rotazione da UI
-- risoluzione completa conflitto evento-turno
+Focus del prossimo blocco:
+
+- rifinire la logica decisionale del conflitto
+- estendere il comportamento in base allo stato reale della persona
+- valutare la differenza tra:
+  - conflitto operativo vero
+  - situazione da rivalutare
+
+# NOTA PROGETTUALE EMERSA IN QUESTA CHAT
+
+È emersa una decisione progettuale importante per l’evoluzione del motore:
+
+se la persona è in **malattia leggera** o **malattia a letto**, il conflitto evento ↔ turno non dovrebbe necessariamente essere trattato sempre come rosso pieno.
+
+Possibile evoluzione futura:
+
+- stato normale → conflitto rosso
+- malattia → valutazione più morbida / gialla / “evento da rivalutare”
+
+Questa logica non è ancora implementata nel codice ma va considerata come direzione progettuale ufficiale per il motore decisionale.
+
+# CHIUSURA STATO SESSIONE
+
+Stato reale al termine di questa chat:
+
+- nuova rotazione completata
+- persistenza verificata
+- rimozione mirata UI verificata
+- conflitto turno ↔ evento visibile e funzionante
+- sistema salvato in Git e GitHub
+- prossimo lavoro da riprendere in chat nuova: **conflitto turno ↔ evento**

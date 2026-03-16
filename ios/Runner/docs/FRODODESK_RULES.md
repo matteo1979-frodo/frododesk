@@ -1,6 +1,6 @@
 FRODODESK — RULES
 
-Ultimo aggiornamento: 15 Marzo 2026
+Ultimo aggiornamento: 16 Marzo 2026
 
 
 IDENTITÀ DEL SISTEMA
@@ -244,3 +244,44 @@ roadmap di sviluppo
 Se docs e codice non coincidono, vale sempre:
 
 ➡ il codice reale
+
+
+REGOLA DECISIONALE — CONFLITTO TURNO ↔ EVENTO
+
+Quando un evento cade dentro un turno di lavoro, il sistema deve trattarlo come **conflitto reale** e non come semplice informazione.
+
+Il sistema deve:
+
+- segnalare chiaramente la sovrapposizione
+- mostrare il turno coinvolto
+- mostrare la fascia oraria in conflitto
+- aiutare l’utente a prendere una decisione operativa
+
+Possibili azioni operative:
+
+- prendere permesso
+- prendere ferie
+- cambiare turno
+- spostare evento
+
+
+EVOLUZIONE FUTURA DEL MOTORE DECISIONALE
+
+Durante lo sviluppo è emersa una regola progettuale importante:
+
+il conflitto evento ↔ turno non deve sempre essere valutato allo stesso modo.
+
+Il sistema dovrà considerare **lo stato reale della persona**.
+
+Esempio concettuale:
+
+stato normale → conflitto rosso pieno  
+
+malattia leggera / malattia a letto →  
+valutazione più morbida (evento da rivalutare)
+
+Motivazione:
+
+una visita medica può essere compatibile con uno stato di malattia.
+
+Questa logica non è ancora implementata nel codice ma è registrata come direzione evolutiva del motore decisionale FrodoDesk.

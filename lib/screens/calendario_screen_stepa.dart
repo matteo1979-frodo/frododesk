@@ -2685,9 +2685,21 @@ class _CalendarioScreenStepAStabileState
             _familyEventsBlock(familyEvents),
             const SizedBox(height: 12),
           ],
-          _turnRow("Matteo", m, statusText: matteoStatus, events: matteoEvents),
+          _turnRow(
+            "Matteo",
+            m,
+            statusText: matteoStatus,
+            events: matteoEvents,
+            conflicts: matteoEventConflicts,
+          ),
           const SizedBox(height: 10),
-          _turnRow("Chiara", c, statusText: chiaraStatus, events: chiaraEvents),
+          _turnRow(
+            "Chiara",
+            c,
+            statusText: chiaraStatus,
+            events: chiaraEvents,
+            conflicts: chiaraEventConflicts,
+          ),
 
           const SizedBox(height: 12),
 
@@ -3141,6 +3153,7 @@ class _CalendarioScreenStepAStabileState
     TurnPlan p, {
     String? statusText,
     List<RealEvent> events = const [],
+    List<TurnEventConflictResolution> conflicts = const [],
   }) {
     final label = _turnLabel(p.type);
     final time = p.isOff ? "OFF" : "${_fmt(p.start)}–${_fmt(p.end)}";
@@ -3220,6 +3233,17 @@ class _CalendarioScreenStepAStabileState
                           ),
                         ),
                       ),
+                    ),
+                  ),
+                ],
+                if (conflicts.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    "⚠ Conflitto con turno",
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
                     ),
                   ),
                 ],
