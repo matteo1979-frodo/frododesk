@@ -1090,6 +1090,24 @@ class _CalendarioScreenStepAStabileState
     return "${_fmtDateTime(range.start)}–${_fmtDateTime(range.end)}";
   }
 
+  bool _isPersonOnFerie({
+    required String personKey,
+    required PersonDayOverride? manualOverride,
+    required DateTime day,
+  }) {
+    if (manualOverride?.status == OverrideStatus.ferie) {
+      return true;
+    }
+
+    FeriePerson? feriePerson;
+    if (personKey == 'matteo') feriePerson = FeriePerson.matteo;
+    if (personKey == 'chiara') feriePerson = FeriePerson.chiara;
+
+    if (feriePerson == null) return false;
+
+    return coreStore.feriePeriodStore.isOnHoliday(feriePerson, _onlyDate(day));
+  }
+
   String _turnPlanSummary(TurnPlan plan) {
     final label = _turnLabel(plan.type);
     if (plan.isOff) return "OFF";
@@ -1127,6 +1145,16 @@ class _CalendarioScreenStepAStabileState
         "Turno: ${_turnPlanSummary(turnPlan)}\n"
         "Fascia in conflitto: ${_rangeLabel(overlap)}\n"
         "Causa risoluzione: permesso ${_rangeLabel(covered)}";
+  }
+
+  String _buildResolvedConflictDetailFerie({
+    required TurnPlan turnPlan,
+    required _DateRange overlap,
+  }) {
+    return "Evento dentro il turno di lavoro.\n"
+        "Turno: ${_turnPlanSummary(turnPlan)}\n"
+        "Fascia in conflitto: ${_rangeLabel(overlap)}\n"
+        "Causa risoluzione: ferie";
   }
 
   String _conflictStateLabel(TurnEventConflictState state) {
@@ -1388,6 +1416,11 @@ class _CalendarioScreenStepAStabileState
     );
 
     final permessoRange = _permessoRangeFromOverride(manualOverride, day);
+    final isOnFerie = _isPersonOnFerie(
+      personKey: personKey,
+      manualOverride: manualOverride,
+      day: day,
+    );
     final personEvents = _eventsForPersonOnDay(personKey: personKey, day: day);
 
     final resolutions = <TurnEventConflictResolution>[];
@@ -1398,6 +1431,21 @@ class _CalendarioScreenStepAStabileState
 
       final overlap = _rangeOverlap(turnRange, eventRange);
       if (overlap == null) continue;
+
+      if (isOnFerie) {
+        resolutions.add(
+          TurnEventConflictResolution(
+            event: event,
+            state: TurnEventConflictState.resolved,
+            overlapRange: overlap,
+            detailText: _buildResolvedConflictDetailFerie(
+              turnPlan: turnPlan,
+              overlap: overlap,
+            ),
+          ),
+        );
+        continue;
+      }
 
       if (permessoRange == null) {
         resolutions.add(
@@ -2004,158 +2052,173 @@ class _CalendarioScreenStepAStabileState
       label: "Pranzo",
     );
 
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.35)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "BUCHI DEL GIORNO",
-            style: TextStyle(fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      headline,
-                      style: const TextStyle(fontWeight: FontWeight.w900),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subline,
-                      style: TextStyle(
-                        color: Colors.black.withOpacity(0.68),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+    return GestureDetector(
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text("Buchi del giorno"),
+            content: Text(
+              cov.gapDetails
+                  .map((g) => g.lines.map((l) => "⚠ $l").join("\n"))
+                  .join("\n\n"),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Chiudi"),
               ),
             ],
           ),
-          if (state == DayGapVisualState.coveredNeed) ...[
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.10),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.35)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "BUCHI DEL GIORNO",
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
             const SizedBox(height: 10),
-            if (sandraDecision.serveSandraMattina &&
-                _effSandraMattina(_selectedDay))
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  "• Sandra copre la fascia mattina (${_fmt(_engine.sandraCambioMattinaStart)}–${_fmt(_engine.sandraCambioMattinaEnd)})",
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-            if (sandraDecision.serveSandraPranzo &&
-                _effSandraPranzo(_selectedDay))
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  "• Sandra copre la fascia pranzo (${_fmt(_engine.sandraPranzoStart)}–${_fmt(_engine.sandraPranzoEnd)})",
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-            if (sandraDecision.serveSandraSera && _effSandraSera(_selectedDay))
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  "• Sandra copre la fascia sera (${_fmt(_engine.sandraSeraStart)}–${_fmt(_engine.sandraSeraEnd)})",
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-            if (inCover != SchoolCoverChoice.none &&
-                inCover != SchoolCoverChoice.altro)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  "• Ingresso scuola coperto da ${_schoolCoverLabel(inCover)}",
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-            if (inCover == SchoolCoverChoice.altro && inSupportSummary != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  inSupportSummary,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-            if (!uscita13Eff &&
-                outCover != SchoolCoverChoice.none &&
-                outCover != SchoolCoverChoice.altro)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  "• Uscita scuola coperta da ${_schoolCoverLabel(outCover)}",
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-            if (!uscita13Eff &&
-                outCover == SchoolCoverChoice.altro &&
-                outSupportSummary != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  outSupportSummary,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-            if (uscita13Eff &&
-                lunchCover != SchoolCoverChoice.none &&
-                lunchCover != SchoolCoverChoice.altro)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  "• Pranzo coperto da ${_schoolCoverLabel(lunchCover)}",
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-            if (uscita13Eff &&
-                lunchCover == SchoolCoverChoice.altro &&
-                lunchSupportSummary != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  lunchSupportSummary,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-          ],
-          if (state == DayGapVisualState.realGap) ...[
-            const SizedBox(height: 10),
-            for (int i = 0; i < cov.gapDetails.length; i++) ...[
-              Text(
-                "BUCO ${i + 1} — ${_cleanGapTitle(cov.gapDetails[i].label)}",
-                style: const TextStyle(fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 6),
-              ...cov.gapDetails[i].lines.map(
-                (line) => Padding(
-                  padding: const EdgeInsets.only(left: 8, bottom: 4),
-                  child: Text(
-                    "⚠ $line",
-                    style: TextStyle(color: Colors.black.withOpacity(0.72)),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icon, color: color, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        headline,
+                        style: const TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subline,
+                        style: TextStyle(
+                          color: Colors.black.withOpacity(0.68),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              if (i != cov.gapDetails.length - 1) const SizedBox(height: 10),
+              ],
+            ),
+            if (state == DayGapVisualState.coveredNeed) ...[
+              const SizedBox(height: 10),
+              if (sandraDecision.serveSandraMattina &&
+                  _effSandraMattina(_selectedDay))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    "• Sandra copre la fascia mattina (${_fmt(_engine.sandraCambioMattinaStart)}–${_fmt(_engine.sandraCambioMattinaEnd)})",
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              if (sandraDecision.serveSandraPranzo &&
+                  _effSandraPranzo(_selectedDay))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    "• Sandra copre la fascia pranzo (${_fmt(_engine.sandraPranzoStart)}–${_fmt(_engine.sandraPranzoEnd)})",
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              if (sandraDecision.serveSandraSera &&
+                  _effSandraSera(_selectedDay))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    "• Sandra copre la fascia sera (${_fmt(_engine.sandraSeraStart)}–${_fmt(_engine.sandraSeraEnd)})",
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              if (inCover != SchoolCoverChoice.none &&
+                  inCover != SchoolCoverChoice.altro)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    "• Ingresso scuola coperto da ${_schoolCoverLabel(inCover)}",
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              if (inCover == SchoolCoverChoice.altro &&
+                  inSupportSummary != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    inSupportSummary,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              if (!uscita13Eff &&
+                  outCover != SchoolCoverChoice.none &&
+                  outCover != SchoolCoverChoice.altro)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    "• Uscita scuola coperta da ${_schoolCoverLabel(outCover)}",
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              if (!uscita13Eff &&
+                  outCover == SchoolCoverChoice.altro &&
+                  outSupportSummary != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    outSupportSummary,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              if (uscita13Eff &&
+                  lunchCover != SchoolCoverChoice.none &&
+                  lunchCover != SchoolCoverChoice.altro)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    "• Pranzo coperto da ${_schoolCoverLabel(lunchCover)}",
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              if (uscita13Eff &&
+                  lunchCover == SchoolCoverChoice.altro &&
+                  lunchSupportSummary != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    lunchSupportSummary,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+            ],
+            if (state == DayGapVisualState.realGap) ...[
+              const SizedBox(height: 10),
+              for (int i = 0; i < cov.gapDetails.length; i++) ...[
+                Text(
+                  "BUCO ${i + 1} — ${_cleanGapTitle(cov.gapDetails[i].label)}",
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 6),
+
+                if (i != cov.gapDetails.length - 1) const SizedBox(height: 10),
+              ],
             ],
           ],
-        ],
+        ),
       ),
-    );
+    ); // GestureDetector
   }
 
   Widget _buildAliceHomeRiskBox() {
@@ -2208,67 +2271,69 @@ class _CalendarioScreenStepAStabileState
         ? "Il motore ha rilevato una situazione in cui Alice potrebbe trovarsi a casa senza adulto disponibile."
         : "Il motore non rileva situazioni di Alice a casa senza adulto disponibile.";
 
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.35)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "RISCHIO ALICE A CASA",
-            style: TextStyle(fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(fontWeight: FontWeight.w900),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: Colors.black.withOpacity(0.68),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+    return GestureDetector(
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text("Rischio Alice a casa"),
+            content: Text(subtitle),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text("Chiudi"),
               ),
             ],
           ),
-          if (details.isNotEmpty) ...[
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.10),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.35)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "RISCHIO ALICE A CASA",
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
             const SizedBox(height: 10),
-            ...details.map(
-              (line) => Padding(
-                padding: const EdgeInsets.only(left: 8, bottom: 4),
-                child: Text(
-                  "• $line",
-                  style: TextStyle(
-                    color: Colors.black.withOpacity(0.72),
-                    fontWeight: FontWeight.w600,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icon, color: color, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: Colors.black.withOpacity(0.68),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
+              ],
             ),
           ],
-        ],
-      ),
-    );
+        ),
+      ), // Container
+    ); // GestureDetector
   }
 
   @override
@@ -3047,7 +3112,7 @@ class _CalendarioScreenStepAStabileState
         break;
       case TurnEventConflictState.resolved:
         title = "Conflitto turno / evento — $personName";
-        subtitle = "Conflitto risolto grazie al permesso.";
+        subtitle = "Conflitto risolto da una decisione valida.";
         break;
     }
 

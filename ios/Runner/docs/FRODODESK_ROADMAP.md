@@ -1,6 +1,6 @@
 FRODODESK — ROADMAP
 
-Ultimo aggiornamento: 15 Marzo 2026
+Ultimo aggiornamento: 17 Marzo 2026
 
 OBIETTIVO GENERALE
 
@@ -11,7 +11,7 @@ un passo alla volta, blocchi stabili prima di passare al successivo.
 
 FASE ATTUALE
 
-Calendario reale — rifinitura e consolidamento UI.
+Calendario reale — consolidamento logica copertura + rifinitura UI.
 
 Obiettivo della fase:
 
@@ -94,6 +94,14 @@ eventi famiglia / generali
 
 rilevazione conflitto turno ↔ evento
 
+✔ AGGIORNAMENTO 17 Marzo 2026
+
+Risolto problema critico nella simulazione reale:
+
+- il sistema ora gestisce correttamente la copertura combinata Matteo + Chiara
+- gli eventi temporanei (visite) non generano più falsi buchi
+- il motore rileva correttamente buchi reali (es. 09:30–10:00)
+
 Nuova logica conflitti (decisione 15 Marzo 2026)
 
 Quando un evento cade dentro un turno di lavoro, il sistema genera un conflitto reale.
@@ -127,6 +135,7 @@ Esempio:
 
 Conflitto risolto — Chiara
 Risolto con permesso 13:00–15:30
+
 Ordine sviluppo conflitti
 
 1️⃣ Permesso
@@ -189,6 +198,7 @@ comprensibile
 spiegabile
 
 MODULI FUTURI (DOPO CALENDARIO MATURO)
+
 FINANZE
 
 Funzioni previste:
@@ -244,3 +254,15 @@ ore Sandra
 utilizzo rete supporto
 
 statistiche familiari
+
+# STATO ATTUALE
+
+Sistema stabile.
+
+✔ Logica copertura reale corretta  
+✔ Bug falsi buchi risolto  
+✔ Rilevazione buchi reali funzionante  
+
+⏸️ Da completare:
+
+- fix UI dettagli copertura (`CoverageGapDetail`)

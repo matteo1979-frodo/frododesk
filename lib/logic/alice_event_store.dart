@@ -223,7 +223,9 @@ class AliceEventStore {
   }
 
   bool isSchoolNormalDay(DateTime day) {
-    return !isAliceAtHomeDay(day) && !isExternalActivityDay(day);
+    final eventType = getEventTypeForDay(day);
+
+    return eventType == AliceEventType.schoolNormal;
   }
 
   bool isSummerCampOperationalDay(DateTime day) {

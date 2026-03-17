@@ -290,8 +290,8 @@ class _RealEventPanelState extends State<RealEventPanel> {
       },
     );
 
-    titleCtrl.dispose();
-    notesCtrl.dispose();
+   // titleCtrl.dispose();
+   // notesCtrl.dispose();
 
     if (result == null) return;
 

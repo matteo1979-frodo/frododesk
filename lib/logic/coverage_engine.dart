@@ -493,17 +493,19 @@ class CoverageEngine {
         ferieStore: ferieStore,
       );
 
-      if (!okAliceHome) {
-        entries.add(
-          _CoverageGapEntry(
-            label: "Alice a casa: 07:30–16:25",
-            fasciaStart: aliceHomeStart,
-            fasciaEnd: aliceHomeEnd,
-            isHomePresenceWindow: true,
-            allowSandra: true,
-          ),
-        );
-      }
+      entries.addAll(
+        _uncoveredHomeSegments(
+          day: d0,
+          windowStart: aliceHomeStart,
+          windowEnd: aliceHomeEnd,
+          labelPrefix: 'Alice a casa',
+          sandraMattinaAvailable: effSandraMattina,
+          sandraPranzoAvailable: effSandraPranzo,
+          sandraSeraAvailable: effSandraSera,
+          overrides: overrides,
+          ferieStore: ferieStore,
+        ),
+      );
     }
 
     if (aliceSchoolNormal) {
@@ -748,17 +750,19 @@ class CoverageEngine {
           ferieStore: ferieStore,
         );
 
-        if (!okAliceHome) {
-          entries.add(
-            _CoverageGapEntry(
-              label: "Alice a casa: 07:30–16:25",
-              fasciaStart: aliceHomeStart,
-              fasciaEnd: aliceHomeEnd,
-              isHomePresenceWindow: true,
-              allowSandra: true,
-            ),
-          );
-        }
+        entries.addAll(
+          _uncoveredHomeSegments(
+            day: d0,
+            windowStart: aliceHomeStart,
+            windowEnd: aliceHomeEnd,
+            labelPrefix: 'Alice a casa',
+            sandraMattinaAvailable: effSandraMattina,
+            sandraPranzoAvailable: effSandraPranzo,
+            sandraSeraAvailable: effSandraSera,
+            overrides: overrides,
+            ferieStore: ferieStore,
+          ),
+        );
       }
     }
 
@@ -1284,9 +1288,14 @@ class CoverageEngine {
           overlappingRealEvent.startTime != null &&
           overlappingRealEvent.endTime != null;
 
-      if (hasTimedRealEvent) {
-        return "$personName è fuori casa per evento reale: ${overlappingRealEvent.title}.";
-      }
+if (hasTimedRealEvent) {
+  final startHour = overlappingRealEvent.startTime!.hour.toString().padLeft(2, '0');
+  final startMinute = overlappingRealEvent.startTime!.minute.toString().padLeft(2, '0');
+  final endHour = overlappingRealEvent.endTime!.hour.toString().padLeft(2, '0');
+  final endMinute = overlappingRealEvent.endTime!.minute.toString().padLeft(2, '0');
+
+  return "$personName è fuori casa per evento reale: ${overlappingRealEvent.title} ($startHour:$startMinute–$endHour:$endMinute).";
+}
 
       return "$personName risulta disponibile in questa fascia (ferie).";
     }
@@ -1466,6 +1475,15 @@ class CoverageEngine {
         <PersonAvailability>[PersonAvailability(busyShifts: chiaraBusy)],
       );
     }
+
+    // tentativo copertura combinata Matteo + Chiara
+    final combinedCover =
+        isTimeCovered(fasciaStart, fasciaEnd, <PersonAvailability>[
+          PersonAvailability(busyShifts: matteoBusy),
+          PersonAvailability(busyShifts: chiaraBusy),
+        ]);
+
+    if (combinedCover) return true;
 
     if (matteoCanCover || chiaraCanCover) return true;
 

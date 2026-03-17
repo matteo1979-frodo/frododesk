@@ -1,6 +1,6 @@
 # FRODODESK — SYSTEM STATE
 
-Ultimo aggiornamento: 16 Marzo 2026
+Ultimo aggiornamento: 17 Marzo 2026
 
 # STATO GENERALE DEL PROGETTO
 
@@ -22,57 +22,86 @@ Calendario reale — consolidamento operativo.
 
 Il calendario è il cuore del sistema e deve funzionare in modo affidabile nella vita reale prima di introdurre altri moduli.
 
-Checkpoint tecnico raggiunto:
+Checkpoint tecnico aggiornato:
 
 - UI calendario stabilizzata
 - metodo `_cardTurni()` riparato
 - bottoni gestione turni ripristinati
 - introduzione struttura override turni
-- primo salvataggio Git stabile dopo modifica struttura turni
-- dialog **Nuova rotazione** collegato al sistema reale
-- `TurnEngine` collegato correttamente a `rotationOverrideStore`
-- logica rotazione nuova verificata in memoria con comportamento coerente
-- persistenza `RotationOverrideStore` implementata
-- caricamento `rotationOverrideStore.load()` collegato in `CoreStore.init()`
-- test reale completato: la nuova rotazione resta attiva dopo chiusura e riavvio app
-- aggiunto bottone UI **Rimuovi nuova rotazione attiva**
-- rimozione mirata della nuova rotazione per persona selezionata (**Matteo** / **Chiara**)
+- nuova rotazione turni completa (creazione, lettura, persistenza, rimozione)
 - conflitto turno ↔ evento visibile nella card Turni
-- spiegazione conflitto attiva con stato, turno e fascia in sovrapposizione
-- segnale rapido sotto la riga turno: **⚠ Conflitto con turno**
-- commit Git creato e push GitHub completato
+- introduzione gestione conflitto risolto anche tramite **Ferie**
+- correzione logica Alice scuola vs vacanza (`AliceEventStore.isSchoolNormalDay`)
+- fix crash UI `TextEditingController disposed`
+- sistema stabile in esecuzione reale
+
+# 🔥 FIX CRITICO COMPLETATO (17 Marzo 2026)
+
+## Problema
+
+Caso reale:
+
+- Chiara in ferie
+- evento reale Chiara 09:00–10:00
+- Matteo presente fino alle 13:00
+- Chiara rientra alle 10:00
+
+RISULTATO ERRATO (prima):
+
+→ BUCO 07:30–16:25  
+→ RISCHIO ALICE A CASA  
+
+## Comportamento corretto
+
+- 07:30–09:00 → Chiara presente
+- 09:00–10:00 → Matteo presente
+- 10:00+ → Chiara torna disponibile
+
+→ Alice **non è mai sola**  
+→ Copertura **OK tutto il giorno**
+
+## Soluzione implementata
+
+Aggiornata la logica in:
+
+- `coverage_logic.dart`
+- `coverage_engine.dart`
+
+Ora il sistema:
+
+- combina correttamente la presenza Matteo + Chiara
+- gestisce eventi temporanei (visite)
+- gestisce rientro dopo evento
+- elimina falsi buchi Alice
+
+## Verifica reale effettuata
+
+✔ Caso 1  
+Chiara ferie + visita → COPERTURA OK
+
+✔ Caso 2  
+Chiara visita + Matteo visita sovrapposta →  
+BUCO reale rilevato → 09:30–10:00
 
 # MOTORI ATTIVI
 
-TurnEngine
-
-CoverageEngine
-
-EmergencyDayLogic
-
-FourthShiftCycleLogic
+TurnEngine  
+CoverageEngine  
+EmergencyDayLogic  
+FourthShiftCycleLogic  
 
 # STORE PRINCIPALI
 
-OverrideStore
-
-TurnOverrideStore
-
-RotationOverrideStore
-
-RealEventStore
-
-AliceEventStore
-
-SupportNetworkStore
-
-FeriePeriodStore
-
-DiseasePeriodStore
-
-FourthShiftStore
-
-SettingsStore
+OverrideStore  
+TurnOverrideStore  
+RotationOverrideStore  
+RealEventStore  
+AliceEventStore  
+SupportNetworkStore  
+FeriePeriodStore  
+DiseasePeriodStore  
+FourthShiftStore  
+SettingsStore  
 
 # FUNZIONALITÀ ATTUALI
 
@@ -94,12 +123,14 @@ Il sistema gestisce:
 - nuova rotazione turni persistente
 - rimozione mirata della nuova rotazione attiva
 - rilevazione conflitto turno ↔ evento
+- gestione conflitto risolto tramite:
+  - permesso
+  - ferie
 - spiegazione del conflitto nella UI Turni
 - indicatore rapido conflitto sotto la riga del turno
+- copertura combinata reale Matteo + Chiara ✔
 
 # GERARCHIA SISTEMA TURNI
-
-Il motore turni applica la seguente gerarchia:
 
 Override giornaliero  
 ↓  
@@ -109,194 +140,64 @@ Nuova rotazione
 ↓  
 Quarta squadra  
 ↓  
-Rotazione base
+Rotazione base  
 
-Questa gerarchia garantisce che una modifica manuale abbia sempre priorità sulla rotazione automatica.
-
-# GESTIONE MODIFICA TURNI
-
-La UI attuale del calendario include quattro strumenti operativi:
-
-- Cambio turno (solo oggi)
-- Cambio turno (periodo)
-- Nuova rotazione
-- Rimuovi nuova rotazione attiva
-
-### Nuova rotazione turni
-
-È stato introdotto il dialog operativo **Nuova rotazione** nel calendario.
-
-Questa funzione permette di impostare una nuova rotazione turni personale quando
-la rotazione standard dell’azienda non è più valida.
-
-Parametri della rotazione:
-
-- Persona (Matteo / Chiara)
-- Data di inizio
-- Turno iniziale (Mattina / Pomeriggio / Notte)
-
-Questa funzione è separata da:
-
-- Quarta squadra
-- Override giornalieri
-- Override periodo
-
-### Rimozione nuova rotazione attiva
-
-È stato aggiunto un comando UI dedicato:
-
-**Rimuovi nuova rotazione attiva**
-
-Comportamento:
-
-- chiede quale persona selezionare (**Matteo** / **Chiara**)
-- rimuove solo la nuova rotazione attiva della persona scelta
-- non tocca l’eventuale nuova rotazione dell’altra persona
-- dopo la rimozione, il motore torna automaticamente alla gerarchia normale del sistema turni
-
-Questa rimozione è mirata e non è un reset totale ambiguo.
-
-# LOGICA ATTUALE NUOVA ROTAZIONE
-
-La nuova rotazione è collegata al motore turni reale.
-
-Regola implementata e verificata:
-
-- ciclo a blocchi **5-5-5**
-- sequenza: **Mattina → Notte → Pomeriggio**
-- il turno iniziale scelto nel dialog diventa il punto di partenza del ciclo
-- sabato e domenica risultano **OFF**
-- sabato e domenica **non contano** nel conteggio dei 5 giorni lavorativi
-- la rotazione viene letta con priorità superiore a Quarta Squadra e rotazione base
-- il sistema usa `RotationOverrideStore` come sorgente per il `TurnEngine`
-
-Esempio:
-
-- 5 giorni lavorativi Mattina
-- poi 5 giorni lavorativi Notte
-- poi 5 giorni lavorativi Pomeriggio
-- poi il ciclo ricomincia
-
-# STATO IMPLEMENTAZIONE NUOVA ROTAZIONE
-
-Stato reale al termine della sessione:
-
-UI dialog: ✅ completata  
-Salvataggio nello store: ✅ completato  
-Collegamento `CoreStore` → `TurnEngine`: ✅ completato  
-Lettura da parte del motore turni: ✅ completata  
-Logica 5-5-5 con weekend OFF fuori conteggio: ✅ completata  
-Persistenza dopo riavvio / riapertura app: ✅ implementata e verificata  
-Rimozione mirata da UI: ✅ implementata e verificata  
-Test reale in app: ✅ superato  
-
-Conclusione attuale:
-
-**Nuova rotazione: funzione completa (creazione, lettura, persistenza, rimozione mirata).**
-
-# CONFLITTO TURNO ↔ EVENTO
+# LOGICA CONFLITTO TURNO ↔ EVENTO
 
 Il sistema rileva automaticamente quando:
 
 evento ∩ turno ≠ ∅
 
-cioè quando un evento cade dentro un turno di lavoro.
+e classifica:
 
-Il controllo è attivo nella card **Turni** e usa:
+🔴 Conflitto aperto  
+🟠 Conflitto parziale  
+🟢 Conflitto risolto  
 
-- turno reale letto dal `TurnEngine`
-- eventi reali letti da `RealEventStore`
-- eventuale stato giornaliero / permesso già presente
-- calcolo della fascia reale di sovrapposizione
+Supporto attivo:
 
-# STATI DEL CONFLITTO
+- Permesso ✔
+- Ferie ✔
 
-Decisione di progetto — 15 Marzo 2026.
+# STATO UI
 
-Il conflitto può avere tre stati.
+File:
 
-🔴 Conflitto aperto
+`calendario_screen_stepa.dart`
 
-Evento dentro il turno e nessuna decisione valida.
+Situazione attuale:
 
-🟠 Conflitto parzialmente coperto
+- UI stabilizzata e funzionante
+- nessun errore di compilazione
 
-Una decisione esiste ma non copre tutta la sovrapposizione tra evento e turno.
+✔ Miglioramento introdotto:
 
-Esempio:
+- rimozione dettagli buchi dal box principale
+- introduzione popup su "Buchi del giorno"
+- visualizzazione dettagli solo su richiesta utente
+- aggiunta indicatori visivi ⚠ nelle cause del buco
 
-Coperto con permesso 13:00–15:00
+Risultato:
 
-Resta scoperta la fascia 15:00–15:30 dentro il turno.
+- UI più pulita
+- migliore leggibilità
+- separazione tra sintesi (box) e dettaglio (popup)
 
-🟢 Conflitto risolto
+# STATO GENERALE
 
-La decisione copre completamente la sovrapposizione tra evento e turno.
+Sistema stabile e utilizzabile.
 
-# STATO ATTUALE IMPLEMENTAZIONE CONFLITTO
+Logica copertura:
+✔ corretta  
+✔ verificata su casi reali  
+✔ senza falsi positivi  
 
-Attualmente il sistema:
+UI:
+✔ più pulita  
+✔ più leggibile  
+✔ comportamento coerente con uso reale  
 
-- rileva correttamente quando un evento cade dentro il turno
-- mostra un box conflitto dedicato nella card **Turni**
-- mostra:
-  - titolo conflitto
-  - stato del conflitto
-  - turno interessato
-  - fascia reale in conflitto
-- mostra sotto la riga del turno un indicatore rapido:
+# PROSSIMO PASSO
 
-**⚠ Conflitto con turno**
-
-Test reale verificato in app:
-
-- turno Matteo: **Mattina 06:00–14:00**
-- evento Matteo: **visita 12:30–13:30**
-- risultato: conflitto correttamente segnalato in UI
-
-# ORDINE IMPLEMENTAZIONE
-
-1. Permesso
-2. Ferie
-3. Turno cambiato
-4. Evento spostato
-
-Attualmente è attiva la base del caso **Permesso** e la rilevazione conflitto evento ↔ turno è stata verificata in UI.
-
-# PROSSIMO PASSO SVILUPPO
-
-Prossimo step ufficiale:
-
-**continuare il lavoro sul conflitto turno ↔ evento**
-
-Focus del prossimo blocco:
-
-- rifinire la logica decisionale del conflitto
-- estendere il comportamento in base allo stato reale della persona
-- valutare la differenza tra:
-  - conflitto operativo vero
-  - situazione da rivalutare
-
-# NOTA PROGETTUALE EMERSA IN QUESTA CHAT
-
-È emersa una decisione progettuale importante per l’evoluzione del motore:
-
-se la persona è in **malattia leggera** o **malattia a letto**, il conflitto evento ↔ turno non dovrebbe necessariamente essere trattato sempre come rosso pieno.
-
-Possibile evoluzione futura:
-
-- stato normale → conflitto rosso
-- malattia → valutazione più morbida / gialla / “evento da rivalutare”
-
-Questa logica non è ancora implementata nel codice ma va considerata come direzione progettuale ufficiale per il motore decisionale.
-
-# CHIUSURA STATO SESSIONE
-
-Stato reale al termine di questa chat:
-
-- nuova rotazione completata
-- persistenza verificata
-- rimozione mirata UI verificata
-- conflitto turno ↔ evento visibile e funzionante
-- sistema salvato in Git e GitHub
-- prossimo lavoro da riprendere in chat nuova: **conflitto turno ↔ evento**
+- ritorno al bug logico complesso (ferie + evento → falso buco)
+- verifica profonda coverage combinata in scenari reali
