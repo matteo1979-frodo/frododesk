@@ -1,6 +1,6 @@
 # FRODODESK — PROJECT MEMORY
 
-Ultimo aggiornamento: 15 Marzo 2026
+Ultimo aggiornamento: 17 Marzo 2026
 
 ## IDENTITÀ DEL PROGETTO
 
@@ -101,3 +101,47 @@ Il suo compito è:
 - evidenziare problemi reali
 - spiegare perché accadono
 - aiutare a prendere decisioni prima che diventino emergenze.
+
+---
+
+# AGGIORNAMENTO — 17 Marzo 2026
+
+## Copertura reale (fix critico validato)
+
+Risolto un caso reale complesso nella gestione della copertura:
+
+Scenario:
+- Chiara in ferie
+- evento reale Chiara 09:00–10:00
+- Matteo presente fino alle 13:00
+
+Problema:
+il sistema generava un falso buco “Alice a casa” nonostante la copertura reale fosse continua.
+
+Causa:
+la copertura non considerava correttamente la continuità tra Matteo e Chiara nei cambi di presenza durante la giornata.
+
+Soluzione strutturale:
+- eventi reali integrati nei busy shifts anche in presenza di ferie/malattia
+- segmentazione completa della giornata in micro-fasce temporali
+- utilizzo coerente di `isTimeCovered` su copertura combinata multi-persona
+- verifica della copertura reale su ogni segmento (non solo sulla fascia intera)
+
+Risultato:
+- eliminati i falsi positivi
+- copertura coerente con la realtà fisica della giornata
+- comportamento stabile anche nei cambi intermedi (staffetta tra persone)
+
+Validazione:
+il motore di copertura è stato controllato nei punti critici:
+
+- costruzione busy shifts (turni + eventi reali)
+- applicazione override
+- logica `_isFasciaCovered`
+- funzione `isTimeCovered`
+- segmentazione `_uncoveredHomeSegments`
+
+e testato direttamente sull’app reale con esito corretto.
+
+Stato attuale:
+la logica di copertura è considerata **affidabile per uso reale**.

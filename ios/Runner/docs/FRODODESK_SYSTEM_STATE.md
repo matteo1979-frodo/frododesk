@@ -34,6 +34,15 @@ Checkpoint tecnico aggiornato:
 - correzione logica Alice scuola vs vacanza (`AliceEventStore.isSchoolNormalDay`)
 - fix crash UI `TextEditingController disposed`
 - sistema stabile in esecuzione reale
+- verifica profonda completata sul motore di copertura reale
+- controllata tutta la catena logica:
+  - `_busyShiftsFromRealEventsForPerson`
+  - `OverrideApply.applyToBusyShifts`
+  - `_isFasciaCovered`
+  - `isTimeCovered`
+  - `_uncoveredHomeSegments`
+- confermato che la copertura combinata Matteo + Chiara è coerente anche nei segmenti intermedi
+- verifica finale eseguita in app reale con esito corretto: **Copertura OK**
 
 # 🔥 FIX CRITICO COMPLETATO (17 Marzo 2026)
 
@@ -82,6 +91,9 @@ Chiara ferie + visita → COPERTURA OK
 ✔ Caso 2  
 Chiara visita + Matteo visita sovrapposta →  
 BUCO reale rilevato → 09:30–10:00
+
+✔ Verifica aggiuntiva di solidità  
+Controllata manualmente l’intera catena del motore di copertura sui punti critici senza trovare incoerenze residue.
 
 # MOTORI ATTIVI
 
@@ -191,6 +203,8 @@ Logica copertura:
 ✔ corretta  
 ✔ verificata su casi reali  
 ✔ senza falsi positivi  
+✔ controllata nei punti logici più delicati  
+✔ confermata in app reale  
 
 UI:
 ✔ più pulita  
@@ -199,5 +213,11 @@ UI:
 
 # PROSSIMO PASSO
 
-- ritorno al bug logico complesso (ferie + evento → falso buco)
-- verifica profonda coverage combinata in scenari reali
+- integrazione Eventi Reali nei Turni
+- lettura eventi del giorno da `RealEventStore`
+- visualizzazione accanto ai turni di Matteo e Chiara
+- trattamento come conflitti reali, non come semplice informazione
+
+File previsto:
+
+`lib/screens/calendario_screen_stepa.dart`
