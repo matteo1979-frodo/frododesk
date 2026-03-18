@@ -1,6 +1,6 @@
 FRODODESK — RULES
 
-Ultimo aggiornamento: 16 Marzo 2026
+Ultimo aggiornamento: 17 Marzo 2026
 
 
 IDENTITÀ DEL SISTEMA
@@ -199,16 +199,32 @@ Matteo copia i file aggiornati nella cartella:
 del progetto FrodoDesk.
 
 
-6️⃣ (Opzionale) Salvataggio online con Git
+6️⃣ Salvataggio obbligatorio (Git)
 
-Se Matteo vuole salvare anche online:
+Dopo aver aggiornato i file docs, eseguire SEMPRE:
 
 git add .  
 git commit -m "docs update"  
 git push
 
+Questo passaggio garantisce:
 
-7️⃣ Conferma finale di Frodo
+- allineamento tra locale e remoto  
+- possibilità di cambiare chat senza perdere stato  
+- continuità completa del progetto  
+
+
+7️⃣ Controllo finale
+
+Verificare sempre:
+
+- file docs aggiornati ✔  
+- copiati nella cartella `/docs` ✔  
+- commit eseguito ✔  
+- push eseguito ✔  
+
+
+8️⃣ Conferma finale di Frodo
 
 Prima della chiusura definitiva della chat:
 
@@ -285,21 +301,23 @@ Motivazione:
 una visita medica può essere compatibile con uno stato di malattia.
 
 Questa logica non è ancora implementata nel codice ma è registrata come direzione evolutiva del motore decisionale FrodoDesk.
+
+
 REGOLA — APERTURA CHAT FRODODESK
 
 Ogni nuova chat FrodoDesk deve iniziare con questa sequenza:
 
-1) Messaggio
-FRODODESK — RIPRESA SVILUPPO
+1) Messaggio  
+FRODODESK — RIPRESA SVILUPPO  
 
-2) Incollare
-docs/FRODODESK_SYSTEM_STATE.md
+2) Incollare  
+docs/FRODODESK_SYSTEM_STATE.md  
 
-3) Incollare
-docs/FRODODESK_RULES.md
+3) Incollare  
+docs/FRODODESK_RULES.md  
 
-4) Indicare il file su cui si lavora
+4) Indicare il file su cui si lavora  
 
-5) Incollare il file reale
+5) Incollare il file reale  
 
 Solo dopo si riprende lo sviluppo.

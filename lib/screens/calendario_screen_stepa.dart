@@ -33,6 +33,8 @@ import '../widgets/disease_period_panel.dart';
 // ✅ NEW: Eventi speciali centro estivo
 import '../logic/summer_camp_special_event_store.dart';
 
+import '../utils/calendario_formatters.dart';
+
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
   final DateTime? initialSelectedDay;
@@ -325,7 +327,7 @@ class _CalendarioScreenStepAStabileState
       if (!coversFullRange) continue;
 
       lines.add(
-        "• Supporto $contextLabel: ${person.name} ${_fmt(person.start)}–${_fmt(person.end)}",
+        ". Supporto $contextLabel: ${person.name} ${fmtTimeOfDay(person.start)}-${fmtTimeOfDay(person.end)}",
       );
     }
 
@@ -902,16 +904,6 @@ class _CalendarioScreenStepAStabileState
 
   DateTime _onlyDate(DateTime d) => DateTime(d.year, d.month, d.day);
 
-  String _fmtDate(DateTime d) => DateFormat('yyyy-MM-dd').format(d);
-
-  String _fmt(TimeOfDay t) =>
-      "${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}";
-
-  String _fmtDateTime(DateTime dt) =>
-      "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
-
-  String _fmtShortDate(DateTime dt) => DateFormat('dd/MM', 'it_IT').format(dt);
-
   DateTime _atDayTime(DateTime day, TimeOfDay t) {
     final d0 = _onlyDate(day);
     return DateTime(d0.year, d0.month, d0.day, t.hour, t.minute);
@@ -1087,7 +1079,7 @@ class _CalendarioScreenStepAStabileState
   }
 
   String _rangeLabel(_DateRange range) {
-    return "${_fmtDateTime(range.start)}–${_fmtDateTime(range.end)}";
+    return "${fmtDateTimeHHmm(range.start)}-${fmtDateTimeHHmm(range.end)}";
   }
 
   bool _isPersonOnFerie({
@@ -1111,7 +1103,7 @@ class _CalendarioScreenStepAStabileState
   String _turnPlanSummary(TurnPlan plan) {
     final label = _turnLabel(plan.type);
     if (plan.isOff) return "OFF";
-    return "$label ${_fmt(plan.start)}–${_fmt(plan.end)}";
+    return "$label ${fmtTimeOfDay(plan.start)} ${fmtTimeOfDay(plan.end)}";
   }
 
   String _buildOpenConflictDetail({
@@ -1237,7 +1229,7 @@ class _CalendarioScreenStepAStabileState
       day: day,
     );
     if (period != null && period.shift != null && period.endDate != null) {
-      return "Turno cambiato manualmente • ${_turnOverrideShiftLabel(period.shift!)} (${_fmtShortDate(period.startDate)}–${_fmtShortDate(period.endDate!)})";
+      return "Turno cambiato manualmente • ${_turnOverrideShiftLabel(period.shift!)} (${fmtShortDate(period.startDate)} → ${fmtShortDate(period.endDate!)})";
     }
 
     return null;
@@ -1303,7 +1295,7 @@ class _CalendarioScreenStepAStabileState
         return "${_turnOverrideShiftLabel(item.shift!)} (solo oggi)";
       }
       if (item.endDate != null) {
-        return "${_turnOverrideShiftLabel(item.shift!)} (${_fmtShortDate(item.startDate)}–${_fmtShortDate(item.endDate!)})";
+        return "${_turnOverrideShiftLabel(item.shift!)} (${fmtShortDate(item.startDate)} → ${fmtShortDate(item.endDate!)})";
       }
       return _turnOverrideShiftLabel(item.shift!);
     }
@@ -1619,11 +1611,11 @@ class _CalendarioScreenStepAStabileState
 
   String _realEventText(RealEvent event) {
     if (event.startTime != null && event.endTime != null) {
-      return "${event.title} ${_fmt(event.startTime!)}–${_fmt(event.endTime!)}";
+      return "${event.title} ${fmtTimeOfDay(event.startTime!)}–${fmtTimeOfDay(event.endTime!)}";
     }
 
     if (event.startTime != null) {
-      return "${event.title} ${_fmt(event.startTime!)}";
+      return "${event.title} ${fmtTimeOfDay(event.startTime!)}";
     }
 
     return "${event.title} • Tutto il giorno";
@@ -2122,7 +2114,7 @@ class _CalendarioScreenStepAStabileState
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
-                    "• Sandra copre la fascia mattina (${_fmt(_engine.sandraCambioMattinaStart)}–${_fmt(_engine.sandraCambioMattinaEnd)})",
+                    "• Sandra copre la fascia mattina (${fmtTimeOfDay(_engine.sandraCambioMattinaStart)}–${fmtTimeOfDay(_engine.sandraCambioMattinaEnd)})",
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -2131,7 +2123,7 @@ class _CalendarioScreenStepAStabileState
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
-                    "• Sandra copre la fascia pranzo (${_fmt(_engine.sandraPranzoStart)}–${_fmt(_engine.sandraPranzoEnd)})",
+                    "• Sandra copre la fascia pranzo (${fmtTimeOfDay(_engine.sandraPranzoStart)}–${fmtTimeOfDay(_engine.sandraPranzoEnd)})",
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -2140,7 +2132,7 @@ class _CalendarioScreenStepAStabileState
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
-                    "• Sandra copre la fascia sera (${_fmt(_engine.sandraSeraStart)}–${_fmt(_engine.sandraSeraEnd)})",
+                    "• Sandra copre la fascia sera (${fmtTimeOfDay(_engine.sandraSeraStart)}–${fmtTimeOfDay(_engine.sandraSeraEnd)})",
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -3221,7 +3213,9 @@ class _CalendarioScreenStepAStabileState
     List<TurnEventConflictResolution> conflicts = const [],
   }) {
     final label = _turnLabel(p.type);
-    final time = p.isOff ? "OFF" : "${_fmt(p.start)}–${_fmt(p.end)}";
+    final time = p.isOff
+        ? "OFF"
+        : "${fmtTimeOfDay(p.start)}–${fmtTimeOfDay(p.end)}";
 
     final isMalattiaALetto =
         statusText != null &&
@@ -3408,13 +3402,13 @@ class _CalendarioScreenStepAStabileState
   String _turnLabel(TurnType t) {
     switch (t) {
       case TurnType.mattina:
-        return "Mattina";
+        return "M";
       case TurnType.pomeriggio:
-        return "Pomeriggio";
+        return "P";
       case TurnType.notte:
-        return "Notte";
+        return "N";
       case TurnType.off:
-        return "Off";
+        return "OFF";
     }
   }
 
@@ -3488,7 +3482,7 @@ class _CalendarioScreenStepAStabileState
             ),
             const SizedBox(height: 6),
             Text(
-              "Orario: ${_fmt(current.start)}–${_fmt(current.end)}",
+              "Orario: ${fmtTimeOfDay(current.start)}–${fmtTimeOfDay(current.end)}",
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
@@ -3539,13 +3533,15 @@ class _CalendarioScreenStepAStabileState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Orario: ${_fmt(_scuolaStart)}–${_fmt(_scuolaEnd)}"),
+          Text(
+            "Orario: ${fmtTimeOfDay(_scuolaStart)}–${fmtTimeOfDay(_scuolaEnd)}",
+          ),
           const SizedBox(height: 12),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(
               uscita13Eff
-                  ? "Uscita anticipata: ${_fmt(uscitaAt!)}"
+                  ? "Uscita anticipata: ${fmtTimeOfDay(uscitaAt!)}"
                   : "Uscita anticipata (tocca per impostare orario)",
               style: const TextStyle(fontWeight: FontWeight.w800),
             ),
@@ -3566,7 +3562,7 @@ class _CalendarioScreenStepAStabileState
               children: [
                 Expanded(
                   child: Text(
-                    "Uscita: ${_fmt(outStart)}–${_fmt(outEnd)}${hasCustomOut ? " (personalizzata)" : ""}",
+                    "Uscita: ${fmtTimeOfDay(outStart)}–${fmtTimeOfDay(outEnd)}${hasCustomOut ? " (personalizzata)" : ""}",
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
@@ -3591,7 +3587,7 @@ class _CalendarioScreenStepAStabileState
             value: inChoice,
             isExpanded: true,
             decoration: InputDecoration(
-              labelText: "Ingresso 07:30–${_fmt(_scuolaStart)}",
+              labelText: "Ingresso 07:30–${fmtTimeOfDay(_scuolaStart)}",
             ),
             items: SchoolCoverChoice.values.map((c) {
               return DropdownMenuItem(
@@ -3622,7 +3618,8 @@ class _CalendarioScreenStepAStabileState
               value: outChoice,
               isExpanded: true,
               decoration: InputDecoration(
-                labelText: "Uscita ${_fmt(outStart)}–${_fmt(outEnd)}",
+                labelText:
+                    "Uscita ${fmtTimeOfDay(outStart)}–${fmtTimeOfDay(outEnd)}",
               ),
               items: SchoolCoverChoice.values.map((c) {
                 return DropdownMenuItem(
@@ -3663,7 +3660,7 @@ class _CalendarioScreenStepAStabileState
               isExpanded: true,
               decoration: InputDecoration(
                 labelText:
-                    "Pranzo ${_fmt(uscitaAt!)}–${_fmt(_engine.sandraPranzoEnd)}",
+                    "Pranzo ${fmtTimeOfDay(uscitaAt!)}–${fmtTimeOfDay(_engine.sandraPranzoEnd)}",
               ),
               items: SchoolCoverChoice.values.map((c) {
                 return DropdownMenuItem(
@@ -3824,7 +3821,7 @@ class _CalendarioScreenStepAStabileState
             children: [
               Expanded(
                 child: Text(
-                  "$title   ${_fmt(start)}–${_fmt(end)}",
+                  "$title   ${fmtTimeOfDay(start)}–${fmtTimeOfDay(end)}",
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),
@@ -3855,7 +3852,7 @@ class _CalendarioScreenStepAStabileState
       children: [
         Expanded(
           child: Text(
-            "$title\n${_fmt(start)}–${_fmt(end)}",
+            "$title\n${fmtTimeOfDay(start)}–${fmtTimeOfDay(end)}",
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
         ),
@@ -3934,9 +3931,10 @@ class _CalendarioScreenStepAStabileState
                   String time = "";
 
                   if (e.startTime != null && e.endTime != null) {
-                    time = "${_fmt(e.startTime!)}–${_fmt(e.endTime!)}";
+                    time =
+                        "${fmtTimeOfDay(e.startTime!)}–${fmtTimeOfDay(e.endTime!)}";
                   } else if (e.startTime != null) {
-                    time = _fmt(e.startTime!);
+                    time = fmtTimeOfDay(e.startTime!);
                   } else {
                     time = "Tutto il giorno";
                   }

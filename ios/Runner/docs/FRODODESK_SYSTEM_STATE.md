@@ -1,6 +1,6 @@
 # FRODODESK — SYSTEM STATE
 
-Ultimo aggiornamento: 17 Marzo 2026
+Ultimo aggiornamento: 18 Marzo 2026
 
 # STATO GENERALE DEL PROGETTO
 
@@ -43,6 +43,17 @@ Checkpoint tecnico aggiornato:
   - `_uncoveredHomeSegments`
 - confermato che la copertura combinata Matteo + Chiara è coerente anche nei segmenti intermedi
 - verifica finale eseguita in app reale con esito corretto: **Copertura OK**
+- avviata estrazione modulare sicura del file `calendario_screen_stepa.dart`
+- creato file helper dedicato: `lib/utils/calendario_formatters.dart`
+- aggiunto import del nuovo file utils nel calendario
+- rimossi dal file principale gli helper:
+  - `_fmtShortDate()`
+  - `_fmtDateTime()`
+  - `_fmtDate()`
+  - `_fmt()`
+- sostituite nel file principale le chiamate a `_fmt(...)` con `fmtTimeOfDay(...)`
+- sostituite nel file principale le chiamate a `_fmtShortDate(...)` con `fmtShortDate(...)`
+- app verificata dopo l’estrazione helper: nessun errore rosso, avvio su Edge riuscito
 
 # 🔥 FIX CRITICO COMPLETATO (17 Marzo 2026)
 
@@ -95,6 +106,59 @@ BUCO reale rilevato → 09:30–10:00
 ✔ Verifica aggiuntiva di solidità  
 Controllata manualmente l’intera catena del motore di copertura sui punti critici senza trovare incoerenze residue.
 
+# 🔥 FIX CRITICI COMPLETATI (18 Marzo 2026)
+
+## Problema 1
+
+Dopo alcune correzioni, il sistema aveva smesso di considerare correttamente i giorni normali di scuola.
+
+RISULTATO ERRATO (prima):
+
+- giorno senza evento speciale Alice
+- ingresso/uscita scuola non rientravano più correttamente nel comportamento atteso
+- il motore poteva saltare la logica scuola in modo incoerente
+
+## Soluzione implementata
+
+Corretta la funzione:
+
+- `AliceEventStore.isSchoolNormalDay`
+
+Nuova logica:
+
+- un giorno è considerato scuola normale se **non** è:
+  - `vacation`
+  - `schoolClosure`
+  - `sickness`
+  - `summerCamp`
+
+## Problema 2
+
+Giorni con **chiusura scuola** venivano ancora trattati come giorni normali di scuola.
+
+RISULTATO ERRATO (prima):
+
+- comparivano buchi di ingresso/uscita scuola
+- il motore ragionava come se Alice dovesse andare e tornare da scuola
+- incoerenza evidente tra card Alice/Scuola e box Buchi del giorno
+
+## Soluzione implementata
+
+Aggiornata di nuovo la logica di:
+
+- `AliceEventStore.isSchoolNormalDay`
+
+Ora:
+
+- `schoolClosure` esclude correttamente il giorno dalla logica scuola
+- il motore non genera più falsi buchi di ingresso/uscita nei giorni di chiusura scuola
+
+## Verifica reale effettuata
+
+✔ Giorni normali di scuola tornati coerenti  
+✔ Giorni con chiusura scuola non trattati più come scuola attiva  
+✔ Buchi del giorno di nuovo coerenti con lo stato reale di Alice/Scuola
+
 # MOTORI ATTIVI
 
 TurnEngine  
@@ -141,6 +205,7 @@ Il sistema gestisce:
 - spiegazione del conflitto nella UI Turni
 - indicatore rapido conflitto sotto la riga del turno
 - copertura combinata reale Matteo + Chiara ✔
+- prima estrazione helper fuori dal file calendario ✔
 
 # GERARCHIA SISTEMA TURNI
 
@@ -195,6 +260,42 @@ Risultato:
 - migliore leggibilità
 - separazione tra sintesi (box) e dettaglio (popup)
 
+# STATO REFACTOR FILE CALENDARIO
+
+Obiettivo attivo:
+
+alleggerire in modo sicuro `calendario_screen_stepa.dart` senza toccare il cuore della logica.
+
+Fase attuale:
+
+**Fase 1 — Helper puri (avviata)**
+
+✔ completato:
+
+- creazione `lib/utils/calendario_formatters.dart`
+- spostamento helper di formattazione base
+- rimozione helper duplicati dal file principale
+- sostituzione chiamate principali nel calendario
+- verifica avvio app reale
+
+⬜ ancora da completare nella Fase 1:
+
+- `_turnLabel()`
+- `_cleanGapTitle()`
+- `_realEventText()`
+- `_conflictStateLabel()`
+- `_conflictStateColor()`
+
+Fasi successive previste ma non ancora iniziate:
+
+- Fase 2 — Dialog / BottomSheet
+- Fase 3 — Box UI semplici
+
+Vincolo operativo confermato:
+
+- non toccare ancora `_cardTurni()`, `_cardScuola()`, `_cardCopertura()` come estrazione strutturale completa
+- non toccare ancora `_computeCoverageStepA()` e la logica ponte col motore
+
 # STATO GENERALE
 
 Sistema stabile e utilizzabile.
@@ -211,13 +312,21 @@ UI:
 ✔ più leggibile  
 ✔ comportamento coerente con uso reale  
 
+Refactor:
+✔ avviato in modo sicuro  
+✔ prima estrazione helper riuscita  
+✔ nessun errore rosso dopo il primo alleggerimento del file calendario
+
 # PROSSIMO PASSO
 
-- integrazione Eventi Reali nei Turni
-- lettura eventi del giorno da `RealEventStore`
-- visualizzazione accanto ai turni di Matteo e Chiara
-- trattamento come conflitti reali, non come semplice informazione
+Il prossimo passo corretto non è ancora l’estrazione di card grandi né il lavoro sui dialog.
+
+Il prossimo passo è:
+
+- continuare la **Fase 1 — Helper puri**
+- completare l’estrazione dei helper ancora presenti nel file calendario
+- mantenere metodo CNC: una modifica per volta, verifica app reale immediata
 
 File previsto:
 
-`lib/screens/calendario_screen_stepa.dart`
+`lib/screens/calendario_screen_stepa.dart

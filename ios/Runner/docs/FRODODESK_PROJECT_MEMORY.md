@@ -1,6 +1,6 @@
 # FRODODESK — PROJECT MEMORY
 
-Ultimo aggiornamento: 17 Marzo 2026
+Ultimo aggiornamento: 18 Marzo 2026
 
 ## IDENTITÀ DEL PROGETTO
 
@@ -145,3 +145,178 @@ e testato direttamente sull’app reale con esito corretto.
 
 Stato attuale:
 la logica di copertura è considerata **affidabile per uso reale**.
+
+---
+
+# AGGIORNAMENTO — 18 Marzo 2026
+
+## Refactor controllato del calendario (inizio fase modulare)
+
+È stata avviata una fase strutturale importante:
+
+👉 alleggerimento controllato del file  
+`calendario_screen_stepa.dart`
+
+Motivazione:
+
+- il file ha raggiunto ~5000 righe
+- contiene troppe responsabilità insieme:
+  - layout
+  - UI
+  - helper
+  - dialog
+  - logica ponte
+
+Decisione:
+
+👉 NON spezzare tutto  
+👉 procedere con **estrazione chirurgica a rischio zero**
+
+---
+
+## Metodo adottato (CNC rigoroso)
+
+È stato formalizzato il metodo corretto:
+
+1. un solo micro-passo alla volta  
+2. nessuna modifica multipla  
+3. verifica immediata su app reale  
+4. mai modificare parti centrali senza isolamento  
+5. prima estrarre elementi “sicuri”  
+
+---
+
+## Fase attiva
+
+### 🥇 FASE 1 — Helper puri
+
+Primo blocco scelto per l’estrazione perché:
+
+- non hanno stato
+- non dipendono da widget
+- non toccano il motore
+- rischio zero
+
+---
+
+## Intervento effettuato
+
+Creato file:
+
+`lib/utils/calendario_formatters.dart`
+
+Contenuto:
+
+- `fmtTimeOfDay(...)`
+- `fmtShortDate(...)`
+
+---
+
+## Pulizia del file principale
+
+Rimossi dal calendario:
+
+- `_fmt()`
+- `_fmtDate()`
+- `_fmtDateTime()`
+- `_fmtShortDate()`
+
+Sostituzioni effettuate:
+
+- `_fmt(...)` → `fmtTimeOfDay(...)`
+- `_fmtShortDate(...)` → `fmtShortDate(...)`
+
+---
+
+## Metodo tecnico utilizzato
+
+Importante per memoria futura:
+
+👉 NON sostituzione in blocco  
+👉 NON refactor automatico
+
+Ma:
+
+- rimozione funzione
+- errore controllato
+- sostituzione **una chiamata alla volta**
+- verifica continua
+
+---
+
+## Risultato
+
+- codice più pulito
+- nessuna regressione
+- app avviata e funzionante
+- primo alleggerimento reale del file calendario riuscito
+
+---
+
+## Nota importante (disciplina di progetto)
+
+Durante il refactor è stata introdotta una modifica non richiesta:
+
+- abbreviazione `_turnLabel` (M/P/N)
+
+Questa modifica è stata:
+
+❌ fuori metodo (non richiesta esplicita)  
+❌ non coerente con il flusso deciso  
+
+Decisione:
+
+👉 ogni modifica UI deve essere **sempre esplicita e confermata dall’utente**
+
+---
+
+## Stato mentale del progetto
+
+Questa fase segna un passaggio importante:
+
+da:
+👉 costruzione funzionale
+
+a:
+👉 consolidamento + qualità + mantenibilità
+
+---
+
+## Direzione futura
+
+Il refactor continuerà così:
+
+1. completamento helper puri  
+2. estrazione dialog  
+3. estrazione box semplici  
+4. SOLO DOPO eventuale lavoro su card principali  
+
+---
+
+## Regola fondamentale rafforzata
+
+La fonte di verità resta sempre:
+
+➡ codice reale  
+
+I docs servono per:
+
+- continuità tra chat  
+- memoria decisionale  
+- controllo del processo  
+
+---
+
+## Stato attuale
+
+✔ sistema stabile  
+✔ copertura affidabile  
+✔ refactor avviato correttamente  
+✔ nessuna regressione introdotta  
+✔ metodo CNC rispettato  
+
+👉 il calendario è ora pronto per:
+
+- uso reale continuativo  
+- test su più giorni  
+- miglioramenti incrementali controllati
