@@ -202,14 +202,6 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
         );
       }
     } else {
-      final events = widget.store.events;
-
-      for (int i = events.length - 1; i >= 0; i--) {
-        if (events[i].includesDay(widget.selectedDay)) {
-          widget.store.removeEventAt(i);
-        }
-      }
-
       if (_draftType != AliceEventType.schoolNormal) {
         widget.store.addEvent(
           AliceEventPeriod(
@@ -256,16 +248,10 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
   Widget _buildSectionTitle(String title, {IconData? icon}) {
     return Row(
       children: [
-        if (icon != null) ...[
-          Icon(icon, size: 18),
-          const SizedBox(width: 6),
-        ],
+        if (icon != null) ...[Icon(icon, size: 18), const SizedBox(width: 6)],
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w900,
-          ),
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
         ),
       ],
     );
@@ -377,11 +363,7 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
                   value: t,
                   child: Row(
                     children: [
-                      Icon(
-                        _typeIcon(t),
-                        size: 18,
-                        color: _typeColor(t),
-                      ),
+                      Icon(_typeIcon(t), size: 18, color: _typeColor(t)),
                       const SizedBox(width: 8),
                       Expanded(child: Text(_label(t))),
                     ],
@@ -568,8 +550,8 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
                 final cardColor = isEditingThis
                     ? Colors.orange
                     : activeOnSelectedDay
-                        ? Colors.blue
-                        : _typeColor(e.type);
+                    ? Colors.blue
+                    : _typeColor(e.type);
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 10),
@@ -577,9 +559,7 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
                   decoration: BoxDecoration(
                     color: cardColor.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: cardColor.withOpacity(0.25),
-                    ),
+                    border: Border.all(color: cardColor.withOpacity(0.25)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
