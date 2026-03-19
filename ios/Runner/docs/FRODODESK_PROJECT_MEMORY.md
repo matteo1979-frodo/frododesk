@@ -389,16 +389,78 @@ Fasce coinvolte:
 - Pranzo: 13:00–14:30  
 - Sera: 21:00–22:35  
 
-Stato attuale:
+Stato attuale iniziale:
 
 - pranzo → corretto  
 - mattina → NON rilevato  
 - sera → NON rilevato  
 
-Conclusione:
+Conclusione iniziale:
 
 👉 logica Sandra non ancora coerente su tutte le fasce  
 👉 dipendenza incompleta dallo stato Alice
+
+---
+
+## FIX STRUTTURALE VALIDATO — MODELLO NOTTE / POST-NOTTE
+
+Durante il debug del caso guida del **31 agosto 2026** è emerso che il problema osservato con Alice malata **non nasceva da AliceEventStore** ma dal modo in cui il motore rappresentava il turno `N`.
+
+### Situazione reale chiarita
+
+Nel sistema FrodoDesk, quando una persona ha `N` in un giorno, quel giorno rappresenta contemporaneamente:
+
+- la **coda della notte precedente** `00:00–06:30`
+- il **post-notte** con indisponibilità fino alle `14:30`
+- la **nuova notte** che riparte la sera `21:00–06:30`
+
+Il modello precedente invece trattava `N` principalmente come notte che parte la sera, aggiungendo il post-notte solo se **ieri** era notte.
+
+### Effetto del bug
+
+Questo poteva far risultare la persona:
+
+- disponibile dopo le `06:30`
+- quando invece doveva restare indisponibile fino alle `14:30`
+
+Il bug diventava evidente soprattutto nei casi:
+
+- Alice malata a casa
+- Matteo di mattina
+- Chiara di notte
+- Sandra mattina attivabile correttamente solo sulla prima fascia
+
+### Soluzione implementata
+
+È stata aggiornata la funzione:
+
+- `TurnEngine.busyShiftsForPerson(...)`
+
+Nuova regola consolidata:
+
+👉 **Se un giorno è `N`, il post-notte viene sempre aggiunto come blocco reale `00:00–14:30`, indipendentemente dal contesto Alice.**
+
+Questa è ora una regola strutturale del sistema, non un caso speciale.
+
+### Risultato
+
+Dopo il fix:
+
+- il buco mattina viene rilevato correttamente
+- Sandra mattina copre solo la sua finestra reale
+- il buco fino alle `14:30` resta correttamente aperto
+- il comportamento è tornato coerente tra:
+  - Alice a scuola
+  - Alice in vacanza
+  - Alice malata
+
+### Significato architetturale
+
+Questa correzione non è una rifinitura UI.
+
+È una **correzione di fondazione** del modello turni.
+
+Il sistema ora rappresenta meglio la realtà fisica della notte e del recupero post-notte.
 
 ---
 
@@ -410,7 +472,7 @@ Ordine corretto:
 
 1. stabilizzare Eventi Alice  
 2. allineare stato giorno ↔ motore  
-3. correggere Sandra mattina/sera  
+3. rifinire Sandra mattina/sera  
 4. solo dopo tornare su UX/UI
 
 ---
@@ -423,10 +485,11 @@ Caso guida per debug:
 
 Motivo:
 
-- Alice a casa (vacanza)
+- Alice a casa (vacanza / malattia)
 - possibili sovrapposizioni eventi
 - presenza bug Sandra mattina/sera
 - presenza bug Eventi Alice
+- caso reale che ha fatto emergere il problema notte/post-notte
 
 ---
 
@@ -518,6 +581,7 @@ Effetto:
 ✔ refactor avviato correttamente  
 ✔ nessuna regressione introdotta dopo rollback  
 ✔ metodo CNC rispettato  
+✔ modello notte/post-notte corretto nella logica reale  
 
 👉 ma con due blocchi ancora da consolidare:
 

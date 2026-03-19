@@ -1,6 +1,6 @@
 FRODODESK — RULES
 
-Ultimo aggiornamento: 18 Marzo 2026
+Ultimo aggiornamento: 19 Marzo 2026
 
 
 IDENTITÀ DEL SISTEMA
@@ -344,6 +344,58 @@ normale → conflitto pieno
 malattia → valutazione diversa  
 
 (non ancora implementato)
+
+
+# 🔴 NUOVA REGOLA STRUTTURALE — NOTTE / POST-NOTTE
+
+(Introdotta 19 Marzo 2026)
+
+Quando un giorno è marcato come turno NOTTE (`N`):
+
+👉 quel giorno NON rappresenta solo la notte che parte alle 22:00
+
+Ma deve rappresentare SEMPRE tre componenti reali:
+
+1. coda della notte precedente  
+   → 00:00–06:30  
+
+2. indisponibilità post-notte  
+   → 00:00–14:30 (regola obbligatoria)
+
+3. nuova notte la sera  
+   → 21:00–06:30  
+
+---
+
+## Regola operativa
+
+👉 Il post-notte è sempre presente se il giorno è `N`
+
+Non dipende da:
+
+- Alice (scuola / vacanza / malattia)
+- Sandra
+- eventi reali
+
+È una **regola fisica della persona**.
+
+---
+
+## Implicazioni sul sistema
+
+Il motore deve:
+
+- considerare la persona NON disponibile fino alle 14:30
+- generare correttamente i buchi mattina/pranzo
+- NON permettere copertura falsa dopo la notte
+- mantenere coerenza tra tutti gli scenari (Alice scuola / vacanza / malattia)
+
+---
+
+## Obiettivo
+
+👉 evitare falsi positivi di copertura  
+👉 allineare il sistema alla realtà fisica del recupero post-notte  
 
 
 REGOLA — APERTURA CHAT FRODODESK

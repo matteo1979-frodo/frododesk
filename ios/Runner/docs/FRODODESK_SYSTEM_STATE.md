@@ -223,6 +223,72 @@ Esito finale:
 
 Quindi **non** va registrato come cambiamento definitivo dell’interfaccia.
 
+# 🔥 FIX CRITICO COMPLETATO (19 Marzo 2026 — notte/post-notte)
+
+## Problema reale individuato
+
+Caso reale di debug:
+
+- Alice malata sopra periodo vacanza
+- Matteo di mattina
+- Chiara di notte
+- il sistema in alcuni casi non mostrava il buco corretto del mattino/pranzo
+- con Alice malata il motore poteva considerare erroneamente la fascia coperta, mentre con Alice in vacanza il comportamento appariva corretto
+
+Durante il debug è stato verificato che il problema **non** nasceva da:
+
+- `AliceEventStore`
+- `coverage_logic.dart`
+- `WorkShift.overlaps(...)`
+- Sandra
+- lettura dell’evento `sickness`
+
+Il problema reale era nel modello turni:
+
+- il giorno segnato come `N` veniva interpretato solo come notte che **parte alle 22:00**
+- ma nella realtà FrodoDesk quel giorno deve valere anche come:
+  - coda della notte precedente `00:00–06:30`
+  - indisponibilità post-notte fino alle `14:30`
+  - nuova notte la sera stessa `21:00–06:30`
+
+## Soluzione implementata
+
+Aggiornata la funzione:
+
+- `TurnEngine.busyShiftsForPerson(...)`
+
+Nuova regola applicata:
+
+- se **ieri** era notte → aggiunge il blocco post-notte `00:00–14:30`
+- se **oggi** è notte → aggiunge comunque il blocco post-notte `00:00–14:30`
+- il giorno `N` viene quindi trattato come:
+  - coda notte + post-notte la mattina
+  - nuova notte la sera
+
+## Effetto reale del fix
+
+Ora, quando una persona è di notte, il motore la considera coerentemente:
+
+- occupata nella coda notte
+- indisponibile fino alle `14:30`
+- di nuovo occupata nella notte successiva
+
+Questo rende corretti i buchi nei casi:
+
+- Alice malata a casa
+- Alice in vacanza a casa
+- copertura Sandra mattina
+- copertura Sandra pranzo
+- lettura reale della disponibilità dopo la notte
+
+## Verifica reale effettuata
+
+✔ Sul **31 agosto 2026** il sistema ora mostra correttamente il buco mattina  
+✔ Attivando Sandra mattina si chiude solo la fascia coperta da Sandra  
+✔ Resta il buco fino alle `14:30` perché la persona post-notte è indisponibile  
+✔ Il comportamento è tornato coerente con la realtà  
+✔ I debug temporanei sono stati rimossi dopo verifica finale
+
 # MOTORI ATTIVI
 
 TurnEngine  
@@ -270,6 +336,7 @@ Il sistema gestisce:
 - indicatore rapido conflitto sotto la riga del turno
 - copertura combinata reale Matteo + Chiara ✔
 - prima estrazione helper fuori dal file calendario ✔
+- modello notte corretto con post-notte obbligatorio ✔
 
 # GERARCHIA SISTEMA TURNI
 
@@ -370,7 +437,8 @@ Logica copertura:
 ✔ verificata su casi reali  
 ✔ senza falsi positivi nei casi già confermati  
 ✔ controllata nei punti logici più delicati  
-✔ confermata in app reale nei casi testati
+✔ confermata in app reale nei casi testati  
+✔ coerente anche sui giorni `N` con post-notte reale
 
 UI:
 ✔ stabile  
@@ -430,7 +498,8 @@ Problema osservato:
 Stato attuale:
 
 - il pranzo è stato verificato corretto
-- mattina e sera risultano ancora bug aperto da verificare e correggere
+- il caso mattina collegato alla notte/post-notte è stato corretto
+- resta da verificare e consolidare il comportamento generale Sandra mattina/sera in tutti i casi Alice a casa
 
 # PROSSIMO PASSO
 
@@ -444,7 +513,7 @@ Il prossimo passo è:
   - vacanza
   - scuola chiusa
   - malattia
-- poi affrontare il bug Sandra **mattina/sera** nelle giornate in cui Alice è a casa
+- poi rifinire il comportamento Sandra **mattina/sera** nelle giornate in cui Alice è a casa
 
 File previsti per la ripartenza:
 
@@ -454,4 +523,4 @@ File previsti per la ripartenza:
 
 # FRASE DI RIPARTENZA UFFICIALE
 
-Ripartiamo da FrodoDesk — bug Eventi Alice (31 agosto) + bug Sandra mattina/sera.
+Ripartiamo da FrodoDesk — bug Eventi Alice (31 agosto) + rifinitura Sandra mattina/sera con notte/post-notte già corretti.

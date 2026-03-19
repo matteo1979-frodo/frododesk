@@ -472,6 +472,7 @@ class CoverageEngine {
     );
 
     final bool aliceAtHome = isAliceAtHomeDay(d0);
+
     final bool isWeekend =
         d0.weekday == DateTime.saturday || d0.weekday == DateTime.sunday;
     final bool aliceSchoolNormal = isAliceSchoolNormalDay(d0) && !isWeekend;
@@ -484,7 +485,7 @@ class CoverageEngine {
     DateTime? normalSchoolHomeWindowStart;
 
     if (aliceAtHome) {
-      final aliceHomeStart = DateTime(d0.year, d0.month, d0.day, 7, 30);
+      final aliceHomeStart = _atTime(d0, sandraCambioMattinaStart);
       final aliceHomeEnd = _atTime(d0, sandraSeraStart);
 
       final okAliceHome = _isFasciaCovered(
@@ -1153,6 +1154,7 @@ class CoverageEngine {
       ],
       personOverride: overrides.matteo,
     );
+
     final chiaraBusy = OverrideApply.applyToBusyShifts(
       day: day,
       baseBusy: <WorkShift>[
@@ -1302,9 +1304,10 @@ class CoverageEngine {
         final startMinute = overlappingRealEvent.startTime!.minute
             .toString()
             .padLeft(2, '0');
-        final endHour = overlappingRealEvent.endTime!.hour
-            .toString()
-            .padLeft(2, '0');
+        final endHour = overlappingRealEvent.endTime!.hour.toString().padLeft(
+          2,
+          '0',
+        );
         final endMinute = overlappingRealEvent.endTime!.minute
             .toString()
             .padLeft(2, '0');
@@ -1408,6 +1411,7 @@ class CoverageEngine {
       ],
       personOverride: overrides.matteo,
     );
+
     final chiaraBusy = OverrideApply.applyToBusyShifts(
       day: day,
       baseBusy: <WorkShift>[

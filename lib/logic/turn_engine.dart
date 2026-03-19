@@ -317,11 +317,12 @@ class TurnEngine {
 
     // 1) turno di oggi (con viaggio)
     final today = _turnoGiorno(person, d0);
+    final todayTipo = _turnoTipoGiorno(person, d0);
     if (!today.isOff) {
       shifts.add(_shiftConViaggio(baseDay: d0, turno: today));
     }
 
-    // 2) se ieri era NOTTE: aggiungi shift di ieri + riposo 00:00->14:30
+    // 2) se ieri era NOTTE: aggiungi shift di ieri
     final ieri = d0.subtract(const Duration(days: 1));
     final ieriTipo = _turnoTipoGiorno(person, ieri);
 
@@ -330,8 +331,12 @@ class TurnEngine {
       if (!tIeri.isOff) {
         shifts.add(_shiftConViaggio(baseDay: ieri, turno: tIeri));
       }
+    }
 
-      // riposo post-notte (regola consolidata)
+    // 3) riposo post-notte:
+    // - se ieri era notte (regola storica)
+    // - oppure se oggi è notte (regola reale FrodoDesk: N vale anche come coda notte + post-notte)
+    if (ieriTipo == _TurnoTipo.notte || todayTipo == _TurnoTipo.notte) {
       shifts.add(
         WorkShift(
           start: DateTime(d0.year, d0.month, d0.day, 0, 0),
