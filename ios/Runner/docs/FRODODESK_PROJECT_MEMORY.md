@@ -1,6 +1,6 @@
 # FRODODESK — PROJECT MEMORY
 
-Ultimo aggiornamento: 18 Marzo 2026
+Ultimo aggiornamento: 19 Marzo 2026
 
 ## IDENTITÀ DEL PROGETTO
 
@@ -293,6 +293,143 @@ Il refactor continuerà così:
 
 ---
 
+# AGGIORNAMENTO — 19 MARZO 2026
+
+## Consolidamento reale dopo test e rollback controllato
+
+Durante questa fase di lavoro:
+
+- sono stati effettuati test reali su copertura e buchi
+- sono stati individuati bug importanti
+- è stato eseguito un **ripristino controllato del codice funzionante**
+- il sistema è stato riportato allo stato stabile verificato
+
+Decisione metodologica rafforzata:
+
+👉 in caso di dubbio, tornare sempre alla versione stabile reale del codice  
+👉 il codice reale resta sempre la fonte di verità
+
+---
+
+## Scoperta importante — comportamento reale del sistema
+
+Sono stati validati due comportamenti fondamentali:
+
+### 1. Coerenza buco reale con eventi
+
+Caso reale:
+
+- Alice a casa (vacanza)
+- Chiara appuntamento 16:00–17:25
+- Matteo al lavoro
+
+Risultato corretto:
+
+- buco reale: **16:00–17:25**
+- sistema ora allineato con la realtà
+
+---
+
+### 2. Copertura Sandra legata allo stato Alice
+
+È stato chiarito un punto fondamentale:
+
+👉 il comportamento di Sandra dipende da:
+
+- Alice a scuola  
+- Alice a casa (vacanza / malattia)
+
+Il sistema deve reagire correttamente in entrambi i casi.
+
+---
+
+## BUG STRUTTURALE IDENTIFICATO — EVENTI ALICE
+
+Problema osservato:
+
+- inserendo più periodi (es. vacanza + malattia)
+- salvando un nuovo evento
+- il sistema può:
+
+  - far sparire un periodo precedente
+  - non leggere correttamente lo stato del giorno
+  - riportare “Scuola normale” anche quando non dovrebbe
+
+Implicazioni:
+
+- incoerenza tra UI e stato reale
+- generazione di buchi scuola non corretti
+- perdita di affidabilità nella simulazione
+
+Conclusione:
+
+👉 il sistema eventi Alice NON è ancora robusto  
+👉 gestione periodi sovrapposti da rivedere
+
+---
+
+## BUG STRUTTURALE IDENTIFICATO — SANDRA (FASCE)
+
+Comportamento atteso:
+
+Se:
+
+- Alice è a casa (vacanza o malattia)
+- entrambi i genitori lavorano
+
+Sandra deve risultare:
+
+- necessaria a **pranzo ✔ (già corretto)**
+- necessaria a **mattina ❌ (bug)**
+- necessaria a **sera ❌ (bug)**
+
+Fasce coinvolte:
+
+- Mattina: 05:00–06:35  
+- Pranzo: 13:00–14:30  
+- Sera: 21:00–22:35  
+
+Stato attuale:
+
+- pranzo → corretto  
+- mattina → NON rilevato  
+- sera → NON rilevato  
+
+Conclusione:
+
+👉 logica Sandra non ancora coerente su tutte le fasce  
+👉 dipendenza incompleta dallo stato Alice
+
+---
+
+## DIREZIONE TECNICA CONSOLIDATA
+
+Prossima fase NON è UI.
+
+Ordine corretto:
+
+1. stabilizzare Eventi Alice  
+2. allineare stato giorno ↔ motore  
+3. correggere Sandra mattina/sera  
+4. solo dopo tornare su UX/UI
+
+---
+
+## RIFERIMENTO OPERATIVO UFFICIALE
+
+Caso guida per debug:
+
+👉 **31 Agosto 2026**
+
+Motivo:
+
+- Alice a casa (vacanza)
+- possibili sovrapposizioni eventi
+- presenza bug Sandra mattina/sera
+- presenza bug Eventi Alice
+
+---
+
 ## NUOVE DECISIONI SISTEMA — MARZO 2026
 
 ### Alice al seguito (gestione buchi)
@@ -377,13 +514,18 @@ Effetto:
 ## Stato attuale
 
 ✔ sistema stabile  
-✔ copertura affidabile  
+✔ copertura affidabile nei casi verificati  
 ✔ refactor avviato correttamente  
-✔ nessuna regressione introdotta  
+✔ nessuna regressione introdotta dopo rollback  
 ✔ metodo CNC rispettato  
 
-👉 il calendario è ora pronto per:
+👉 ma con due blocchi ancora da consolidare:
+
+- Eventi Alice  
+- Sandra (mattina/sera)
+
+👉 il calendario è pronto per:
 
 - uso reale continuativo  
-- test su più giorni  
+- test mirati sui bug identificati  
 - miglioramenti incrementali controllati

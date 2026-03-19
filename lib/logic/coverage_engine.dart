@@ -211,8 +211,15 @@ class CoverageEngine {
 
     bool servePranzo = false;
 
-    if (uscita13 && lunchCover == SchoolCoverChoice.none) {
-      final lunchStartTime = uscitaAnticipataAt ?? sandraPranzoStart;
+    final bool aliceAtHomeDay = isAliceAtHomeDay(d0);
+    final bool shouldCheckPranzo = uscita13 || aliceAtHomeDay;
+
+    if (shouldCheckPranzo &&
+        (aliceAtHomeDay || lunchCover == SchoolCoverChoice.none)) {
+      final lunchStartTime = uscita13
+          ? (uscitaAnticipataAt ?? sandraPranzoStart)
+          : sandraPranzoStart;
+
       final lunchStart = _atTime(d0, lunchStartTime);
       final lunchEnd = _atTime(d0, sandraPranzoEnd);
 
@@ -224,7 +231,7 @@ class CoverageEngine {
         sandraMattinaAvailable: false,
         sandraPranzoAvailable: false,
         sandraSeraAvailable: false,
-        isHomePresenceWindow: false,
+        isHomePresenceWindow: true,
         overrides: overrides,
         ferieStore: ferieStore,
       );
@@ -478,7 +485,7 @@ class CoverageEngine {
 
     if (aliceAtHome) {
       final aliceHomeStart = DateTime(d0.year, d0.month, d0.day, 7, 30);
-      final aliceHomeEnd = DateTime(d0.year, d0.month, d0.day, 16, 25);
+      final aliceHomeEnd = _atTime(d0, sandraSeraStart);
 
       final okAliceHome = _isFasciaCovered(
         day: d0,
@@ -1288,14 +1295,22 @@ class CoverageEngine {
           overlappingRealEvent.startTime != null &&
           overlappingRealEvent.endTime != null;
 
-if (hasTimedRealEvent) {
-  final startHour = overlappingRealEvent.startTime!.hour.toString().padLeft(2, '0');
-  final startMinute = overlappingRealEvent.startTime!.minute.toString().padLeft(2, '0');
-  final endHour = overlappingRealEvent.endTime!.hour.toString().padLeft(2, '0');
-  final endMinute = overlappingRealEvent.endTime!.minute.toString().padLeft(2, '0');
+      if (hasTimedRealEvent) {
+        final startHour = overlappingRealEvent.startTime!.hour
+            .toString()
+            .padLeft(2, '0');
+        final startMinute = overlappingRealEvent.startTime!.minute
+            .toString()
+            .padLeft(2, '0');
+        final endHour = overlappingRealEvent.endTime!.hour
+            .toString()
+            .padLeft(2, '0');
+        final endMinute = overlappingRealEvent.endTime!.minute
+            .toString()
+            .padLeft(2, '0');
 
-  return "$personName è fuori casa per evento reale: ${overlappingRealEvent.title} ($startHour:$startMinute–$endHour:$endMinute).";
-}
+        return "$personName è fuori casa per evento reale: ${overlappingRealEvent.title} ($startHour:$startMinute–$endHour:$endMinute).";
+      }
 
       return "$personName risulta disponibile in questa fascia (ferie).";
     }

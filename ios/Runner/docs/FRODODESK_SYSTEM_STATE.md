@@ -1,6 +1,6 @@
 # FRODODESK — SYSTEM STATE
 
-Ultimo aggiornamento: 18 Marzo 2026
+Ultimo aggiornamento: 19 Marzo 2026
 
 # STATO GENERALE DEL PROGETTO
 
@@ -159,6 +159,70 @@ Ora:
 ✔ Giorni con chiusura scuola non trattati più come scuola attiva  
 ✔ Buchi del giorno di nuovo coerenti con lo stato reale di Alice/Scuola
 
+# 🔥 AGGIORNAMENTO CHAT DEL 19 MARZO 2026
+
+## Stato reale del codice a fine chat
+
+Durante questa chat sono stati fatti test, tentativi di modifica UI e ripristini controllati.
+
+Alla fine della chat il progetto è stato riportato allo stato stabile corretto tramite recupero della versione funzionante di `coverage_engine.dart` e verifica immediata in app reale.
+
+Quindi la fonte di verità a fine chat è:
+
+- codice reale funzionante
+- UI tornata al punto stabile di partenza della mattina
+- motore di copertura di nuovo allineato con i casi reali già verificati
+
+## Verifiche confermate in app reale
+
+Sono stati ricontrollati con esito corretto questi casi:
+
+### Caso A — Sandra pranzo in vacanza
+
+Scenario reale:
+
+- Alice a casa tutto il giorno perché in vacanza
+- genitori al lavoro
+- buco reale a pranzo 13:00–14:30
+
+Comportamento corretto verificato:
+
+- il box “Buchi del giorno” mostra il buco reale
+- la card “Copertura Sandra / Babysitter” segnala correttamente:
+  - **Pranzo → Serve dal motore**
+
+### Caso B — Buco reale con evento Chiara
+
+Scenario reale:
+
+- Matteo lavora il pomeriggio
+- Chiara lavora la mattina
+- Alice a casa tutto il giorno perché in vacanza
+- Chiara ha appuntamento reale “tagliando” 16:00–17:25
+
+Comportamento corretto verificato:
+
+- il sistema mostra correttamente:
+  - **Alice a casa: 16:00–17:25**
+- il buco non viene più troncato a 16:25
+- il popup dei buchi e la UI tornano allineati con la realtà
+
+## Tentativo UI annullato
+
+Durante la chat è stato tentato uno spostamento del blocco:
+
+- “Decisione scuola (copertura)”
+
+dalla sezione Alice/Scuola alla zona Copertura Sandra / Babysitter.
+
+Esito finale:
+
+- tentativo annullato
+- file riportato allo stato stabile
+- nessuna modifica UI permanente da considerare consolidata nei docs
+
+Quindi **non** va registrato come cambiamento definitivo dell’interfaccia.
+
 # MOTORI ATTIVI
 
 TurnEngine  
@@ -246,8 +310,9 @@ Situazione attuale:
 
 - UI stabilizzata e funzionante
 - nessun errore di compilazione
+- nessuna modifica strutturale UI consolidata in questa chat
 
-✔ Miglioramento introdotto:
+✔ Miglioramento già presente:
 
 - rimozione dettagli buchi dal box principale
 - introduzione popup su "Buchi del giorno"
@@ -301,32 +366,92 @@ Vincolo operativo confermato:
 Sistema stabile e utilizzabile.
 
 Logica copertura:
-✔ corretta  
+✔ corretta sui casi già sistemati  
 ✔ verificata su casi reali  
-✔ senza falsi positivi  
+✔ senza falsi positivi nei casi già confermati  
 ✔ controllata nei punti logici più delicati  
-✔ confermata in app reale  
+✔ confermata in app reale nei casi testati
 
 UI:
-✔ più pulita  
-✔ più leggibile  
-✔ comportamento coerente con uso reale  
+✔ stabile  
+✔ leggibile  
+✔ coerente con uso reale  
+✔ nessuna modifica strutturale permanente introdotta in questa chat
 
 Refactor:
 ✔ avviato in modo sicuro  
 ✔ prima estrazione helper riuscita  
 ✔ nessun errore rosso dopo il primo alleggerimento del file calendario
 
+# BUG APERTI PRIORITARI
+
+## 1. Eventi Alice — gestione periodi sovrapposti / stato giorno errato
+
+Riferimento operativo da usare nella prossima chat:
+
+- **31 agosto 2026**
+
+Problemi osservati:
+
+- in Eventi Alice, salvando alcuni periodi, lo stato del giorno può tornare incoerente
+- salvando malattia/chiusura scuola in presenza di altri periodi, può sparire o non essere più letto correttamente il periodo vacanze
+- la card Alice/Scuola può mostrare:
+  - “Scuola normale”
+  anche quando la realtà del giorno non dovrebbe esserlo
+- in questi casi il motore torna a generare buchi di ingresso/uscita scuola non coerenti con la realtà
+
+Decisione:
+
+- il blocco **Eventi Alice** va rivisto nel dettaglio
+- bisogna verificare bene la coesistenza reale di:
+  - vacanza
+  - scuola chiusa
+  - malattia
+- va controllato l’allineamento tra:
+  - UI card Alice
+  - AliceEventStore
+  - motore CoverageEngine
+
+## 2. Sandra — bug ancora aperto su mattina e sera
+
+Anche questo va ripreso con riferimento:
+
+- **31 agosto 2026**
+
+Problema osservato:
+
+- se Alice è in vacanza o malata
+- e i genitori lavorano entrambi
+- Sandra deve risultare “serve dal motore” non solo a pranzo
+- ma anche nelle fasce:
+  - **Mattina 05:00–06:35**
+  - **Sera 21:00–22:35**
+
+Stato attuale:
+
+- il pranzo è stato verificato corretto
+- mattina e sera risultano ancora bug aperto da verificare e correggere
+
 # PROSSIMO PASSO
 
-Il prossimo passo corretto non è ancora l’estrazione di card grandi né il lavoro sui dialog.
+Il prossimo passo corretto non è l’estrazione di card grandi né il lavoro sui dialog.
 
 Il prossimo passo è:
 
-- continuare la **Fase 1 — Helper puri**
-- completare l’estrazione dei helper ancora presenti nel file calendario
-- mantenere metodo CNC: una modifica per volta, verifica app reale immediata
+- ripartire dal **bug Eventi Alice**
+- usare come riferimento operativo il **31 agosto 2026**
+- verificare coesistenza e priorità reale di:
+  - vacanza
+  - scuola chiusa
+  - malattia
+- poi affrontare il bug Sandra **mattina/sera** nelle giornate in cui Alice è a casa
 
-File previsto:
+File previsti per la ripartenza:
 
-`lib/screens/calendario_screen_stepa.dart
+- `lib/logic/alice_event_store.dart`
+- file/widget collegato alla card Eventi Alice
+- `coverage_engine.dart` solo dopo aver chiarito il blocco Alice
+
+# FRASE DI RIPARTENZA UFFICIALE
+
+Ripartiamo da FrodoDesk — bug Eventi Alice (31 agosto) + bug Sandra mattina/sera.
