@@ -261,7 +261,7 @@ Durante il refactor è stata introdotta una modifica non richiesta:
 
 Questa modifica è stata:
 
-❌ fuori metodo (non richiesta esplicita)  
+❌ fuori metodo  
 ❌ non coerente con il flusso deciso  
 
 Decisione:
@@ -293,17 +293,84 @@ Il refactor continuerà così:
 
 ---
 
-## Regola fondamentale rafforzata
+## NUOVE DECISIONI SISTEMA — MARZO 2026
 
-La fonte di verità resta sempre:
+### Alice al seguito (gestione buchi)
 
-➡ codice reale  
+Quando si crea un buco perché un genitore ha un evento ma è l’unico disponibile:
 
-I docs servono per:
+👉 il sistema deve offrire una soluzione rapida:
 
-- continuità tra chat  
-- memoria decisionale  
-- controllo del processo  
+“Porta Alice con te”
+
+Effetto:
+
+- il buco viene risolto
+- Alice viene considerata coperta durante l’evento
+- alternativa resta rete di supporto
+
+---
+
+### Stati malattia differenziati
+
+Distinzione strutturale:
+
+Malattia leggera:
+- persona autonoma
+- può accompagnare/prendere Alice
+- può muoversi
+
+Malattia a letto:
+- persona non autonoma
+- non può uscire
+- non può coprire attività esterne
+
+---
+
+### Regola override bloccante
+
+Se stato = Malattia a letto:
+
+👉 NON è possibile impostare override di turno
+
+Sistema deve:
+
+- bloccare azione
+oppure
+- mostrare avviso chiaro
+
+---
+
+### Regola INPS malattia
+
+Durante malattia (leggera o a letto):
+
+Fasce obbligatorie:
+
+- 10:00 – 12:00  
+- 17:00 – 19:00  
+
+Sistema deve:
+
+- considerare persona non disponibile in quelle fasce
+- segnalare eventuali conflitti
+- permettere violazione consapevole
+
+---
+
+### Override consapevole rischio
+
+In presenza di conflitti INPS:
+
+👉 il sistema deve offrire:
+
+“Ignora rischio”
+
+Effetto:
+
+- utente può procedere
+- decisione consapevole
+- rischio tracciato
 
 ---
 

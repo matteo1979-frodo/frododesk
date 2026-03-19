@@ -1,6 +1,6 @@
 FRODODESK — RULES
 
-Ultimo aggiornamento: 17 Marzo 2026
+Ultimo aggiornamento: 18 Marzo 2026
 
 
 IDENTITÀ DEL SISTEMA
@@ -133,7 +133,7 @@ Frodo restituisce ogni file completo aggiornato, pronto da copiare nella cartell
 
 PROCEDURA UFFICIALE — CHIUSURA CHAT FRODODESK
 
-Questa procedura va eseguita ogni volta che si chiude una chat di sviluppo FrodoDesk per garantire che la documentazione del progetto resti coerente con il codice reale.
+(aggiornata con richiesta file + backup dati)
 
 1️⃣ Matteo avvia la chiusura
 
@@ -142,182 +142,218 @@ Matteo scrive:
 Chiudiamo la chat. Quali file docs dobbiamo aggiornare?
 
 
-2️⃣ Frodo analizza la chat
+2️⃣ Frodo analizza la chat e richiede i file
 
-Frodo analizza tutta la chat appena svolta e verifica se sono state fatte modifiche a:
+Frodo analizza tutta la chat e verifica modifiche a:
 
-codice del progetto  
-struttura del sistema  
-roadmap di sviluppo  
-regole operative  
-decisioni architetturali  
+codice  
+struttura  
+roadmap  
+regole  
+stato sistema  
 
-In base a questo decide quali file nella cartella /docs devono essere aggiornati.
+👉 Poi DEVE rispondere:
 
-⚠️ Non è automatico che siano sempre tutti.
+Mandami questi file da aggiornare:
+
+- nome_file  
+- nome_file  
+
+⚠️ Solo quelli realmente coinvolti
 
 
 3️⃣ Matteo invia i file reali
-
-Matteo invia i file reali presenti nel progetto.
 
 Regole fondamentali:
 
 sempre file completo  
 uno alla volta  
-mai versioni ricostruite a memoria  
-devono essere i file reali presenti nella cartella /docs  
+mai versioni ricostruite  
+presi dalla cartella /docs  
 
 
 4️⃣ Frodo restituisce i file aggiornati
 
-Per ogni file ricevuto Frodo restituisce:
-
-file completo  
-file aggiornato  
-file pronto da incollare  
-
-Formato risposta:
+Formato obbligatorio:
 
 FILE AGGIORNATO  
-nome_file
+nome_file  
 
-(con dentro il contenuto completo aggiornato)
+(contenuto completo)
 
-⚠️ Regola assoluta:
-
-mai pezzi di file  
-sempre file intero
+⚠️ Mai pezzi di file
 
 
 5️⃣ Matteo aggiorna la cartella docs
 
-Matteo copia i file aggiornati nella cartella:
+Copia i file nella cartella:
 
-/docs
+/docs  
 
-del progetto FrodoDesk.
+Poi scrive:
+
+👉 “Fatto”
 
 
-6️⃣ Salvataggio obbligatorio (Git)
+6️⃣ Salvataggio Git (obbligatorio)
 
-Dopo aver aggiornato i file docs, eseguire SEMPRE:
+Frodo fornisce i comandi:
 
 git add .  
 git commit -m "docs update"  
-git push
-
-Questo passaggio garantisce:
-
-- allineamento tra locale e remoto  
-- possibilità di cambiare chat senza perdere stato  
-- continuità completa del progetto  
+git push  
 
 
-7️⃣ Controllo finale
+7️⃣ BACKUP DATI (quando necessario)
 
-Verificare sempre:
+Se Frodo rileva rischio perdita dati (clean, debug, modifiche):
 
-- file docs aggiornati ✔  
-- copiati nella cartella `/docs` ✔  
-- commit eseguito ✔  
-- push eseguito ✔  
+👉 deve attivare backup dati
+
+Contenuti:
+
+- malattia a periodo  
+- ferie  
+- eventi Alice  
+- eventi reali  
+- rete supporto  
+- quarta squadra  
+- override  
+
+Formato:
+
+👉 JSON esportabile
+
+⚠️ Non sempre obbligatorio, ma obbligatorio se c’è rischio
 
 
-8️⃣ Conferma finale di Frodo
+8️⃣ Controllo finale
 
-Prima della chiusura definitiva della chat:
+Verificare:
 
-Frodo controlla nuovamente lo stato della chat e conferma:
+file docs aggiornati ✔  
+copiati ✔  
+commit ✔  
+push ✔  
+backup (se necessario) ✔  
+
+
+9️⃣ Conferma finale di Frodo
+
+Frodo deve dire:
 
 “Confermo che non ci sono altri file docs da aggiornare.”
 
-Solo dopo questa conferma la chat può essere considerata chiusa correttamente.
+Solo dopo la chat è chiusa.
 
 
 REGOLA OBIETTIVO DOCUMENTAZIONE
 
-La cartella docs deve sempre permettere di:
+La cartella docs deve permettere di:
 
-cambiare chat senza perdere il contesto  
-capire immediatamente lo stato del progetto  
-sapere da dove ripartire nello sviluppo  
+cambiare chat senza perdere contesto  
+capire subito lo stato  
+ripartire immediatamente  
 
 
 ⚠️ REGOLA FONDAMENTALE DEL SISTEMA
 
-La fonte di verità del sistema resta sempre:
+La fonte di verità resta:
 
-➡ il codice reale del progetto
+➡ codice reale
 
-I file nella cartella /docs servono per:
-
-continuità tra chat  
-stato del sistema  
-decisioni strutturali  
-roadmap di sviluppo  
-
-Se docs e codice non coincidono, vale sempre:
-
-➡ il codice reale
+Se docs ≠ codice → vale codice
 
 
 REGOLA DECISIONALE — CONFLITTO TURNO ↔ EVENTO
 
-Quando un evento cade dentro un turno di lavoro, il sistema deve trattarlo come **conflitto reale** e non come semplice informazione.
+Quando un evento cade dentro un turno:
+
+👉 è conflitto reale
 
 Il sistema deve:
 
-- segnalare chiaramente la sovrapposizione
-- mostrare il turno coinvolto
-- mostrare la fascia oraria in conflitto
-- aiutare l’utente a prendere una decisione operativa
+- evidenziare sovrapposizione  
+- mostrare turno  
+- mostrare fascia  
+- aiutare decisione  
 
-Possibili azioni operative:
+Azioni:
 
-- prendere permesso
-- prendere ferie
-- cambiare turno
-- spostare evento
+- permesso  
+- ferie  
+- cambio turno  
+- spostamento evento  
 
 
-EVOLUZIONE FUTURA DEL MOTORE DECISIONALE
+NUOVE REGOLE — MALATTIA
 
-Durante lo sviluppo è emersa una regola progettuale importante:
+Distinzione obbligatoria:
 
-il conflitto evento ↔ turno non deve sempre essere valutato allo stesso modo.
+Malattia leggera:
+- può muoversi  
+- può accompagnare Alice  
 
-Il sistema dovrà considerare **lo stato reale della persona**.
+Malattia a letto:
+- non può uscire  
+- non disponibile  
 
-Esempio concettuale:
 
-stato normale → conflitto rosso pieno  
+REGOLA BLOCCANTE
 
-malattia leggera / malattia a letto →  
-valutazione più morbida (evento da rivalutare)
+Se stato = Malattia a letto:
 
-Motivazione:
+👉 vietato cambio turno / override
 
-una visita medica può essere compatibile con uno stato di malattia.
+Sistema deve bloccare o avvisare
 
-Questa logica non è ancora implementata nel codice ma è registrata come direzione evolutiva del motore decisionale FrodoDesk.
+
+REGOLA INPS
+
+Durante malattia:
+
+Fasce obbligatorie:
+
+10:00–12:00  
+17:00–19:00  
+
+Sistema deve:
+
+- considerare non disponibile  
+- segnalare conflitti  
+- permettere violazione consapevole  
+
+
+REGOLA “IGNORA RISCHIO”
+
+In caso di violazione INPS:
+
+👉 mostrare:
+
+“Ignora rischio”
+
+Permette azione ma segnala rischio
+
+
+EVOLUZIONE FUTURA MOTORE
+
+Il conflitto evento ↔ turno dipenderà dallo stato:
+
+normale → conflitto pieno  
+
+malattia → valutazione diversa  
+
+(non ancora implementato)
 
 
 REGOLA — APERTURA CHAT FRODODESK
 
-Ogni nuova chat FrodoDesk deve iniziare con questa sequenza:
+Ogni nuova chat deve iniziare con:
 
-1) Messaggio  
-FRODODESK — RIPRESA SVILUPPO  
+1) FRODODESK — RIPRESA SVILUPPO  
+2) SYSTEM_STATE  
+3) RULES  
+4) file su cui si lavora  
+5) file reale  
 
-2) Incollare  
-docs/FRODODESK_SYSTEM_STATE.md  
-
-3) Incollare  
-docs/FRODODESK_RULES.md  
-
-4) Indicare il file su cui si lavora  
-
-5) Incollare il file reale  
-
-Solo dopo si riprende lo sviluppo.
+Poi si parte.
