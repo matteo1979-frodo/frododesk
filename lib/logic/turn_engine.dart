@@ -336,7 +336,7 @@ class TurnEngine {
     // 3) riposo post-notte:
     // - se ieri era notte (regola storica)
     // - oppure se oggi è notte (regola reale FrodoDesk: N vale anche come coda notte + post-notte)
-    if (ieriTipo == _TurnoTipo.notte || todayTipo == _TurnoTipo.notte) {
+    if (ieriTipo == _TurnoTipo.notte) {
       shifts.add(
         WorkShift(
           start: DateTime(d0.year, d0.month, d0.day, 0, 0),
