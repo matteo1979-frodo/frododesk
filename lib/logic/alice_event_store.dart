@@ -253,11 +253,11 @@ class AliceEventStore {
     switch (type) {
       case AliceEventType.schoolNormal:
         return 0;
-      case AliceEventType.summerCamp:
-        return 1;
       case AliceEventType.schoolClosure:
-        return 2;
+        return 1;
       case AliceEventType.vacation:
+        return 2;
+      case AliceEventType.summerCamp:
         return 3;
       case AliceEventType.sickness:
         return 4;
