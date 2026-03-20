@@ -968,10 +968,12 @@ class CoverageEngine {
       }
     }
 
+    final normalizedEntries = _dedupeEntriesPreferRichLabel(entries);
+
     final gaps = <String>[];
     final details = <CoverageGapDetail>[];
 
-    for (final entry in entries) {
+    for (final entry in normalizedEntries) {
       gaps.add(entry.label);
       details.add(
         CoverageGapDetail(
@@ -1160,6 +1162,52 @@ class CoverageEngine {
 
     merged.add(current);
     return merged;
+  }
+
+  List<_CoverageGapEntry> _dedupeEntriesPreferRichLabel(
+    List<_CoverageGapEntry> entries,
+  ) {
+    final result = <_CoverageGapEntry>[];
+
+    for (final entry in entries) {
+      final existingIndex = result.indexWhere(
+        (e) =>
+            e.fasciaStart.isAtSameMomentAs(entry.fasciaStart) &&
+            e.fasciaEnd.isAtSameMomentAs(entry.fasciaEnd) &&
+            e.isHomePresenceWindow == entry.isHomePresenceWindow &&
+            e.allowSandra == entry.allowSandra,
+      );
+
+      if (existingIndex == -1) {
+        result.add(entry);
+        continue;
+      }
+
+      final existing = result[existingIndex];
+      final keepExisting =
+          _scoreGapLabel(existing.label) >= _scoreGapLabel(entry.label);
+
+      if (!keepExisting) {
+        result[existingIndex] = entry;
+      }
+    }
+
+    return result;
+  }
+
+  int _scoreGapLabel(String label) {
+    final lower = label.toLowerCase();
+
+    if (lower.startsWith('alice a casa:')) return 100;
+    if (lower.startsWith('alice ingresso:')) return 95;
+    if (lower.startsWith('alice uscita:')) return 95;
+    if (lower.startsWith('alice pranzo:')) return 95;
+    if (lower.startsWith('alice centro estivo ingresso:')) return 95;
+    if (lower.startsWith('alice centro estivo uscita:')) return 95;
+    if (lower.startsWith('centro estivo speciale:')) return 90;
+    if (label.contains(':')) return 80;
+
+    return 10;
   }
 
   List<WorkShift> _effectiveBusyShiftsForPerson({
