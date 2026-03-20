@@ -1,6 +1,6 @@
 # FRODODESK — PROJECT MEMORY
 
-Ultimo aggiornamento: 19 Marzo 2026
+Ultimo aggiornamento: 20 Marzo 2026
 
 ## IDENTITÀ DEL PROGETTO
 
@@ -46,6 +46,7 @@ Family layer
 - eventi Alice
 - eventi familiari
 - eventi personali
+- centro estivo
 
 Availability layer
 - malattia
@@ -574,6 +575,136 @@ Effetto:
 
 ---
 
+# AGGIORNAMENTO — 20 MARZO 2026
+
+## Centro estivo sopra vacanza: entrata nella fase reale
+
+Questa chat ha segnato un passaggio importante del progetto:
+
+👉 il sistema è entrato nel vivo della gestione reale del **centro estivo sovrapposto a vacanza**.
+
+Il punto chiave emerso è questo:
+
+quando Alice ha una vacanza attiva e sopra quella vacanza viene impostato un periodo di centro estivo, il sistema deve ragionare non “per tipo giorno astratto”, ma per **realtà concreta delle fasce**.
+
+Quindi:
+
+- prima dell’inizio del centro estivo → Alice è a casa
+- durante il centro estivo → Alice è fuori casa
+- dopo la fine del centro estivo → Alice torna a casa
+- terminato il centro estivo → deve riemergere correttamente la vacanza sottostante
+
+Questa non è una rifinitura grafica.
+
+È una nuova prova di maturità del motore reale.
+
+---
+
+## Problema reale emerso
+
+Durante i test è emerso che il sistema, con centro estivo sopra vacanza:
+
+- in alcuni casi non allineava bene i “Buchi del giorno”
+- poteva mostrare differenze tra:
+  - box Buchi del giorno
+  - card Copertura Sandra / Babysitter
+  - realtà effettiva della presenza Alice
+- non sempre ritagliava correttamente le fasce parziali prima e dopo il centro estivo
+
+Tradotto in logica umana:
+
+👉 il sistema rischiava di trattare il centro estivo come se “coprisse tutto il giorno”, oppure di non far tornare correttamente la vacanza appena il centro estivo finiva.
+
+---
+
+## Soluzione implementata
+
+È stata corretta la logica nel `CoverageEngine` in modo che:
+
+- il centro estivo vinca sulla vacanza **solo durante il proprio orario reale**
+- i buchi vengano costruiti sulle fasce davvero scoperte
+- Sandra venga valutata sulle parti rimaste realmente fuori copertura
+- il sistema torni a leggere correttamente Alice “a casa” appena il centro estivo finisce
+
+È stato anche introdotto un passaggio tecnico importante:
+
+- costruzione più precisa delle etichette di fascia ritagliata reale  
+  (es. buchi parziali tipo 07:30–08:30 o 13:00–14:30)
+
+---
+
+## Primo caso reale validato
+
+Caso guida corretto e verificato in app reale:
+
+- **Data riferimento:** 17 agosto 2026
+- **Turni:** Matteo notte + Chiara pomeriggio
+- **Stato Alice:** vacanza con centro estivo sovrapposto
+
+Comportamento corretto osservato:
+
+- prima del centro estivo Alice è letta a casa
+- durante il centro estivo Alice non è letta a casa
+- dopo la fine del centro estivo il sistema torna a leggere correttamente la vacanza
+- i buchi reali tornano coerenti
+- la card Sandra e il motore tornano allineati sul caso provato
+
+Questo è il **primo caso reale validato** del blocco centro estivo sopra vacanza.
+
+---
+
+## Stato attuale del blocco centro estivo
+
+✔ un caso reale è corretto  
+✔ il motore è entrato in una logica più realistica  
+✔ la sovrapposizione centro estivo / vacanza non è più solo teorica  
+
+Ma il blocco NON è ancora da dichiarare chiuso.
+
+Restano da testare obbligatoriamente queste due combinazioni:
+
+1. **Matteo mattina + Chiara notte**
+2. **Matteo pomeriggio + Chiara mattina**
+
+Solo dopo questi due test si potrà dire che il blocco centro estivo sopra vacanza è davvero consolidato.
+
+---
+
+## Doppione nei Buchi del giorno
+
+Durante l’ultimo test corretto è emerso un punto aperto non bloccante:
+
+su alcuni casi il sistema può mostrare un doppione logico, ad esempio:
+
+- “Alice a casa: 13:00–14:30”
+- “13:00–14:30”
+
+Questo significa che:
+
+- la logica reale è migliorata molto
+- ma la presentazione finale del buco va pulita
+
+Decisione:
+
+👉 non blocca la prosecuzione  
+👉 va sistemato dopo aver completato i test sulle due combinazioni mancanti
+
+---
+
+## Significato di fase
+
+Questa chat è importante perché segna il momento in cui il sistema non sta più solo “risolvendo bug”, ma sta iniziando a dimostrare di saper leggere **situazioni reali stratificate**:
+
+- vacanza
+- centro estivo
+- turni reali
+- Sandra
+- buchi parziali
+
+È un passaggio piccolo all’apparenza, ma molto importante sul piano della maturità del progetto.
+
+---
+
 ## Stato attuale
 
 ✔ sistema stabile  
@@ -582,14 +713,17 @@ Effetto:
 ✔ nessuna regressione introdotta dopo rollback  
 ✔ metodo CNC rispettato  
 ✔ modello notte/post-notte corretto nella logica reale  
+✔ primo caso reale centro estivo sopra vacanza corretto  
 
-👉 ma con due blocchi ancora da consolidare:
+👉 ma con blocchi ancora da consolidare:
 
-- Eventi Alice  
+- centro estivo sopra vacanza (test mancanti su 2 combinazioni)
+- doppione Buchi del giorno
+- Eventi Alice
 - Sandra (mattina/sera)
 
 👉 il calendario è pronto per:
 
 - uso reale continuativo  
-- test mirati sui bug identificati  
+- test mirati sui blocchi ancora sensibili  
 - miglioramenti incrementali controllati

@@ -1,6 +1,6 @@
 # FRODODESK — SYSTEM STATE
 
-Ultimo aggiornamento: 19 Marzo 2026
+Ultimo aggiornamento: 20 Marzo 2026
 
 # STATO GENERALE DEL PROGETTO
 
@@ -54,6 +54,16 @@ Checkpoint tecnico aggiornato:
 - sostituite nel file principale le chiamate a `_fmt(...)` con `fmtTimeOfDay(...)`
 - sostituite nel file principale le chiamate a `_fmtShortDate(...)` con `fmtShortDate(...)`
 - app verificata dopo l’estrazione helper: nessun errore rosso, avvio su Edge riuscito
+- corretta la logica centro estivo sopra vacanza nel `CoverageEngine`, distinguendo correttamente:
+  - Alice a casa prima del centro estivo
+  - Alice fuori casa durante il centro estivo
+  - Alice di nuovo a casa dopo la fine del centro estivo
+- aggiunta gestione più precisa delle fasce buco legate al centro estivo, compresa la lettura corretta di:
+  - fascia mattina prima dell’ingresso
+  - fascia pranzo se il centro estivo finisce prima
+  - fascia sera dopo il rientro
+- introdotto helper `_labelDateRange(...)` in `coverage_engine.dart` per mostrare correttamente buchi parziali reali nelle fasce ritagliate dal centro estivo
+- verificato in app reale che il centro estivo impostato sopra vacanza prevale correttamente durante la sua fascia e, terminato il centro estivo, il sistema torna a leggere correttamente la vacanza sottostante
 
 # 🔥 FIX CRITICO COMPLETATO (17 Marzo 2026)
 
@@ -289,6 +299,107 @@ Questo rende corretti i buchi nei casi:
 ✔ Il comportamento è tornato coerente con la realtà  
 ✔ I debug temporanei sono stati rimossi dopo verifica finale
 
+# 🔥 AGGIORNAMENTO CHAT DEL 20 MARZO 2026 — CENTRO ESTIVO SOPRA VACANZA
+
+## Stato reale del codice a fine chat
+
+In questa chat il lavoro si è spostato sul comportamento del **centro estivo sovrapposto a vacanza**, cioè sui giorni in cui:
+
+- Alice ha un periodo vacanza attivo
+- sopra quel periodo viene impostato un periodo centro estivo
+- il motore deve capire correttamente quando Alice:
+  - è a casa
+  - è al centro estivo
+  - torna a casa dopo il centro estivo
+
+Il punto chiave emerso è questo:
+
+👉 il sistema non può trattare “giorno di centro estivo” come se Alice fosse fuori tutto il giorno  
+👉 deve invece leggere correttamente le fasce reali:
+
+- prima dell’inizio centro estivo = Alice a casa
+- durante centro estivo = Alice fuori casa
+- dopo la fine centro estivo = Alice di nuovo a casa
+
+## Problema reale individuato
+
+Durante i test reali, con **centro estivo sopra vacanza**, il motore:
+
+- in alcuni casi continuava a mostrare buchi non coerenti
+- in altri casi non mostrava nei “Buchi del giorno” una fascia che invece la card Sandra segnalava come “Serve dal motore”
+- non stava raccontando in modo uniforme la realtà tra:
+  - box Buchi del giorno
+  - card Copertura Sandra / Babysitter
+  - stato Alice (casa / centro estivo)
+
+## Soluzione implementata
+
+È stata corretta la logica in `coverage_engine.dart` in modo che:
+
+- le fasce Sandra vengano ritagliate rispetto all’orario reale del centro estivo
+- i buchi del giorno possano mostrare correttamente i pezzi di fascia che restano davvero scoperti
+- il sistema torni a leggere la vacanza sottostante appena il centro estivo finisce
+- il centro estivo vinca solo **durante la propria finestra oraria**, non per tutto il giorno
+
+In particolare:
+
+- è stato corretto il comportamento del blocco `aliceSummerCamp`
+- è stata sistemata la costruzione dei buchi su:
+  - mattina
+  - pranzo
+  - sera
+- è stato introdotto `_labelDateRange(...)` per mostrare correttamente buchi parziali reali ritagliati dalle fasce centro estivo
+
+## Verifica reale effettuata
+
+### Caso validato
+
+Caso test reale verificato con esito corretto:
+
+- **Data riferimento:** 17 agosto 2026
+- **Turni:** Matteo notte + Chiara pomeriggio
+- **Stato Alice:** vacanza con centro estivo sovrapposto
+
+Comportamento corretto verificato:
+
+- il centro estivo viene letto sopra la vacanza
+- prima dell’ingresso Alice è considerata a casa
+- durante il centro estivo Alice non è considerata a casa
+- dopo il centro estivo il sistema torna a leggere correttamente la vacanza sottostante
+- i buchi reali sono tornati coerenti con la situazione testata
+- la card Sandra e il motore sono di nuovo allineati sul caso validato
+
+## Stato attuale del blocco centro estivo
+
+✔ **Caso validato correttamente:**
+- Matteo notte + Chiara pomeriggio
+- riferimento reale: **17 agosto 2026**
+
+⚠️ **Casi ancora da provare per chiudere davvero il blocco:**
+
+1. Matteo mattina + Chiara notte  
+2. Matteo pomeriggio + Chiara mattina  
+
+Questi due casi sono da considerare **obbligatori** prima di dichiarare il blocco centro estivo completamente chiuso.
+
+## Problema aperto non bloccante
+
+Durante l’ultimo test corretto è emerso un punto da rifinire:
+
+👉 presenza possibile di **doppione nei Buchi del giorno**
+
+Esempio logico:
+
+- “Alice a casa: 13:00–14:30”
+- “13:00–14:30”
+
+Stato del problema:
+
+- la logica base ora è molto più corretta
+- il problema sembra essere di **presentazione / duplicazione del buco**
+- **non blocca** il comportamento reale del motore
+- va però ricordato come rifinitura da fare appena finiti i test turni mancanti
+
 # MOTORI ATTIVI
 
 TurnEngine  
@@ -308,6 +419,8 @@ FeriePeriodStore
 DiseasePeriodStore  
 FourthShiftStore  
 SettingsStore  
+SummerCampScheduleStore  
+SummerCampSpecialEventStore  
 
 # FUNZIONALITÀ ATTUALI
 
@@ -337,6 +450,7 @@ Il sistema gestisce:
 - copertura combinata reale Matteo + Chiara ✔
 - prima estrazione helper fuori dal file calendario ✔
 - modello notte corretto con post-notte obbligatorio ✔
+- gestione centro estivo sopra vacanza ✔ (parzialmente validata su caso reale)
 
 # GERARCHIA SISTEMA TURNI
 
@@ -438,13 +552,16 @@ Logica copertura:
 ✔ senza falsi positivi nei casi già confermati  
 ✔ controllata nei punti logici più delicati  
 ✔ confermata in app reale nei casi testati  
-✔ coerente anche sui giorni `N` con post-notte reale
+✔ coerente anche sui giorni `N` con post-notte reale  
+✔ corretta sul primo caso reale centro estivo sopra vacanza  
+⚠️ da completare la validazione centro estivo sulle altre due combinazioni turni  
 
 UI:
 ✔ stabile  
 ✔ leggibile  
 ✔ coerente con uso reale  
-✔ nessuna modifica strutturale permanente introdotta in questa chat
+✔ nessuna modifica strutturale permanente introdotta in questa chat  
+⚠️ da pulire il possibile doppione nei Buchi del giorno sul blocco centro estivo  
 
 Refactor:
 ✔ avviato in modo sicuro  
@@ -453,9 +570,42 @@ Refactor:
 
 # BUG APERTI PRIORITARI
 
-## 1. Eventi Alice — gestione periodi sovrapposti / stato giorno errato
+## 1. Centro estivo sopra vacanza — validazione incompleta
 
 Riferimento operativo da usare nella prossima chat:
+
+- **17 agosto 2026** come caso guida già validato
+- completare poi le altre combinazioni turni
+
+Stato attuale:
+
+- il caso **Matteo notte + Chiara pomeriggio** è corretto
+- restano da provare:
+  - **Matteo mattina + Chiara notte**
+  - **Matteo pomeriggio + Chiara mattina**
+
+Decisione:
+
+- questo blocco va chiuso prima di dichiarare stabile il centro estivo reale
+
+## 2. Buchi del giorno — possibile doppione fascia
+
+Problema osservato:
+
+- su alcuni casi centro estivo corretti il motore può mostrare un doppione logico del buco
+- esempio:
+  - “Alice a casa: 13:00–14:30”
+  - “13:00–14:30”
+
+Stato attuale:
+
+- problema non bloccante
+- logica reale molto migliorata
+- da rifinire appena completati i test centro estivo sui turni mancanti
+
+## 3. Eventi Alice — gestione periodi sovrapposti / stato giorno errato
+
+Riferimento operativo da usare dopo il blocco centro estivo:
 
 - **31 agosto 2026**
 
@@ -480,7 +630,7 @@ Decisione:
   - AliceEventStore
   - motore CoverageEngine
 
-## 2. Sandra — bug ancora aperto su mattina e sera
+## 4. Sandra — bug ancora aperto su mattina e sera
 
 Anche questo va ripreso con riferimento:
 
@@ -499,28 +649,40 @@ Stato attuale:
 
 - il pranzo è stato verificato corretto
 - il caso mattina collegato alla notte/post-notte è stato corretto
+- sul centro estivo il motore è stato corretto sul primo caso reale
 - resta da verificare e consolidare il comportamento generale Sandra mattina/sera in tutti i casi Alice a casa
 
 # PROSSIMO PASSO
 
-Il prossimo passo corretto non è l’estrazione di card grandi né il lavoro sui dialog.
+Il prossimo passo corretto adesso **non** è ancora il blocco Eventi Alice.
 
 Il prossimo passo è:
 
-- ripartire dal **bug Eventi Alice**
-- usare come riferimento operativo il **31 agosto 2026**
-- verificare coesistenza e priorità reale di:
-  - vacanza
-  - scuola chiusa
-  - malattia
-- poi rifinire il comportamento Sandra **mattina/sera** nelle giornate in cui Alice è a casa
+- chiudere davvero il blocco **centro estivo sopra vacanza**
+- usare come riferimento operativo il **17 agosto 2026**
+- completare i test mancanti sulle due combinazioni turni:
+
+  1. Matteo mattina + Chiara notte  
+  2. Matteo pomeriggio + Chiara mattina  
+
+- verificare per entrambi:
+  - buchi del giorno
+  - coerenza Sandra
+  - ritorno corretto a vacanza dopo la fine del centro estivo
+
+Solo dopo:
+
+- rifinire il possibile doppione nei Buchi del giorno
+- tornare sul blocco **Eventi Alice (31 agosto)**
 
 File previsti per la ripartenza:
 
-- `lib/logic/alice_event_store.dart`
-- file/widget collegato alla card Eventi Alice
-- `coverage_engine.dart` solo dopo aver chiarito il blocco Alice
+- `coverage_engine.dart`
+- `calendario_screen_stepa.dart` (solo se serve lettura UI del problema)
+- poi successivamente:
+  - `lib/logic/alice_event_store.dart`
+  - file/widget collegato alla card Eventi Alice
 
 # FRASE DI RIPARTENZA UFFICIALE
 
-Ripartiamo da FrodoDesk — bug Eventi Alice (31 agosto) + rifinitura Sandra mattina/sera con notte/post-notte già corretti.
+Ripartiamo da FrodoDesk — completare validazione centro estivo sopra vacanza (caso guida 17 agosto già corretto) + test delle 2 combinazioni turni mancanti + poi pulizia del doppione nei Buchi del giorno.

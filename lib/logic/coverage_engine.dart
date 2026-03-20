@@ -180,61 +180,104 @@ class CoverageEngine {
     final morningStart = _atTime(d0, sandraCambioMattinaStart);
     final morningEnd = _atTime(d0, sandraCambioMattinaEnd);
 
+    final lunchBaseStart = _atTime(
+      d0,
+      uscita13 ? (uscitaAnticipataAt ?? sandraPranzoStart) : sandraPranzoStart,
+    );
+    final lunchEnd = _atTime(d0, sandraPranzoEnd);
+
     final eveningStart = _atTime(d0, sandraSeraStart);
     final eveningEnd = _atTime(d0, sandraSeraEnd);
 
-    final bool serveMattina = !_isFasciaCovered(
-      day: d0,
-      fasciaStart: morningStart,
-      fasciaEnd: morningEnd,
-      allowSandra: false,
-      sandraMattinaAvailable: false,
-      sandraPranzoAvailable: false,
-      sandraSeraAvailable: false,
-      isHomePresenceWindow: true,
-      overrides: overrides,
-      ferieStore: ferieStore,
-    );
+    final activeSummerCampPeriod = getSummerCampPeriodForDay(d0);
+    final specialEvent = getSummerCampSpecialEventForDay(d0);
+    final dayConfig = getSummerCampConfigForDay(d0);
 
-    final bool serveSera = !_isFasciaCovered(
-      day: d0,
-      fasciaStart: eveningStart,
-      fasciaEnd: eveningEnd,
-      allowSandra: false,
-      sandraMattinaAvailable: false,
-      sandraPranzoAvailable: false,
-      sandraSeraAvailable: false,
-      isHomePresenceWindow: true,
-      overrides: overrides,
-      ferieStore: ferieStore,
-    );
+    final bool summerCampEnabled =
+        activeSummerCampPeriod != null &&
+        (specialEvent?.enabled ?? dayConfig.enabled);
+
+    final DateTime? campStart = summerCampEnabled
+        ? _atTime(d0, specialEvent?.start ?? dayConfig.start)
+        : null;
+    final DateTime? campEnd = summerCampEnabled
+        ? _atTime(d0, specialEvent?.end ?? dayConfig.end)
+        : null;
+
+    DateTime mattinaCheckStart = morningStart;
+    DateTime mattinaCheckEnd = morningEnd;
+
+    if (campStart != null && campStart.isBefore(mattinaCheckEnd)) {
+      mattinaCheckEnd = campStart;
+    }
+
+    final bool serveMattina = mattinaCheckEnd.isAfter(mattinaCheckStart)
+        ? !_isFasciaCovered(
+            day: d0,
+            fasciaStart: mattinaCheckStart,
+            fasciaEnd: mattinaCheckEnd,
+            allowSandra: false,
+            sandraMattinaAvailable: false,
+            sandraPranzoAvailable: false,
+            sandraSeraAvailable: false,
+            isHomePresenceWindow: true,
+            overrides: overrides,
+            ferieStore: ferieStore,
+          )
+        : false;
+
+    DateTime seraCheckStart = eveningStart;
+    final DateTime seraCheckEnd = eveningEnd;
+
+    if (campEnd != null && campEnd.isAfter(seraCheckStart)) {
+      seraCheckStart = campEnd;
+    }
+
+    final bool serveSera = seraCheckEnd.isAfter(seraCheckStart)
+        ? !_isFasciaCovered(
+            day: d0,
+            fasciaStart: seraCheckStart,
+            fasciaEnd: seraCheckEnd,
+            allowSandra: false,
+            sandraMattinaAvailable: false,
+            sandraPranzoAvailable: false,
+            sandraSeraAvailable: false,
+            isHomePresenceWindow: true,
+            overrides: overrides,
+            ferieStore: ferieStore,
+          )
+        : false;
 
     bool servePranzo = false;
 
     final bool aliceAtHomeDay = isAliceAtHomeDay(d0);
-    final bool shouldCheckPranzo = uscita13 || aliceAtHomeDay;
+    final bool shouldCheckPranzo =
+        uscita13 ||
+        aliceAtHomeDay ||
+        (campEnd != null && campEnd.isBefore(lunchEnd));
 
     if (shouldCheckPranzo &&
         (aliceAtHomeDay || lunchCover == SchoolCoverChoice.none)) {
-      final lunchStartTime = uscita13
-          ? (uscitaAnticipataAt ?? sandraPranzoStart)
-          : sandraPranzoStart;
+      DateTime lunchCheckStart = lunchBaseStart;
 
-      final lunchStart = _atTime(d0, lunchStartTime);
-      final lunchEnd = _atTime(d0, sandraPranzoEnd);
+      if (campEnd != null && campEnd.isAfter(lunchCheckStart)) {
+        lunchCheckStart = campEnd;
+      }
 
-      servePranzo = !_isFasciaCovered(
-        day: d0,
-        fasciaStart: lunchStart,
-        fasciaEnd: lunchEnd,
-        allowSandra: false,
-        sandraMattinaAvailable: false,
-        sandraPranzoAvailable: false,
-        sandraSeraAvailable: false,
-        isHomePresenceWindow: true,
-        overrides: overrides,
-        ferieStore: ferieStore,
-      );
+      if (lunchEnd.isAfter(lunchCheckStart)) {
+        servePranzo = !_isFasciaCovered(
+          day: d0,
+          fasciaStart: lunchCheckStart,
+          fasciaEnd: lunchEnd,
+          allowSandra: false,
+          sandraMattinaAvailable: false,
+          sandraPranzoAvailable: false,
+          sandraSeraAvailable: false,
+          isHomePresenceWindow: true,
+          overrides: overrides,
+          ferieStore: ferieStore,
+        );
+      }
     }
 
     return CoverageSandraDecision(
@@ -481,6 +524,22 @@ class CoverageEngine {
     final AliceEventPeriod? activeSummerCampPeriod = getSummerCampPeriodForDay(
       d0,
     );
+
+    final specialEvent = getSummerCampSpecialEventForDay(d0);
+    final dayConfig = getSummerCampConfigForDay(d0);
+
+    final bool summerCampEnabled =
+        aliceSummerCamp &&
+        activeSummerCampPeriod != null &&
+        (specialEvent?.enabled ?? dayConfig.enabled);
+
+    final DateTime? effectiveCampStart = summerCampEnabled
+        ? _atTime(d0, summerCampStart ?? specialEvent?.start ?? dayConfig.start)
+        : null;
+
+    final DateTime? effectiveCampEnd = summerCampEnabled
+        ? _atTime(d0, summerCampEnd ?? specialEvent?.end ?? dayConfig.end)
+        : null;
 
     DateTime? normalSchoolHomeWindowStart;
 
@@ -800,57 +859,113 @@ class CoverageEngine {
     final fMattinaStart = _atTime(d0, sandraCambioMattinaStart);
     final fMattinaEnd = _atTime(d0, sandraCambioMattinaEnd);
 
-    final okCambioMattina = _isFasciaCovered(
-      day: d0,
-      fasciaStart: fMattinaStart,
-      fasciaEnd: fMattinaEnd,
-      allowSandra: true,
-      sandraMattinaAvailable: effSandraMattina,
-      sandraPranzoAvailable: effSandraPranzo,
-      sandraSeraAvailable: effSandraSera,
-      isHomePresenceWindow: true,
-      overrides: overrides,
-      ferieStore: ferieStore,
-    );
+    DateTime mattinaGapStart = fMattinaStart;
+    DateTime mattinaGapEnd = fMattinaEnd;
 
-    if (!okCambioMattina) {
-      entries.add(
-        _CoverageGapEntry(
-          label: _labelRange(sandraCambioMattinaStart, sandraCambioMattinaEnd),
-          fasciaStart: fMattinaStart,
-          fasciaEnd: fMattinaEnd,
-          isHomePresenceWindow: true,
-          allowSandra: true,
-        ),
+    if (effectiveCampStart != null &&
+        effectiveCampStart.isBefore(mattinaGapEnd)) {
+      mattinaGapEnd = effectiveCampStart;
+    }
+
+    if (mattinaGapEnd.isAfter(mattinaGapStart)) {
+      final okCambioMattina = _isFasciaCovered(
+        day: d0,
+        fasciaStart: mattinaGapStart,
+        fasciaEnd: mattinaGapEnd,
+        allowSandra: true,
+        sandraMattinaAvailable: effSandraMattina,
+        sandraPranzoAvailable: effSandraPranzo,
+        sandraSeraAvailable: effSandraSera,
+        isHomePresenceWindow: true,
+        overrides: overrides,
+        ferieStore: ferieStore,
       );
+
+      if (!okCambioMattina) {
+        entries.add(
+          _CoverageGapEntry(
+            label: _labelDateRange(mattinaGapStart, mattinaGapEnd),
+            fasciaStart: mattinaGapStart,
+            fasciaEnd: mattinaGapEnd,
+            isHomePresenceWindow: true,
+            allowSandra: true,
+          ),
+        );
+      }
+    }
+
+    final fPranzoStart = _atTime(d0, sandraPranzoStart);
+    final fPranzoEnd = _atTime(d0, sandraPranzoEnd);
+
+    DateTime pranzoGapStart = fPranzoStart;
+    final DateTime pranzoGapEnd = fPranzoEnd;
+
+    if (effectiveCampEnd != null && effectiveCampEnd.isAfter(pranzoGapStart)) {
+      pranzoGapStart = effectiveCampEnd;
+    }
+
+    if (pranzoGapEnd.isAfter(pranzoGapStart)) {
+      final okPranzo = _isFasciaCovered(
+        day: d0,
+        fasciaStart: pranzoGapStart,
+        fasciaEnd: pranzoGapEnd,
+        allowSandra: true,
+        sandraMattinaAvailable: effSandraMattina,
+        sandraPranzoAvailable: effSandraPranzo,
+        sandraSeraAvailable: effSandraSera,
+        isHomePresenceWindow: true,
+        overrides: overrides,
+        ferieStore: ferieStore,
+      );
+
+      if (!okPranzo) {
+        entries.add(
+          _CoverageGapEntry(
+            label: _labelDateRange(pranzoGapStart, pranzoGapEnd),
+            fasciaStart: pranzoGapStart,
+            fasciaEnd: pranzoGapEnd,
+            isHomePresenceWindow: true,
+            allowSandra: true,
+          ),
+        );
+      }
     }
 
     final fSeraStart = _atTime(d0, sandraSeraStart);
     final fSeraEnd = _atTime(d0, sandraSeraEnd);
 
-    final okSera = _isFasciaCovered(
-      day: d0,
-      fasciaStart: fSeraStart,
-      fasciaEnd: fSeraEnd,
-      allowSandra: true,
-      sandraMattinaAvailable: effSandraMattina,
-      sandraPranzoAvailable: effSandraPranzo,
-      sandraSeraAvailable: effSandraSera,
-      isHomePresenceWindow: true,
-      overrides: overrides,
-      ferieStore: ferieStore,
-    );
+    DateTime seraGapStart = fSeraStart;
+    final DateTime seraGapEnd = fSeraEnd;
 
-    if (!okSera) {
-      entries.add(
-        _CoverageGapEntry(
-          label: _labelRange(sandraSeraStart, sandraSeraEnd),
-          fasciaStart: fSeraStart,
-          fasciaEnd: fSeraEnd,
-          isHomePresenceWindow: true,
-          allowSandra: true,
-        ),
+    if (effectiveCampEnd != null && effectiveCampEnd.isAfter(seraGapStart)) {
+      seraGapStart = effectiveCampEnd;
+    }
+
+    if (seraGapEnd.isAfter(seraGapStart)) {
+      final okSera = _isFasciaCovered(
+        day: d0,
+        fasciaStart: seraGapStart,
+        fasciaEnd: seraGapEnd,
+        allowSandra: true,
+        sandraMattinaAvailable: effSandraMattina,
+        sandraPranzoAvailable: effSandraPranzo,
+        sandraSeraAvailable: effSandraSera,
+        isHomePresenceWindow: true,
+        overrides: overrides,
+        ferieStore: ferieStore,
       );
+
+      if (!okSera) {
+        entries.add(
+          _CoverageGapEntry(
+            label: _labelDateRange(seraGapStart, seraGapEnd),
+            fasciaStart: seraGapStart,
+            fasciaEnd: seraGapEnd,
+            isHomePresenceWindow: true,
+            allowSandra: true,
+          ),
+        );
+      }
     }
 
     final gaps = <String>[];
@@ -1836,6 +1951,9 @@ class CoverageEngine {
       DateTime(d0.year, d0.month, d0.day, t.hour, t.minute);
 
   String _labelRange(TimeOfDay a, TimeOfDay b) => "${_fmt(a)}–${_fmt(b)}";
+
+  String _labelDateRange(DateTime start, DateTime end) =>
+      "${_fmtTimeDate(start)}–${_fmtTimeDate(end)}";
 
   String _fmt(TimeOfDay t) {
     final hh = t.hour.toString().padLeft(2, '0');
