@@ -409,3 +409,82 @@ Ogni nuova chat deve iniziare con:
 5) file reale  
 
 Poi si parte.
+---
+
+# REGOLA CRITICA — CONTINUITÀ DOCUMENTALE (21 Marzo 2026)
+
+## ERRORE DA NON RIPETERE
+
+Durante questa chat è stato commesso un errore grave:
+
+👉 restituzione di un file docs **parziale e ridotto**
+invece del file completo aggiornato.
+
+Esempio reale:
+
+- file originale ~700+ righe
+- file restituito ~200 righe
+
+Questo comportamento è **inaccettabile per FrodoDesk**.
+
+---
+
+## PRINCIPIO ASSOLUTO
+
+FrodoDesk NON è un progetto normale.
+
+È un sistema che vive di:
+
+👉 memoria completa  
+👉 continuità totale  
+👉 contesto accumulato  
+
+---
+
+## REGOLA OPERATIVA OBBLIGATORIA
+
+Quando Frodo aggiorna un file docs deve:
+
+✔ restituire SEMPRE il file completo  
+✔ mantenere TUTTO il contenuto esistente  
+✔ aggiungere solo le nuove parti  
+✔ NON semplificare  
+✔ NON riassumere  
+✔ NON “ripulire” il file  
+✔ NON riorganizzare autonomamente  
+
+---
+
+## VIETATO
+
+❌ accorciare il file  
+❌ riscrivere il file “più pulito”  
+❌ perdere dettagli storici  
+❌ eliminare sezioni esistenti  
+❌ reinterpretare il contenuto  
+
+---
+
+## MOTIVO
+
+La nuova chat deve poter:
+
+👉 leggere il file come se questa chat non fosse mai stata chiusa  
+
+Se il file viene ridotto:
+
+👉 si perde memoria  
+👉 si perde contesto  
+👉 si rompe il sistema  
+
+---
+
+## REGOLA FINALE
+
+👉 I file docs sono memoria viva del sistema  
+👉 NON devono mai essere compressi o semplificati  
+
+Qualsiasi aggiornamento deve essere:
+
+👉 SOLO AGGIUNTA  
+👉 MAI SOSTITUZIONE E RENDERE SEMPRE FILE INTERO

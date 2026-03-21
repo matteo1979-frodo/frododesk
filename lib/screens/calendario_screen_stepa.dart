@@ -72,6 +72,9 @@ class _CalendarioScreenStepAStabileState
   final GlobalKey _overrideKey = GlobalKey();
   final GlobalKey _eventiKey = GlobalKey();
 
+  bool _realitySectionOpen = true;
+  bool _coverageSectionOpen = false;
+
   Future<void> _scrollTo(GlobalKey key) async {
     final ctx = key.currentContext;
     if (ctx == null) return;
@@ -2375,7 +2378,11 @@ class _CalendarioScreenStepAStabileState
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: EdgeInsets.all(
+        (title.contains("REALTÀ") ? _realitySectionOpen : _coverageSectionOpen)
+            ? 14
+            : 10,
+      ),
       decoration: BoxDecoration(
         color: Colors.grey.withOpacity(0.08),
         borderRadius: BorderRadius.circular(14),
@@ -2384,20 +2391,56 @@ class _CalendarioScreenStepAStabileState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: TextStyle(
-              color: Colors.black.withOpacity(0.62),
-              fontWeight: FontWeight.w600,
+          InkWell(
+            onTap: () {
+              setState(() {
+                if (title.contains("REALTÀ")) {
+                  _realitySectionOpen = !_realitySectionOpen;
+                } else {
+                  _coverageSectionOpen = !_coverageSectionOpen;
+                }
+              });
+            },
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: Colors.black.withOpacity(0.62),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  (title.contains("REALTÀ")
+                          ? _realitySectionOpen
+                          : _coverageSectionOpen)
+                      ? Icons.expand_less
+                      : Icons.expand_more,
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 12),
-          child,
+          if (title.contains("REALTÀ")) ...[
+            if (_realitySectionOpen) child,
+          ] else ...[
+            if (_coverageSectionOpen) child,
+          ],
         ],
       ),
     );

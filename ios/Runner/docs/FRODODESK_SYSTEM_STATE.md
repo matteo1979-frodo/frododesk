@@ -1,6 +1,6 @@
 # FRODODESK — SYSTEM STATE
 
-Ultimo aggiornamento: 20 Marzo 2026
+Ultimo aggiornamento: 21 Marzo 2026
 
 # STATO GENERALE DEL PROGETTO
 
@@ -686,3 +686,150 @@ File previsti per la ripartenza:
 # FRASE DI RIPARTENZA UFFICIALE
 
 Ripartiamo da FrodoDesk — completare validazione centro estivo sopra vacanza (caso guida 17 agosto già corretto) + test delle 2 combinazioni turni mancanti + poi pulizia del doppione nei Buchi del giorno.
+---
+
+# AGGIORNAMENTO STATO — 21 MARZO 2026
+
+## Stato attuale sistema
+
+Il calendario FrodoDesk ha raggiunto uno stato stabile per uso reale continuativo.
+
+### Blocchi consolidati
+
+- motore copertura stabile  
+- gestione turni + eventi reali coerente  
+- modello notte/post-notte corretto  
+- centro estivo sopra vacanza funzionante  
+- Eventi Alice stabilizzati e coerenti con il motore  
+- comportamento Sandra corretto su tutte le fasce (mattina, pranzo, sera)  
+- introduzione sezioni comprimibili nella schermata calendario  
+- sezione “REALTÀ DEL GIORNO” aperta di default  
+- sezione “COPERTURA ALICE” chiusa di default  
+- box sezione più compatti quando chiusi
+
+---
+
+## Centro estivo sopra vacanza
+
+Blocco testato e validato su caso reale.
+
+Comportamento corretto:
+
+- prima del centro estivo → Alice a casa  
+- durante il centro estivo → Alice fuori casa  
+- dopo il centro estivo → ritorno alla vacanza  
+
+I buchi del giorno risultano coerenti con la realtà.
+
+👉 Stato: **CHIUSO**
+
+---
+
+## Eventi Alice
+
+Problemi precedenti:
+
+- incoerenze tra stato giorno e periodi
+- lettura non stabile tra vacanza / malattia / scuola
+
+Situazione attuale:
+
+- gestione periodi stabilizzata
+- stato giorno coerente con la realtà
+- allineamento corretto tra:
+  - AliceEventStore
+  - UI
+  - CoverageEngine
+
+👉 Stato: **CHIUSO**
+
+---
+
+## Sandra (copertura fasce)
+
+Problema precedente:
+
+- mancata attivazione corretta nelle fasce:
+  - mattina
+  - sera
+
+Situazione attuale:
+
+- Sandra viene richiesta correttamente dal motore quando:
+  - Alice è a casa
+  - genitori non disponibili
+- copertura coerente su:
+  - mattina ✔
+  - pranzo ✔
+  - sera ✔
+
+👉 Stato: **CHIUSO**
+
+---
+
+## Problemi aperti (non bloccanti)
+
+- doppione visuale nei “Buchi del giorno”  
+- semplificazione UX/UI necessaria  
+
+👉 non impattano la correttezza del motore  
+
+---
+
+## Direzione operativa
+
+Il sistema è pronto per:
+
+- uso reale continuativo  
+- test su casi reali prolungati  
+
+La prossima fase non è strutturale ma di esperienza utente.
+
+---
+
+## Prossima fase
+
+Focus su UX/UI:
+
+- riduzione scroll  
+- card compatte  
+- sezioni apri/chiudi  
+- accesso rapido alle modifiche (tap diretto su persone e copertura)  
+
+---
+
+## Stato UI aggiornato
+
+Nel file:
+
+`calendario_screen_stepa.dart`
+
+sono state introdotte modifiche UX sicure e già verificate in app reale:
+
+- aggiunte variabili di stato per apertura/chiusura sezioni
+- header sezione cliccabile
+- icona espandi/comprimi
+- contenuto sezione nascosto quando chiuso
+- padding ridotto quando sezione chiusa
+
+Verifica reale eseguita:
+
+- “REALTÀ DEL GIORNO” si apre/chiude correttamente
+- “COPERTURA ALICE” si apre/chiude correttamente
+- “COPERTURA ALICE” parte chiusa di default
+- layout più compatto confermato in app reale
+
+👉 Stato: **ATTIVO E STABILE**
+
+---
+
+## Stato generale
+
+✔ sistema stabile  
+✔ motore affidabile  
+✔ pronto per utilizzo reale  
+✔ Eventi Alice risolti  
+✔ Sandra mattina/sera risolto  
+✔ prima ottimizzazione UX/UI completata e verificata  
+
+👉 fase attuale: **ottimizzazione utilizzo e leggibilità**

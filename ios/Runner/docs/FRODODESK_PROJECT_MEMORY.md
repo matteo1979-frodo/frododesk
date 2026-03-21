@@ -1,6 +1,6 @@
 # FRODODESK — PROJECT MEMORY
 
-Ultimo aggiornamento: 20 Marzo 2026
+Ultimo aggiornamento: 21 Marzo 2026
 
 ## IDENTITÀ DEL PROGETTO
 
@@ -727,3 +727,146 @@ Questa chat è importante perché segna il momento in cui il sistema non sta pi�
 - uso reale continuativo  
 - test mirati sui blocchi ancora sensibili  
 - miglioramenti incrementali controllati
+---
+
+# AGGIORNAMENTO — 21 MARZO 2026
+
+## BLOCCO CENTRO ESTIVO SOPRA VACANZA — CHIUSO
+
+Durante questa chat il blocco:
+
+centro estivo sopra vacanza
+
+è stato testato e verificato direttamente in app reale.
+
+### Risultato
+
+- comportamento corretto prima del centro estivo → Alice a casa  
+- comportamento corretto durante il centro estivo → Alice fuori casa  
+- comportamento corretto dopo il centro estivo → ritorno alla vacanza  
+- buchi del giorno coerenti  
+- nessuna incoerenza tra motore e card Sandra  
+
+### Decisione
+
+Il blocco è considerato **chiuso e stabile per uso reale**.
+
+---
+
+## EVENTI ALICE — BLOCCO CONSOLIDATO
+
+Il lavoro successivo ha confermato che il sistema eventi Alice è tornato coerente nella pratica reale.
+
+### Situazione consolidata
+
+- stato del giorno letto correttamente
+- coerenza recuperata tra periodi e comportamento reale del motore
+- allineamento corretto tra:
+  - AliceEventStore
+  - UI della card Alice/Scuola
+  - CoverageEngine
+
+### Decisione
+
+Il blocco Eventi Alice, che in precedenza risultava sensibile, è ora da considerare **stabilizzato per uso reale**.
+
+---
+
+## SANDRA — FASCE MATTINA / PRANZO / SERA CONSOLIDATE
+
+Anche il comportamento Sandra è stato riportato a coerenza strutturale.
+
+### Situazione consolidata
+
+Quando Alice è a casa e i genitori non sono disponibili, il sistema ora richiede correttamente Sandra su tutte le fasce rilevanti:
+
+- mattina ✔
+- pranzo ✔
+- sera ✔
+
+Questo chiude il problema aperto emerso nel caso guida del 31 agosto 2026.
+
+### Decisione
+
+Il blocco Sandra sulle fasce operative è ora da considerare **stabilizzato per uso reale**.
+
+---
+
+## Punto aperto (non bloccante)
+
+Doppione nei “Buchi del giorno”:
+
+esempio:
+- Alice a casa: 13:00–14:30  
+- 13:00–14:30  
+
+Significato:
+
+- il motore è corretto  
+- il problema è solo di visualizzazione  
+
+### Decisione
+
+Rimandato alla fase UI (pulizia output).
+
+---
+
+## STATO UX/UI — PRIMA OTTIMIZZAZIONE REALE COMPLETATA
+
+Durante questa chat è iniziata davvero la fase UX/UI, senza toccare il motore logico.
+
+### Intervento reale eseguito
+
+Nel file:
+
+`calendario_screen_stepa.dart`
+
+sono state introdotte modifiche sicure e verificate in app reale:
+
+- sezioni principali comprimibili
+- header cliccabile sulle sezioni
+- icona espandi/comprimi
+- contenuto nascosto quando la sezione è chiusa
+- padding più compatto quando la sezione è chiusa
+- “REALTÀ DEL GIORNO” aperta di default
+- “COPERTURA ALICE” chiusa di default
+
+### Verifica reale
+
+Test effettuato con esito corretto:
+
+- la sezione “REALTÀ DEL GIORNO” si apre e si chiude correttamente
+- la sezione “COPERTURA ALICE” si apre e si chiude correttamente
+- la schermata risulta più leggibile
+- lo scroll iniziale è ridotto
+- nessuna regressione osservata nel comportamento del calendario
+
+### Significato della fase
+
+Questo passaggio segna l’inizio concreto della nuova fase:
+
+👉 non più fondazione motore  
+👉 ma miglioramento dell’uso quotidiano reale
+
+---
+
+## Stato del sistema a fine chat
+
+- motore copertura stabile  
+- centro estivo consolidato  
+- Eventi Alice stabilizzati  
+- Sandra coerente su tutte le fasce  
+- nessuna regressione osservata  
+- prima ottimizzazione UX/UI completata e verificata  
+- calendario utilizzabile per test reali continuativi  
+
+---
+
+## Prossima fase
+
+Miglioramento UX/UI:
+
+- riduzione scroll  
+- card compatte  
+- apertura/chiusura sezioni  
+- accesso rapido alle modifiche (tap diretto su Matteo / Chiara / Alice / Copertura)
