@@ -807,7 +807,7 @@ class _CalendarioScreenStepAStabileState
                   (r) => Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
-                      "• ${_realEventText(r.event)} — ${_conflictStateLabel(r.state)}${r.detailText == null ? "" : "\n${r.detailText}"}",
+                      "• ${realEventText(r.event)} — ${conflictStateLabel(r.state)}${r.detailText == null ? "" : "\n${r.detailText}"}",
                       style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
@@ -1150,28 +1150,6 @@ class _CalendarioScreenStepAStabileState
         "Turno: ${_turnPlanSummary(turnPlan)}\n"
         "Fascia in conflitto: ${_rangeLabel(overlap)}\n"
         "Causa risoluzione: ferie";
-  }
-
-  String _conflictStateLabel(TurnEventConflictState state) {
-    switch (state) {
-      case TurnEventConflictState.open:
-        return "Conflitto aperto";
-      case TurnEventConflictState.partial:
-        return "Parzialmente coperto";
-      case TurnEventConflictState.resolved:
-        return "Risolto";
-    }
-  }
-
-  Color _conflictStateColor(TurnEventConflictState state) {
-    switch (state) {
-      case TurnEventConflictState.open:
-        return Colors.red;
-      case TurnEventConflictState.partial:
-        return Colors.orange;
-      case TurnEventConflictState.resolved:
-        return Colors.green;
-    }
   }
 
   TurnEventConflictState _worstConflictState(
@@ -1530,32 +1508,6 @@ class _CalendarioScreenStepAStabileState
     return resolutions;
   }
 
-  String _cleanGapTitle(String label) {
-    final lower = label.toLowerCase();
-
-    if (lower.contains('alice ingresso')) {
-      return 'Ingresso scuola';
-    }
-
-    if (lower.contains('alice uscita')) {
-      return 'Uscita scuola';
-    }
-
-    if (lower.contains('pranzo')) {
-      return 'Pranzo';
-    }
-
-    if (lower.contains('sera')) {
-      return 'Sera';
-    }
-
-    if (lower.contains('mattina')) {
-      return 'Mattina';
-    }
-
-    return label;
-  }
-
   String? _extractGapTime(String label) {
     final parts = label.split(': ');
     if (parts.length < 2) return null;
@@ -1610,18 +1562,6 @@ class _CalendarioScreenStepAStabileState
     });
 
     return filtered;
-  }
-
-  String _realEventText(RealEvent event) {
-    if (event.startTime != null && event.endTime != null) {
-      return "${event.title} ${fmtTimeOfDay(event.startTime!)}–${fmtTimeOfDay(event.endTime!)}";
-    }
-
-    if (event.startTime != null) {
-      return "${event.title} ${fmtTimeOfDay(event.startTime!)}";
-    }
-
-    return "${event.title} • Tutto il giorno";
   }
 
   String? _personRealStatusText({
@@ -2202,7 +2142,7 @@ class _CalendarioScreenStepAStabileState
               const SizedBox(height: 10),
               for (int i = 0; i < cov.gapDetails.length; i++) ...[
                 Text(
-                  "BUCO ${i + 1} — ${_cleanGapTitle(cov.gapDetails[i].label)}",
+                  "BUCO ${i + 1} — ${cleanGapTitle(cov.gapDetails[i].label)}",
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 6),
@@ -2376,13 +2316,13 @@ class _CalendarioScreenStepAStabileState
     required String subtitle,
     required Widget child,
   }) {
+    final isOpen = title.contains("REALTÀ")
+        ? _realitySectionOpen
+        : _coverageSectionOpen;
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(
-        (title.contains("REALTÀ") ? _realitySectionOpen : _coverageSectionOpen)
-            ? 14
-            : 10,
-      ),
+
+      padding: EdgeInsets.all(isOpen ? 14 : 10),
       decoration: BoxDecoration(
         color: Colors.grey.withOpacity(0.08),
         borderRadius: BorderRadius.circular(14),
@@ -2425,13 +2365,7 @@ class _CalendarioScreenStepAStabileState
                     ],
                   ),
                 ),
-                Icon(
-                  (title.contains("REALTÀ")
-                          ? _realitySectionOpen
-                          : _coverageSectionOpen)
-                      ? Icons.expand_less
-                      : Icons.expand_more,
-                ),
+                Icon(isOpen ? Icons.expand_less : Icons.expand_more),
               ],
             ),
           ),
@@ -3131,7 +3065,7 @@ class _CalendarioScreenStepAStabileState
     required List<TurnEventConflictResolution> conflicts,
   }) {
     final worst = _worstConflictState(conflicts);
-    final color = _conflictStateColor(worst);
+    final color = conflictStateColor(worst);
 
     final String title;
     final String subtitle;
@@ -3206,15 +3140,15 @@ class _CalendarioScreenStepAStabileState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _realEventText(r.event),
+                        realEventText(r.event),
                         style: const TextStyle(fontWeight: FontWeight.w800),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "Stato: ${_conflictStateLabel(r.state)}",
+                        "Stato: ${conflictStateLabel(r.state)}",
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
-                          color: _conflictStateColor(r.state),
+                          color: conflictStateColor(r.state),
                         ),
                       ),
                       if (r.detailText != null) ...[
@@ -3309,7 +3243,7 @@ class _CalendarioScreenStepAStabileState
               if (events.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 _eventPill(
-                  text: _realEventText(events.first),
+                  text: realEventText(events.first),
                   onTap: () =>
                       _showExtraEventsDialog(personName: name, events: events),
                 ),
@@ -3375,7 +3309,7 @@ class _CalendarioScreenStepAStabileState
           ),
           const SizedBox(height: 8),
           _eventPill(
-            text: _realEventText(events.first),
+            text: realEventText(events.first),
             onTap: () =>
                 _showExtraEventsDialog(personName: "Famiglia", events: events),
           ),

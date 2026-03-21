@@ -870,3 +870,151 @@ Miglioramento UX/UI:
 - card compatte  
 - apertura/chiusura sezioni  
 - accesso rapido alle modifiche (tap diretto su Matteo / Chiara / Alice / Copertura)
+---
+
+# AGGIORNAMENTO — 21 MARZO 2026 (CONSOLIDAMENTO FASE REALE)
+
+## Cambio di fase del progetto
+
+Con questa chat FrodoDesk entra ufficialmente in una nuova fase:
+
+👉 da correzione e stabilizzazione motore  
+👉 a utilizzo reale continuativo + ottimizzazione UX/UI
+
+Questo segna un passaggio strutturale importante:
+
+il calendario non è più “in costruzione fragile”  
+ma diventa uno strumento utilizzabile nella vita reale.
+
+---
+
+## Stato dei blocchi principali
+
+Dopo le ultime verifiche in app reale, i seguenti blocchi sono da considerare consolidati:
+
+### Copertura reale
+
+- combinazione Matteo + Chiara stabile  
+- gestione eventi reali integrata correttamente  
+- nessun falso positivo nei casi testati  
+- comportamento coerente anche nei cambi intermedi  
+
+👉 stato: **affidabile per uso reale**
+
+---
+
+### Modello notte / post-notte
+
+- rappresentazione reale della notte completata  
+- indisponibilità fino alle 14:30 sempre rispettata  
+- coerenza mantenuta su tutti gli stati Alice  
+
+👉 stato: **fondazione corretta del sistema turni**
+
+---
+
+### Centro estivo sopra vacanza
+
+- gestione per fasce reali (prima / durante / dopo)  
+- ritorno corretto alla vacanza sottostante  
+- buchi coerenti con la realtà  
+
+👉 stato: **consolidato**
+
+---
+
+### Eventi Alice
+
+- stato del giorno coerente  
+- gestione periodi stabile  
+- allineamento UI ↔ store ↔ motore  
+
+👉 stato: **stabilizzato per uso reale**
+
+---
+
+### Sandra (copertura)
+
+- attivazione corretta su tutte le fasce:
+  - mattina  
+  - pranzo  
+  - sera  
+
+👉 stato: **coerente con la realtà**
+
+---
+
+## Significato architetturale
+
+Il sistema ha raggiunto un punto chiave:
+
+👉 la simulazione della giornata è credibile  
+👉 le decisioni possono essere prese sulla base del sistema  
+
+Questo è il primo vero momento in cui FrodoDesk smette di essere:
+
+- un insieme di logiche  
+e diventa:
+- un sistema decisionale utilizzabile
+
+---
+
+## Inizio fase UX/UI
+
+Per la prima volta si è intervenuti sull’interfaccia senza toccare il motore.
+
+Intervento:
+
+- sezioni comprimibili  
+- header cliccabili  
+- layout più compatto  
+
+Risultato:
+
+- migliore leggibilità  
+- riduzione dello scroll  
+- nessuna regressione  
+
+👉 questa è la direzione della nuova fase
+
+---
+
+## Regola consolidata della nuova fase
+
+Da ora in avanti:
+
+👉 il motore NON si tocca se non per bug reali  
+👉 le modifiche principali sono su utilizzo e leggibilità  
+
+---
+
+## Problemi ancora aperti (non bloccanti)
+
+### Doppione “Buchi del giorno”
+
+- duplicazione visiva della stessa fascia  
+- problema solo di presentazione  
+
+👉 da risolvere nella fase UI
+
+---
+
+## Direzione operativa aggiornata
+
+Prossimi passi corretti:
+
+1. migliorare UX/UI  
+2. rendere il calendario sempre più rapido da usare  
+3. test prolungati nella vita reale  
+4. individuare eventuali nuovi casi limite  
+
+---
+
+## Stato del progetto
+
+✔ sistema stabile  
+✔ motore affidabile  
+✔ calendario utilizzabile davvero  
+✔ base pronta per evoluzione  
+
+👉 FrodoDesk entra nella fase di utilizzo reale continuo

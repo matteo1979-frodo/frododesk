@@ -833,3 +833,56 @@ Verifica reale eseguita:
 ✔ prima ottimizzazione UX/UI completata e verificata  
 
 👉 fase attuale: **ottimizzazione utilizzo e leggibilità**
+## 🔥 AGGIORNAMENTO — 21 MARZO 2026 (CHIUSURA FASE 1 REFACTOR)
+
+Durante questa chat è stata completata la **Fase 1 — Helper puri** del refactor del file:
+
+`calendario_screen_stepa.dart`
+
+### Stato refactor
+
+Completato lo spostamento nel file:
+
+`lib/utils/calendario_formatters.dart`
+
+dei seguenti helper:
+
+- `cleanGapTitle()`
+- `realEventText()`
+- `conflictStateLabel()`
+- `conflictStateColor()`
+
+### Decisione strutturale
+
+- `_turnLabel()` NON è stato spostato
+- resta nel file calendario per evitare dipendenze non controllate
+
+### Stato tecnico
+
+- file utils collegato correttamente
+- import funzionante
+- presente dipendenza temporanea da `TurnEventConflictState`
+
+Nota:
+
+questa dipendenza sarà pulita in una fase successiva di refactor
+
+### Verifica reale
+
+✔ app avviata dopo ogni modifica  
+✔ nessun errore rosso  
+✔ nessuna regressione  
+✔ UI invariata  
+✔ logica invariata  
+
+👉 refactor considerato stabile
+
+### Stato fase
+
+👉 **Fase 1 — COMPLETATA**
+
+### Prossimo step
+
+Fase 2 — Dialog / BottomSheet extraction
+
+Non ancora iniziata
