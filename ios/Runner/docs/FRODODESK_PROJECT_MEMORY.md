@@ -1018,3 +1018,114 @@ Prossimi passi corretti:
 ✔ base pronta per evoluzione  
 
 👉 FrodoDesk entra nella fase di utilizzo reale continuo
+
+🔥 AGGIORNAMENTO — 23 MARZO 2026 (UI + STABILITÀ LOGICA CONFERMATA)
+Verifica reale in app
+
+Durante questa fase è stata eseguita una verifica diretta sull’app con:
+
+inserimento eventi reali
+assegnazione corretta persona evento
+verifica conflitto turno ↔ evento
+verifica copertura Alice
+Caso testato
+evento reale “visita Matteo” inserito correttamente
+evento assegnato a Chiara con nota “accompagnare Matteo”
+conflitto turno visibile correttamente
+nessun buco generato (Alice a scuola)
+Risultato
+
+👉 sistema coerente con la realtà
+👉 nessun falso buco
+👉 conflitto correttamente rilevato
+
+Chiarimento importante — MALATTIA A LETTO
+
+È stata confermata una regola fondamentale:
+
+👉 Malattia a letto = adulto presente in casa
+
+MA:
+
+NON disponibile per logistica esterna
+NON può accompagnare/prendere Alice
+MA copre la presenza in casa
+Implicazione nel motore
+se Alice è a casa → NON genera buco presenza
+se serve accompagnamento scuola → genera buco
+
+👉 distinzione chiave tra:
+
+presenza in casa ✔
+copertura logistica ❌
+
+Questa distinzione è confermata come fondamentale per il sistema.
+
+Stato reale della fase
+
+Questa chat NON è stata una fase di sviluppo nuovo codice.
+
+👉 È stata una fase di:
+
+verifica reale sistema
+validazione comportamento logico
+conferma coerenza motore
+Decisione
+
+👉 il motore di copertura è confermato stabile anche nei casi:
+
+eventi reali + turni
+conflitti reali
+malattia a letto
+Alice a scuola vs Alice a casa
+Direzione immediata
+
+Il lavoro in corso NON è:
+
+❌ stabilità logica (già raggiunta)
+
+MA:
+
+👉 UX/UI e organizzazione della schermata
+
+Indicazione UI emersa
+
+Problema reale:
+
+👉 colonna troppo lunga nella sezione “REALTÀ DEL GIORNO”
+
+Decisione già emersa:
+
+👉 suddivisione futura in 3 blocchi:
+
+Realtà del giorno
+Alice / Scuola
+Buchi del giorno
+
+⚠️ NON implementata ancora
+👉 rimandata a fase UI
+
+Stato finale della chat
+
+✔ motore stabile
+✔ comportamento reale verificato
+✔ nessun bug logico emerso
+✔ sistema coerente con la vita reale
+
+👉 fase attuale: UX/UI e organizzazione schermata
+
+Prossima ripartenza corretta
+
+La prossima chat NON riparte da bug o logica.
+
+Riparte da:
+
+👉 miglioramento UI calendario
+👉 gestione spazi e leggibilità
+👉 organizzazione blocchi
+
+📌 IMPORTANTE (continuità progetto)
+
+Questa chat conferma definitivamente che:
+
+👉 la fase “stabilità logica calendario” è chiusa

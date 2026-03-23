@@ -1,6 +1,6 @@
 # FRODODESK — SYSTEM STATE
 
-Ultimo aggiornamento: 21 Marzo 2026
+Ultimo aggiornamento: 23 Marzo 2026
 
 # STATO GENERALE DEL PROGETTO
 
@@ -886,3 +886,200 @@ questa dipendenza sarà pulita in una fase successiva di refactor
 Fase 2 — Dialog / BottomSheet extraction
 
 Non ancora iniziata
+---
+
+# 🔥 AGGIORNAMENTO — 23 MARZO 2026 (VALIDAZIONE CONFLITTI + DECISIONE NUOVA FASE UI)
+
+## Stato reale della chat
+
+Durante questa chat il lavoro non è stato di semplice manutenzione visiva.
+
+È stato fatto un passaggio reale di validazione del sistema decisionale sul blocco:
+
+- conflitto turno ↔ evento
+- permesso come risoluzione umana
+- distinzione tra presenza in casa e logistica esterna
+
+👉 Questo significa che la chat ha lavorato su:
+
+- validazione logica reale
+- uso reale del sistema
+- pulizia UI minima
+- preparazione della prossima riorganizzazione strutturale della schermata
+
+---
+
+## Validazione completa conflitto turno ↔ evento
+
+Il sistema è stato testato direttamente in app reale su un caso concreto.
+
+### Sequenza validata
+
+1. **Conflitto aperto**
+   - evento dentro il turno
+   - box conflitto mostrato correttamente
+   - fascia in conflitto letta correttamente
+
+2. **Conflitto risolto**
+   - inserimento permesso sull’intera fascia evento
+   - stato aggiornato correttamente in:
+     - **Conflitto risolto**
+   - causa risoluzione mostrata correttamente:
+     - permesso sulla fascia coperta
+
+3. **Conflitto parziale**
+   - permesso solo su una parte della fascia
+   - stato aggiornato correttamente in:
+     - **Conflitto parziale**
+   - parte coperta e parte scoperta lette correttamente
+
+4. **Conflitto parziale invertito**
+   - permesso spostato sulla seconda metà
+   - sistema ancora coerente
+   - fascia residua scoperta calcolata correttamente
+
+5. **Ritorno a conflitto aperto**
+   - rimozione del permesso
+   - sistema tornato correttamente a:
+     - **Conflitto aperto**
+
+👉 Stato del blocco:
+
+**VALIDATO REALMENTE IN APP**
+
+---
+
+## Chiarimento strutturale importante — presenza vs logistica
+
+Durante i test è stato chiarito un punto fondamentale del sistema:
+
+### Malattia a letto
+
+- la persona è considerata **presente in casa**
+- quindi può evitare un buco di semplice presenza
+- ma **non può coprire logistica esterna**
+
+Esempio corretto:
+
+- Alice a casa + adulto malattia a letto in casa
+  - **nessun buco di presenza**
+
+- Alice da portare / prendere fuori
+  - se manca altra persona disponibile
+  - **buco reale di logistica**
+
+👉 Questa distinzione è stata verificata direttamente in app ed è risultata coerente con la realtà.
+
+---
+
+## Pulizia UI effettuata
+
+È stata rimossa dalla schermata la chiamata:
+
+- `_turnOverrideDebugBox()`
+
+Risultato:
+
+- sparite le righe debug tipo:
+  - “Matteo oggi: nessuno”
+  - “Chiara oggi: nessuno”
+- card Turni più pulita
+- nessuna regressione osservata
+- app avviata correttamente dopo modifica
+
+👉 Stato:
+
+**FATTO e verificato in app reale**
+
+---
+
+## Nuova consapevolezza sulla fase del progetto
+
+Durante la chat è stato chiarito che il progetto, in questo punto, non è più in una fase di sola stabilità logica pura.
+
+La situazione reale è questa:
+
+- la logica base del motore è già utilizzabile
+- il sistema viene testato su casi reali
+- la UI adesso deve aiutare a leggere e decidere meglio
+
+Quindi la fase attuale è da considerare:
+
+### uso reale + validazione decisionale + rifinitura strutturale UI
+
+---
+
+## Problema reale emerso sulla schermata
+
+È stato confermato un problema pratico d’uso:
+
+👉 la colonna **“REALTÀ DEL GIORNO”** è troppo lunga
+
+Effetti reali:
+
+- troppo scroll
+- lettura lenta
+- difficoltà a capire rapidamente la giornata
+- struttura non più allineata al modo reale in cui il sistema viene usato
+
+---
+
+## Decisione presa per la prossima chat
+
+È stata presa una decisione strutturale chiara:
+
+### prossima modifica da fare:
+separare la schermata in 3 blocchi distinti
+
+1. **Realtà del giorno**
+   - turni
+   - eventi adulti
+   - stato persone
+
+2. **Alice / Scuola**
+   - scuola
+   - eventi Alice
+   - accompagnamenti / coperture scuola
+
+3. **Buchi / Decisioni**
+   - buchi reali
+   - conflitti
+   - azioni e decisioni
+
+⚠️ Nota importante:
+
+- questa modifica NON è ancora stata implementata in questa chat
+- è stata solo decisa e preparata
+- verrà fatta nella prossima chat lavorando sul file completo reale
+
+---
+
+## Stato finale a chiusura chat
+
+- app aperta e funzionante
+- nessun errore rosso
+- conflitto turno ↔ evento validato
+- distinzione presenza/logistica validata
+- debug UI rimosso
+- prossima direzione UI chiarita
+
+👉 Stato generale:
+
+**sistema stabile, coerente e pronto per la prossima riorganizzazione della schermata**
+
+---
+
+## Nuovo prossimo passo ufficiale
+
+Il prossimo passo corretto ora è:
+
+- aprire nuova chat
+- inviare file completo reale `calendario_screen_stepa.dart`
+- applicare in modo sicuro la nuova struttura UI in 3 blocchi
+- senza toccare la logica del motore
+
+---
+
+## Frase di ripartenza aggiornata
+
+Ripartiamo da FrodoDesk — validato conflitto turno/evento + presenza vs logistica + rimozione debug UI fatta; prossimo passo: separazione schermata in 3 blocchi (Realtà / Alice / Buchi) lavorando sul file completo reale.

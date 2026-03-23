@@ -29,6 +29,7 @@ import '../widgets/support_network_panel.dart';
 import '../widgets/fourth_shift_panel.dart';
 import '../widgets/ferie_period_panel.dart';
 import '../widgets/disease_period_panel.dart';
+import '../widgets/extra_events_dialog.dart';
 
 // ✅ NEW: Eventi speciali centro estivo
 import '../logic/summer_camp_special_event_store.dart';
@@ -2696,7 +2697,6 @@ class _CalendarioScreenStepAStabileState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _turnOverrideDebugBox(),
           if (conflict.hasConflict) ...[
             _turnConflictBox(conflict),
             const SizedBox(height: 12),
@@ -3244,15 +3244,19 @@ class _CalendarioScreenStepAStabileState
                 const SizedBox(height: 6),
                 _eventPill(
                   text: realEventText(events.first),
-                  onTap: () =>
-                      _showExtraEventsDialog(personName: name, events: events),
+                  onTap: () => showExtraEventsDialog(
+                    context: context,
+                    personName: name,
+                    events: events,
+                  ),
                 ),
                 if (events.length > 1) ...[
                   const SizedBox(height: 4),
                   Padding(
                     padding: const EdgeInsets.only(left: 6),
                     child: InkWell(
-                      onTap: () => _showExtraEventsDialog(
+                      onTap: () => showExtraEventsDialog(
+                        context: context,
                         personName: name,
                         events: events,
                       ),
@@ -3310,15 +3314,19 @@ class _CalendarioScreenStepAStabileState
           const SizedBox(height: 8),
           _eventPill(
             text: realEventText(events.first),
-            onTap: () =>
-                _showExtraEventsDialog(personName: "Famiglia", events: events),
+            onTap: () => showExtraEventsDialog(
+              context: context,
+              personName: "Famiglia",
+              events: events,
+            ),
           ),
           if (events.length > 1) ...[
             const SizedBox(height: 4),
             Padding(
               padding: const EdgeInsets.only(left: 6),
               child: InkWell(
-                onTap: () => _showExtraEventsDialog(
+                onTap: () => showExtraEventsDialog(
+                  context: context,
                   personName: "Famiglia",
                   events: events,
                 ),
