@@ -557,7 +557,7 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
             ),
             const SizedBox(height: 10),
 
-            if (events.isEmpty)
+            if (_isSavedPeriodsOpen && events.isEmpty)
               _buildInfoBox(
                 child: Text(
                   "Nessun periodo salvato.",
@@ -565,7 +565,7 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
                 ),
               ),
 
-            if (events.isNotEmpty && _isSavedPeriodsOpen)
+            if (_isSavedPeriodsOpen && events.isNotEmpty)
               ...List.generate(events.length, (index) {
                 final e = events[index];
                 final activeOnSelectedDay = e.includesDay(widget.selectedDay);

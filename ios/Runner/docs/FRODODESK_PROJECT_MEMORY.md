@@ -1,6 +1,6 @@
 # FRODODESK — PROJECT MEMORY
 
-Ultimo aggiornamento: 21 Marzo 2026
+Ultimo aggiornamento: 24 Marzo 2026
 
 ## IDENTITÀ DEL PROGETTO
 
@@ -1364,3 +1364,153 @@ Obiettivo:
 - ridurre altezza schermata
 - evitare liste lunghe
 - migliorare usabilità reale
+
+---
+
+# 🔥 AGGIORNAMENTO — 24 MARZO 2026 (PERIODI SALVATI ALICE COLLAPSABLE + BANNER STATO ALICE)
+
+## Evoluzione della lettura visiva di Alice
+
+Durante questa chat è emersa una decisione importante sulla gerarchia visiva del blocco **Alice / Scuola**.
+
+### Chiarimento strutturale
+
+Lo stato reale dominante di Alice nella giornata non deve essere nascosto dentro:
+
+- periodi salvati
+- buchi del giorno
+- dettagli secondari
+
+👉 Deve essere visibile **subito**, in cima alla card **Alice / Scuola**
+
+Decisione consolidata:
+
+- il banner stato Alice NON va sotto i controlli scuola
+- il banner stato Alice NON va vicino ai toggle operativi
+- il banner stato Alice va **all’inizio della card**, come contesto dominante della giornata
+
+Questo è coerente con la filosofia FrodoDesk:
+
+👉 prima si vede la realtà  
+👉 poi si leggono i dettagli operativi
+
+---
+
+## Periodi salvati Alice — comportamento collapsable completato
+
+Il blocco “Periodi salvati Alice” era già stato trasformato in sezione apri/chiudi, ma il comportamento non era ancora perfettamente coerente:
+
+- da chiuso poteva comparire comunque il messaggio:
+  - “Nessun periodo salvato”
+
+### Correzione completata
+
+Nel widget `alice_event_panel.dart` è stata rifinita la logica in modo che:
+
+- blocco chiuso → nessun contenuto visibile
+- blocco aperto + nessun periodo → compare “Nessun periodo salvato”
+- blocco aperto + periodi presenti → compare la lista completa
+
+### Significato della modifica
+
+Questo rende finalmente coerente la decisione UX:
+
+👉 un blocco chiuso deve davvero alleggerire la schermata
+
+e non occupare spazio inutile.
+
+### Risultato reale
+
+Testato in app reale con esito corretto:
+
+- schermata più corta quando il blocco è chiuso
+- contenuto visibile solo quando richiesto
+
+---
+
+## Banner “Stato Alice” introdotto nella card Alice / Scuola
+
+È stato introdotto un nuovo elemento visivo in cima alla card **Alice / Scuola** che mostra immediatamente l’evento Alice dominante attivo sul giorno.
+
+### Esempi di stato ora leggibili subito
+
+- Vacanza
+- Malattia
+- Centro estivo
+- Scuola chiusa
+
+### Principio consolidato
+
+Il colore NON rappresenta solo il nome tecnico dell’evento.
+
+👉 rappresenta l’impatto reale sulla giornata
+
+Decisione cromatica consolidata emersa in chat:
+
+- **Malattia** → rosso
+- **Scuola chiusa** → arancione
+- **Vacanza** → teal
+- **Centro estivo** → verde
+
+Questo migliora moltissimo il colpo d’occhio:
+
+- si capisce subito **perché** la giornata è diversa
+- si collega più facilmente lo stato Alice ai buchi e alle decisioni
+- la realtà del giorno viene letta prima ancora dei dettagli
+
+### Significato architetturale
+
+Questa non è una modifica grafica secondaria.
+
+È una evoluzione importante della capacità del sistema di:
+
+- spiegare la giornata
+- mostrare il contesto dominante
+- ridurre il carico mentale dell’utente
+
+---
+
+## Nuova direzione emersa — Buchi del giorno più intelligenti
+
+Durante la stessa chat è emersa una nuova direzione concettuale chiara.
+
+Dopo aver reso visibile il banner stato Alice, il passo successivo naturale è questo:
+
+👉 portare la causa evento Alice anche dentro **“Buchi del giorno”**
+
+Esempio desiderato:
+
+- “Alice a casa (Vacanza): 13:00–14:30”
+- “Alice a casa (Malattia): 13:00–14:30”
+
+### Decisione di posizione
+
+Questa spiegazione va:
+
+- **dentro “Buchi del giorno”**
+
+e NON va:
+
+- dentro “Rischio Alice a casa”
+
+Motivo:
+
+- “Rischio Alice a casa” deve restare un segnale pulito del motore
+- “Buchi del giorno” è il punto giusto per la spiegazione umana del problema
+
+⚠️ Importante:
+
+questa evoluzione è stata **decisa concettualmente**
+ma **non ancora implementata** in questa chat.
+
+---
+
+## Stato della fase
+
+Con questa chat la direzione UX/UI del calendario diventa ancora più matura:
+
+- meno altezza inutile
+- più chiarezza immediata
+- migliore legame tra causa reale e lettura della giornata
+
+👉 il sistema continua a evolvere non nel motore, ma nella sua capacità di farsi capire al volo nella vita reale

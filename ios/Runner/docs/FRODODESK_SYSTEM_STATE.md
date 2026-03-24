@@ -1471,3 +1471,195 @@ per continuare a ridurre la lunghezza verticale della schermata.
 ## Nuova frase di ripartenza aggiornata
 
 Ripartiamo da FrodoDesk — fonte turno visibile in card Turni + permesso spostato come azione rapida dentro Turni e validato in app; prossimo passo: rendere “Periodi salvati Alice” espandibile/collapsable per ridurre la lunghezza della schermata.
+
+---
+
+# 🔥 AGGIORNAMENTO — 24 MARZO 2026 (PERIODI SALVATI ALICE COLLAPSABLE + BANNER STATO ALICE)
+
+## Stato reale della chat
+
+In questa chat il lavoro ha toccato due punti precisi e reali del sistema, entrambi verificati direttamente in app reale:
+
+1. `lib/widgets/alice_event_panel.dart`
+2. `lib/screens/calendario_screen_stepa.dart`
+
+La modifica è stata interamente UI/UX.
+
+Il motore logico NON è stato modificato.
+
+---
+
+## 1. Periodi salvati Alice — comportamento collapsable completato correttamente
+
+Il blocco “Periodi salvati Alice” era già stato impostato con logica apri/chiudi, ma in stato chiuso mostrava ancora il messaggio:
+
+- “Nessun periodo salvato”
+
+Questo rendeva il comportamento solo parzialmente coerente con la decisione UX presa.
+
+### Correzione applicata
+
+Nel file:
+
+`lib/widgets/alice_event_panel.dart`
+
+è stata corretta la logica di visualizzazione in modo che:
+
+- se il blocco è **chiuso** → non si veda né lista né messaggio
+- se il blocco è **aperto** e non ci sono periodi → si veda “Nessun periodo salvato”
+- se il blocco è **aperto** e ci sono periodi → si veda la lista completa
+
+### Risultato reale verificato
+
+Test effettuato in app:
+
+- blocco chiuso → schermata più corta, nessun contenuto sotto
+- blocco aperto → contenuto mostrato correttamente
+- comportamento giudicato coerente con la decisione presa
+
+👉 Stato:
+
+**FATTO e verificato in app reale**
+
+---
+
+## 2. Banner “Stato Alice” nella card Alice / Scuola
+
+Durante l’uso reale è emersa una decisione UX importante:
+
+👉 lo stato dominante della giornata di Alice deve essere visibile immediatamente, senza doverlo dedurre dai buchi o dai periodi salvati.
+
+La decisione presa è stata questa:
+
+- il banner NON va sotto i controlli scuola
+- il banner NON va in mezzo ai toggle o alle decisioni operative
+- il banner va **in cima alla card “Alice / Scuola”**, come contesto dominante della giornata
+
+### Significato della modifica
+
+Questa modifica collega direttamente:
+
+- evento Alice attivo
+- lettura visiva immediata della giornata
+- comprensione dei buchi del giorno
+
+Esempi di stato resi visibili:
+
+- Vacanza
+- Malattia
+- Centro estivo
+- Scuola chiusa
+
+### Scelta cromatica consolidata
+
+Decisione concettuale emersa in chat:
+
+- **Malattia** → rosso
+- **Scuola chiusa** → arancione
+- **Vacanza** → teal
+- **Centro estivo** → verde
+
+Principio confermato:
+
+👉 il colore rappresenta l’impatto reale sulla giornata, non solo il nome tecnico dell’evento
+
+### Correzione tecnica applicata
+
+Nel file:
+
+`lib/screens/calendario_screen_stepa.dart`
+
+è stato aggiunto l’accesso all’evento Alice del giorno dentro `_cardScuola()` e, subito all’inizio del contenuto della card, è stato inserito un banner visivo che appare quando il giorno NON è “Scuola normale”.
+
+### Verifica reale effettuata
+
+Test reale effettuato in app:
+
+- impostato evento Alice “Vacanza”
+- il banner compare correttamente in alto nella card “Alice / Scuola”
+- lettura immediata e molto più chiara della realtà del giorno
+- risultato giudicato corretto e utile in uso reale
+
+👉 Stato:
+
+**FATTO e verificato in app reale**
+
+---
+
+## Effetto pratico complessivo della chat
+
+Questa chat ha prodotto due miglioramenti reali molto coerenti con la fase attuale del progetto:
+
+1. riduzione della lunghezza verticale della schermata
+2. miglioramento della comprensione immediata dello stato reale di Alice
+
+Non è stato toccato il motore.
+
+È stata migliorata la capacità del sistema di:
+
+- mostrare la realtà
+- far capire subito il contesto
+- collegare visivamente causa ed effetto
+
+---
+
+## Nuova direzione emersa
+
+Dopo il banner “Stato Alice”, il prossimo miglioramento naturale emerso in chat è questo:
+
+👉 portare l’informazione evento Alice anche dentro **“Buchi del giorno”**
+
+Esempio concettuale desiderato:
+
+- “Alice a casa (Vacanza): 13:00–14:30”
+- “Alice a casa (Malattia): 13:00–14:30”
+
+Decisione presa in chat:
+
+- questa informazione va dentro **“Buchi del giorno”**
+- NON dentro **“Rischio Alice a casa”**
+
+Motivo:
+
+- “Rischio Alice a casa” deve restare pulito come segnale automatico del motore
+- “Buchi del giorno” è la zona giusta per la spiegazione umana del problema
+
+⚠️ Nota importante:
+
+questa evoluzione è stata **decisa concettualmente**
+ma **NON ancora implementata** in questa chat
+
+---
+
+## Stato finale a chiusura chat
+
+- app funzionante
+- nessun errore rosso
+- blocco “Periodi salvati Alice” ora coerente quando chiuso
+- banner “Stato Alice” visibile correttamente in cima alla card Alice / Scuola
+- leggibilità della giornata migliorata
+- nessuna modifica motore
+- continuità UX/UI confermata
+
+👉 modifica considerata **stabile, utile e riuscita in uso reale**
+
+---
+
+## Prossimo passo ufficiale aggiornato
+
+Il prossimo passo corretto ora è:
+
+### portare la causa evento Alice dentro “Buchi del giorno”
+
+Esempio obiettivo:
+
+- “Alice a casa (Vacanza): …”
+- “Alice a casa (Malattia): …”
+
+Solo dopo si valuteranno altre rifiniture UI della schermata.
+
+---
+
+## Nuova frase di ripartenza aggiornata
+
+Ripartiamo da FrodoDesk — “Periodi salvati Alice” collapsable completato correttamente + banner “Stato Alice” aggiunto in cima alla card Alice / Scuola e verificato in app; prossimo passo: rendere i “Buchi del giorno” più intelligenti mostrando anche la causa evento Alice dentro la descrizione del buco.

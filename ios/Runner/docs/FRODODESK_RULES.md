@@ -1,6 +1,6 @@
 FRODODESK — RULES
 
-Ultimo aggiornamento: 19 Marzo 2026
+Ultimo aggiornamento: 24 Marzo 2026
 
 
 IDENTITÀ DEL SISTEMA
@@ -584,3 +584,82 @@ purché:
 - nessuna parte venga persa  
 - ordine corretto mantenuto  
 - contenuto completo garantito  
+
+---
+
+# AGGIORNAMENTO — 24 MARZO 2026 (REGOLA BLOCCHI GRANDI DEFINITIVA)
+
+## Nuova regola definitiva
+
+Da questo momento, quando un file è grande, la restituzione deve seguire una procedura ancora più rigida.
+
+Questa regola vale per:
+
+- file del sistema
+- file docs
+- qualsiasi file lungo restituito da Frodo
+
+---
+
+## Limite massimo per blocco
+
+Ogni blocco restituito deve restare entro circa:
+
+👉 **1200 righe massime**
+
+Questo serve per ridurre il rischio di:
+
+- troncamento
+- timeout
+- perdita di porzioni finali
+- risposta instabile
+
+---
+
+## Procedura obbligatoria a blocchi
+
+Quando il file è lungo:
+
+1. Frodo invia **BLOCCO 1**
+2. Matteo cancella il file vecchio e incolla **BLOCCO 1**
+3. Matteo scrive: **OK**
+4. Frodo invia **BLOCCO 2**
+5. Matteo incolla **BLOCCO 2**
+6. Matteo scrive: **OK**
+7. si continua così fino all’ultimo blocco
+
+Solo dopo l’ultimo blocco Frodo deve dichiarare chiaramente che il file è completo.
+
+---
+
+## Divieto operativo
+
+È vietato:
+
+❌ inviare un file lungo tutto insieme se il rischio di troncamento è alto  
+❌ inviare blocchi troppo lunghi  
+❌ saltare il passaggio di conferma “OK” tra un blocco e il successivo  
+❌ lasciare all’utente il dubbio se il file sia finito o no  
+
+---
+
+## Principio di sicurezza
+
+Per FrodoDesk vale questa regola:
+
+👉 meglio più blocchi piccoli, ordinati e sicuri  
+che un file unico incompleto o instabile
+
+---
+
+## Regola finale consolidata
+
+Qualsiasi file grosso deve essere:
+
+- completo
+- ordinato
+- diviso in blocchi
+- consegnato con conferma “OK” tra i blocchi
+- senza mai superare circa 1200 righe per blocco
+
+Questa è da considerare regola strutturale ufficiale del metodo FrodoDesk.

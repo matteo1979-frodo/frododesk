@@ -21,6 +21,7 @@ import '../models/week_identity.dart';
 import '../logic/settings_store.dart';
 import '../logic/ips_store.dart';
 import '../logic/day_settings_store.dart';
+import '../logic/alice_event_store.dart';
 
 import '../widgets/stepb_override_panel.dart';
 import '../widgets/alice_event_panel.dart';
@@ -3617,12 +3618,92 @@ class _CalendarioScreenStepAStabileState
         daySettingsStore.schoolOutStartForDay(_selectedDay) != null ||
         daySettingsStore.schoolOutEndForDay(_selectedDay) != null;
 
+    final aliceEvent = coreStore.aliceEventStore.getEventForDay(_selectedDay);
+
+    String aliceEventLabel() {
+      if (aliceEvent == null) return "Scuola normale";
+
+      switch (aliceEvent.type) {
+        case AliceEventType.schoolNormal:
+          return "Scuola normale";
+        case AliceEventType.vacation:
+          return "Vacanza";
+        case AliceEventType.schoolClosure:
+          return "Scuola chiusa";
+        case AliceEventType.sickness:
+          return "Malattia";
+        case AliceEventType.summerCamp:
+          return "Centro estivo";
+      }
+    }
+
+    Color aliceEventColor() {
+      if (aliceEvent == null) return Colors.grey;
+
+      switch (aliceEvent.type) {
+        case AliceEventType.schoolNormal:
+          return Colors.grey;
+        case AliceEventType.vacation:
+          return Colors.teal;
+        case AliceEventType.schoolClosure:
+          return Colors.orange;
+        case AliceEventType.sickness:
+          return Colors.red;
+        case AliceEventType.summerCamp:
+          return Colors.green;
+      }
+    }
+
+    IconData aliceEventIcon() {
+      if (aliceEvent == null) return Icons.school_outlined;
+
+      switch (aliceEvent.type) {
+        case AliceEventType.schoolNormal:
+          return Icons.school_outlined;
+        case AliceEventType.vacation:
+          return Icons.beach_access_outlined;
+        case AliceEventType.schoolClosure:
+          return Icons.event_busy_outlined;
+        case AliceEventType.sickness:
+          return Icons.sick_outlined;
+        case AliceEventType.summerCamp:
+          return Icons.park_outlined;
+      }
+    }
+
     return _card(
       title: "Alice / Scuola",
       subtitle: "Orari scuola + uscita anticipata rapida (con orario).",
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (aliceEvent != null &&
+              aliceEvent.type != AliceEventType.schoolNormal)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: aliceEventColor().withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: aliceEventColor().withOpacity(0.35)),
+              ),
+              child: Row(
+                children: [
+                  Icon(aliceEventIcon(), size: 18, color: aliceEventColor()),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Stato Alice: ${aliceEventLabel()}",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: aliceEventColor(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Text(
             "Orario: ${fmtTimeOfDay(_scuolaStart)}–${fmtTimeOfDay(_scuolaEnd)}",
           ),
