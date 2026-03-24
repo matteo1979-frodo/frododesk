@@ -1129,3 +1129,121 @@ Riparte da:
 Questa chat conferma definitivamente che:
 
 👉 la fase “stabilità logica calendario” è chiusa
+---
+
+# AGGIORNAMENTO — 24 MARZO 2026
+
+## NUOVA REGOLA PRATICA DI SVILUPPO SU FILE GRANDI
+
+Durante il lavoro reale su `calendario_screen_stepa.dart` è emerso in modo definitivo un problema operativo:
+
+quando il file diventa molto lungo, la risposta completa in un unico messaggio può diventare instabile e interrompersi prima della consegna completa.
+
+Questo non è un problema teorico ma un caso reale emerso durante lo sviluppo.
+
+### Effetto pratico osservato
+
+- Matteo riesce a inviare il file completo reale
+- Frodo riesce a lavorarci
+- ma la restituzione in un solo messaggio può andare in timeout o interrompersi
+
+Questo rompe il flusso CNC e crea frustrazione operativa.
+
+---
+
+## Decisione consolidata
+
+Da ora in poi il metodo corretto è questo:
+
+### Se la modifica è piccola
+si continua con micro-step chirurgico normale.
+
+### Se la modifica è strutturale su file grande
+si usa il metodo:
+
+1. Matteo invia il file reale completo  
+2. Frodo lavora sull’intero file  
+3. Frodo restituisce il file completo spezzato in più blocchi ordinati  
+
+Formato pratico:
+
+- BLOCCO 1
+- BLOCCO 2
+- BLOCCO 3
+
+Matteo:
+
+- cancella il file originale
+- incolla i blocchi nell’ordine
+- salva
+- testa subito in app reale
+
+---
+
+## Validazione reale del metodo
+
+Questo metodo è stato verificato nella pratica come la strada più affidabile per continuare a lavorare su FrodoDesk su file molto grandi senza perdere continuità.
+
+Principio consolidato:
+
+👉 meglio più blocchi completi e stabili che una risposta unica troncata
+
+---
+
+## Stato UI emerso nella pratica reale
+
+Dopo la nuova organizzazione della schermata calendario è emerso chiaramente che la direzione è giusta, ma la pagina non è ancora abbastanza compatta per l’uso reale quotidiano.
+
+### Osservazione reale dell’utente
+
+La schermata è risultata:
+
+- più chiara di prima
+- ma ancora troppo lunga
+- ancora troppo pesante in alcune sezioni
+
+---
+
+## Decisione UX/UI consolidata
+
+La nuova direzione confermata è:
+
+- ridurre ancora la lunghezza visiva
+- chiudere i blocchi di default
+- usare sempre di più sezioni espandibili / comprimibili
+- trasformare le liste lunghe in componenti apri/chiudi
+
+Questo è ormai parte della filosofia pratica di utilizzo reale del calendario.
+
+---
+
+## Prossimo passo ufficiale
+
+La prossima ripartenza corretta NON è su logica motore.
+
+La prossima modifica ufficiale da fare è:
+
+### Periodi salvati Alice → blocco espandibile / collapsable
+
+Motivazione:
+
+- la lista dei periodi salvati Alice cresce troppo in altezza
+- se vengono aggiunti più eventi, la schermata diventa lunga e scomoda
+- serve una UI che permetta di aprire/chiudere quella sezione solo quando necessario
+
+### Decisione operativa
+
+Il prossimo step corretto è:
+
+- rendere “Periodi salvati Alice” apribile/chiudibile
+- mantenere l’informazione disponibile
+- ridurre la lunghezza verticale della schermata
+
+---
+
+## Significato di fase
+
+Questa fase conferma una cosa molto importante:
+
+👉 la stabilità logica del calendario è ormai considerata chiusa  
+👉 la fase attuale è uso reale + miglioramento usabilità + controllo visivo della complessità

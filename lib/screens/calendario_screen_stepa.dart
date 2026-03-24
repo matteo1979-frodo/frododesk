@@ -74,7 +74,8 @@ class _CalendarioScreenStepAStabileState
   final GlobalKey _eventiKey = GlobalKey();
 
   bool _realitySectionOpen = true;
-  bool _coverageSectionOpen = false;
+  bool _aliceSectionOpen = true;
+  bool _decisionsSectionOpen = false;
 
   Future<void> _scrollTo(GlobalKey key) async {
     final ctx = key.currentContext;
@@ -2147,14 +2148,13 @@ class _CalendarioScreenStepAStabileState
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 6),
-
                 if (i != cov.gapDetails.length - 1) const SizedBox(height: 10),
               ],
             ],
           ],
         ),
       ),
-    ); // GestureDetector
+    );
   }
 
   Widget _buildAliceHomeRiskBox() {
@@ -2268,8 +2268,8 @@ class _CalendarioScreenStepAStabileState
             ),
           ],
         ),
-      ), // Container
-    ); // GestureDetector
+      ),
+    );
   }
 
   @override
@@ -2280,49 +2280,15 @@ class _CalendarioScreenStepAStabileState
     _syncWeekWithSelectedDay();
   }
 
-  Widget _buildAliceArea(bool showSummerCampSpecialCard) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Container(
-          key: _eventiKey,
-          child: RealEventPanel(
-            selectedDay: _selectedDay,
-            store: coreStore.realEventStore,
-            onChanged: () {
-              setState(() {});
-              ipsStore.refresh(now: _selectedDay);
-            },
-          ),
-        ),
-        const SizedBox(height: 12),
-        AliceEventPanel(
-          selectedDay: _selectedDay,
-          store: coreStore.aliceEventStore,
-          onChanged: () {
-            setState(() {});
-            ipsStore.refresh(now: _selectedDay);
-          },
-        ),
-        if (showSummerCampSpecialCard) ...[
-          const SizedBox(height: 12),
-          _cardSummerCampSpecialEvent(),
-        ],
-      ],
-    );
-  }
-
   Widget _buildSectionBox({
     required String title,
     required String subtitle,
+    required bool isOpen,
+    required VoidCallback onToggle,
     required Widget child,
   }) {
-    final isOpen = title.contains("REALTÀ")
-        ? _realitySectionOpen
-        : _coverageSectionOpen;
     return Container(
       width: double.infinity,
-
       padding: EdgeInsets.all(isOpen ? 14 : 10),
       decoration: BoxDecoration(
         color: Colors.grey.withOpacity(0.08),
@@ -2333,15 +2299,7 @@ class _CalendarioScreenStepAStabileState
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
-            onTap: () {
-              setState(() {
-                if (title.contains("REALTÀ")) {
-                  _realitySectionOpen = !_realitySectionOpen;
-                } else {
-                  _coverageSectionOpen = !_coverageSectionOpen;
-                }
-              });
-            },
+            onTap: onToggle,
             child: Row(
               children: [
                 Expanded(
@@ -2371,31 +2329,37 @@ class _CalendarioScreenStepAStabileState
             ),
           ),
           const SizedBox(height: 12),
-          if (title.contains("REALTÀ")) ...[
-            if (_realitySectionOpen) child,
-          ] else ...[
-            if (_coverageSectionOpen) child,
-          ],
+          if (isOpen) child,
         ],
       ),
     );
   }
 
-  Widget _buildRealitySection({required bool showSummerCampSpecialCard}) {
+  Widget _buildRealitySection() {
     return _buildSectionBox(
       title: "REALTÀ DEL GIORNO",
-      subtitle: "Cose che descrivono cosa succede oggi nella vita reale.",
+      subtitle: "Turni, eventi adulti e stato reale delle persone oggi.",
+      isOpen: _realitySectionOpen,
+      onToggle: () {
+        setState(() {
+          _realitySectionOpen = !_realitySectionOpen;
+        });
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(key: _turniKey, child: _cardTurni()),
           const SizedBox(height: 12),
-          FourthShiftPanel(
-            store: coreStore.fourthShiftStore,
-            onChanged: () {
-              setState(() {});
-              ipsStore.refresh(now: _selectedDay);
-            },
+          Container(
+            key: _eventiKey,
+            child: RealEventPanel(
+              selectedDay: _selectedDay,
+              store: coreStore.realEventStore,
+              onChanged: () {
+                setState(() {});
+                ipsStore.refresh(now: _selectedDay);
+              },
+            ),
           ),
           const SizedBox(height: 12),
           FeriePeriodPanel(store: coreStore.feriePeriodStore),
@@ -2413,23 +2377,57 @@ class _CalendarioScreenStepAStabileState
             key: _overrideKey,
             child: _cardOverrideStepB(_getOverridesForDay(_selectedDay)),
           ),
-          const SizedBox(height: 12),
-          _cardScuola(),
-          const SizedBox(height: 12),
-          _buildAliceArea(showSummerCampSpecialCard),
         ],
       ),
     );
   }
 
-  Widget _buildCoverageSection({
+  Widget _buildAliceSection({required bool showSummerCampSpecialCard}) {
+    return _buildSectionBox(
+      title: "ALICE / SCUOLA",
+      subtitle: "Scuola, eventi Alice e stato reale della giornata di Alice.",
+      isOpen: _aliceSectionOpen,
+      onToggle: () {
+        setState(() {
+          _aliceSectionOpen = !_aliceSectionOpen;
+        });
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _cardScuola(),
+          const SizedBox(height: 12),
+          AliceEventPanel(
+            selectedDay: _selectedDay,
+            store: coreStore.aliceEventStore,
+            onChanged: () {
+              setState(() {});
+              ipsStore.refresh(now: _selectedDay);
+            },
+          ),
+          if (showSummerCampSpecialCard) ...[
+            const SizedBox(height: 12),
+            _cardSummerCampSpecialEvent(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDecisionsSection({
     required CoverageResultStepA cov,
     required bool isEmergency,
   }) {
     return _buildSectionBox(
-      title: "COPERTURA ALICE",
+      title: "BUCHI / DECISIONI",
       subtitle:
-          "Buchi, supporti e decisioni operative per coprire la giornata.",
+          "Buchi reali, supporti e decisioni operative per coprire la giornata.",
+      isOpen: _decisionsSectionOpen,
+      onToggle: () {
+        setState(() {
+          _decisionsSectionOpen = !_decisionsSectionOpen;
+        });
+      },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -2459,16 +2457,18 @@ class _CalendarioScreenStepAStabileState
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Expanded(flex: 5, child: _buildRealitySection()),
+        const SizedBox(width: 12),
         Expanded(
-          flex: 7,
-          child: _buildRealitySection(
+          flex: 4,
+          child: _buildAliceSection(
             showSummerCampSpecialCard: showSummerCampSpecialCard,
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           flex: 5,
-          child: _buildCoverageSection(cov: cov, isEmergency: isEmergency),
+          child: _buildDecisionsSection(cov: cov, isEmergency: isEmergency),
         ),
       ],
     );
@@ -2482,11 +2482,13 @@ class _CalendarioScreenStepAStabileState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildRealitySection(
+        _buildRealitySection(),
+        const SizedBox(height: 12),
+        _buildAliceSection(
           showSummerCampSpecialCard: showSummerCampSpecialCard,
         ),
         const SizedBox(height: 12),
-        _buildCoverageSection(cov: cov, isEmergency: isEmergency),
+        _buildDecisionsSection(cov: cov, isEmergency: isEmergency),
       ],
     );
   }
@@ -2499,11 +2501,13 @@ class _CalendarioScreenStepAStabileState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildRealitySection(
+        _buildRealitySection(),
+        const SizedBox(height: 12),
+        _buildAliceSection(
           showSummerCampSpecialCard: showSummerCampSpecialCard,
         ),
         const SizedBox(height: 12),
-        _buildCoverageSection(cov: cov, isEmergency: isEmergency),
+        _buildDecisionsSection(cov: cov, isEmergency: isEmergency),
       ],
     );
   }
@@ -2517,7 +2521,7 @@ class _CalendarioScreenStepAStabileState
       builder: (context, c) {
         final w = c.maxWidth;
 
-        if (w >= 1100) {
+        if (w >= 1200) {
           return _buildDesktopThreeColumns(
             cov: cov,
             showSummerCampSpecialCard: showSummerCampSpecialCard,
@@ -2933,6 +2937,34 @@ class _CalendarioScreenStepAStabileState
             icon: const Icon(Icons.autorenew),
             label: const Text("Nuova rotazione"),
           ),
+
+          const SizedBox(height: 8),
+
+          OutlinedButton.icon(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return Dialog(
+                    insetPadding: const EdgeInsets.all(16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: FourthShiftPanel(
+                        store: coreStore.fourthShiftStore,
+                        onChanged: () {
+                          setState(() {});
+                          ipsStore.refresh(now: _selectedDay);
+                        },
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+            icon: const Icon(Icons.repeat),
+            label: const Text("Quarta squadra"),
+          ),
+
           const SizedBox(height: 8),
 
           OutlinedButton.icon(

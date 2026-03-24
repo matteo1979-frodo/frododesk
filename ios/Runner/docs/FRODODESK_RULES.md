@@ -488,3 +488,99 @@ Qualsiasi aggiornamento deve essere:
 
 👉 SOLO AGGIUNTA  
 👉 MAI SOSTITUZIONE E RENDERE SEMPRE FILE INTERO
+---
+
+# AGGIORNAMENTO — 24 MARZO 2026
+
+## REGOLA FILE GRANDI / RISPOSTE BLOCCATE
+
+Durante lo sviluppo reale di FrodoDesk è emerso un problema critico:
+
+👉 i file molto lunghi (es. calendario_screen_stepa.dart) possono causare:
+- timeout risposta
+- messaggi troncati
+- errore “tempo di consegna scaduto”
+- perdita continuità operativa
+
+---
+
+## NUOVA REGOLA OPERATIVA
+
+Quando si lavora su file molto grandi:
+
+### CASO 1 — MODIFICA PICCOLA
+
+👉 usare micro-step normale
+
+- modifica singola riga
+- sostituzione puntuale
+- fix chirurgico
+
+---
+
+### CASO 2 — MODIFICA STRUTTURALE
+
+👉 usare modalità a blocchi
+
+Procedura obbligatoria:
+
+1) Matteo invia file reale completo  
+2) Frodo lavora sull’intero file  
+3) Frodo restituisce file completo diviso in blocchi  
+
+Formato:
+
+BLOCCO 1  
+BLOCCO 2  
+BLOCCO 3  
+
+---
+
+## REGOLA DI SICUREZZA
+
+Matteo deve:
+
+- cancellare file originale  
+- incollare blocchi in ordine  
+- salvare  
+- testare subito  
+
+---
+
+## REGOLA ANTI-ERRORE CRITICO
+
+È vietato:
+
+❌ tentare di inviare file enorme in un solo blocco se instabile  
+❌ lasciare risposta a metà  
+❌ generare file incompleto  
+
+---
+
+## PRINCIPIO OPERATIVO
+
+👉 meglio più blocchi completi che un file troncato  
+
+---
+
+## VALIDAZIONE
+
+Questo metodo è stato:
+
+✔ testato in reale  
+✔ necessario per continuità  
+✔ adottato come standard ufficiale FrodoDesk  
+
+---
+
+## AGGIUNTA ALLA REGOLA FILE REALI
+
+Quando necessario:
+
+👉 “file completo” = può essere restituito in più blocchi
+
+purché:
+
+- nessuna parte venga persa  
+- ordine corretto mantenuto  
+- contenuto completo garantito  

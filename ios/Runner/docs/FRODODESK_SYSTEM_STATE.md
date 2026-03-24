@@ -1083,3 +1083,198 @@ Il prossimo passo corretto ora è:
 ## Frase di ripartenza aggiornata
 
 Ripartiamo da FrodoDesk — validato conflitto turno/evento + presenza vs logistica + rimozione debug UI fatta; prossimo passo: separazione schermata in 3 blocchi (Realtà / Alice / Buchi) lavorando sul file completo reale.
+---
+
+# 🔥 AGGIORNAMENTO — 24 MARZO 2026 (UI 3 BLOCCHI + QUARTA SQUADRA DENTRO TURNI + METODO ANTI-TIMEOUT)
+
+## Stato reale della chat
+
+In questa chat è stata eseguita una modifica reale sul file:
+
+`lib/screens/calendario_screen_stepa.dart`
+
+con verifica finale positiva in app reale.
+
+La chat ha anche chiarito e consolidato un nuovo metodo tecnico obbligatorio per lavorare sui file molto grandi senza perdere continuità operativa.
+
+---
+
+## Modifica UI realmente applicata
+
+La schermata calendario è stata riorganizzata in **3 blocchi distinti**.
+
+### Nuova struttura reale
+
+1. **REALTÀ DEL GIORNO**  
+2. **ALICE / SCUOLA**  
+3. **BUCHI / DECISIONI**
+
+### Effetto pratico
+
+Questa separazione ha migliorato la leggibilità della schermata e ha confermato che la direzione UX/UI è corretta per l’uso reale.
+
+Validazione utente emersa in chat:
+
+- schermata percepita **più chiara**
+- ma ancora **non abbastanza compatta**
+- serve ulteriore lavoro sulla riduzione della lunghezza verticale
+
+---
+
+## Quarta Squadra spostata dentro Turni
+
+Durante la stessa chat è stata applicata una modifica strutturale UI importante:
+
+👉 **Quarta Squadra non è più mostrata come blocco separato nella colonna principale**
+
+Ora viene richiamata dalla card **Turni** tramite bottone dedicato, mantenendo la logica esistente intatta.
+
+### Significato della modifica
+
+Questa decisione riflette meglio la natura reale della Quarta Squadra:
+
+- non è “realtà del giorno”
+- è una **azione strutturale sui turni**
+
+Quindi è stata correttamente avvicinata a:
+
+- Cambio turno (solo oggi)
+- Cambio turno (periodo)
+- Nuova rotazione
+- Rimuovi nuova rotazione
+
+### Stato
+
+✔ modifica applicata  
+✔ app avviata correttamente  
+✔ nessun errore rosso  
+✔ logica preservata  
+
+---
+
+## Verifica reale conclusiva
+
+Dopo la modifica completa:
+
+- il file è stato ricostruito correttamente
+- la restituzione è avvenuta in blocchi
+- l’utente ha ricopiato il file
+- l’app è partita correttamente
+
+Esito confermato:
+
+👉 **funziona**
+
+---
+
+## Nuova criticità emersa in uso reale
+
+Dopo la riorganizzazione, l’utente ha osservato un problema UX concreto:
+
+### Alice / Scuola → Periodi salvati Alice
+
+Quando i periodi salvati aumentano, la lista verticale cresce troppo e rende la schermata ancora lunga.
+
+### Decisione operativa presa
+
+Il prossimo intervento corretto NON è sul motore logico.
+
+Il prossimo intervento ufficiale è:
+
+👉 rendere **“Periodi salvati Alice” espandibile / collapsable**
+
+Motivazione:
+
+- evitare lista infinita
+- ridurre altezza verticale
+- aprire il dettaglio solo quando serve
+- mantenere continuità con la nuova filosofia UI basata su sezioni comprimibili
+
+---
+
+## Nuovo stato della fase progetto
+
+La chat conferma ancora una volta che:
+
+👉 la fase di stabilità logica del calendario è chiusa  
+👉 la fase attuale è **UX/UI reale + usabilità + contenimento della complessità visiva**
+
+---
+
+## Nuovo metodo tecnico consolidato — file molto grandi
+
+Durante questa chat è stato consolidato definitivamente un nuovo metodo operativo per i file grandi come:
+
+`calendario_screen_stepa.dart`
+
+### Problema reale emerso
+
+Quando il file è troppo lungo, la risposta completa in un unico messaggio può:
+
+- interrompersi
+- andare in timeout
+- risultare incompleta
+- bloccare il flusso di lavoro
+
+### Metodo corretto deciso e validato
+
+Se la modifica è strutturale e il file è molto grande:
+
+1. Matteo invia il file reale completo  
+2. Frodo modifica l’intero file  
+3. Frodo restituisce il file completo in blocchi ordinati  
+
+Formato operativo valido:
+
+- BLOCCO 1
+- BLOCCO 2
+- BLOCCO 3
+
+L’utente:
+
+- cancella il file originale
+- incolla i blocchi nell’ordine
+- salva
+- testa in app reale
+
+### Stato del metodo
+
+✔ testato nella pratica  
+✔ necessario  
+✔ da considerare standard ufficiale quando serve  
+
+Principio consolidato:
+
+👉 meglio più blocchi completi che una risposta unica troncata
+
+---
+
+## Stato attuale della schermata
+
+La schermata calendario ora è:
+
+✔ più leggibile di prima  
+✔ separata in aree logiche corrette  
+✔ più coerente con l’uso reale  
+
+ma ancora:
+
+⚠️ non abbastanza compatta  
+⚠️ ancora migliorabile sulle liste lunghe  
+⚠️ ancora da alleggerire visivamente in alcune sezioni
+
+---
+
+## Prossimo passo ufficiale aggiornato
+
+Il prossimo passo corretto ora è:
+
+### **Periodi salvati Alice → blocco espandibile / collapsable**
+
+Solo dopo si continuerà con altre rifiniture UX/UI della schermata.
+
+---
+
+## Frase di ripartenza aggiornata
+
+Ripartiamo da FrodoDesk — UI in 3 blocchi applicata e verificata + Quarta Squadra spostata dentro Turni + metodo file grandi a blocchi consolidato; prossimo passo: rendere “Periodi salvati Alice” espandibile/collapsable per ridurre la lunghezza della schermata.
