@@ -76,6 +76,7 @@ class _CalendarioScreenStepAStabileState
   bool _realitySectionOpen = true;
   bool _aliceSectionOpen = true;
   bool _decisionsSectionOpen = false;
+  bool _permessoPanelOpen = false;
 
   Future<void> _scrollTo(GlobalKey key) async {
     final ctx = key.currentContext;
@@ -1218,6 +1219,65 @@ class _CalendarioScreenStepAStabileState
     return null;
   }
 
+  // 🆕 Fonte strutturale del turno mostrato oggi
+  String? _turnSourceTextForPerson({
+    required String personKey,
+    required DateTime day,
+  }) {
+    final person = _personIdFromKey(personKey);
+    if (person == null) return null;
+
+    final daily = coreStore.turnOverrideStore.dailyOverrideFor(
+      person: person,
+      day: day,
+    );
+    if (daily != null && daily.shift != null) {
+      return "Cambio turno (solo oggi)";
+    }
+
+    final period = coreStore.turnOverrideStore.periodOverrideFor(
+      person: person,
+      day: day,
+    );
+    if (period != null && period.shift != null) {
+      return "Cambio turno (periodo)";
+    }
+
+    final activeRotation = coreStore.rotationOverrideStore.activeFor(
+      person: person,
+      day: day,
+    );
+    if (activeRotation != null) {
+      return "Nuova rotazione";
+    }
+
+    final isFourthShiftActive = coreStore.fourthShiftStore
+        .isActiveForPersonOnDay(person.name, _onlyDate(day));
+    if (isFourthShiftActive) {
+      return "Quarta squadra";
+    }
+
+    return null;
+  }
+
+  Color _turnSourceColor(String sourceText) {
+    final lower = sourceText.toLowerCase();
+
+    if (lower.contains('quarta squadra')) {
+      return Colors.orange;
+    }
+
+    if (lower.contains('cambio turno')) {
+      return Colors.amber.shade800;
+    }
+
+    if (lower.contains('nuova rotazione')) {
+      return Colors.deepPurple;
+    }
+
+    return Colors.blueGrey;
+  }
+
   void _addDailyTurnOverrideTest({
     required TurnPersonId person,
     required TurnOverrideShift shift,
@@ -1324,7 +1384,6 @@ class _CalendarioScreenStepAStabileState
             "Chiara periodo: ${fmtOverride(chiaraPeriod)}",
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
-
           const SizedBox(height: 10),
           Wrap(
             spacing: 8,
@@ -2372,11 +2431,6 @@ class _CalendarioScreenStepAStabileState
               ipsStore.refresh(now: _selectedDay);
             },
           ),
-          const SizedBox(height: 12),
-          Container(
-            key: _overrideKey,
-            child: _cardOverrideStepB(_getOverridesForDay(_selectedDay)),
-          ),
         ],
       ),
     );
@@ -2646,15 +2700,6 @@ class _CalendarioScreenStepAStabileState
     );
     final conflict = _turns.sameDayConflictFor(_selectedDay);
     final ov = _getOverridesForDay(_selectedDay);
-    final activeRotationMatteo = coreStore.rotationOverrideStore.activeFor(
-      person: TurnPersonId.matteo,
-      day: _selectedDay,
-    );
-
-    final activeRotationChiara = coreStore.rotationOverrideStore.activeFor(
-      person: TurnPersonId.chiara,
-      day: _selectedDay,
-    );
 
     final matteoStatus = _personRealStatusText(
       personKey: 'matteo',
@@ -2665,6 +2710,16 @@ class _CalendarioScreenStepAStabileState
     final chiaraStatus = _personRealStatusText(
       personKey: 'chiara',
       manualOverride: ov.chiara,
+      day: _selectedDay,
+    );
+
+    final matteoSource = _turnSourceTextForPerson(
+      personKey: 'matteo',
+      day: _selectedDay,
+    );
+
+    final chiaraSource = _turnSourceTextForPerson(
+      personKey: 'chiara',
       day: _selectedDay,
     );
 
@@ -2727,6 +2782,7 @@ class _CalendarioScreenStepAStabileState
             "Matteo",
             m,
             statusText: matteoStatus,
+            sourceText: matteoSource,
             events: matteoEvents,
             conflicts: matteoEventConflicts,
           ),
@@ -2735,12 +2791,11 @@ class _CalendarioScreenStepAStabileState
             "Chiara",
             c,
             statusText: chiaraStatus,
+            sourceText: chiaraSource,
             events: chiaraEvents,
             conflicts: chiaraEventConflicts,
           ),
-
           const SizedBox(height: 12),
-
           OutlinedButton.icon(
             onPressed: () async {
               final person = await showDialog<TurnPerson>(
@@ -2820,9 +2875,7 @@ class _CalendarioScreenStepAStabileState
             icon: const Icon(Icons.swap_horiz),
             label: const Text("Cambio turno (solo oggi)"),
           ),
-
           const SizedBox(height: 8),
-
           OutlinedButton.icon(
             onPressed: () async {
               final person = await showDialog<TurnPerson>(
@@ -2847,7 +2900,6 @@ class _CalendarioScreenStepAStabileState
               );
 
               if (person == null) return;
-
               final startDay = await showDatePicker(
                 context: context,
                 initialDate: _selectedDay,
@@ -2966,6 +3018,8 @@ class _CalendarioScreenStepAStabileState
           ),
 
           const SizedBox(height: 8),
+
+          _cardOverrideStepB(_getOverridesForDay(_selectedDay)),
 
           OutlinedButton.icon(
             onPressed: () async {
@@ -3218,6 +3272,7 @@ class _CalendarioScreenStepAStabileState
     String name,
     TurnPlan p, {
     String? statusText,
+    String? sourceText,
     List<RealEvent> events = const [],
     List<TurnEventConflictResolution> conflicts = const [],
   }) {
@@ -3268,6 +3323,14 @@ class _CalendarioScreenStepAStabileState
                             : isTurnChanged
                             ? Colors.deepPurple
                             : Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  if (sourceText != null && sourceText.isNotEmpty)
+                    Text(
+                      "• $sourceText",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: _turnSourceColor(sourceText),
                       ),
                     ),
                 ],
@@ -3430,12 +3493,28 @@ class _CalendarioScreenStepAStabileState
   }
 
   Widget _cardOverrideStepB(DayOverrides ovSelected) {
-    return _card(
-      title: "Stato giornaliero",
-      subtitle: "Imposta lo stato del giorno (influenza subito la copertura).",
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        /// 🔘 SOLO BOTTONE (stile Quarta squadra)
+        OutlinedButton.icon(
+          onPressed: () {
+            setState(() {
+              _permessoPanelOpen = !_permessoPanelOpen;
+            });
+          },
+          icon: Icon(
+            _permessoPanelOpen
+                ? Icons.keyboard_arrow_up
+                : Icons.keyboard_arrow_down,
+          ),
+          label: Text(_permessoPanelOpen ? "Chiudi permessi" : "Apri permessi"),
+        ),
+
+        /// 📦 CONTENUTO (solo se aperto)
+        if (_permessoPanelOpen) ...[
+          const SizedBox(height: 12),
+
           StepBOverridePanel(
             day: _selectedDay,
             current: ovSelected,
@@ -3446,16 +3525,10 @@ class _CalendarioScreenStepAStabileState
               ipsStore.refresh(now: _selectedDay);
             },
           ),
+
           const SizedBox(height: 10),
-          Text(
-            "DEBUG: ${_getOverridesForDay(_selectedDay)}",
-            style: TextStyle(
-              color: Colors.black.withOpacity(0.55),
-              fontSize: 12,
-            ),
-          ),
         ],
-      ),
+      ],
     );
   }
 

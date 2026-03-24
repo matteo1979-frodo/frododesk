@@ -1247,3 +1247,120 @@ Questa fase conferma una cosa molto importante:
 
 👉 la stabilità logica del calendario è ormai considerata chiusa  
 👉 la fase attuale è uso reale + miglioramento usabilità + controllo visivo della complessità
+---
+
+# 🔥 AGGIORNAMENTO — 24 MARZO 2026 (PERMESSO COME AZIONE RAPIDA + CHIAREZZA TURNI)
+
+## Evoluzione UX del Permesso
+
+Durante questa chat è emersa una decisione importante sull’interpretazione del **Permesso** nel sistema.
+
+### Chiarimento strutturale
+
+Il permesso NON è uno stato della persona (come malattia o ferie).
+
+👉 È una **azione operativa sulla giornata**, simile a:
+
+- cambio turno
+- nuova rotazione
+- quarta squadra
+
+### Decisione applicata
+
+Il permesso è stato:
+
+- tolto dal concetto di “stato giornaliero”
+- spostato nella card **Turni**
+- reso accessibile tramite bottone dedicato
+
+---
+
+## Nuovo comportamento reale del Permesso
+
+Ora il sistema funziona così:
+
+- bottone: **Apri permessi**
+- apertura pannello con:
+  - Matteo
+  - Chiara
+- per ogni persona:
+  - bottone **Permesso**
+  - apertura popup orario
+  - visualizzazione orario sotto
+  - bottone **Rimuovi permesso**
+
+---
+
+## Validazione reale in app
+
+Test effettuato:
+
+- inserito permesso su Chiara (21:00–22:00)
+- visualizzazione immediata nella card Turni:
+  - “Stato: Permesso 21:00–22:00”
+- rimozione funzionante
+- aggiornamento UI immediato
+
+👉 risultato:
+
+✔ comportamento naturale  
+✔ rapido  
+✔ coerente con uso reale  
+
+---
+
+## Miglioramento leggibilità Turni
+
+È stata introdotta anche una maggiore chiarezza nella lettura dei turni.
+
+Ora il sistema rende più evidente:
+
+👉 da dove deriva il turno mostrato
+
+(es: quarta squadra, nuova rotazione, ecc.)
+
+Questo elimina ambiguità nell’uso quotidiano.
+
+---
+
+## Significato della modifica
+
+Questa modifica non è estetica.
+
+È una evoluzione importante del sistema:
+
+- separa **stato persona** da **azione operativa**
+- riduce confusione mentale
+- aumenta velocità di utilizzo reale
+- migliora la leggibilità immediata della giornata
+
+---
+
+## Stato della fase
+
+👉 motore stabile  
+👉 UX in evoluzione  
+👉 sistema sempre più vicino all’uso reale quotidiano  
+
+---
+
+## Direzione confermata
+
+Il lavoro continua su:
+
+- semplificazione UI
+- riduzione scroll
+- accesso rapido alle azioni
+- leggibilità immediata
+
+---
+
+## Prossimo passo (confermato)
+
+### Periodi salvati Alice → blocco espandibile / collapsable
+
+Obiettivo:
+
+- ridurre altezza schermata
+- evitare liste lunghe
+- migliorare usabilità reale

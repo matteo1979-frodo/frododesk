@@ -1,6 +1,6 @@
 # FRODODESK — SYSTEM STATE
 
-Ultimo aggiornamento: 23 Marzo 2026
+Ultimo aggiornamento: 24 Marzo 2026
 
 # STATO GENERALE DEL PROGETTO
 
@@ -1278,3 +1278,196 @@ Solo dopo si continuerà con altre rifiniture UX/UI della schermata.
 ## Frase di ripartenza aggiornata
 
 Ripartiamo da FrodoDesk — UI in 3 blocchi applicata e verificata + Quarta Squadra spostata dentro Turni + metodo file grandi a blocchi consolidato; prossimo passo: rendere “Periodi salvati Alice” espandibile/collapsable per ridurre la lunghezza della schermata.
+
+---
+
+# 🔥 AGGIORNAMENTO — 24 MARZO 2026 (TURNI: FONTE TURNO VISIBILE + PERMESSO COME AZIONE RAPIDA)
+
+## Stato reale della chat
+
+In questa chat il lavoro è rimasto nel file:
+
+`lib/screens/calendario_screen_stepa.dart`
+
+con una rifinitura UI reale e verificata in app, più un riassetto locale del file:
+
+`lib/widgets/stepb_override_panel.dart`
+
+per rendere il permesso più rapido da usare nella pratica quotidiana.
+
+La modifica NON ha toccato il motore di copertura.
+
+Ha toccato:
+
+- leggibilità immediata dei turni
+- posizione UI del permesso
+- velocità operativa di inserimento/rimozione permesso
+
+---
+
+## Fonte turno resa visibile nella card Turni
+
+È stata introdotta una lettura esplicita della **fonte del turno mostrato** accanto alla riga persona quando il turno deriva da una fonte strutturale diversa dalla rotazione base.
+
+### Casi ora visibili
+
+Il sistema può mostrare in riga turno, accanto all’orario:
+
+- **Quarta squadra**
+- **Nuova rotazione**
+- **Cambio turno (solo oggi)**
+- **Cambio turno (periodo)**
+
+### Significato pratico
+
+Prima il turno cambiava correttamente, ma non era sempre chiaro **perché** fosse quello.
+
+Adesso nella card Turni si vede subito se il turno deriva da:
+
+- override manuale
+- nuova rotazione
+- quarta squadra
+
+Questo migliora l’uso reale perché rende leggibile la giornata senza dover ricordare a memoria quale meccanismo è attivo.
+
+### Verifica reale effettuata
+
+Caso reale verificato in app:
+
+- Chiara in giorno coperto da **Quarta Squadra**
+- la riga Turni mostra correttamente:
+  - turno della giornata
+  - etichetta **Quarta squadra**
+
+👉 risultato validato positivamente in uso reale.
+
+---
+
+## Permesso separato dallo “stato giornaliero”
+
+Durante questa chat è stata chiarita e applicata una decisione UX importante:
+
+👉 **Permesso non è uno stato persona come malattia o ferie**
+👉 è una **azione operativa sulla giornata**, simile ai controlli turni.
+
+Per questo motivo il permesso è stato spostato dalla zona “stato giornaliero” alla card **Turni**, sotto i pulsanti operativi.
+
+### Nuova posizione
+
+Dentro la card Turni ora il permesso vive come azione dedicata, vicina a:
+
+- Cambio turno (solo oggi)
+- Cambio turno (periodo)
+- Nuova rotazione
+- Quarta squadra
+
+### Significato strutturale
+
+Questa modifica allinea la UI alla logica reale di FrodoDesk:
+
+- malattia / ferie = stati della persona
+- permesso = azione operativa sulla giornata
+
+---
+
+## Nuovo comportamento UI del permesso
+
+Il componente `stepb_override_panel.dart` è stato semplificato e reso più pratico.
+
+### Prima
+
+- presenza di tendina / gestione più tecnica
+- il permesso era meno immediato da usare
+
+### Ora
+
+- compare un bottone **Apri permessi**
+- aprendolo si vedono:
+  - Matteo
+  - Chiara
+- per ciascuno:
+  - bottone **Permesso**
+  - popup orario
+  - se attivo: bottone **Rimuovi permesso**
+  - orario visibile sotto
+
+### Comportamento reale validato
+
+Test effettuato in app:
+
+- inserito permesso reale su Chiara
+- selezionata fascia oraria serale
+- il sistema ha mostrato correttamente in Turni:
+  - **Stato: Permesso 21:00–22:00**
+- il bottone di rimozione ha funzionato correttamente
+- il permesso può quindi essere:
+  - creato
+  - visualizzato
+  - rimosso
+  in modo rapido e coerente
+
+👉 risultato confermato come **molto efficace in uso reale**.
+
+---
+
+## Esito pratico della modifica
+
+Questa rifinitura ha prodotto tre miglioramenti reali:
+
+1. **maggiore chiarezza della fonte turno**
+2. **permesso più rapido da inserire**
+3. **minor confusione tra stato persona e azione operativa**
+
+La modifica è risultata particolarmente riuscita perché il permesso ora:
+
+- si imposta in pochi tocchi
+- si vede subito nei Turni
+- si rimuove rapidamente
+- non sporca più la logica mentale dello “stato giornaliero”
+
+---
+
+## Stato finale a chiusura chat
+
+- app funzionante
+- nessun errore rosso
+- fonte turno visibile correttamente
+- quarta squadra visibile in riga turno
+- permesso spostato nella card Turni
+- apri/chiudi permessi funzionante
+- popup orario permesso funzionante
+- rimozione permesso funzionante
+- stato turno aggiornato correttamente dopo inserimento permesso
+
+👉 modifica considerata **stabile e riuscita in uso reale**
+
+---
+
+## Effetto sulla fase progetto
+
+Questa chat conferma ancora la direzione attuale del progetto:
+
+👉 motore stabile  
+👉 interventi concentrati su **uso reale, chiarezza e velocità operativa**
+
+Non è una modifica “estetica”.
+
+È una modifica di **qualità d’uso reale del calendario**.
+
+---
+
+## Prossimo passo
+
+Dopo questa rifinitura, il prossimo passo ufficiale NON cambia.
+
+Resta:
+
+### **Periodi salvati Alice → blocco espandibile / collapsable**
+
+per continuare a ridurre la lunghezza verticale della schermata.
+
+---
+
+## Nuova frase di ripartenza aggiornata
+
+Ripartiamo da FrodoDesk — fonte turno visibile in card Turni + permesso spostato come azione rapida dentro Turni e validato in app; prossimo passo: rendere “Periodi salvati Alice” espandibile/collapsable per ridurre la lunghezza della schermata.

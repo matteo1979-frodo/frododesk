@@ -27,6 +27,8 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
 
   int? _editingIndex;
 
+  bool _isSavedPeriodsOpen = false;
+
   @override
   void initState() {
     super.initState();
@@ -527,9 +529,31 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
             const Divider(),
             const SizedBox(height: 10),
 
-            _buildSectionTitle(
-              "Periodi salvati Alice",
-              icon: Icons.list_alt_outlined,
+            InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () {
+                setState(() {
+                  _isSavedPeriodsOpen = !_isSavedPeriodsOpen;
+                });
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildSectionTitle(
+                        "Periodi salvati Alice",
+                        icon: Icons.list_alt_outlined,
+                      ),
+                    ),
+                    Icon(
+                      _isSavedPeriodsOpen
+                          ? Icons.expand_less
+                          : Icons.expand_more,
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 10),
 
@@ -541,7 +565,7 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
                 ),
               ),
 
-            if (events.isNotEmpty)
+            if (events.isNotEmpty && _isSavedPeriodsOpen)
               ...List.generate(events.length, (index) {
                 final e = events[index];
                 final activeOnSelectedDay = e.includesDay(widget.selectedDay);
