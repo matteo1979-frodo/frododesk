@@ -663,3 +663,52 @@ Qualsiasi file grosso deve essere:
 - senza mai superare circa 1200 righe per blocco
 
 Questa è da considerare regola strutturale ufficiale del metodo FrodoDesk.
+---
+
+## 🔥 REGOLA OPERATIVA — AZIONI REVERSIBILI (25 Marzo 2026)
+
+Nel sistema FrodoDesk, ogni azione operativa proposta all’utente deve essere:
+
+- attivabile
+- disattivabile
+- reversibile
+- trasparente
+
+### Divieto assoluto
+
+Il sistema NON deve mai:
+
+- applicare automaticamente una soluzione definitiva
+- nascondere lo stato reale originale
+- impedire il ritorno al problema iniziale (es. buco)
+
+### Principio fondamentale
+
+👉 Il sistema suggerisce  
+👉 L’utente decide  
+👉 L’utente può sempre tornare indietro
+
+### Applicazione concreta
+
+Esempio:
+
+“Porta Alice con Matteo / Chiara”
+
+Deve:
+
+- risolvere il buco quando attivo
+- far riapparire il buco quando disattivato
+
+### Significato strutturale
+
+Le azioni nel sistema NON sono modifiche permanenti.
+
+Sono:
+
+👉 simulazioni operative temporanee
+
+### Obiettivo
+
+- mantenere sempre visibile la realtà
+- permettere confronto tra soluzioni
+- evitare automatismi che falsano la percezione del sistema

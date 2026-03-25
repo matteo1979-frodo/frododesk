@@ -18,6 +18,7 @@ import 'coverage_adapter.dart';
 import 'ips_store.dart';
 import 'week_store.dart';
 import 'system_event_store.dart';
+import '../logic/alice_companion_store.dart';
 
 import 'ips/ips_detail_snapshot.dart';
 import 'ips/ips_module_status.dart';
@@ -48,6 +49,8 @@ class CoreStore {
 
   // ✅ NEW: Rete di supporto
   late final SupportNetworkStore supportNetworkStore;
+
+  late final AliceCompanionStore aliceCompanionStore;
 
   // ✅ NEW: Quarta Squadra
   late final FourthShiftStore fourthShiftStore;
@@ -106,6 +109,8 @@ class CoreStore {
     // ✅ NEW: Rete di supporto
     supportNetworkStore = SupportNetworkStore();
 
+    aliceCompanionStore = AliceCompanionStore();
+
     // ✅ NEW: Quarta Squadra
     fourthShiftStore = FourthShiftStore();
 
@@ -127,6 +132,7 @@ class CoreStore {
       supportNetworkStore: supportNetworkStore,
       diseasePeriodStore: diseasePeriodStore,
       realEventStore: realEventStore,
+      aliceCompanionStore: aliceCompanionStore,
       aliceEventStore: aliceEventStore,
       summerCampScheduleStore: summerCampScheduleStore,
     );

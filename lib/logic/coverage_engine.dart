@@ -26,6 +26,8 @@ import 'summer_camp_schedule_store.dart';
 // ✅ NEW: Eventi speciali centro estivo
 import 'summer_camp_special_event_store.dart';
 
+import 'alice_companion_store.dart';
+
 class CoverageEngine {
   final TurnEngine turnEngine;
   final DaySettingsStore daySettingsStore;
@@ -34,6 +36,8 @@ class CoverageEngine {
 
   // ✅ NEW: Eventi reali
   final RealEventStore realEventStore;
+
+  final AliceCompanionStore aliceCompanionStore;
 
   // ✅ NEW: Eventi Alice (aggancio strutturale)
   final AliceEventStore aliceEventStore;
@@ -60,6 +64,7 @@ class CoverageEngine {
     SupportNetworkStore? supportNetworkStore,
     DiseasePeriodStore? diseasePeriodStore,
     RealEventStore? realEventStore,
+    AliceCompanionStore? aliceCompanionStore,
     AliceEventStore? aliceEventStore,
     SummerCampScheduleStore? summerCampScheduleStore,
     SummerCampSpecialEventStore? summerCampSpecialEventStore,
@@ -70,6 +75,7 @@ class CoverageEngine {
     TimeOfDay? sandraSeraStart,
     TimeOfDay? sandraSeraEnd,
   }) : turnEngine = turnEngine ?? TurnEngine(),
+       aliceCompanionStore = aliceCompanionStore!,
        daySettingsStore = daySettingsStore ?? DaySettingsStore(),
        supportNetworkStore = supportNetworkStore ?? SupportNetworkStore(),
        diseasePeriodStore = diseasePeriodStore ?? DiseasePeriodStore(),
@@ -974,6 +980,21 @@ class CoverageEngine {
     final details = <CoverageGapDetail>[];
 
     for (final entry in normalizedEntries) {
+      // 🔥 STEP: Alice accompagnata → ignora buco
+      if (aliceCompanionStore.isAliceAccompanied(
+        day: d0,
+        start: entry.fasciaStart,
+        end: entry.fasciaEnd,
+      )) {
+        continue;
+      } // 🔥 STEP: Alice accompagnata → ignora buco
+      if (aliceCompanionStore.isAliceAccompanied(
+        day: d0,
+        start: entry.fasciaStart,
+        end: entry.fasciaEnd,
+      )) {
+        continue;
+      }
       gaps.add(entry.label);
       details.add(
         CoverageGapDetail(
@@ -1109,7 +1130,26 @@ class CoverageEngine {
         ferieStore: ferieStore,
       );
 
-      if (!covered) {
+      if (!covered &&
+          !aliceCompanionStore.entriesForDay(day).any((entry) {
+            final entryStart = DateTime(
+              day.year,
+              day.month,
+              day.day,
+              entry.start.hour,
+              entry.start.minute,
+            );
+
+            final entryEnd = DateTime(
+              day.year,
+              day.month,
+              day.day,
+              entry.end.hour,
+              entry.end.minute,
+            );
+
+            return entryStart.isBefore(segEnd) && entryEnd.isAfter(segStart);
+          })) {
         result.add(
           _CoverageGapEntry(
             label:
@@ -1496,7 +1536,12 @@ class CoverageEngine {
     }
 
     if (_isPostNightForPersonDay(person: person, day: day)) {
-      return "$personName è in riposo post-notte.";
+      final postNightEnd = DateTime(day.year, day.month, day.day, 14, 30);
+
+      if (!fasciaStart.isAfter(postNightEnd) &&
+          !fasciaEnd.isAfter(postNightEnd)) {
+        return "$personName è in riposo post-notte.";
+      }
     }
 
     return "$personName è al lavoro in questa fascia.";
@@ -1666,6 +1711,14 @@ class CoverageEngine {
         ]);
 
     if (combinedCover) return true;
+
+    if (aliceCompanionStore.isAliceAccompanied(
+      day: day,
+      start: fasciaStart,
+      end: fasciaEnd,
+    )) {
+      return true;
+    }
 
     if (matteoCanCover || chiaraCanCover) return true;
 

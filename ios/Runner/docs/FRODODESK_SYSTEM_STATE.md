@@ -685,6 +685,63 @@ File previsti per la ripartenza:
 
 # FRASE DI RIPARTENZA UFFICIALE
 
+---
+
+# 🔥 AGGIORNAMENTO — 25 MARZO 2026 (PORTA ALICE DINAMICO)
+
+## Problema reale emerso
+
+Durante l’uso reale è emerso un comportamento non corretto:
+
+- il bottone “Porta Alice con …” eliminava il buco
+- ma NON era possibile:
+  - togliere la scelta
+  - ripristinare il buco
+- inoltre il sistema proponeva sempre la stessa persona anche quando non coerente
+
+## Soluzione implementata
+
+È stata introdotta una gestione **dinamica e reversibile** del “Porta Alice”.
+
+### Nuovo comportamento
+
+- il sistema identifica **chi è realmente disponibile**
+- il bottone mostra correttamente:
+  - “Porta Alice con Matteo”
+  - oppure
+  - “Porta Alice con Chiara”
+
+### Stato attivo
+
+Quando attivo:
+
+- il buco viene risolto
+- la copertura viene considerata valida
+
+### Nuova possibilità introdotta
+
+👉 è ora possibile:
+
+- **disattivare la scelta**
+- far tornare il buco reale
+
+Questo è fondamentale per:
+
+- simulazione reale
+- decisione consapevole
+- gestione alternativa (rete supporto, Sandra, ecc.)
+
+## Verifica reale
+
+✔ bottone cambia nome correttamente  
+✔ copertura viene applicata correttamente  
+✔ disattivazione ripristina il buco  
+✔ comportamento coerente con la realtà  
+
+👉 stato: **FUNZIONANTE E VALIDATO**
+
+---
+
 Ripartiamo da FrodoDesk — completare validazione centro estivo sopra vacanza (caso guida 17 agosto già corretto) + test delle 2 combinazioni turni mancanti + poi pulizia del doppione nei Buchi del giorno.
 ---
 

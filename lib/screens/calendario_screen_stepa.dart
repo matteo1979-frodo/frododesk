@@ -9,6 +9,7 @@ import '../logic/coverage_engine.dart';
 import '../logic/turn_engine.dart';
 import '../logic/turn_override_store.dart';
 import '../logic/ferie_period_store.dart';
+import '../logic/alice_companion_store.dart';
 
 import '../models/day_override.dart';
 import '../models/disease_period.dart';
@@ -964,6 +965,108 @@ class _CalendarioScreenStepAStabileState
   bool _isLunchGapLabel(String label) {
     final lower = label.toLowerCase();
     return lower.contains('pranzo');
+  }
+
+  String _gapTitleWithAliceState(String label) {
+    final clean = cleanGapTitle(label);
+
+    if (!clean.toLowerCase().startsWith('alice a casa')) {
+      return clean;
+    }
+
+    final aliceEvent = coreStore.aliceEventStore.getEventForDay(_selectedDay);
+    if (aliceEvent == null) return clean;
+
+    String? stateLabel;
+    switch (aliceEvent.type) {
+      case AliceEventType.schoolNormal:
+        stateLabel = null;
+        break;
+      case AliceEventType.vacation:
+        stateLabel = "Vacanza";
+        break;
+      case AliceEventType.schoolClosure:
+        stateLabel = "Scuola chiusa";
+        break;
+      case AliceEventType.sickness:
+        stateLabel = "Malattia";
+        break;
+      case AliceEventType.summerCamp:
+        stateLabel = "Centro estivo";
+        break;
+    }
+
+    if (stateLabel == null || stateLabel.isEmpty) return clean;
+
+    final parts = clean.split(':');
+    if (parts.length < 2) {
+      return "Alice a casa ($stateLabel)";
+    }
+
+    final left = parts.first.trim();
+    final right = parts.sublist(1).join(':').trim();
+
+    return "$left ($stateLabel): $right";
+  }
+
+  String _companionActionTextForGap(String label) {
+    final match = RegExp(r'(\d{2}:\d{2})–(\d{2}:\d{2})').firstMatch(label);
+    if (match == null) return "Porta Alice con te";
+
+    TimeOfDay parse(String t) {
+      final p = t.split(":");
+      return TimeOfDay(hour: int.parse(p[0]), minute: int.parse(p[1]));
+    }
+
+    final start = parse(match.group(1)!);
+    final end = parse(match.group(2)!);
+
+    final person = _whoCanBringAliceForGap(start: start, end: end);
+
+    final existing = coreStore.aliceCompanionStore
+        .entriesForDay(_selectedDay)
+        .any(
+          (e) =>
+              e.person == person &&
+              e.start.hour == start.hour &&
+              e.start.minute == start.minute &&
+              e.end.hour == end.hour &&
+              e.end.minute == end.minute,
+        );
+
+    final who = person == AliceCompanionPerson.matteo ? "Matteo" : "Chiara";
+
+    return existing ? "Togli Alice da $who" : "Porta Alice con $who";
+  }
+
+  String _companionButtonTextForGap(String label) {
+    final match = RegExp(r'(\d{2}:\d{2})–(\d{2}:\d{2})').firstMatch(label);
+    if (match == null) return "Porta Alice con te";
+
+    TimeOfDay parse(String t) {
+      final p = t.split(":");
+      return TimeOfDay(hour: int.parse(p[0]), minute: int.parse(p[1]));
+    }
+
+    final start = parse(match.group(1)!);
+    final end = parse(match.group(2)!);
+
+    final person = _whoCanBringAliceForGap(start: start, end: end);
+
+    final active = coreStore.aliceCompanionStore
+        .entriesForDay(_selectedDay)
+        .any(
+          (e) =>
+              e.person == person &&
+              e.start.hour == start.hour &&
+              e.start.minute == start.minute &&
+              e.end.hour == end.hour &&
+              e.end.minute == end.minute,
+        );
+
+    final who = person == AliceCompanionPerson.matteo ? "Matteo" : "Chiara";
+
+    return active ? "Alice con $who ✅" : "Porta Alice con $who";
   }
 
   _DateRange? _rangeOverlap(_DateRange a, _DateRange b) {
@@ -1972,6 +2075,83 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
+  AliceCompanionPerson _whoCanBringAliceForGap({
+    required TimeOfDay start,
+    required TimeOfDay end,
+  }) {
+    final day = _selectedDay;
+
+    DateTime toDT(TimeOfDay t) =>
+        DateTime(day.year, day.month, day.day, t.hour, t.minute);
+
+    final gapStart = toDT(start);
+    final gapEnd = toDT(end);
+
+    bool overlaps(
+      DateTime aStart,
+      DateTime aEnd,
+      DateTime bStart,
+      DateTime bEnd,
+    ) {
+      return aStart.isBefore(bEnd) && aEnd.isAfter(bStart);
+    }
+
+    bool matteoBusy = false;
+    bool chiaraBusy = false;
+
+    final matteoPlan = _turns.turnPlanForPersonDay(
+      person: TurnPerson.matteo,
+      day: day,
+    );
+    if (!matteoPlan.isOff) {
+      final workStart = toDT(matteoPlan.start);
+      final workEnd = toDT(matteoPlan.end);
+      matteoBusy = overlaps(workStart, workEnd, gapStart, gapEnd);
+    }
+
+    final chiaraPlan = _turns.turnPlanForPersonDay(
+      person: TurnPerson.chiara,
+      day: day,
+    );
+    if (!chiaraPlan.isOff) {
+      final workStart = toDT(chiaraPlan.start);
+      final workEnd = toDT(chiaraPlan.end);
+      chiaraBusy = overlaps(workStart, workEnd, gapStart, gapEnd);
+    }
+
+    final events = coreStore.realEventStore.eventsForDay(_onlyDate(day));
+    for (final e in events) {
+      if (e.startTime == null || e.endTime == null) continue;
+
+      final eventStart = toDT(e.startTime!);
+      final eventEnd = toDT(e.endTime!);
+      final hit = overlaps(eventStart, eventEnd, gapStart, gapEnd);
+
+      if (!hit) continue;
+
+      if (e.personKey == 'matteo') matteoBusy = true;
+      if (e.personKey == 'chiara') chiaraBusy = true;
+    }
+
+    for (final e in events) {
+      if (e.startTime == null || e.endTime == null) continue;
+
+      final eventStart = toDT(e.startTime!);
+      final eventEnd = toDT(e.endTime!);
+      final hit = overlaps(eventStart, eventEnd, gapStart, gapEnd);
+
+      if (!hit) continue;
+
+      if (e.personKey == 'chiara') return AliceCompanionPerson.chiara;
+      if (e.personKey == 'matteo') return AliceCompanionPerson.matteo;
+    }
+
+    if (!matteoBusy && chiaraBusy) return AliceCompanionPerson.matteo;
+    if (!chiaraBusy && matteoBusy) return AliceCompanionPerson.chiara;
+
+    return AliceCompanionPerson.matteo;
+  }
+
   Widget _buildDayGapsBox(CoverageResultStepA cov) {
     final state = _dayGapVisualState(cov);
 
@@ -2048,6 +2228,20 @@ class _CalendarioScreenStepAStabileState
       lines: supportLunchLines,
       label: "Pranzo",
     );
+
+    final visibleGapDetails = cov.gapDetails.isNotEmpty
+        ? cov.gapDetails
+        : coreStore.aliceCompanionStore.entriesForDay(_selectedDay).map((e) {
+            final who = e.person == AliceCompanionPerson.matteo
+                ? "Matteo"
+                : "Chiara";
+
+            return CoverageGapDetail(
+              label:
+                  "Alice con $who: ${fmtTimeOfDay(e.start)}–${fmtTimeOfDay(e.end)}",
+              lines: const [],
+            );
+          }).toList();
 
     return GestureDetector(
       onTap: () {
@@ -2200,13 +2394,85 @@ class _CalendarioScreenStepAStabileState
                   ),
                 ),
             ],
-            if (state == DayGapVisualState.realGap) ...[
+            if (state == DayGapVisualState.realGap ||
+                coreStore.aliceCompanionStore
+                    .entriesForDay(_selectedDay)
+                    .isNotEmpty) ...[
               const SizedBox(height: 10),
-              for (int i = 0; i < cov.gapDetails.length; i++) ...[
+
+              for (int i = 0; i < visibleGapDetails.length; i++) ...[
                 Text(
-                  "BUCO ${i + 1} — ${cleanGapTitle(cov.gapDetails[i].label)}",
+                  "BUCO ${i + 1} — ${_gapTitleWithAliceState(visibleGapDetails[i].label)}",
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
+                const SizedBox(height: 4),
+                if (visibleGapDetails[i].lines.isNotEmpty)
+                  Text(
+                    visibleGapDetails[i].lines.join("\n"),
+                    style: TextStyle(
+                      color: Colors.black.withOpacity(0.7),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                const SizedBox(height: 6),
+
+                ElevatedButton(
+                  onPressed: () {
+                    final gap = visibleGapDetails[i];
+
+                    final nowDay = _selectedDay;
+
+                    // parsing orari dalla label (es: 16:00–17:25)
+                    final match = RegExp(
+                      r'(\d{2}:\d{2})–(\d{2}:\d{2})',
+                    ).firstMatch(gap.label);
+                    if (match == null) return;
+
+                    final times = [match.group(1)!, match.group(2)!];
+
+                    TimeOfDay parse(String t) {
+                      final p = t.split(":");
+                      return TimeOfDay(
+                        hour: int.parse(p[0]),
+                        minute: int.parse(p[1]),
+                      );
+                    }
+
+                    final start = parse(times[0]);
+                    final end = parse(times[1]);
+
+                    final entry = AliceCompanionEntry(
+                      day: nowDay,
+                      start: start,
+                      end: end,
+                      person: _whoCanBringAliceForGap(start: start, end: end),
+                    );
+
+                    final existing = coreStore.aliceCompanionStore
+                        .entriesForDay(nowDay)
+                        .any(
+                          (e) =>
+                              e.start.hour == start.hour &&
+                              e.start.minute == start.minute &&
+                              e.end.hour == end.hour &&
+                              e.end.minute == end.minute,
+                        );
+
+                    if (existing) {
+                      coreStore.aliceCompanionStore.removeEntry(entry);
+                    } else {
+                      coreStore.aliceCompanionStore.addEntry(entry);
+                    }
+
+                    setState(() {
+                      // trigger rebuild
+                    });
+                  },
+                  child: Text(
+                    _companionActionTextForGap(visibleGapDetails[i].label),
+                  ),
+                ),
+
                 const SizedBox(height: 6),
                 if (i != cov.gapDetails.length - 1) const SizedBox(height: 10),
               ],

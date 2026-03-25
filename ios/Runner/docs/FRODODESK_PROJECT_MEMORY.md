@@ -1514,3 +1514,52 @@ Con questa chat la direzione UX/UI del calendario diventa ancora più matura:
 - migliore legame tra causa reale e lettura della giornata
 
 👉 il sistema continua a evolvere non nel motore, ma nella sua capacità di farsi capire al volo nella vita reale
+---
+
+## 🔥 AGGIORNAMENTO — 25 MARZO 2026 (PORTA ALICE DINAMICO)
+
+### Nuova capacità del sistema
+
+Introdotta gestione dinamica e reversibile della soluzione:
+
+👉 “Porta Alice con [persona]”
+
+### Principio
+
+Il sistema NON deve mai:
+
+- applicare soluzioni definitive non reversibili
+- nascondere la realtà originale (buco)
+
+Il sistema deve:
+
+- proporre una soluzione
+- permettere attivazione
+- permettere disattivazione
+- ripristinare lo stato reale originale
+
+### Comportamento consolidato
+
+- il sistema identifica la persona realmente disponibile
+- il bottone è contestuale (Matteo / Chiara)
+- attivando:
+  - il buco viene risolto
+- disattivando:
+  - il buco torna visibile
+
+### Significato per FrodoDesk
+
+Questo introduce un concetto fondamentale:
+
+👉 le azioni sono **simulazioni operative reversibili**
+
+Non sono:
+
+- modifiche strutturali permanenti
+- automatismi nascosti
+
+### Stato
+
+✔ implementato  
+✔ testato in app reale  
+✔ comportamento coerente con la filosofia del sistema  
