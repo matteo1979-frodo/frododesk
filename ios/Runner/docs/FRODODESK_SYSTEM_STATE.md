@@ -1,6 +1,6 @@
 # FRODODESK — SYSTEM STATE
 
-Ultimo aggiornamento: 24 Marzo 2026
+Ultimo aggiornamento: 25 Marzo 2026
 
 # STATO GENERALE DEL PROGETTO
 
@@ -319,7 +319,7 @@ Il punto chiave emerso è questo:
 
 - prima dell’inizio centro estivo = Alice a casa
 - durante centro estivo = Alice fuori casa
-- dopo la fine centro estivo = Alice di nuovo a casa
+- dopo la fine del centro estivo = Alice di nuovo a casa
 
 ## Problema reale individuato
 
@@ -365,7 +365,7 @@ Comportamento corretto verificato:
 - il centro estivo viene letto sopra la vacanza
 - prima dell’ingresso Alice è considerata a casa
 - durante il centro estivo Alice non è considerata a casa
-- dopo il centro estivo il sistema torna a leggere correttamente la vacanza sottostante
+- dopo la fine del centro estivo il sistema torna a leggere correttamente la vacanza sottostante
 - i buchi reali sono tornati coerenti con la situazione testata
 - la card Sandra e il motore sono di nuovo allineati sul caso validato
 

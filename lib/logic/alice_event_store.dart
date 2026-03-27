@@ -1,6 +1,7 @@
 // lib/logic/alice_event_store.dart
 
 import 'dart:convert';
+import 'package:flutter/material.dart';
 
 import 'persistence_store.dart';
 
@@ -17,10 +18,16 @@ class AliceEventPeriod {
   final DateTime end;
   final AliceEventType type;
 
+  // ✅ NUOVO: orari centro estivo (solo se summerCamp)
+  final TimeOfDay? summerCampStart;
+  final TimeOfDay? summerCampEnd;
+
   AliceEventPeriod({
     required this.start,
     required this.end,
     required this.type,
+    this.summerCampStart,
+    this.summerCampEnd,
   }) {
     if (_normalizeDay(end).isBefore(_normalizeDay(start))) {
       throw ArgumentError('AliceEventPeriod end must be on or after start');
@@ -38,11 +45,15 @@ class AliceEventPeriod {
     DateTime? start,
     DateTime? end,
     AliceEventType? type,
+    TimeOfDay? summerCampStart,
+    TimeOfDay? summerCampEnd,
   }) {
     return AliceEventPeriod(
       start: start ?? this.start,
       end: end ?? this.end,
       type: type ?? this.type,
+      summerCampStart: summerCampStart ?? this.summerCampStart,
+      summerCampEnd: summerCampEnd ?? this.summerCampEnd,
     );
   }
 
@@ -81,6 +92,12 @@ class AliceEventStore {
         final endDay = map['endDay'];
         final typeIndex = map['typeIndex'];
 
+        // ✅ NUOVO (facoltativo, retrocompatibile)
+        final scStartHour = map['scStartHour'];
+        final scStartMinute = map['scStartMinute'];
+        final scEndHour = map['scEndHour'];
+        final scEndMinute = map['scEndMinute'];
+
         if (startYear is! int ||
             startMonth is! int ||
             startDay is! int ||
@@ -95,10 +112,23 @@ class AliceEventStore {
           continue;
         }
 
+        TimeOfDay? scStart;
+        TimeOfDay? scEnd;
+
+        if (scStartHour is int && scStartMinute is int) {
+          scStart = TimeOfDay(hour: scStartHour, minute: scStartMinute);
+        }
+
+        if (scEndHour is int && scEndMinute is int) {
+          scEnd = TimeOfDay(hour: scEndHour, minute: scEndMinute);
+        }
+
         final event = AliceEventPeriod(
           start: DateTime(startYear, startMonth, startDay),
           end: DateTime(endYear, endMonth, endDay),
           type: AliceEventType.values[typeIndex],
+          summerCampStart: scStart,
+          summerCampEnd: scEnd,
         );
 
         _events.add(event);
@@ -281,6 +311,12 @@ class AliceEventStore {
             'endMonth': event.end.month,
             'endDay': event.end.day,
             'typeIndex': event.type.index,
+
+            // ✅ NUOVO
+            'scStartHour': event.summerCampStart?.hour,
+            'scStartMinute': event.summerCampStart?.minute,
+            'scEndHour': event.summerCampEnd?.hour,
+            'scEndMinute': event.summerCampEnd?.minute,
           },
         )
         .toList();

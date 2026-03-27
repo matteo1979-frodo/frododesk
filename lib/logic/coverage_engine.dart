@@ -126,7 +126,13 @@ class CoverageEngine {
   }
 
   bool isAliceSummerCampOperationalDay(DateTime day) {
-    return aliceEventStore.hasSummerCampPeriodForDay(day);
+    final period = aliceEventStore.getSummerCampPeriodForDay(day);
+    if (period == null) return false;
+
+    final special = summerCampSpecialEventStore.getForDay(day);
+    final config = summerCampScheduleStore.getConfigForDay(day);
+
+    return special?.enabled ?? config.enabled;
   }
 
   AliceEventType? getAliceEventTypeForDay(DateTime day) {
@@ -138,7 +144,7 @@ class CoverageEngine {
   }
 
   SummerCampDayConfig getSummerCampConfigForDay(DateTime day) {
-    return summerCampScheduleStore.getConfigForDay(day);
+    return summerCampScheduleStore.getEffectiveConfigForDay(day);
   }
 
   SummerCampSpecialEvent? getSummerCampSpecialEventForDay(DateTime day) {
@@ -727,9 +733,15 @@ class CoverageEngine {
 
       final bool effectiveEnabled = specialEvent?.enabled ?? dayConfig.enabled;
       final TimeOfDay effectiveStart =
-          summerCampStart ?? specialEvent?.start ?? dayConfig.start;
+          activeSummerCampPeriod?.summerCampStart ??
+          summerCampStart ??
+          specialEvent?.start ??
+          dayConfig.start;
       final TimeOfDay effectiveEnd =
-          summerCampEnd ?? specialEvent?.end ?? dayConfig.end;
+          activeSummerCampPeriod?.summerCampEnd ??
+          summerCampEnd ??
+          specialEvent?.end ??
+          dayConfig.end;
 
       if (effectiveEnabled) {
         if (specialEvent != null) {
@@ -778,7 +790,13 @@ class CoverageEngine {
         }
 
         final campOutStart = _atTime(d0, effectiveEnd);
-        final campOutEnd = DateTime(d0.year, d0.month, d0.day, 18, 0);
+        final campOutEnd = DateTime(
+          d0.year,
+          d0.month,
+          d0.day,
+          sandraSeraStart.hour,
+          sandraSeraStart.minute,
+        );
         final labelCampOut =
             "Alice centro estivo uscita: ${_fmt(effectiveEnd)}–18:00";
 
@@ -900,43 +918,46 @@ class CoverageEngine {
       }
     }
 
-    final fPranzoStart = _atTime(d0, sandraPranzoStart);
-    final fPranzoEnd = _atTime(d0, sandraPranzoEnd);
+    // 🔥 FIX: pranzo solo se Alice è a casa (NON centro estivo)
+    if (aliceAtHome) {
+      final fPranzoStart = _atTime(d0, sandraPranzoStart);
+      final fPranzoEnd = _atTime(d0, sandraPranzoEnd);
 
-    DateTime pranzoGapStart = fPranzoStart;
-    final DateTime pranzoGapEnd = fPranzoEnd;
+      DateTime pranzoGapStart = fPranzoStart;
+      final DateTime pranzoGapEnd = fPranzoEnd;
 
-    if (effectiveCampEnd != null && effectiveCampEnd.isAfter(pranzoGapStart)) {
-      pranzoGapStart = effectiveCampEnd;
-    }
+      if (effectiveCampEnd != null &&
+          effectiveCampEnd.isAfter(pranzoGapStart)) {
+        pranzoGapStart = effectiveCampEnd;
+      }
 
-    if (pranzoGapEnd.isAfter(pranzoGapStart)) {
-      final okPranzo = _isFasciaCovered(
-        day: d0,
-        fasciaStart: pranzoGapStart,
-        fasciaEnd: pranzoGapEnd,
-        allowSandra: true,
-        sandraMattinaAvailable: effSandraMattina,
-        sandraPranzoAvailable: effSandraPranzo,
-        sandraSeraAvailable: effSandraSera,
-        isHomePresenceWindow: true,
-        overrides: overrides,
-        ferieStore: ferieStore,
-      );
-
-      if (!okPranzo) {
-        entries.add(
-          _CoverageGapEntry(
-            label: _labelDateRange(pranzoGapStart, pranzoGapEnd),
-            fasciaStart: pranzoGapStart,
-            fasciaEnd: pranzoGapEnd,
-            isHomePresenceWindow: true,
-            allowSandra: true,
-          ),
+      if (pranzoGapEnd.isAfter(pranzoGapStart)) {
+        final okPranzo = _isFasciaCovered(
+          day: d0,
+          fasciaStart: pranzoGapStart,
+          fasciaEnd: pranzoGapEnd,
+          allowSandra: true,
+          sandraMattinaAvailable: effSandraMattina,
+          sandraPranzoAvailable: effSandraPranzo,
+          sandraSeraAvailable: effSandraSera,
+          isHomePresenceWindow: true,
+          overrides: overrides,
+          ferieStore: ferieStore,
         );
+
+        if (!okPranzo) {
+          entries.add(
+            _CoverageGapEntry(
+              label: _labelDateRange(pranzoGapStart, pranzoGapEnd),
+              fasciaStart: pranzoGapStart,
+              fasciaEnd: pranzoGapEnd,
+              isHomePresenceWindow: true,
+              allowSandra: true,
+            ),
+          );
+        }
       }
     }
-
     final fSeraStart = _atTime(d0, sandraSeraStart);
     final fSeraEnd = _atTime(d0, sandraSeraEnd);
 

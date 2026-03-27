@@ -1,6 +1,6 @@
 FRODODESK — ROADMAP
 
-Ultimo aggiornamento: 17 Marzo 2026
+Ultimo aggiornamento: 25 Marzo 2026
 
 OBIETTIVO GENERALE
 
@@ -153,21 +153,164 @@ modifica evento direttamente dal conflitto
 
 collegamento eventi alla simulazione copertura
 
-BLOCCO D — CALENDARIO REALE COMPLETO
+---
 
-Funzioni previste:
+# 🔥 AGGIORNAMENTO — 25 MARZO 2026 (ALLINEAMENTO REALE + PULIZIA ROADMAP)
 
-integrazione completa eventi
+## Stato reale aggiornato
 
-gestione visite
+Durante le ultime chat è emerso chiaramente che:
 
-gestione viaggi
+- molte parti segnate come "da fare" sono in realtà già completate e funzionanti
+- il sistema è più avanti rispetto a quanto indicato in roadmap
 
-gestione impegni reali
+In particolare:
 
-eventi Alice scuola completi
+✔ conflitti turno ↔ evento → già funzionanti e validati in app reale  
+✔ gestione permesso → già operativa e stabile  
+✔ copertura combinata → stabile  
+✔ eventi Alice → stabilizzati  
+✔ Sandra → funzionante su tutte le fasce  
 
-eventi con durata reale
+👉 Questo comporta una revisione pratica della roadmap:
+
+la fase non è più di costruzione logica base  
+ma di **uso reale + rifinitura UX/UI**
+
+---
+
+## Nuovo focus reale della fase
+
+La priorità NON è più:
+
+- aggiungere logica
+- costruire nuovi motori
+
+La priorità è:
+
+👉 rendere il sistema **veloce da leggere e usare nella vita reale**
+
+---
+
+## BLOCCO C — stato reale aggiornato
+
+Stato: **FUNZIONALMENTE COMPLETO (LOGICA)**  
+Stato UI: **IN RIFINITURA**
+
+Il blocco Eventi Reali non è più da costruire, ma da:
+
+- rendere più leggibile
+- integrare meglio nella UI
+- velocizzare l’uso
+
+---
+
+## BLOCCO D — CALENDARIO REALE COMPLETO
+
+Stato: **ATTIVO (FASE REALE)**
+
+Questo blocco è ora la fase dominante del progetto.
+
+Non è più solo "previsto", ma già in uso reale.
+
+---
+
+## PRIORITÀ ATTUALE — UX/UI
+
+Focus attuale:
+
+- riduzione scroll
+- maggiore compattezza
+- lettura immediata della giornata
+- meno elementi inutili visivamente
+- più chiarezza causa → effetto
+
+---
+
+## INTERVENTI UI GIÀ FATTI (VALIDATI)
+
+✔ separazione in 3 blocchi:
+- Realtà del giorno
+- Alice / Scuola
+- Buchi / Decisioni
+
+✔ Periodi salvati Alice collapsable
+
+✔ Banner Stato Alice in cima alla card
+
+✔ Permesso come azione rapida dentro Turni
+
+✔ Fonte turno visibile (Quarta squadra, override, ecc.)
+
+✔ Debug UI rimosso
+
+✔ Metodo file grandi a blocchi consolidato
+
+---
+
+## PROBLEMI REALI EMERSI (UX)
+
+Situazione reale attuale:
+
+- schermata ancora troppo lunga
+- card Alice / Scuola ancora troppo estesa
+- alcune informazioni ridondanti
+- necessità di lettura più immediata
+
+---
+
+## PROSSIMO PASSO OPERATIVO
+
+👉 NON toccare la logica
+
+👉 lavorare SOLO sulla UI
+
+### Obiettivo preciso:
+
+**accorciare e semplificare la card "Alice / Scuola"**
+
+Motivo:
+
+- è il blocco più lungo
+- impatta direttamente sull’usabilità reale
+- rallenta la lettura della giornata
+
+---
+
+## DECISIONE IMPORTANTE
+
+👉 NON lavorare ora su:
+
+- causa evento Alice nei Buchi del giorno
+
+Motivo:
+
+- è già presente nel titolo del buco
+- non è una priorità reale
+- non migliora l’uso quanto la semplificazione UI
+
+---
+
+## DIREZIONE CORRETTA
+
+Fase attuale:
+
+👉 **OTTIMIZZAZIONE USO REALE**
+
+Non:
+
+❌ sviluppo logico  
+❌ nuove feature  
+❌ espansione sistema  
+
+Ma:
+
+✔ pulizia  
+✔ velocità  
+✔ leggibilità  
+✔ utilizzo quotidiano  
+
+---
 
 BLOCCO E — CONFLITTI AVANZATI
 
@@ -262,7 +405,13 @@ Sistema stabile.
 ✔ Logica copertura reale corretta  
 ✔ Bug falsi buchi risolto  
 ✔ Rilevazione buchi reali funzionante  
+✔ Conflitti turno ↔ evento funzionanti  
+✔ Permesso operativo e stabile  
+✔ Eventi Alice stabilizzati  
+✔ Sandra funzionante su tutte le fasce  
 
 ⏸️ Da completare:
 
-- fix UI dettagli copertura (`CoverageGapDetail`)
+- semplificazione UI card Alice / Scuola
+- riduzione lunghezza schermata
+- miglioramento leggibilità immediata

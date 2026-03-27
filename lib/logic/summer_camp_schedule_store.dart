@@ -114,22 +114,54 @@ class SummerCampWeekConfig {
 class SummerCampScheduleStore {
   SummerCampWeekConfig _weekConfig = SummerCampWeekConfig.standard();
 
+  // 🔥 NUOVO: override giornalieri
+  final Map<String, SummerCampDayConfig> _dailyOverrides = {};
+
   SummerCampWeekConfig get weekConfig => _weekConfig;
+
+  String _dayKey(DateTime day) {
+    return "${day.year}-${day.month}-${day.day}";
+  }
 
   SummerCampDayConfig getConfigForDay(DateTime day) {
     return _weekConfig.forWeekday(day.weekday);
   }
 
+  SummerCampDayConfig getEffectiveConfigForDay(DateTime day) {
+    final key = _dayKey(day);
+
+    if (_dailyOverrides.containsKey(key)) {
+      return _dailyOverrides[key]!;
+    }
+
+    return getConfigForDay(day);
+  }
+
+  bool hasOverrideForDay(DateTime day) {
+    final key = _dayKey(day);
+    return _dailyOverrides.containsKey(key);
+  }
+
+  void setOverrideForDay(DateTime day, SummerCampDayConfig config) {
+    final key = _dayKey(day);
+    _dailyOverrides[key] = config;
+  }
+
+  void removeOverrideForDay(DateTime day) {
+    final key = _dayKey(day);
+    _dailyOverrides.remove(key);
+  }
+
   bool isEnabledForDay(DateTime day) {
-    return getConfigForDay(day).enabled;
+    return getEffectiveConfigForDay(day).enabled;
   }
 
   TimeOfDay getStartForDay(DateTime day) {
-    return getConfigForDay(day).start;
+    return getEffectiveConfigForDay(day).start;
   }
 
   TimeOfDay getEndForDay(DateTime day) {
-    return getConfigForDay(day).end;
+    return getEffectiveConfigForDay(day).end;
   }
 
   void setWholeWeek(SummerCampWeekConfig config) {

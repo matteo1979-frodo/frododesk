@@ -25,6 +25,10 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
   late DateTime _draftStart;
   late DateTime _draftEnd;
 
+  // ✅ NUOVO: orari draft centro estivo
+  TimeOfDay _draftSummerCampStart = const TimeOfDay(hour: 8, minute: 30);
+  TimeOfDay _draftSummerCampEnd = const TimeOfDay(hour: 16, minute: 30);
+
   int? _editingIndex;
 
   bool _isSavedPeriodsOpen = false;
@@ -56,12 +60,18 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
       _draftType = AliceEventType.schoolNormal;
       _draftStart = _onlyDate(widget.selectedDay);
       _draftEnd = _onlyDate(widget.selectedDay);
+      _draftSummerCampStart = const TimeOfDay(hour: 8, minute: 30);
+      _draftSummerCampEnd = const TimeOfDay(hour: 16, minute: 30);
       return;
     }
 
     _draftType = current.type;
     _draftStart = _onlyDate(current.start);
     _draftEnd = _onlyDate(current.end);
+    _draftSummerCampStart =
+        current.summerCampStart ?? const TimeOfDay(hour: 8, minute: 30);
+    _draftSummerCampEnd =
+        current.summerCampEnd ?? const TimeOfDay(hour: 16, minute: 30);
   }
 
   AliceEventPeriod? _eventForSelectedDay() {
@@ -76,6 +86,12 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
 
   String _fmtDateHuman(DateTime d) {
     return DateFormat('EEEE d MMMM yyyy', 'it_IT').format(d);
+  }
+
+  String _fmtTime(TimeOfDay t) {
+    final hh = t.hour.toString().padLeft(2, '0');
+    final mm = t.minute.toString().padLeft(2, '0');
+    return "$hh:$mm";
   }
 
   String _label(AliceEventType type) {
@@ -171,6 +187,54 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
     });
   }
 
+  Future<void> _pickDraftSummerCampStart() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _draftSummerCampStart,
+      helpText: 'Centro estivo • ORARIO INGRESSO',
+      cancelText: 'Annulla',
+      confirmText: 'OK',
+    );
+
+    if (picked == null) return;
+
+    final newStartMinutes = picked.hour * 60 + picked.minute;
+    final currentEndMinutes =
+        _draftSummerCampEnd.hour * 60 + _draftSummerCampEnd.minute;
+
+    setState(() {
+      _draftSummerCampStart = picked;
+      if (newStartMinutes >= currentEndMinutes) {
+        _draftSummerCampEnd = TimeOfDay(
+          hour: picked.hour + 1 <= 23 ? picked.hour + 1 : picked.hour,
+          minute: picked.minute,
+        );
+      }
+    });
+  }
+
+  Future<void> _pickDraftSummerCampEnd() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _draftSummerCampEnd,
+      helpText: 'Centro estivo • ORARIO USCITA',
+      cancelText: 'Annulla',
+      confirmText: 'OK',
+    );
+
+    if (picked == null) return;
+
+    final currentStartMinutes =
+        _draftSummerCampStart.hour * 60 + _draftSummerCampStart.minute;
+    final newEndMinutes = picked.hour * 60 + picked.minute;
+
+    if (newEndMinutes <= currentStartMinutes) return;
+
+    setState(() {
+      _draftSummerCampEnd = picked;
+    });
+  }
+
   void _startEditingSavedPeriod(int index) {
     final e = widget.store.events[index];
 
@@ -179,6 +243,10 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
       _draftType = e.type;
       _draftStart = _onlyDate(e.start);
       _draftEnd = _onlyDate(e.end);
+      _draftSummerCampStart =
+          e.summerCampStart ?? const TimeOfDay(hour: 8, minute: 30);
+      _draftSummerCampEnd =
+          e.summerCampEnd ?? const TimeOfDay(hour: 16, minute: 30);
     });
   }
 
@@ -200,6 +268,12 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
             start: _draftStart,
             end: _draftEnd,
             type: _draftType,
+            summerCampStart: _draftType == AliceEventType.summerCamp
+                ? _draftSummerCampStart
+                : null,
+            summerCampEnd: _draftType == AliceEventType.summerCamp
+                ? _draftSummerCampEnd
+                : null,
           ),
         );
       }
@@ -210,6 +284,12 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
             start: _draftStart,
             end: _draftEnd,
             type: _draftType,
+            summerCampStart: _draftType == AliceEventType.summerCamp
+                ? _draftSummerCampStart
+                : null,
+            summerCampEnd: _draftType == AliceEventType.summerCamp
+                ? _draftSummerCampEnd
+                : null,
           ),
         );
       }
@@ -408,6 +488,51 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
               ],
             ),
 
+            if (_draftType == AliceEventType.summerCamp) ...[
+              const SizedBox(height: 12),
+              _buildInfoBox(
+                backgroundColor: Colors.green.withOpacity(0.08),
+                borderColor: Colors.green.withOpacity(0.25),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle(
+                      "Orari centro estivo",
+                      icon: Icons.access_time,
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _pickDraftSummerCampStart,
+                            icon: const Icon(Icons.login),
+                            label: Text(
+                              "Ingresso: ${_fmtTime(_draftSummerCampStart)}",
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _pickDraftSummerCampEnd,
+                            icon: const Icon(Icons.logout),
+                            label: Text(
+                              "Uscita: ${_fmtTime(_draftSummerCampEnd)}",
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             const SizedBox(height: 12),
 
             _buildInfoBox(
@@ -449,6 +574,13 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
                       "Periodo da salvare: ${_fmtDate(_draftStart)} → ${_fmtDate(_draftEnd)}",
                       style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
+                  if (_draftType == AliceEventType.summerCamp) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      "Orario base: ${_fmtTime(_draftSummerCampStart)} → ${_fmtTime(_draftSummerCampEnd)}",
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -515,6 +647,13 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
                       "Periodo attivo: ${_fmtDate(current.start)} → ${_fmtDate(current.end)}",
                       style: TextStyle(color: Colors.black.withOpacity(0.7)),
                     ),
+                    if (current.type == AliceEventType.summerCamp) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        "Orario centro estivo: ${_fmtTime(current.summerCampStart ?? const TimeOfDay(hour: 8, minute: 30))} → ${_fmtTime(current.summerCampEnd ?? const TimeOfDay(hour: 16, minute: 30))}",
+                        style: TextStyle(color: Colors.black.withOpacity(0.7)),
+                      ),
+                    ],
                     const SizedBox(height: 10),
                     OutlinedButton.icon(
                       onPressed: _clearEvent,
@@ -611,6 +750,13 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
                         "${_fmtDate(e.start)} → ${_fmtDate(e.end)}",
                         style: TextStyle(color: Colors.black.withOpacity(0.7)),
                       ),
+                      if (e.type == AliceEventType.summerCamp) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          "Orario: ${_fmtTime(e.summerCampStart ?? const TimeOfDay(hour: 8, minute: 30))} → ${_fmtTime(e.summerCampEnd ?? const TimeOfDay(hour: 16, minute: 30))}",
+                          style: TextStyle(color: Colors.black.withOpacity(0.7)),
+                        ),
+                      ],
                       if (activeOnSelectedDay) ...[
                         const SizedBox(height: 6),
                         const Text(

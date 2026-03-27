@@ -3925,7 +3925,7 @@ class _CalendarioScreenStepAStabileState
 
       switch (aliceEvent.type) {
         case AliceEventType.schoolNormal:
-          return Icons.school_outlined;
+          return Icons.menu_book_rounded;
         case AliceEventType.vacation:
           return Icons.beach_access_outlined;
         case AliceEventType.schoolClosure:
@@ -3943,33 +3943,35 @@ class _CalendarioScreenStepAStabileState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (aliceEvent != null &&
-              aliceEvent.type != AliceEventType.schoolNormal)
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: aliceEventColor().withOpacity(0.12),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: aliceEventColor().withOpacity(0.35)),
-              ),
-              child: Row(
-                children: [
-                  Icon(aliceEventIcon(), size: 18, color: aliceEventColor()),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      "Stato Alice: ${aliceEventLabel()}",
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: aliceEventColor(),
-                      ),
-                    ),
-                  ),
-                ],
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: aliceEventColor().withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: aliceEventColor().withOpacity(0.6),
+                width: 1.5,
               ),
             ),
+            child: Row(
+              children: [
+                Icon(aliceEventIcon(), size: 18, color: aliceEventColor()),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "Stato Alice: ${aliceEventLabel()}",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15,
+                      color: aliceEventColor().withOpacity(1.0),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           Text(
             "Orario: ${fmtTimeOfDay(_scuolaStart)}–${fmtTimeOfDay(_scuolaEnd)}",
           ),
@@ -4021,7 +4023,7 @@ class _CalendarioScreenStepAStabileState
           ),
           const SizedBox(height: 10),
           DropdownButtonFormField<SchoolCoverChoice>(
-            value: inChoice,
+            value: _effectiveSchoolInCover(_selectedDay),
             isExpanded: true,
             decoration: InputDecoration(
               labelText: "Ingresso 07:30–${fmtTimeOfDay(_scuolaStart)}",
@@ -4052,7 +4054,7 @@ class _CalendarioScreenStepAStabileState
           if (!uscita13Eff) ...[
             const SizedBox(height: 12),
             DropdownButtonFormField<SchoolCoverChoice>(
-              value: outChoice,
+              value: _effectiveSchoolOutCover(_selectedDay),
               isExpanded: true,
               decoration: InputDecoration(
                 labelText:
@@ -4093,7 +4095,7 @@ class _CalendarioScreenStepAStabileState
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<SchoolCoverChoice>(
-              value: lunchChoice,
+              value: _effectiveLunchCover(_selectedDay),
               isExpanded: true,
               decoration: InputDecoration(
                 labelText:
