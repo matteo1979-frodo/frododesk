@@ -5,6 +5,7 @@ import 'ferie_period_store.dart';
 import 'alice_event_store.dart';
 import 'real_event_store.dart';
 import 'summer_camp_schedule_store.dart';
+import 'summer_camp_special_event_store.dart';
 import 'support_network_store.dart';
 import 'disease_period_store.dart';
 import 'fourth_shift_store.dart';
@@ -46,6 +47,9 @@ class CoreStore {
 
   // ✅ NEW: Centro estivo settimanale
   late final SummerCampScheduleStore summerCampScheduleStore;
+
+  // ✅ NEW: Eventi speciali centro estivo
+  late final SummerCampSpecialEventStore summerCampSpecialEventStore;
 
   // ✅ NEW: Rete di supporto
   late final SupportNetworkStore supportNetworkStore;
@@ -106,6 +110,9 @@ class CoreStore {
     // ✅ NEW: Centro estivo settimanale
     summerCampScheduleStore = SummerCampScheduleStore();
 
+    // ✅ NEW: Eventi speciali centro estivo
+    summerCampSpecialEventStore = SummerCampSpecialEventStore();
+
     // ✅ NEW: Rete di supporto
     supportNetworkStore = SupportNetworkStore();
 
@@ -135,6 +142,7 @@ class CoreStore {
       aliceCompanionStore: aliceCompanionStore,
       aliceEventStore: aliceEventStore,
       summerCampScheduleStore: summerCampScheduleStore,
+      summerCampSpecialEventStore: summerCampSpecialEventStore,
     );
 
     // 4) Adapter Copertura
@@ -164,6 +172,7 @@ class CoreStore {
     await feriePeriodStore.load();
     await diseasePeriodStore.load();
     await aliceEventStore.load();
+    await summerCampSpecialEventStore.load();
     await supportNetworkStore.load();
     await fourthShiftStore.load();
     await rotationOverrideStore.load();

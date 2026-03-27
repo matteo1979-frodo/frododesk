@@ -733,36 +733,22 @@ class CoverageEngine {
 
       final bool effectiveEnabled = specialEvent?.enabled ?? dayConfig.enabled;
       final TimeOfDay effectiveStart =
-          activeSummerCampPeriod?.summerCampStart ??
-          summerCampStart ??
           specialEvent?.start ??
+          summerCampStart ??
+          activeSummerCampPeriod?.summerCampStart ??
           dayConfig.start;
+
       final TimeOfDay effectiveEnd =
-          activeSummerCampPeriod?.summerCampEnd ??
-          summerCampEnd ??
           specialEvent?.end ??
+          summerCampEnd ??
+          activeSummerCampPeriod?.summerCampEnd ??
           dayConfig.end;
 
       if (effectiveEnabled) {
-        if (specialEvent != null) {
-          final specialStart = _atTime(d0, effectiveStart);
-          final specialEnd = _atTime(d0, effectiveEnd);
-          entries.add(
-            _CoverageGapEntry(
-              label:
-                  "Centro estivo speciale: ${specialEvent.label} ${_fmt(effectiveStart)}–${_fmt(effectiveEnd)}",
-              fasciaStart: specialStart,
-              fasciaEnd: specialEnd,
-              isHomePresenceWindow: false,
-              allowSandra: false,
-            ),
-          );
-        }
-
-        final campInStart = DateTime(d0.year, d0.month, d0.day, 7, 30);
+        final campInStart = _atTime(d0, sandraCambioMattinaEnd);
         final campInEnd = _atTime(d0, effectiveStart);
         final labelCampIn =
-            "Alice centro estivo ingresso: 07:30–${_fmt(effectiveStart)}";
+            "Alice centro estivo ingresso: ${_fmtTimeDate(campInStart)}–${_fmt(effectiveStart)}";
 
         final campInCoveredInReality = _isFasciaCovered(
           day: d0,
