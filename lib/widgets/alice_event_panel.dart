@@ -3,16 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../logic/alice_event_store.dart';
+import '../logic/summer_camp_special_event_store.dart';
 
 class AliceEventPanel extends StatefulWidget {
   final DateTime selectedDay;
   final AliceEventStore store;
+  final SummerCampSpecialEventStore summerCampSpecialEventStore;
   final VoidCallback onChanged;
 
   const AliceEventPanel({
     super.key,
     required this.selectedDay,
     required this.store,
+    required this.summerCampSpecialEventStore,
     required this.onChanged,
   });
 
@@ -362,6 +365,8 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
   Widget build(BuildContext context) {
     final current = _eventForSelectedDay();
     final events = widget.store.events;
+    final specialSummerCampEvents = widget.summerCampSpecialEventStore.getAll();
+    final allItems = events;
 
     return Card(
       elevation: 0,
@@ -696,6 +701,16 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
             ),
             const SizedBox(height: 10),
 
+            if (_isSavedPeriodsOpen && specialSummerCampEvents.isNotEmpty)
+              _buildInfoBox(
+                backgroundColor: Colors.green.withOpacity(0.06),
+                borderColor: Colors.green.withOpacity(0.20),
+                child: Text(
+                  "Eventi speciali centro estivo salvati: ${specialSummerCampEvents.length}",
+                  style: TextStyle(color: Colors.black.withOpacity(0.75)),
+                ),
+              ),
+
             if (_isSavedPeriodsOpen && events.isEmpty)
               _buildInfoBox(
                 child: Text(
@@ -754,7 +769,9 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
                         const SizedBox(height: 6),
                         Text(
                           "Orario: ${_fmtTime(e.summerCampStart ?? const TimeOfDay(hour: 8, minute: 30))} → ${_fmtTime(e.summerCampEnd ?? const TimeOfDay(hour: 16, minute: 30))}",
-                          style: TextStyle(color: Colors.black.withOpacity(0.7)),
+                          style: TextStyle(
+                            color: Colors.black.withOpacity(0.7),
+                          ),
                         ),
                       ],
                       if (activeOnSelectedDay) ...[

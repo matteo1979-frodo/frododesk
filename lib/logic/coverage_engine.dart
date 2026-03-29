@@ -531,7 +531,9 @@ class CoverageEngine {
     final bool isWeekend =
         d0.weekday == DateTime.saturday || d0.weekday == DateTime.sunday;
     final bool aliceSchoolNormal = isAliceSchoolNormalDay(d0) && !isWeekend;
-    final bool aliceSummerCamp = isAliceSummerCampOperationalDay(d0);
+    final bool aliceSummerCamp =
+        isAliceSummerCampOperationalDay(d0) ||
+        getSummerCampSpecialEventForDay(d0) != null;
 
     final AliceEventPeriod? activeSummerCampPeriod = getSummerCampPeriodForDay(
       d0,

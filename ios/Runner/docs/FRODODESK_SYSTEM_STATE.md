@@ -1,6 +1,6 @@
 # FRODODESK — SYSTEM STATE
 
-Ultimo aggiornamento: 25 Marzo 2026
+Ultimo aggiornamento: 29 Marzo 2026
 
 # STATO GENERALE DEL PROGETTO
 
@@ -1720,3 +1720,220 @@ Solo dopo si valuteranno altre rifiniture UI della schermata.
 ## Nuova frase di ripartenza aggiornata
 
 Ripartiamo da FrodoDesk — “Periodi salvati Alice” collapsable completato correttamente + banner “Stato Alice” aggiunto in cima alla card Alice / Scuola e verificato in app; prossimo passo: rendere i “Buchi del giorno” più intelligenti mostrando anche la causa evento Alice dentro la descrizione del buco.
+# 🔥 AGGIORNAMENTO — 29 MARZO 2026 (EVENTI SPECIALI CENTRO ESTIVO + PERSISTENZA + STATO/ORARIO ALICE)
+
+## Stato reale della chat
+
+In questa chat il lavoro si è concentrato sul completamento reale del blocco:
+
+- centro estivo con orario base
+- override su singolo giorno
+- persistenza evento speciale
+- coerenza tra motore, stato Alice e orario mostrato in UI
+
+La chat è partita da un problema reale:
+
+👉 il centro estivo funzionava come periodo  
+👉 ma il giorno speciale (es. gita) non sovrascriveva in modo affidabile tutta la realtà del giorno
+
+In particolare, il sistema doveva permettere questo scenario:
+
+- centro estivo base: es. 08:25–16:30
+- giorno speciale: es. gita 07:00–19:30
+
+con queste regole obbligatorie:
+
+- il giorno speciale vale solo per quel giorno
+- il giorno dopo si torna automaticamente all’orario base
+- il motore deve leggere il giorno speciale come verità reale del giorno
+
+---
+
+## Problema reale emerso
+
+I problemi concreti osservati durante i test sono stati:
+
+1. l’orario speciale del giorno non aveva priorità affidabile sul base  
+2. nei buchi potevano comparire fasce incoerenti  
+3. l’evento speciale non restava salvato al riavvio  
+4. la card Alice / Scuola mostrava:
+   - stato Alice corretto solo in parte
+   - orario non coerente con l’evento speciale
+
+Esempio reale:
+
+- gita centro estivo impostata sul singolo giorno
+- il sistema continuava in alcune parti a leggere:
+  - centro estivo base
+  - orario standard
+invece dell’orario reale speciale
+
+---
+
+## Soluzione implementata
+
+### 1. Priorità orario speciale nel motore
+
+Nel `CoverageEngine` è stata corretta la priorità di lettura degli orari centro estivo in modo che:
+
+👉 evento speciale giorno singolo  
+prevalga su  
+👉 orario base del periodo
+
+Nuova regola reale consolidata:
+
+- se esiste evento speciale → usa quello
+- altrimenti → usa il centro estivo base
+- il giorno dopo → ritorno automatico al base
+
+---
+
+### 2. Correzione buco reale ingresso gita
+
+Durante il test reale è emerso un caso corretto ma letto male:
+
+- Sandra copre fino alle 06:35
+- gita inizia alle 07:00
+
+Il sistema inizialmente non mostrava bene il buco reale 06:35–07:00.
+
+La logica è stata corretta in modo che:
+
+- il buco ingresso centro estivo speciale parta dalla fine reale copertura Sandra
+- la label mostri l’orario corretto del segmento reale
+
+Risultato corretto verificato:
+
+👉 **Alice centro estivo ingresso: 06:35–07:00**
+
+---
+
+### 3. Persistenza eventi speciali centro estivo
+
+È stato completato `SummerCampSpecialEventStore` con persistenza reale.
+
+Aggiunti:
+
+- `load()`
+- `_save()`
+- salvataggio automatico su:
+  - `setForDay(...)`
+  - `removeForDay(...)`
+  - `clearAll()`
+
+Inoltre, in `CoreStore` sono stati aggiunti:
+
+- dichiarazione store
+- inizializzazione store
+- `await summerCampSpecialEventStore.load();`
+- passaggio dello store al `CoverageEngine`
+- import corretto del file store
+
+Durante questo passaggio è emerso anche un crash reale:
+
+`LateInitializationError: summerCampSpecialEventStore has not been initialized`
+
+Il problema è stato corretto inizializzando correttamente lo store nel `CoreStore`.
+
+È emerso anche un effetto collaterale reale:
+
+- gli eventi Alice salvati risultavano spariti
+
+Causa:
+
+- mancava il `load()` di `aliceEventStore` nel ciclo di inizializzazione
+
+Fix applicato:
+
+- ripristinato `await aliceEventStore.load();`
+
+Risultato finale verificato:
+
+✔ app riparte  
+✔ nessun bianco / crash  
+✔ eventi Alice di periodo tornano visibili  
+✔ evento speciale centro estivo resta salvato dopo riavvio
+
+---
+
+### 4. Stato Alice e orario Alice coerenti con evento speciale
+
+Nella card `Alice / Scuola` è stato corretto il comportamento del box alto.
+
+Prima:
+
+- in presenza di gita centro estivo, la UI mostrava ancora:
+  - “Centro estivo”
+  - orario standard
+
+Ora:
+
+- se esiste evento speciale attivo nel giorno selezionato:
+  - il testo stato Alice mostra l’etichetta speciale (es. `gita`)
+  - l’orario mostra lo start/end dell’evento speciale
+
+Esempio corretto verificato:
+
+- **Stato Alice: gita**
+- **Orario: 07:00–19:30**
+
+Questa modifica NON ha trasformato la gita in `AliceEventType` vero.
+
+Decisione tecnica consolidata della chat:
+
+👉 per ora l’evento speciale resta uno store dedicato del centro estivo  
+👉 ma viene letto correttamente in UI come realtà dominante del giorno
+
+Scelta fatta per evitare rischi sul motore che ora è stabile.
+
+---
+
+## Verifica reale effettuata
+
+Test reali completati con esito corretto:
+
+✔ giorno speciale modifica davvero l’orario solo su quel giorno  
+✔ il giorno successivo torna al base  
+✔ buco reale ingresso gita corretto  
+✔ label buco corretta  
+✔ evento speciale resta salvato  
+✔ app riaperta senza crash  
+✔ stato Alice mostra `gita`  
+✔ orario Alice mostra orario speciale reale
+
+👉 stato: **FUNZIONANTE E VALIDATO IN APP REALE**
+
+---
+
+## Decisione strutturale emersa
+
+Durante la chat è emersa una decisione importante:
+
+concettualmente, per FrodoDesk, una gita è più vicina a un **evento vero della vita di Alice** che a una semplice variazione tecnica.
+
+Ma è stata presa una decisione prudente e CNC-safe:
+
+- per ora l’evento speciale resta nel blocco centro estivo
+- viene mostrato nella UI come realtà del giorno
+- NON si unifica ancora dentro `AliceEventStore`
+- il motore NON viene generalizzato ancora a scuola + centro estivo
+
+Motivazione:
+
+👉 evitare di rompere un sistema che adesso funziona bene
+
+---
+
+## Stato finale a chiusura chat
+
+- centro estivo base funzionante
+- override giorno singolo funzionante
+- persistenza evento speciale funzionante
+- crash da store non inizializzato risolto
+- load Alice ripristinato
+- stato Alice coerente con evento speciale
+- orario Alice coerente con evento speciale
+- nessun errore rosso finale
+- comportamento giudicato corretto in uso reale
+
+👉 blocco considerato **stabile e utilizzabile**

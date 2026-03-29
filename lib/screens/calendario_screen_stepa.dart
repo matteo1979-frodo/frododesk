@@ -2721,6 +2721,7 @@ class _CalendarioScreenStepAStabileState
           AliceEventPanel(
             selectedDay: _selectedDay,
             store: coreStore.aliceEventStore,
+            summerCampSpecialEventStore: coreStore.summerCampSpecialEventStore,
             onChanged: () {
               setState(() {});
               ipsStore.refresh(now: _selectedDay);
@@ -3887,6 +3888,14 @@ class _CalendarioScreenStepAStabileState
     final aliceEvent = coreStore.aliceEventStore.getEventForDay(_selectedDay);
 
     String aliceEventLabel() {
+      final special = coreStore.summerCampSpecialEventStore.getForDay(
+        _selectedDay,
+      );
+
+      if (special != null && special.enabled) {
+        return special.label; // 👈 tipo "gita"
+      }
+
       if (aliceEvent == null) return "Scuola normale";
 
       switch (aliceEvent.type) {
@@ -3973,7 +3982,7 @@ class _CalendarioScreenStepAStabileState
             ),
           ),
           Text(
-            "Orario: ${fmtTimeOfDay(_scuolaStart)}–${fmtTimeOfDay(_scuolaEnd)}",
+            "Orario: ${fmtTimeOfDay(coreStore.summerCampSpecialEventStore.getForDay(_selectedDay)?.start ?? _scuolaStart)}–${fmtTimeOfDay(coreStore.summerCampSpecialEventStore.getForDay(_selectedDay)?.end ?? _scuolaEnd)}",
           ),
           const SizedBox(height: 12),
           SwitchListTile(
