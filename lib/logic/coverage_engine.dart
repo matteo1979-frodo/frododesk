@@ -20,6 +20,8 @@ import 'ferie_period_store.dart';
 // ✅ NEW: Eventi Alice
 import 'alice_event_store.dart';
 
+import 'alice_special_event_store.dart';
+
 // ✅ NEW: Centro estivo settimanale
 import 'summer_camp_schedule_store.dart';
 
@@ -41,6 +43,8 @@ class CoverageEngine {
 
   // ✅ NEW: Eventi Alice (aggancio strutturale)
   final AliceEventStore aliceEventStore;
+
+  final AliceSpecialEventStore aliceSpecialEventStore;
 
   // ✅ NEW: Centro estivo settimanale (aggancio strutturale)
   final SummerCampScheduleStore summerCampScheduleStore;
@@ -66,6 +70,7 @@ class CoverageEngine {
     RealEventStore? realEventStore,
     AliceCompanionStore? aliceCompanionStore,
     AliceEventStore? aliceEventStore,
+    AliceSpecialEventStore? aliceSpecialEventStore,
     SummerCampScheduleStore? summerCampScheduleStore,
     SummerCampSpecialEventStore? summerCampSpecialEventStore,
     TimeOfDay? sandraCambioMattinaStart,
@@ -81,6 +86,8 @@ class CoverageEngine {
        diseasePeriodStore = diseasePeriodStore ?? DiseasePeriodStore(),
        realEventStore = realEventStore ?? RealEventStore(),
        aliceEventStore = aliceEventStore ?? AliceEventStore(),
+       aliceSpecialEventStore =
+           aliceSpecialEventStore ?? AliceSpecialEventStore(),
        summerCampScheduleStore =
            summerCampScheduleStore ?? SummerCampScheduleStore(),
        summerCampSpecialEventStore =
@@ -492,6 +499,23 @@ class CoverageEngine {
     );
   }
 
+  bool isSomeoneAvailable(DateTime start, DateTime end) {
+    // TEMPORANEO: consideriamo Chiara disponibile dopo le 19
+    final chiaraAvailableFrom = DateTime(
+      start.year,
+      start.month,
+      start.day,
+      19,
+      0,
+    );
+
+    if (end.isAfter(chiaraAvailableFrom)) {
+      return true;
+    }
+
+    return false;
+  }
+
   CoverageDayAnalysis analyzeDayV2({
     required DateTime day,
     required bool uscita13,
@@ -527,6 +551,29 @@ class CoverageEngine {
     );
 
     final bool aliceAtHome = isAliceAtHomeDay(d0);
+    final aliceSpecialEvents = aliceSpecialEventStore.eventsForDay(d0);
+    final bool hasAliceSpecialEvents = aliceSpecialEvents.any((e) => e.enabled);
+    final firstAliceEvent = aliceSpecialEvents.isNotEmpty
+        ? aliceSpecialEvents.first
+        : null;
+    final bool hasTimedAliceEvent =
+        firstAliceEvent != null &&
+        firstAliceEvent.start != null &&
+        firstAliceEvent.end != null;
+    final DateTime? aliceEventStart = hasTimedAliceEvent
+        ? _atTime(d0, firstAliceEvent!.start!)
+        : null;
+    final DateTime? aliceEventEnd = hasTimedAliceEvent
+        ? _atTime(d0, firstAliceEvent!.end!)
+        : null;
+
+    print(
+      "Alice timed event: $hasTimedAliceEvent | start: $aliceEventStart | end: $aliceEventEnd",
+    );
+
+    print(
+      "Coverage day: ${d0.year}-${d0.month}-${d0.day} | AliceSpecialEvents: ${aliceSpecialEvents.length} / attivi: $hasAliceSpecialEvents",
+    );
 
     final bool isWeekend =
         d0.weekday == DateTime.saturday || d0.weekday == DateTime.sunday;
@@ -557,7 +604,61 @@ class CoverageEngine {
 
     DateTime? normalSchoolHomeWindowStart;
 
-    if (aliceAtHome) {
+    if (hasTimedAliceEvent &&
+        aliceEventStart != null &&
+        aliceEventEnd != null) {
+      // Durante evento Alice NON è a casa → nessun bisogno presenza casa
+      final DateTime eventStart = aliceEventStart!;
+      final DateTime eventEnd = aliceEventEnd!;
+      final DateTime preEventStart = _atTime(d0, schoolOutEnd);
+      final DateTime preEventEnd = eventStart;
+      final DateTime postEventStart = eventEnd;
+      final DateTime postEventEnd = _atTime(d0, sandraSeraStart);
+
+      if (postEventEnd.isAfter(postEventStart) &&
+          !isSomeoneAvailable(postEventStart, postEventEnd)) {
+        entries.add(
+          _CoverageGapEntry(
+            label:
+                'Ritiro Alice evento: ${_fmtTimeDate(postEventStart)}–${_fmtTimeDate(postEventEnd)}',
+            fasciaStart: postEventStart,
+            fasciaEnd: postEventEnd,
+            isHomePresenceWindow: false,
+            allowSandra: true,
+          ),
+        );
+      }
+
+      if (preEventEnd.isAfter(preEventStart)) {
+        final bool preEventCovered = _isFasciaCovered(
+          day: d0,
+          fasciaStart: preEventStart,
+          fasciaEnd: preEventEnd,
+          allowSandra: true,
+          sandraMattinaAvailable: effSandraMattina,
+          sandraPranzoAvailable: effSandraPranzo,
+          sandraSeraAvailable: effSandraSera,
+          isHomePresenceWindow: false,
+          overrides: overrides,
+          ferieStore: ferieStore,
+        );
+
+        if (!preEventCovered) {
+          entries.add(
+            _CoverageGapEntry(
+              label:
+                  'Accompagnamento Alice evento: ${_fmtTimeDate(preEventStart)}–${_fmtTimeDate(preEventEnd)}',
+              fasciaStart: preEventStart,
+              fasciaEnd: preEventEnd,
+              isHomePresenceWindow: false,
+              allowSandra: true,
+            ),
+          );
+        }
+      }
+    }
+
+    if (aliceAtHome && !hasTimedAliceEvent) {
       final aliceHomeStart = _atTime(d0, sandraCambioMattinaStart);
       final aliceHomeEnd = _atTime(d0, sandraSeraStart);
 
@@ -907,7 +1008,7 @@ class CoverageEngine {
     }
 
     // 🔥 FIX: pranzo solo se Alice è a casa (NON centro estivo)
-    if (aliceAtHome) {
+    if (aliceAtHome && !hasTimedAliceEvent) {
       final fPranzoStart = _atTime(d0, sandraPranzoStart);
       final fPranzoEnd = _atTime(d0, sandraPranzoEnd);
 
@@ -1541,7 +1642,9 @@ class CoverageEngine {
     if (overlappingRealEvent != null &&
         overlappingRealEvent.startTime != null &&
         overlappingRealEvent.endTime != null) {
-      return "$personName è occupato da evento reale: ${overlappingRealEvent.title} (${_fmt(overlappingRealEvent.startTime!)}–${_fmt(overlappingRealEvent.endTime!)}).";
+      return personName == 'Chiara'
+          ? "Chiara è occupata da evento reale: ${overlappingRealEvent.title} (${_fmt(overlappingRealEvent.startTime!)}–${_fmt(overlappingRealEvent.endTime!)})."
+          : "Matteo è occupato da evento reale: ${overlappingRealEvent.title} (${_fmt(overlappingRealEvent.startTime!)}–${_fmt(overlappingRealEvent.endTime!)}).";
     }
 
     if (_isPostNightForPersonDay(person: person, day: day)) {

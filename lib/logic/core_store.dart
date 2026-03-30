@@ -6,6 +6,7 @@ import 'alice_event_store.dart';
 import 'real_event_store.dart';
 import 'summer_camp_schedule_store.dart';
 import 'summer_camp_special_event_store.dart';
+import 'alice_special_event_store.dart';
 import 'support_network_store.dart';
 import 'disease_period_store.dart';
 import 'fourth_shift_store.dart';
@@ -50,6 +51,8 @@ class CoreStore {
 
   // ✅ NEW: Eventi speciali centro estivo
   late final SummerCampSpecialEventStore summerCampSpecialEventStore;
+
+  late final AliceSpecialEventStore aliceSpecialEventStore;
 
   // ✅ NEW: Rete di supporto
   late final SupportNetworkStore supportNetworkStore;
@@ -113,6 +116,8 @@ class CoreStore {
     // ✅ NEW: Eventi speciali centro estivo
     summerCampSpecialEventStore = SummerCampSpecialEventStore();
 
+    aliceSpecialEventStore = AliceSpecialEventStore();
+
     // ✅ NEW: Rete di supporto
     supportNetworkStore = SupportNetworkStore();
 
@@ -141,6 +146,7 @@ class CoreStore {
       realEventStore: realEventStore,
       aliceCompanionStore: aliceCompanionStore,
       aliceEventStore: aliceEventStore,
+      aliceSpecialEventStore: aliceSpecialEventStore,
       summerCampScheduleStore: summerCampScheduleStore,
       summerCampSpecialEventStore: summerCampSpecialEventStore,
     );

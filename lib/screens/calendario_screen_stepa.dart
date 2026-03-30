@@ -17,7 +17,9 @@ import '../models/real_event.dart';
 import '../models/turn_override.dart';
 import '../models/work_shift.dart';
 import '../models/rotation_override.dart';
+import '../models/alice_special_event.dart';
 import '../logic/core_store.dart';
+import '../logic/alice_special_event_store.dart';
 import '../models/week_identity.dart';
 import '../logic/settings_store.dart';
 import '../logic/ips_store.dart';
@@ -79,6 +81,10 @@ class _CalendarioScreenStepAStabileState
   bool _aliceSectionOpen = true;
   bool _decisionsSectionOpen = false;
   bool _permessoPanelOpen = false;
+  bool _showAliceEventEditor = false;
+
+  final TextEditingController _aliceEventNameController =
+      TextEditingController();
 
   Future<void> _scrollTo(GlobalKey key) async {
     final ctx = key.currentContext;
@@ -3887,6 +3893,12 @@ class _CalendarioScreenStepAStabileState
 
     final aliceEvent = coreStore.aliceEventStore.getEventForDay(_selectedDay);
 
+    final extraEvents = coreStore.aliceSpecialEventStore.eventsForDay(
+      _selectedDay,
+    );
+
+    final bool hasExtraEvents = extraEvents.isNotEmpty;
+
     String aliceEventLabel() {
       final special = coreStore.summerCampSpecialEventStore.getForDay(
         _selectedDay,
@@ -3952,6 +3964,75 @@ class _CalendarioScreenStepAStabileState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (extraEvents.isNotEmpty)
+            Text("Eventi Alice speciali: ${extraEvents.length}"),
+          ...extraEvents.map(
+            (e) => Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                "• ${e.label} (${e.start.format(context)} - ${e.end.format(context)})",
+              ),
+            ),
+          ),
+          if (!hasExtraEvents)
+            OutlinedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _showAliceEventEditor = !_showAliceEventEditor;
+                });
+              },
+              icon: const Icon(Icons.add),
+              label: const Text("Aggiungi evento Alice"),
+            ),
+          if (_showAliceEventEditor)
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _aliceEventNameController,
+                    decoration: const InputDecoration(
+                      labelText: "Nome evento (es. Pallavolo)",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text("Orario: 18:00 - 20:00 (test)"),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      coreStore.aliceSpecialEventStore.addEvent(
+                        _selectedDay,
+                        AliceSpecialEvent(
+                          id: 'evt_${DateTime.now().millisecondsSinceEpoch}',
+                          label: _aliceEventNameController.text,
+                          category: AliceSpecialEventCategory.activity,
+                          date: DateTime(
+                            _selectedDay.year,
+                            _selectedDay.month,
+                            _selectedDay.day,
+                          ),
+                          start: const TimeOfDay(hour: 18, minute: 0),
+                          end: const TimeOfDay(hour: 20, minute: 0),
+                          note: '',
+                          enabled: true,
+                        ),
+                      );
+                      setState(() {
+                        _showAliceEventEditor = false;
+                      });
+                    },
+                    child: const Text("Salva evento"),
+                  ),
+                ],
+              ),
+            ),
           Container(
             width: double.infinity,
             margin: const EdgeInsets.only(bottom: 12),
