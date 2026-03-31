@@ -152,6 +152,17 @@ class AliceSpecialEventStore {
     );
   }
 
+  List<DateTime> allDates() {
+    return _eventsByDay.keys.map((key) {
+      final parts = key.split('-');
+      return DateTime(
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+        int.parse(parts[2]),
+      );
+    }).toList();
+  }
+
   void addTestEvent(DateTime day) {
     addEvent(
       day,

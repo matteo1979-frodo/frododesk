@@ -178,6 +178,7 @@ class CoreStore {
     await feriePeriodStore.load();
     await diseasePeriodStore.load();
     await aliceEventStore.load();
+    await aliceSpecialEventStore.load();
     await summerCampSpecialEventStore.load();
     await supportNetworkStore.load();
     await fourthShiftStore.load();

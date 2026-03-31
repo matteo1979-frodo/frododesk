@@ -1,6 +1,6 @@
 # FRODODESK — MODULO EVENTI ALICE
 
-Ultimo aggiornamento: 30 Marzo 2026
+Ultimo aggiornamento: 31 Marzo 2026
 
 ## IDENTITÀ DEL MODULO
 
@@ -104,36 +104,48 @@ Campi ufficiali:
 ✔ disponibilità reale persone (turni + eventi reali)  
 ✔ simmetria completa Matteo / Chiara  
 ✔ fasce spezzate reali per accompagnamento / ritiro  
+✔ multi-evento nello stesso giorno  
+✔ persistenza eventi (salvataggio stabile)  
+✔ modifica evento  
+✔ eliminazione evento  
+✔ orari evento configurabili  
 
 ---
 
 ### NON ANCORA FATTO
 
-- editor completo (orari modificabili)
-- categorie selezionabili UI
-- note
-- modifica evento
-- eliminazione evento
-- ricorrenze
-- gestione conflitti tra eventi
+#### UI / UX
+- lista compatta (no lista infinita)  
+- gestione “+N altri eventi”  
+- ordinamento per orario  
+- distinzione visiva attivo / disattivato  
+- evento “tutto il giorno”  
+
+#### LOGICA
+- gestione conflitti tra eventi (sovrapposizione)  
+- evento → influenza copertura in modo esplicito UI  
+- evento → interazione completa con scuola / centro estivo  
+- evento → conflitto reale con turni genitori (segnalazione forte)  
+
+#### PRO
+- Alice al seguito  
+- suggerimenti automatici nei buchi  
+- integrazione IPS  
+- eventi ricorrenti  
 
 ---
 
 ## PROSSIMO STEP
 
-👉 sviluppo completo editor Eventi Alice:
+👉 UI intelligente eventi Alice:
 
-- inserimento orari
-- modifica
-- eliminazione
-- categorie
-- note
-- persistenza completa
-- gestione multipli eventi
-- UX reale
+- lista compatta  
+- espansione eventi  
+- “+N altri”  
+- struttura non infinita  
 
 ---
 
 ## FRASE DI RIPARTENZA
 
-Ripartiamo da FrodoDesk — disponibilità reale completata (simmetria Matteo/Chiara + fasce spezzate reali per accompagnamento e ritiro). Prossimo passo: sviluppo completo editor Eventi Alice.
+Ripartiamo da FrodoDesk — UI eventi Alice (lista compatta + gestione multi-evento avanzata).
