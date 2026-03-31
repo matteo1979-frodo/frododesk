@@ -1,6 +1,6 @@
 # FRODODESK — MODULO EVENTI ALICE
 
-Ultimo aggiornamento: 31 Marzo 2026
+Ultimo aggiornamento: 1 Aprile 2026
 
 ## IDENTITÀ DEL MODULO
 
@@ -8,11 +8,16 @@ Questo modulo gestisce gli **Eventi Alice reali/speciali**, cioè gli eventi del
 
 ---
 
-## 🔥 AGGIORNAMENTO STRUTTURALE — INTEGRAZIONE MOTORE
+## 🔥 STATO ATTUALE — EVOLUZIONE MODULO
 
 Gli Eventi Alice NON sono più solo informativi.
 
-👉 Sono diventati elementi attivi del motore decisionale.
+👉 Sono diventati entità reali, persistenti e modificabili  
+👉 Supportano conflitti, azioni e spostamenti nel tempo  
+
+👉 🔥 NUOVO:
+- influenzano già la logica reale di copertura (buchi / presenza)
+- integrati con decisione scuola e uscita anticipata
 
 ---
 
@@ -62,16 +67,6 @@ Il sistema deve sempre verificare:
 
 ---
 
-## RISULTATO RAGGIUNTO
-
-Il sistema ora:
-
-✔ genera buchi SOLO se necessari  
-✔ elimina falsi positivi  
-✔ simula la realtà logistica reale  
-
----
-
 ## MODELLO EVENTO ALICE
 
 Campi ufficiali:
@@ -87,7 +82,7 @@ Campi ufficiali:
 
 ---
 
-## STATO REALE ATTUALE
+## 🧠 STATO REALE ATTUALE
 
 ### FATTO
 
@@ -97,55 +92,168 @@ Campi ufficiali:
 ✔ editor base  
 ✔ salvataggio evento  
 ✔ visualizzazione  
-✔ integrazione con CoverageEngine  
-✔ logica accompagnamento  
-✔ logica ritiro  
-✔ eliminazione falsi buchi  
-✔ disponibilità reale persone (turni + eventi reali)  
-✔ simmetria completa Matteo / Chiara  
-✔ fasce spezzate reali per accompagnamento / ritiro  
 ✔ multi-evento nello stesso giorno  
-✔ persistenza eventi (salvataggio stabile)  
+✔ persistenza eventi stabile  
 ✔ modifica evento  
 ✔ eliminazione evento  
 ✔ orari evento configurabili  
 
+✔ rilevazione conflitti tra eventi  
+✔ evidenziazione conflitti  
+✔ popup +N eventi  
+
+✔ gestione DATA evento  
+✔ spostamento eventi tra giorni  
+✔ store cross-day  
+
 ---
 
-### NON ANCORA FATTO
+## 🔥 NUOVO (1 Aprile — STRADA A QUASI COMPLETA)
 
-#### UI / UX
-- lista compatta (no lista infinita)  
-- gestione “+N altri eventi”  
-- ordinamento per orario  
-- distinzione visiva attivo / disattivato  
-- evento “tutto il giorno”  
+### PERIODI ALICE (AliceEventPanel)
 
-#### LOGICA
-- gestione conflitti tra eventi (sovrapposizione)  
-- evento → influenza copertura in modo esplicito UI  
-- evento → interazione completa con scuola / centro estivo  
-- evento → conflitto reale con turni genitori (segnalazione forte)  
+✔ gestione completa periodi:
+- scuola normale
+- vacanza
+- malattia
+- chiusura scuola
+- centro estivo
 
-#### PRO
-- Alice al seguito  
-- suggerimenti automatici nei buchi  
-- integrazione IPS  
-- eventi ricorrenti  
+✔ popup editor (stile eventi del giorno)
+
+✔ aggiunto bottone ANNULLA → reset editor
+
+✔ orari dinamici per evento:
+
+- ✔ Centro estivo → ingresso/uscita configurabili  
+- ✔ Scuola normale → ingresso/uscita configurabili 🔥 NUOVO  
+- ✔ Vacanza → nessun orario  
+- ✔ Malattia → nessun orario  
+- ✔ Chiusura scuola → nessun orario  
+
+✔ UI dinamica corretta:
+- mostra orari SOLO se servono
+- label cambia automaticamente:
+  - "Orari scuola"
+  - "Orari centro estivo"
+
+---
+
+## 🔥 INTEGRAZIONE REALE GIÀ ATTIVA
+
+✔ Eventi Alice influenzano già:
+
+- copertura giornata
+- presenza Alice in casa
+- decisione scuola
+- uscita anticipata
+- buchi reali
+
+✔ gestione reale verificata:
+- se nessuno disponibile → BUCO
+- possibilità uso rete supporto
+- comportamento corretto con uscita 13:00
+
+---
+
+## 🔧 STRUTTURA UI ATTUALE
+
+### 1️⃣ Eventi Alice del giorno (NUOVO)
+- UI moderna
+- eventi cliccabili
+- conflitti visivi
+- azioni rapide
+
+---
+
+### 2️⃣ Periodi Alice (STABILE)
+
+👉 AliceEventPanel
+
+Funzionalità:
+- creazione
+- modifica
+- eliminazione
+- gestione orari dinamici
+- popup editor
+- reset stato
+
+---
+
+## ⚠️ STATO ARCHITETTURALE
+
+👉 sistema DUPLICATO (voluto)
+
+- sopra → eventi giornalieri
+- sotto → periodi
+
+---
+
+## 🎯 STRATEGIA CONFERMATA
+
+NON unificare subito
+
+---
+
+## 🚧 NON ANCORA FATTO
+
+### STRADA A (quasi completa)
+
+☑ editor popup  
+☑ orari dinamici  
+☑ annulla/reset  
+⬜ pulizia UI finale  
+
+---
+
+### STRADA B (NON INIZIATA)
+
+⬜ unificazione completa eventi + periodi  
+⬜ eliminazione AliceEventPanel  
+⬜ tutto dentro _cardScuola  
+
+---
+
+### LOGICA AVANZATA
+
+⬜ eventi → segnalazione forte conflitto con turni  
+⬜ eventi → suggerimenti automatici  
+⬜ eventi → integrazione completa IPS  
+
+---
+
+### PRO FUTURI
+
+⬜ Alice al seguito  
+⬜ suggerimenti intelligenti  
+⬜ eventi ricorrenti  
+⬜ storico/statistiche  
+
+---
+
+## 🔥 STEP STRATEGICO FUTURO
+
+👉 TEST REALI SISTEMA
+
+Obiettivo:
+
+Verificare:
+
+- eventi → copertura
+- eventi → decisione scuola
+- eventi → buchi reali
+- eventi → rete supporto
 
 ---
 
 ## PROSSIMO STEP
 
-👉 UI intelligente eventi Alice:
+👉 TEST GUIDATI
 
-- lista compatta  
-- espansione eventi  
-- “+N altri”  
-- struttura non infinita  
+(simulazione casi reali per trovare bug)
 
 ---
 
 ## FRASE DI RIPARTENZA
 
-Ripartiamo da FrodoDesk — UI eventi Alice (lista compatta + gestione multi-evento avanzata).
+Ripartiamo da FrodoDesk — test collegamento Eventi Alice → copertura reale

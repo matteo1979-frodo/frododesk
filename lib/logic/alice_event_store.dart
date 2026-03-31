@@ -18,9 +18,13 @@ class AliceEventPeriod {
   final DateTime end;
   final AliceEventType type;
 
-  // ✅ NUOVO: orari centro estivo (solo se summerCamp)
+  // ✅ Centro estivo
   final TimeOfDay? summerCampStart;
   final TimeOfDay? summerCampEnd;
+
+  // ✅ NUOVO: scuola normale con orari
+  final TimeOfDay? schoolStart;
+  final TimeOfDay? schoolEnd;
 
   AliceEventPeriod({
     required this.start,
@@ -28,6 +32,8 @@ class AliceEventPeriod {
     required this.type,
     this.summerCampStart,
     this.summerCampEnd,
+    this.schoolStart,
+    this.schoolEnd,
   }) {
     if (_normalizeDay(end).isBefore(_normalizeDay(start))) {
       throw ArgumentError('AliceEventPeriod end must be on or after start');
@@ -47,6 +53,8 @@ class AliceEventPeriod {
     AliceEventType? type,
     TimeOfDay? summerCampStart,
     TimeOfDay? summerCampEnd,
+    TimeOfDay? schoolStart,
+    TimeOfDay? schoolEnd,
   }) {
     return AliceEventPeriod(
       start: start ?? this.start,
@@ -54,6 +62,8 @@ class AliceEventPeriod {
       type: type ?? this.type,
       summerCampStart: summerCampStart ?? this.summerCampStart,
       summerCampEnd: summerCampEnd ?? this.summerCampEnd,
+      schoolStart: schoolStart ?? this.schoolStart,
+      schoolEnd: schoolEnd ?? this.schoolEnd,
     );
   }
 

@@ -28,13 +28,14 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
   late DateTime _draftStart;
   late DateTime _draftEnd;
 
-  // ✅ NUOVO: orari draft centro estivo
   TimeOfDay _draftSummerCampStart = const TimeOfDay(hour: 8, minute: 30);
   TimeOfDay _draftSummerCampEnd = const TimeOfDay(hour: 16, minute: 30);
 
   int? _editingIndex;
 
   bool _isSavedPeriodsOpen = false;
+  bool _isEditorOpen = false;
+  final Set<int> _expandedSavedPeriodIndexes = <int>{};
 
   @override
   void initState() {
@@ -58,6 +59,7 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
     final current = _eventForSelectedDay();
 
     _editingIndex = null;
+    _isEditorOpen = false;
 
     if (current == null) {
       _draftType = AliceEventType.schoolNormal;
@@ -85,10 +87,6 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
 
   String _fmtDate(DateTime d) {
     return DateFormat('yyyy-MM-dd').format(d);
-  }
-
-  String _fmtDateHuman(DateTime d) {
-    return DateFormat('EEEE d MMMM yyyy', 'it_IT').format(d);
   }
 
   String _fmtTime(TimeOfDay t) {
@@ -190,6 +188,22 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
     });
   }
 
+  Future<void> _pickDraftSchoolStart() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 8, minute: 25),
+      helpText: 'Scuola normale • ORARIO INGRESSO',
+      cancelText: 'Annulla',
+      confirmText: 'OK',
+    );
+
+    if (picked == null) return;
+
+    setState(() {
+      _draftSummerCampStart = picked;
+    });
+  }
+
   Future<void> _pickDraftSummerCampStart() async {
     final picked = await showTimePicker(
       context: context,
@@ -213,6 +227,22 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
           minute: picked.minute,
         );
       }
+    });
+  }
+
+  Future<void> _pickDraftSchoolEnd() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 16, minute: 25),
+      helpText: 'Scuola normale • ORARIO USCITA',
+      cancelText: 'Annulla',
+      confirmText: 'OK',
+    );
+
+    if (picked == null) return;
+
+    setState(() {
+      _draftSummerCampEnd = picked;
     });
   }
 
@@ -250,6 +280,7 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
           e.summerCampStart ?? const TimeOfDay(hour: 8, minute: 30);
       _draftSummerCampEnd =
           e.summerCampEnd ?? const TimeOfDay(hour: 16, minute: 30);
+      _isEditorOpen = true;
     });
   }
 
@@ -260,42 +291,22 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
   }
 
   void _saveDraftPeriod() {
+    final needsCustomTimes =
+        _draftType == AliceEventType.summerCamp ||
+        _draftType == AliceEventType.schoolNormal;
+
+    final newEvent = AliceEventPeriod(
+      start: _draftStart,
+      end: _draftEnd,
+      type: _draftType,
+      summerCampStart: needsCustomTimes ? _draftSummerCampStart : null,
+      summerCampEnd: needsCustomTimes ? _draftSummerCampEnd : null,
+    );
+
     if (_editingIndex != null) {
-      final index = _editingIndex!;
-      if (_draftType == AliceEventType.schoolNormal) {
-        widget.store.removeEventAt(index);
-      } else {
-        widget.store.updateEvent(
-          index,
-          AliceEventPeriod(
-            start: _draftStart,
-            end: _draftEnd,
-            type: _draftType,
-            summerCampStart: _draftType == AliceEventType.summerCamp
-                ? _draftSummerCampStart
-                : null,
-            summerCampEnd: _draftType == AliceEventType.summerCamp
-                ? _draftSummerCampEnd
-                : null,
-          ),
-        );
-      }
+      widget.store.updateEvent(_editingIndex!, newEvent);
     } else {
-      if (_draftType != AliceEventType.schoolNormal) {
-        widget.store.addEvent(
-          AliceEventPeriod(
-            start: _draftStart,
-            end: _draftEnd,
-            type: _draftType,
-            summerCampStart: _draftType == AliceEventType.summerCamp
-                ? _draftSummerCampStart
-                : null,
-            summerCampEnd: _draftType == AliceEventType.summerCamp
-                ? _draftSummerCampEnd
-                : null,
-          ),
-        );
-      }
+      widget.store.addEvent(newEvent);
     }
 
     widget.onChanged();
@@ -326,6 +337,7 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
     widget.onChanged();
 
     setState(() {
+      _expandedSavedPeriodIndexes.remove(index);
       _loadDraftFromSelectedDay();
     });
   }
@@ -361,12 +373,262 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
     );
   }
 
+  Widget _buildCurrentStateCard(AliceEventPeriod? current) {
+    if (current == null) {
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.10),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.grey.withOpacity(0.45)),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              _typeIcon(AliceEventType.schoolNormal),
+              size: 18,
+              color: _typeColor(AliceEventType.schoolNormal),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                "Evento attivo Alice: Scuola normale",
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: _typeColor(AliceEventType.schoolNormal),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: _typeColor(current.type).withOpacity(0.10),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _typeColor(current.type).withOpacity(0.45)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                _typeIcon(current.type),
+                size: 18,
+                color: _typeColor(current.type),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  "Evento attivo Alice: ${_label(current.type)}",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 15,
+                    color: _typeColor(current.type),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Periodo attivo: ${_fmtDate(current.start)} → ${_fmtDate(current.end)}",
+            style: TextStyle(
+              color: Colors.black.withOpacity(0.72),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (current.type == AliceEventType.summerCamp) ...[
+            const SizedBox(height: 6),
+            Text(
+              "Orario centro estivo: ${_fmtTime(current.summerCampStart ?? const TimeOfDay(hour: 8, minute: 30))} → ${_fmtTime(current.summerCampEnd ?? const TimeOfDay(hour: 16, minute: 30))}",
+              style: TextStyle(
+                color: Colors.black.withOpacity(0.72),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: _clearEvent,
+            icon: const Icon(Icons.delete_outline),
+            label: const Text("Rimuovi evento attivo"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSavedPeriodTile(int index, AliceEventPeriod e) {
+    final activeOnSelectedDay = e.includesDay(widget.selectedDay);
+    final isEditingThis = _editingIndex == index;
+    final isExpanded = _expandedSavedPeriodIndexes.contains(index);
+
+    final cardColor = isEditingThis
+        ? Colors.orange
+        : activeOnSelectedDay
+        ? Colors.blue
+        : _typeColor(e.type);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: () {
+        setState(() {
+          if (isExpanded) {
+            _expandedSavedPeriodIndexes.remove(index);
+          } else {
+            _expandedSavedPeriodIndexes
+              ..clear()
+              ..add(index);
+          }
+        });
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: cardColor.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: cardColor.withOpacity(0.25)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(_typeIcon(e.type), size: 18, color: _typeColor(e.type)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _label(e.type),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        "${_fmtDate(e.start)} → ${_fmtDate(e.end)}",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.black.withOpacity(0.6),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (activeOnSelectedDay) ...[
+                  const SizedBox(width: 6),
+                  const Icon(Icons.visibility, size: 18, color: Colors.blue),
+                ],
+                if (isEditingThis) ...[
+                  const SizedBox(width: 6),
+                  const Icon(Icons.edit, size: 18, color: Colors.orange),
+                ],
+                const SizedBox(width: 8),
+                Icon(
+                  isExpanded ? Icons.expand_less : Icons.expand_more,
+                  size: 20,
+                  color: Colors.black54,
+                ),
+              ],
+            ),
+            if (isExpanded) ...[
+              const SizedBox(height: 10),
+              if (e.type == AliceEventType.summerCamp) ...[
+                Text(
+                  "Orario: ${_fmtTime(e.summerCampStart ?? const TimeOfDay(hour: 8, minute: 30))} → ${_fmtTime(e.summerCampEnd ?? const TimeOfDay(hour: 16, minute: 30))}",
+                  style: TextStyle(
+                    color: Colors.black.withOpacity(0.72),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+              if (activeOnSelectedDay) ...[
+                const Text(
+                  "Attivo sul giorno selezionato",
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 6),
+              ],
+              if (isEditingThis) ...[
+                const Text(
+                  "Periodo in modifica",
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 6),
+              ],
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _startEditingSavedPeriod(index),
+                      icon: const Icon(Icons.edit),
+                      label: const Text("Modifica"),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _removeSavedPeriodAt(index),
+                      icon: const Icon(Icons.delete_outline),
+                      label: const Text("Rimuovi"),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEditorPreviewBox() {
+    return _buildInfoBox(
+      backgroundColor: _draftType == AliceEventType.schoolNormal
+          ? Colors.grey.withOpacity(0.08)
+          : _typeColor(_draftType).withOpacity(0.08),
+      borderColor: _draftType == AliceEventType.schoolNormal
+          ? Colors.grey.withOpacity(0.25)
+          : _typeColor(_draftType).withOpacity(0.25),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Periodo da salvare: ${_fmtDate(_draftStart)} → ${_fmtDate(_draftEnd)}",
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          if (_draftType == AliceEventType.summerCamp) ...[
+            const SizedBox(height: 8),
+            Text(
+              "Orario base: ${_fmtTime(_draftSummerCampStart)} → ${_fmtTime(_draftSummerCampEnd)}",
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final current = _eventForSelectedDay();
     final events = widget.store.events;
     final specialSummerCampEvents = widget.summerCampSpecialEventStore.getAll();
-    final allItems = events;
 
     return Card(
       elevation: 0,
@@ -387,24 +649,7 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
             ),
             const SizedBox(height: 14),
 
-            _buildInfoBox(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionTitle(
-                    "Giorno selezionato",
-                    icon: Icons.calendar_today_outlined,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _fmtDateHuman(widget.selectedDay),
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 12),
+            _buildCurrentStateCard(current),
 
             if (_editingIndex != null)
               Container(
@@ -440,9 +685,24 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
 
             DropdownButtonFormField<AliceEventType>(
               value: _draftType,
+              selectedItemBuilder: (context) {
+                return AliceEventType.values.map((t) {
+                  final text = t == AliceEventType.schoolNormal
+                      ? "Seleziona evento"
+                      : _label(t);
+
+                  return Row(
+                    children: [
+                      Icon(_typeIcon(t), size: 18, color: _typeColor(t)),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(text)),
+                    ],
+                  );
+                }).toList();
+              },
               isExpanded: true,
               decoration: const InputDecoration(
-                labelText: "Tipo evento Alice",
+                labelText: "Imposta nuovo stato",
                 border: OutlineInputBorder(),
               ),
               items: AliceEventType.values.map((t) {
@@ -461,213 +721,123 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
                 if (v == null) return;
                 setState(() {
                   _draftType = v;
+                  _isEditorOpen = true;
                 });
               },
             ),
 
-            const SizedBox(height: 12),
-
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _pickDraftStart,
-                    icon: const Icon(Icons.event),
-                    label: Text("Inizio: ${_fmtDate(_draftStart)}"),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 8),
-
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _pickDraftEnd,
-                    icon: const Icon(Icons.event_available),
-                    label: Text("Fine: ${_fmtDate(_draftEnd)}"),
-                  ),
-                ),
-              ],
-            ),
-
-            if (_draftType == AliceEventType.summerCamp) ...[
+            if (_isEditorOpen) ...[
               const SizedBox(height: 12),
-              _buildInfoBox(
-                backgroundColor: Colors.green.withOpacity(0.08),
-                borderColor: Colors.green.withOpacity(0.25),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionTitle(
-                      "Orari centro estivo",
-                      icon: Icons.access_time,
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _pickDraftSummerCampStart,
-                            icon: const Icon(Icons.login),
-                            label: Text(
-                              "Ingresso: ${_fmtTime(_draftSummerCampStart)}",
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _pickDraftSummerCampEnd,
-                            icon: const Icon(Icons.logout),
-                            label: Text(
-                              "Uscita: ${_fmtTime(_draftSummerCampEnd)}",
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
 
-            const SizedBox(height: 12),
-
-            _buildInfoBox(
-              backgroundColor: _draftType == AliceEventType.schoolNormal
-                  ? Colors.grey.withOpacity(0.08)
-                  : _typeColor(_draftType).withOpacity(0.08),
-              borderColor: _draftType == AliceEventType.schoolNormal
-                  ? Colors.grey.withOpacity(0.25)
-                  : _typeColor(_draftType).withOpacity(0.25),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
                 children: [
-                  Row(
-                    children: [
-                      Icon(
-                        _typeIcon(_draftType),
-                        size: 18,
-                        color: _typeColor(_draftType),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          "Tipo selezionato: ${_label(_draftType)}",
-                          style: const TextStyle(fontWeight: FontWeight.w800),
-                        ),
-                      ),
-                    ],
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _pickDraftStart,
+                      icon: const Icon(Icons.event),
+                      label: Text("Inizio: ${_fmtDate(_draftStart)}"),
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  if (_draftType == AliceEventType.schoolNormal)
-                    Text(
-                      _editingIndex != null
-                          ? "Se salvi con 'Scuola normale', il periodo in modifica verrà rimosso."
-                          : "Se salvi con 'Scuola normale', l’evento attivo sul giorno selezionato verrà rimosso.",
-                      style: TextStyle(color: Colors.black.withOpacity(0.7)),
-                    ),
-                  if (_draftType != AliceEventType.schoolNormal)
-                    Text(
-                      "Periodo da salvare: ${_fmtDate(_draftStart)} → ${_fmtDate(_draftEnd)}",
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  if (_draftType == AliceEventType.summerCamp) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      "Orario base: ${_fmtTime(_draftSummerCampStart)} → ${_fmtTime(_draftSummerCampEnd)}",
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ],
                 ],
               ),
-            ),
 
-            const SizedBox(height: 12),
+              const SizedBox(height: 8),
 
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _saveDraftPeriod,
-                    icon: const Icon(Icons.save),
-                    label: Text(
-                      _editingIndex != null
-                          ? "Salva modifica"
-                          : "Salva periodo",
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _pickDraftEnd,
+                      icon: const Icon(Icons.event_available),
+                      label: Text("Fine: ${_fmtDate(_draftEnd)}"),
                     ),
+                  ),
+                ],
+              ),
+
+              if (_draftType == AliceEventType.summerCamp ||
+                  _draftType == AliceEventType.schoolNormal) ...[
+                const SizedBox(height: 12),
+                _buildInfoBox(
+                  backgroundColor: Colors.green.withOpacity(0.08),
+                  borderColor: Colors.green.withOpacity(0.25),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionTitle(
+                        _draftType == AliceEventType.schoolNormal
+                            ? "Orari scuola"
+                            : "Orari centro estivo",
+                        icon: Icons.access_time,
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed:
+                                  _draftType == AliceEventType.schoolNormal
+                                  ? _pickDraftSchoolStart
+                                  : _pickDraftSummerCampStart,
+                              icon: const Icon(Icons.login),
+                              label: Text(
+                                _draftType == AliceEventType.schoolNormal
+                                    ? "Ingresso scuola: ${_fmtTime(_draftSummerCampStart)}"
+                                    : "Ingresso: ${_fmtTime(_draftSummerCampStart)}",
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _pickDraftSummerCampEnd,
+                              icon: const Icon(Icons.logout),
+                              label: Text(
+                                _draftType == AliceEventType.schoolNormal
+                                    ? "Uscita scuola: ${_fmtTime(_draftSummerCampEnd)}"
+                                    : "Uscita: ${_fmtTime(_draftSummerCampEnd)}",
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
 
-            const SizedBox(height: 18),
+              const SizedBox(height: 12),
+              _buildEditorPreviewBox(),
+              const SizedBox(height: 12),
 
-            _buildSectionTitle(
-              "Stato del giorno selezionato",
-              icon: Icons.visibility_outlined,
-            ),
-            const SizedBox(height: 10),
-
-            if (current == null)
-              _buildInfoBox(
-                child: Text(
-                  "Stato attuale: Scuola normale.",
-                  style: TextStyle(color: Colors.black.withOpacity(0.75)),
-                ),
-              ),
-
-            if (current != null)
-              _buildInfoBox(
-                backgroundColor: _typeColor(current.type).withOpacity(0.08),
-                borderColor: _typeColor(current.type).withOpacity(0.25),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          _typeIcon(current.type),
-                          size: 18,
-                          color: _typeColor(current.type),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            "Evento attivo: ${_label(current.type)}",
-                            style: const TextStyle(fontWeight: FontWeight.w800),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      "Periodo attivo: ${_fmtDate(current.start)} → ${_fmtDate(current.end)}",
-                      style: TextStyle(color: Colors.black.withOpacity(0.7)),
-                    ),
-                    if (current.type == AliceEventType.summerCamp) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        "Orario centro estivo: ${_fmtTime(current.summerCampStart ?? const TimeOfDay(hour: 8, minute: 30))} → ${_fmtTime(current.summerCampEnd ?? const TimeOfDay(hour: 16, minute: 30))}",
-                        style: TextStyle(color: Colors.black.withOpacity(0.7)),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _saveDraftPeriod,
+                      icon: const Icon(Icons.save),
+                      label: Text(
+                        _editingIndex != null
+                            ? "Salva modifica"
+                            : "Salva periodo",
                       ),
-                    ],
-                    const SizedBox(height: 10),
-                    OutlinedButton.icon(
-                      onPressed: _clearEvent,
-                      icon: const Icon(Icons.delete_outline),
-                      label: const Text("Rimuovi evento attivo"),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _cancelEditing,
+                      icon: const Icon(Icons.close),
+                      label: const Text("Annulla"),
+                    ),
+                  ),
+                ],
               ),
+            ],
 
             const SizedBox(height: 18),
             const Divider(),
@@ -720,98 +890,10 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
               ),
 
             if (_isSavedPeriodsOpen && events.isNotEmpty)
-              ...List.generate(events.length, (index) {
-                final e = events[index];
-                final activeOnSelectedDay = e.includesDay(widget.selectedDay);
-                final isEditingThis = _editingIndex == index;
-
-                final cardColor = isEditingThis
-                    ? Colors.orange
-                    : activeOnSelectedDay
-                    ? Colors.blue
-                    : _typeColor(e.type);
-
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: cardColor.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: cardColor.withOpacity(0.25)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            _typeIcon(e.type),
-                            size: 18,
-                            color: _typeColor(e.type),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _label(e.type),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        "${_fmtDate(e.start)} → ${_fmtDate(e.end)}",
-                        style: TextStyle(color: Colors.black.withOpacity(0.7)),
-                      ),
-                      if (e.type == AliceEventType.summerCamp) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          "Orario: ${_fmtTime(e.summerCampStart ?? const TimeOfDay(hour: 8, minute: 30))} → ${_fmtTime(e.summerCampEnd ?? const TimeOfDay(hour: 16, minute: 30))}",
-                          style: TextStyle(
-                            color: Colors.black.withOpacity(0.7),
-                          ),
-                        ),
-                      ],
-                      if (activeOnSelectedDay) ...[
-                        const SizedBox(height: 6),
-                        const Text(
-                          "Attivo sul giorno selezionato",
-                          style: TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                      ],
-                      if (isEditingThis) ...[
-                        const SizedBox(height: 6),
-                        const Text(
-                          "Periodo in modifica",
-                          style: TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                      ],
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => _startEditingSavedPeriod(index),
-                              icon: const Icon(Icons.edit),
-                              label: const Text("Modifica"),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () => _removeSavedPeriodAt(index),
-                              icon: const Icon(Icons.delete_outline),
-                              label: const Text("Rimuovi"),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                );
-              }),
+              ...List.generate(
+                events.length,
+                (index) => _buildSavedPeriodTile(index, events[index]),
+              ),
           ],
         ),
       ),
