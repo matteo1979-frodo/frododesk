@@ -101,6 +101,9 @@ Campi ufficiali:
 ✔ logica accompagnamento  
 ✔ logica ritiro  
 ✔ eliminazione falsi buchi  
+✔ disponibilità reale persone (turni + eventi reali)  
+✔ simmetria completa Matteo / Chiara  
+✔ fasce spezzate reali per accompagnamento / ritiro  
 
 ---
 
@@ -113,26 +116,10 @@ Campi ufficiali:
 - eliminazione evento
 - ricorrenze
 - gestione conflitti tra eventi
-- collegamento completo con disponibilità reale (turni veri)
 
 ---
 
 ## PROSSIMO STEP
-
-👉 rendere reale il controllo disponibilità:
-
-`isSomeoneAvailable`
-
-👉 collegarlo a:
-
-- TurnEngine
-- RealEventStore
-- Disease
-- SupportNetwork
-
----
-
-## STEP SUCCESSIVO
 
 👉 sviluppo completo editor Eventi Alice:
 
@@ -142,9 +129,11 @@ Campi ufficiali:
 - categorie
 - note
 - persistenza completa
+- gestione multipli eventi
+- UX reale
 
 ---
 
 ## FRASE DI RIPARTENZA
 
-Ripartiamo da FrodoDesk — Eventi Alice integrati nel motore (accompagnamento + ritiro funzionanti). Prossimo passo: rendere reale il controllo disponibilità e completare editor Eventi Alice.
+Ripartiamo da FrodoDesk — disponibilità reale completata (simmetria Matteo/Chiara + fasce spezzate reali per accompagnamento e ritiro). Prossimo passo: sviluppo completo editor Eventi Alice.

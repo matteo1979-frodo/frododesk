@@ -21,6 +21,7 @@ import 'ferie_period_store.dart';
 import 'alice_event_store.dart';
 
 import 'alice_special_event_store.dart';
+import '../models/alice_special_event.dart';
 
 // ✅ NEW: Centro estivo settimanale
 import 'summer_camp_schedule_store.dart';
@@ -376,8 +377,6 @@ class CoverageEngine {
     ).gaps;
   }
 
-  // ✅ STEP 6.1
-  // API dedicata per leggere il rischio automatico "Alice a casa"
   bool hasAliceHomeRiskForDay({
     required DateTime day,
     required bool uscita13,
@@ -499,17 +498,157 @@ class CoverageEngine {
     );
   }
 
-  bool isSomeoneAvailable(DateTime start, DateTime end) {
-    // TEMPORANEO: consideriamo Chiara disponibile dopo le 19
-    final chiaraAvailableFrom = DateTime(
-      start.year,
-      start.month,
-      start.day,
-      19,
-      0,
+  bool isMatteoBusyBetween(DateTime start, DateTime end) {
+    final plan = turnEngine.turnPlanForPersonDay(
+      person: TurnPerson.matteo,
+      day: start,
     );
 
-    if (end.isAfter(chiaraAvailableFrom)) {
+    bool busyForTurn = false;
+
+    if (!plan.isOff) {
+      final workStart = DateTime(
+        start.year,
+        start.month,
+        start.day,
+        plan.start.hour,
+        plan.start.minute,
+      );
+
+      DateTime workEnd = DateTime(
+        start.year,
+        start.month,
+        start.day,
+        plan.end.hour,
+        plan.end.minute,
+      );
+
+      final startMin = plan.start.hour * 60 + plan.start.minute;
+      final endMin = plan.end.hour * 60 + plan.end.minute;
+
+      if (endMin <= startMin) {
+        workEnd = workEnd.add(const Duration(days: 1));
+      }
+
+      busyForTurn = start.isBefore(workEnd) && end.isAfter(workStart);
+    }
+
+    final matteoEvents = realEventStore
+        .eventsForDay(start)
+        .where((e) => e.personKey == 'matteo');
+
+    bool busyForEvent = false;
+
+    for (final event in matteoEvents) {
+      final eventStart = DateTime(
+        event.startDate.year,
+        event.startDate.month,
+        event.startDate.day,
+        event.startTime?.hour ?? 0,
+        event.startTime?.minute ?? 0,
+      );
+
+      DateTime eventEnd = DateTime(
+        event.endDate.year,
+        event.endDate.month,
+        event.endDate.day,
+        event.endTime?.hour ?? 23,
+        event.endTime?.minute ?? 59,
+      );
+
+      if (!eventEnd.isAfter(eventStart)) {
+        eventEnd = eventEnd.add(const Duration(days: 1));
+      }
+
+      final overlap = start.isBefore(eventEnd) && end.isAfter(eventStart);
+
+      if (overlap) {
+        busyForEvent = true;
+        break;
+      }
+    }
+
+    return busyForTurn || busyForEvent;
+  }
+
+  bool isChiaraBusyBetween(DateTime start, DateTime end) {
+    final plan = turnEngine.turnPlanForPersonDay(
+      person: TurnPerson.chiara,
+      day: start,
+    );
+
+    bool busyForTurn = false;
+
+    if (!plan.isOff) {
+      final workStart = DateTime(
+        start.year,
+        start.month,
+        start.day,
+        plan.start.hour,
+        plan.start.minute,
+      );
+
+      DateTime workEnd = DateTime(
+        start.year,
+        start.month,
+        start.day,
+        plan.end.hour,
+        plan.end.minute,
+      );
+
+      final startMin = plan.start.hour * 60 + plan.start.minute;
+      final endMin = plan.end.hour * 60 + plan.end.minute;
+
+      if (endMin <= startMin) {
+        workEnd = workEnd.add(const Duration(days: 1));
+      }
+
+      busyForTurn = start.isBefore(workEnd) && end.isAfter(workStart);
+    }
+
+    final chiaraEvents = realEventStore
+        .eventsForDay(start)
+        .where((e) => e.personKey == 'chiara');
+
+    bool busyForEvent = false;
+
+    for (final event in chiaraEvents) {
+      final eventStart = DateTime(
+        event.startDate.year,
+        event.startDate.month,
+        event.startDate.day,
+        event.startTime?.hour ?? 0,
+        event.startTime?.minute ?? 0,
+      );
+
+      DateTime eventEnd = DateTime(
+        event.endDate.year,
+        event.endDate.month,
+        event.endDate.day,
+        event.endTime?.hour ?? 23,
+        event.endTime?.minute ?? 59,
+      );
+
+      if (!eventEnd.isAfter(eventStart)) {
+        eventEnd = eventEnd.add(const Duration(days: 1));
+      }
+
+      final overlap = start.isBefore(eventEnd) && end.isAfter(eventStart);
+
+      if (overlap) {
+        busyForEvent = true;
+        break;
+      }
+    }
+
+    return busyForTurn || busyForEvent;
+  }
+
+  bool isSomeoneAvailable(DateTime start, DateTime end) {
+    final matteoBusy = isMatteoBusyBetween(start, end);
+    final chiaraBusy = isChiaraBusyBetween(start, end);
+
+    if (!matteoBusy || !chiaraBusy) {
       return true;
     }
 
@@ -551,28 +690,33 @@ class CoverageEngine {
     );
 
     final bool aliceAtHome = isAliceAtHomeDay(d0);
-    final aliceSpecialEvents = aliceSpecialEventStore.eventsForDay(d0);
-    final bool hasAliceSpecialEvents = aliceSpecialEvents.any((e) => e.enabled);
-    final firstAliceEvent = aliceSpecialEvents.isNotEmpty
+
+    final aliceSpecialEvents = _enabledTimedAliceEventsForDay(d0);
+    final bool hasAliceSpecialEvents = aliceSpecialEvents.isNotEmpty;
+
+    final AliceSpecialEvent? firstAliceEvent = hasAliceSpecialEvents
         ? aliceSpecialEvents.first
         : null;
-    final bool hasTimedAliceEvent =
-        firstAliceEvent != null &&
-        firstAliceEvent.start != null &&
-        firstAliceEvent.end != null;
-    final DateTime? aliceEventStart = hasTimedAliceEvent
-        ? _atTime(d0, firstAliceEvent!.start!)
+    final AliceSpecialEvent? lastAliceEvent = hasAliceSpecialEvents
+        ? aliceSpecialEvents.last
         : null;
-    final DateTime? aliceEventEnd = hasTimedAliceEvent
-        ? _atTime(d0, firstAliceEvent!.end!)
+
+    final bool hasTimedAliceEvent =
+        firstAliceEvent != null && lastAliceEvent != null;
+
+    final DateTime? firstAliceEventStart = hasTimedAliceEvent
+        ? _atTime(d0, firstAliceEvent!.start)
+        : null;
+    final DateTime? lastAliceEventEnd = hasTimedAliceEvent
+        ? _atTime(d0, lastAliceEvent!.end)
         : null;
 
     print(
-      "Alice timed event: $hasTimedAliceEvent | start: $aliceEventStart | end: $aliceEventEnd",
+      "Alice timed events: ${aliceSpecialEvents.length} | first: $firstAliceEventStart | last: $lastAliceEventEnd",
     );
 
     print(
-      "Coverage day: ${d0.year}-${d0.month}-${d0.day} | AliceSpecialEvents: ${aliceSpecialEvents.length} / attivi: $hasAliceSpecialEvents",
+      "Coverage day: ${d0.year}-${d0.month}-${d0.day} | AliceSpecialEvents attivi: ${aliceSpecialEvents.length}",
     );
 
     final bool isWeekend =
@@ -604,65 +748,11 @@ class CoverageEngine {
 
     DateTime? normalSchoolHomeWindowStart;
 
-    if (hasTimedAliceEvent &&
-        aliceEventStart != null &&
-        aliceEventEnd != null) {
-      // Durante evento Alice NON è a casa → nessun bisogno presenza casa
-      final DateTime eventStart = aliceEventStart!;
-      final DateTime eventEnd = aliceEventEnd!;
-      final DateTime preEventStart = _atTime(d0, schoolOutEnd);
-      final DateTime preEventEnd = eventStart;
-      final DateTime postEventStart = eventEnd;
-      final DateTime postEventEnd = _atTime(d0, sandraSeraStart);
-
-      if (postEventEnd.isAfter(postEventStart) &&
-          !isSomeoneAvailable(postEventStart, postEventEnd)) {
-        entries.add(
-          _CoverageGapEntry(
-            label:
-                'Ritiro Alice evento: ${_fmtTimeDate(postEventStart)}–${_fmtTimeDate(postEventEnd)}',
-            fasciaStart: postEventStart,
-            fasciaEnd: postEventEnd,
-            isHomePresenceWindow: false,
-            allowSandra: true,
-          ),
-        );
-      }
-
-      if (preEventEnd.isAfter(preEventStart)) {
-        final bool preEventCovered = _isFasciaCovered(
-          day: d0,
-          fasciaStart: preEventStart,
-          fasciaEnd: preEventEnd,
-          allowSandra: true,
-          sandraMattinaAvailable: effSandraMattina,
-          sandraPranzoAvailable: effSandraPranzo,
-          sandraSeraAvailable: effSandraSera,
-          isHomePresenceWindow: false,
-          overrides: overrides,
-          ferieStore: ferieStore,
-        );
-
-        if (!preEventCovered) {
-          entries.add(
-            _CoverageGapEntry(
-              label:
-                  'Accompagnamento Alice evento: ${_fmtTimeDate(preEventStart)}–${_fmtTimeDate(preEventEnd)}',
-              fasciaStart: preEventStart,
-              fasciaEnd: preEventEnd,
-              isHomePresenceWindow: false,
-              allowSandra: true,
-            ),
-          );
-        }
-      }
-    }
-
     if (aliceAtHome && !hasTimedAliceEvent) {
       final aliceHomeStart = _atTime(d0, sandraCambioMattinaStart);
       final aliceHomeEnd = _atTime(d0, sandraSeraStart);
 
-      final okAliceHome = _isFasciaCovered(
+      _isFasciaCovered(
         day: d0,
         fasciaStart: aliceHomeStart,
         fasciaEnd: aliceHomeEnd,
@@ -688,6 +778,54 @@ class CoverageEngine {
           ferieStore: ferieStore,
         ),
       );
+    }
+
+    if (aliceAtHome && hasTimedAliceEvent) {
+      final homeWindowStart = _atTime(d0, sandraCambioMattinaStart);
+      final homeWindowEnd = _atTime(d0, sandraSeraStart);
+
+      DateTime cursor = homeWindowStart;
+
+      for (final event in aliceSpecialEvents) {
+        final eventStart = _atTime(d0, event.start);
+        final eventEnd = _atTime(d0, event.end);
+
+        if (eventStart.isAfter(cursor)) {
+          entries.addAll(
+            _uncoveredHomeSegments(
+              day: d0,
+              windowStart: cursor,
+              windowEnd: eventStart,
+              labelPrefix: 'Alice a casa',
+              sandraMattinaAvailable: effSandraMattina,
+              sandraPranzoAvailable: effSandraPranzo,
+              sandraSeraAvailable: effSandraSera,
+              overrides: overrides,
+              ferieStore: ferieStore,
+            ),
+          );
+        }
+
+        if (eventEnd.isAfter(cursor)) {
+          cursor = eventEnd;
+        }
+      }
+
+      if (homeWindowEnd.isAfter(cursor)) {
+        entries.addAll(
+          _uncoveredHomeSegments(
+            day: d0,
+            windowStart: cursor,
+            windowEnd: homeWindowEnd,
+            labelPrefix: 'Alice a casa',
+            sandraMattinaAvailable: effSandraMattina,
+            sandraPranzoAvailable: effSandraPranzo,
+            sandraSeraAvailable: effSandraSera,
+            overrides: overrides,
+            ferieStore: ferieStore,
+          ),
+        );
+      }
     }
 
     if (aliceSchoolNormal) {
@@ -838,13 +976,13 @@ class CoverageEngine {
       final TimeOfDay effectiveStart =
           specialEvent?.start ??
           summerCampStart ??
-          activeSummerCampPeriod?.summerCampStart ??
+          activeSummerCampPeriod.summerCampStart ??
           dayConfig.start;
 
       final TimeOfDay effectiveEnd =
           specialEvent?.end ??
           summerCampEnd ??
-          activeSummerCampPeriod?.summerCampEnd ??
+          activeSummerCampPeriod.summerCampEnd ??
           dayConfig.end;
 
       if (effectiveEnabled) {
@@ -917,7 +1055,7 @@ class CoverageEngine {
         final aliceHomeStart = DateTime(d0.year, d0.month, d0.day, 7, 30);
         final aliceHomeEnd = DateTime(d0.year, d0.month, d0.day, 16, 25);
 
-        final okAliceHome = _isFasciaCovered(
+        _isFasciaCovered(
           day: d0,
           fasciaStart: aliceHomeStart,
           fasciaEnd: aliceHomeEnd,
@@ -946,26 +1084,87 @@ class CoverageEngine {
       }
     }
 
-    // ✅ STEP 4.2
-    // Dopo uscita/pranzo Alice è di nuovo a casa.
-    // Qui costruiamo i buchi REALI di continuità fino alla fascia sera.
     if (normalSchoolHomeWindowStart != null) {
       final homeWindowEnd = _atTime(d0, sandraSeraStart);
 
-      if (homeWindowEnd.isAfter(normalSchoolHomeWindowStart)) {
-        entries.addAll(
-          _uncoveredHomeSegments(
+      if (!hasTimedAliceEvent) {
+        if (homeWindowEnd.isAfter(normalSchoolHomeWindowStart)) {
+          entries.addAll(
+            _uncoveredHomeSegments(
+              day: d0,
+              windowStart: normalSchoolHomeWindowStart,
+              windowEnd: homeWindowEnd,
+              labelPrefix: 'Alice a casa',
+              sandraMattinaAvailable: effSandraMattina,
+              sandraPranzoAvailable: effSandraPranzo,
+              sandraSeraAvailable: effSandraSera,
+              overrides: overrides,
+              ferieStore: ferieStore,
+            ),
+          );
+        }
+      } else {
+        final firstStart = _atTime(d0, firstAliceEvent!.start);
+        final lastEnd = _atTime(d0, lastAliceEvent!.end);
+
+        if (firstStart.isAfter(normalSchoolHomeWindowStart)) {
+          final preEntries = _uncoveredExternalSegments(
             day: d0,
             windowStart: normalSchoolHomeWindowStart,
-            windowEnd: homeWindowEnd,
-            labelPrefix: 'Alice a casa',
+            windowEnd: firstStart,
+            labelPrefix: 'Accompagnamento Alice evento',
             sandraMattinaAvailable: effSandraMattina,
             sandraPranzoAvailable: effSandraPranzo,
             sandraSeraAvailable: effSandraSera,
             overrides: overrides,
             ferieStore: ferieStore,
-          ),
-        );
+          );
+
+          entries.addAll(preEntries);
+        }
+
+        DateTime cursor = _atTime(d0, firstAliceEvent.start);
+
+        for (final event in aliceSpecialEvents) {
+          final eventStart = _atTime(d0, event.start);
+          final eventEnd = _atTime(d0, event.end);
+
+          if (eventStart.isAfter(cursor)) {
+            entries.addAll(
+              _uncoveredHomeSegments(
+                day: d0,
+                windowStart: cursor,
+                windowEnd: eventStart,
+                labelPrefix: 'Alice a casa',
+                sandraMattinaAvailable: effSandraMattina,
+                sandraPranzoAvailable: effSandraPranzo,
+                sandraSeraAvailable: effSandraSera,
+                overrides: overrides,
+                ferieStore: ferieStore,
+              ),
+            );
+          }
+
+          if (eventEnd.isAfter(cursor)) {
+            cursor = eventEnd;
+          }
+        }
+
+        if (homeWindowEnd.isAfter(lastEnd)) {
+          final postEntries = _uncoveredExternalSegments(
+            day: d0,
+            windowStart: lastEnd,
+            windowEnd: homeWindowEnd,
+            labelPrefix: 'Ritiro Alice evento',
+            sandraMattinaAvailable: effSandraMattina,
+            sandraPranzoAvailable: effSandraPranzo,
+            sandraSeraAvailable: effSandraSera,
+            overrides: overrides,
+            ferieStore: ferieStore,
+          );
+
+          entries.addAll(postEntries);
+        }
       }
     }
 
@@ -1007,7 +1206,6 @@ class CoverageEngine {
       }
     }
 
-    // 🔥 FIX: pranzo solo se Alice è a casa (NON centro estivo)
     if (aliceAtHome && !hasTimedAliceEvent) {
       final fPranzoStart = _atTime(d0, sandraPranzoStart);
       final fPranzoEnd = _atTime(d0, sandraPranzoEnd);
@@ -1090,14 +1288,6 @@ class CoverageEngine {
     final details = <CoverageGapDetail>[];
 
     for (final entry in normalizedEntries) {
-      // 🔥 STEP: Alice accompagnata → ignora buco
-      if (aliceCompanionStore.isAliceAccompanied(
-        day: d0,
-        start: entry.fasciaStart,
-        end: entry.fasciaEnd,
-      )) {
-        continue;
-      } // 🔥 STEP: Alice accompagnata → ignora buco
       if (aliceCompanionStore.isAliceAccompanied(
         day: d0,
         start: entry.fasciaStart,
@@ -1126,6 +1316,135 @@ class CoverageEngine {
     }
 
     return CoverageDayAnalysis(gaps: gaps, details: details);
+  }
+
+  List<_CoverageGapEntry> _uncoveredExternalSegments({
+    required DateTime day,
+    required DateTime windowStart,
+    required DateTime windowEnd,
+    required String labelPrefix,
+    required bool sandraMattinaAvailable,
+    required bool sandraPranzoAvailable,
+    required bool sandraSeraAvailable,
+    required DayOverrides overrides,
+    FeriePeriodStore? ferieStore,
+  }) {
+    final points = <DateTime>{windowStart, windowEnd};
+
+    void addIfInside(DateTime dt) {
+      if (!dt.isBefore(windowStart) && !dt.isAfter(windowEnd)) {
+        points.add(dt);
+      }
+    }
+
+    final matteoBusy = _effectiveBusyShiftsForPerson(
+      personKey: 'matteo',
+      person: TurnPerson.matteo,
+      day: day,
+      overrides: overrides,
+      ferieStore: ferieStore,
+    );
+
+    final chiaraBusy = _effectiveBusyShiftsForPerson(
+      personKey: 'chiara',
+      person: TurnPerson.chiara,
+      day: day,
+      overrides: overrides,
+      ferieStore: ferieStore,
+    );
+
+    for (final shift in matteoBusy) {
+      addIfInside(shift.start);
+      addIfInside(shift.end);
+    }
+
+    for (final shift in chiaraBusy) {
+      addIfInside(shift.start);
+      addIfInside(shift.end);
+    }
+
+    for (final person in supportNetworkStore.people) {
+      if (!person.enabled) continue;
+
+      final enabledForDay = daySettingsStore.isSupportPersonEnabledForDay(
+        day,
+        person.id,
+      );
+      if (!enabledForDay) continue;
+
+      final start = DateTime(
+        day.year,
+        day.month,
+        day.day,
+        person.start.hour,
+        person.start.minute,
+      );
+
+      final end = DateTime(
+        day.year,
+        day.month,
+        day.day,
+        person.end.hour,
+        person.end.minute,
+      );
+
+      addIfInside(start);
+      addIfInside(end);
+    }
+
+    if (sandraMattinaAvailable) {
+      addIfInside(_atTime(day, sandraCambioMattinaStart));
+      addIfInside(_atTime(day, sandraCambioMattinaEnd));
+    }
+
+    if (sandraPranzoAvailable) {
+      addIfInside(_atTime(day, sandraPranzoStart));
+      addIfInside(_atTime(day, sandraPranzoEnd));
+    }
+
+    if (sandraSeraAvailable) {
+      addIfInside(_atTime(day, sandraSeraStart));
+      addIfInside(_atTime(day, sandraSeraEnd));
+    }
+
+    final ordered = points.toList()..sort((a, b) => a.compareTo(b));
+
+    final result = <_CoverageGapEntry>[];
+
+    for (var i = 0; i < ordered.length - 1; i++) {
+      final segStart = ordered[i];
+      final segEnd = ordered[i + 1];
+
+      if (!segEnd.isAfter(segStart)) continue;
+
+      final covered = _isFasciaCovered(
+        day: day,
+        fasciaStart: segStart,
+        fasciaEnd: segEnd,
+        allowSandra: true,
+        sandraMattinaAvailable: sandraMattinaAvailable,
+        sandraPranzoAvailable: sandraPranzoAvailable,
+        sandraSeraAvailable: sandraSeraAvailable,
+        isHomePresenceWindow: false,
+        overrides: overrides,
+        ferieStore: ferieStore,
+      );
+
+      if (!covered) {
+        result.add(
+          _CoverageGapEntry(
+            label:
+                '$labelPrefix: ${_fmtTimeDate(segStart)}–${_fmtTimeDate(segEnd)}',
+            fasciaStart: segStart,
+            fasciaEnd: segEnd,
+            isHomePresenceWindow: false,
+            allowSandra: true,
+          ),
+        );
+      }
+    }
+
+    return result;
   }
 
   List<_CoverageGapEntry> _uncoveredHomeSegments({
@@ -1390,8 +1709,6 @@ class CoverageEngine {
       baseBusy = [];
     }
 
-    // ✅ Regola A:
-    // anche in malattia/ferie un evento reale con orario rende la persona fuori casa
     final extraBusy = _busyShiftsFromRealEventsForPerson(
       personKey: personKey,
       day: day,
@@ -1710,9 +2027,6 @@ class CoverageEngine {
     if (matteoHoliday || matteoDiseaseStatus != null) baseBusyMatteo = [];
     if (chiaraHoliday || chiaraDiseaseStatus != null) baseBusyChiara = [];
 
-    // ✅ Regola A:
-    // evento reale con orario = persona fuori casa in quella fascia
-    // anche se è in ferie o malattia
     final extraBusyMatteo = _busyShiftsFromRealEventsForPerson(
       personKey: 'matteo',
       day: day,
@@ -1815,14 +2129,16 @@ class CoverageEngine {
       );
     }
 
-    // tentativo copertura combinata Matteo + Chiara
-    final combinedCover =
-        isTimeCovered(fasciaStart, fasciaEnd, <PersonAvailability>[
-          PersonAvailability(busyShifts: matteoBusy),
-          PersonAvailability(busyShifts: chiaraBusy),
-        ]);
+    if (m != OverrideStatus.malattiaALetto &&
+        c != OverrideStatus.malattiaALetto) {
+      final combinedCover =
+          isTimeCovered(fasciaStart, fasciaEnd, <PersonAvailability>[
+            PersonAvailability(busyShifts: matteoBusy),
+            PersonAvailability(busyShifts: chiaraBusy),
+          ]);
 
-    if (combinedCover) return true;
+      if (combinedCover) return true;
+    }
 
     if (aliceCompanionStore.isAliceAccompanied(
       day: day,
@@ -1959,8 +2275,6 @@ class CoverageEngine {
       baseBusy = [];
     }
 
-    // ✅ Regola A:
-    // evento reale con orario = persona fuori casa in quella fascia
     final extraBusy = _busyShiftsFromRealEventsForPerson(
       personKey: personKey,
       day: day,
@@ -2156,6 +2470,21 @@ class CoverageEngine {
     final o1 = start.isBefore(imps1End) && end.isAfter(imps1Start);
     final o2 = start.isBefore(imps2End) && end.isAfter(imps2Start);
     return o1 || o2;
+  }
+
+  List<AliceSpecialEvent> _enabledTimedAliceEventsForDay(DateTime day) {
+    final events = aliceSpecialEventStore
+        .eventsForDay(day)
+        .where((event) => event.enabled)
+        .toList();
+
+    events.sort((a, b) {
+      final aMinutes = a.start.hour * 60 + a.start.minute;
+      final bMinutes = b.start.hour * 60 + b.start.minute;
+      return aMinutes.compareTo(bMinutes);
+    });
+
+    return events;
   }
 
   DateTime _onlyDate(DateTime d) => DateTime(d.year, d.month, d.day);

@@ -85,6 +85,14 @@ class _CalendarioScreenStepAStabileState
 
   final TextEditingController _aliceEventNameController =
       TextEditingController();
+  final TextEditingController _aliceEventNoteController =
+      TextEditingController();
+
+  TimeOfDay _aliceEventStart = const TimeOfDay(hour: 18, minute: 0);
+  TimeOfDay _aliceEventEnd = const TimeOfDay(hour: 20, minute: 0);
+  AliceSpecialEventCategory _aliceEventCategory =
+      AliceSpecialEventCategory.activity;
+  String? _editingAliceSpecialEventId;
 
   Future<void> _scrollTo(GlobalKey key) async {
     final ctx = key.currentContext;
@@ -2612,6 +2620,13 @@ class _CalendarioScreenStepAStabileState
     _syncWeekWithSelectedDay();
   }
 
+  @override
+  void dispose() {
+    _aliceEventNameController.dispose();
+    _aliceEventNoteController.dispose();
+    super.dispose();
+  }
+
   Widget _buildSectionBox({
     required String title,
     required String subtitle,
@@ -3875,6 +3890,219 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
+  List<AliceSpecialEvent> _sortedAliceSpecialEventsForSelectedDay() {
+    final events = [
+      ...coreStore.aliceSpecialEventStore.eventsForDay(_selectedDay),
+    ];
+
+    events.sort((a, b) {
+      final aMin = a.start.hour * 60 + a.start.minute;
+      final bMin = b.start.hour * 60 + b.start.minute;
+      return aMin.compareTo(bMin);
+    });
+
+    return events;
+  }
+
+  String _aliceSpecialCategoryLabel(AliceSpecialEventCategory category) {
+    switch (category) {
+      case AliceSpecialEventCategory.school:
+        return "Scuola";
+      case AliceSpecialEventCategory.sport:
+        return "Sport";
+      case AliceSpecialEventCategory.health:
+        return "Salute";
+      case AliceSpecialEventCategory.activity:
+        return "Attività";
+      case AliceSpecialEventCategory.other:
+        return "Altro";
+    }
+  }
+
+  IconData _aliceSpecialCategoryIcon(AliceSpecialEventCategory category) {
+    switch (category) {
+      case AliceSpecialEventCategory.school:
+        return Icons.school_outlined;
+      case AliceSpecialEventCategory.sport:
+        return Icons.sports_volleyball_outlined;
+      case AliceSpecialEventCategory.health:
+        return Icons.medical_information_outlined;
+      case AliceSpecialEventCategory.activity:
+        return Icons.event_outlined;
+      case AliceSpecialEventCategory.other:
+        return Icons.label_outline;
+    }
+  }
+
+  void _resetAliceSpecialEventEditor({bool closeEditor = true}) {
+    _aliceEventNameController.clear();
+    _aliceEventNoteController.clear();
+    _aliceEventStart = const TimeOfDay(hour: 18, minute: 0);
+    _aliceEventEnd = const TimeOfDay(hour: 20, minute: 0);
+    _aliceEventCategory = AliceSpecialEventCategory.activity;
+    _editingAliceSpecialEventId = null;
+    if (closeEditor) {
+      _showAliceEventEditor = false;
+    }
+  }
+
+  void _openNewAliceSpecialEventEditor() {
+    setState(() {
+      _resetAliceSpecialEventEditor(closeEditor: false);
+      _showAliceEventEditor = true;
+    });
+  }
+
+  void _startEditAliceSpecialEvent(AliceSpecialEvent event) {
+    setState(() {
+      _editingAliceSpecialEventId = event.id;
+      _aliceEventNameController.text = event.label;
+      _aliceEventNoteController.text = event.note;
+      _aliceEventStart = event.start;
+      _aliceEventEnd = event.end;
+      _aliceEventCategory = event.category;
+      _showAliceEventEditor = true;
+    });
+  }
+
+  void _cancelAliceSpecialEventEditor() {
+    setState(() {
+      _resetAliceSpecialEventEditor(closeEditor: true);
+    });
+  }
+
+  Future<void> _pickAliceSpecialEventStart() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _aliceEventStart,
+      helpText: "Evento Alice • ORA INIZIO",
+      cancelText: "Annulla",
+      confirmText: "OK",
+    );
+
+    if (picked == null) return;
+
+    final pickedMin = picked.hour * 60 + picked.minute;
+    final currentEndMin = _aliceEventEnd.hour * 60 + _aliceEventEnd.minute;
+
+    setState(() {
+      _aliceEventStart = picked;
+      if (pickedMin >= currentEndMin) {
+        final nextHour = picked.hour < 23 ? picked.hour + 1 : picked.hour;
+        _aliceEventEnd = TimeOfDay(hour: nextHour, minute: picked.minute);
+      }
+    });
+  }
+
+  Future<void> _pickAliceSpecialEventEnd() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _aliceEventEnd,
+      helpText: "Evento Alice • ORA FINE",
+      cancelText: "Annulla",
+      confirmText: "OK",
+    );
+
+    if (picked == null) return;
+
+    final startMin = _aliceEventStart.hour * 60 + _aliceEventStart.minute;
+    final endMin = picked.hour * 60 + picked.minute;
+
+    if (endMin <= startMin) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "L'orario di fine deve essere dopo l'orario di inizio.",
+          ),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _aliceEventEnd = picked;
+    });
+  }
+
+  void _saveAliceSpecialEvent() {
+    final label = _aliceEventNameController.text.trim();
+    if (label.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Scrivi il nome dell'evento Alice.")),
+      );
+      return;
+    }
+
+    final startMin = _aliceEventStart.hour * 60 + _aliceEventStart.minute;
+    final endMin = _aliceEventEnd.hour * 60 + _aliceEventEnd.minute;
+    if (endMin <= startMin) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "L'orario di fine deve essere dopo l'orario di inizio.",
+          ),
+        ),
+      );
+      return;
+    }
+
+    final day = _onlyDate(_selectedDay);
+    final store = coreStore.aliceSpecialEventStore;
+    final events = [...store.eventsForDay(day)];
+
+    final newEvent = AliceSpecialEvent(
+      id:
+          _editingAliceSpecialEventId ??
+          'evt_${DateTime.now().millisecondsSinceEpoch}',
+      label: label,
+      category: _aliceEventCategory,
+      date: day,
+      start: _aliceEventStart,
+      end: _aliceEventEnd,
+      note: _aliceEventNoteController.text.trim(),
+      enabled: true,
+    );
+
+    if (_editingAliceSpecialEventId != null) {
+      final index = events.indexWhere(
+        (e) => e.id == _editingAliceSpecialEventId,
+      );
+      if (index != -1) {
+        events[index] = newEvent;
+      } else {
+        events.add(newEvent);
+      }
+    } else {
+      events.add(newEvent);
+    }
+
+    events.sort((a, b) {
+      final aMin = a.start.hour * 60 + a.start.minute;
+      final bMin = b.start.hour * 60 + b.start.minute;
+      return aMin.compareTo(bMin);
+    });
+
+    store.replaceEventsForDay(day, events);
+
+    setState(() {
+      _resetAliceSpecialEventEditor(closeEditor: true);
+    });
+
+    ipsStore.refresh(now: _selectedDay);
+  }
+
+  void _removeAliceSpecialEvent(AliceSpecialEvent event) {
+    coreStore.aliceSpecialEventStore.removeEvent(_selectedDay, event.id);
+
+    setState(() {
+      if (_editingAliceSpecialEventId == event.id) {
+        _resetAliceSpecialEventEditor(closeEditor: true);
+      }
+    });
+
+    ipsStore.refresh(now: _selectedDay);
+  }
+
   Widget _cardScuola() {
     final inChoice = daySettingsStore.schoolInCoverForDay(_selectedDay);
     final outChoice = daySettingsStore.schoolOutCoverForDay(_selectedDay);
@@ -3893,19 +4121,20 @@ class _CalendarioScreenStepAStabileState
 
     final aliceEvent = coreStore.aliceEventStore.getEventForDay(_selectedDay);
 
-    final extraEvents = coreStore.aliceSpecialEventStore.eventsForDay(
-      _selectedDay,
-    );
-
+    final extraEvents = _sortedAliceSpecialEventsForSelectedDay();
     final bool hasExtraEvents = extraEvents.isNotEmpty;
 
     String aliceEventLabel() {
-      final special = coreStore.summerCampSpecialEventStore.getForDay(
+      final specialCamp = coreStore.summerCampSpecialEventStore.getForDay(
         _selectedDay,
       );
 
-      if (special != null && special.enabled) {
-        return special.label; // 👈 tipo "gita"
+      if (specialCamp != null && specialCamp.enabled) {
+        return specialCamp.label;
+      }
+
+      if (extraEvents.isNotEmpty) {
+        return extraEvents.first.label;
       }
 
       if (aliceEvent == null) return "Scuola normale";
@@ -3964,75 +4193,6 @@ class _CalendarioScreenStepAStabileState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (extraEvents.isNotEmpty)
-            Text("Eventi Alice speciali: ${extraEvents.length}"),
-          ...extraEvents.map(
-            (e) => Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                "• ${e.label} (${e.start.format(context)} - ${e.end.format(context)})",
-              ),
-            ),
-          ),
-          if (!hasExtraEvents)
-            OutlinedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _showAliceEventEditor = !_showAliceEventEditor;
-                });
-              },
-              icon: const Icon(Icons.add),
-              label: const Text("Aggiungi evento Alice"),
-            ),
-          if (_showAliceEventEditor)
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: _aliceEventNameController,
-                    decoration: const InputDecoration(
-                      labelText: "Nome evento (es. Pallavolo)",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text("Orario: 18:00 - 20:00 (test)"),
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      coreStore.aliceSpecialEventStore.addEvent(
-                        _selectedDay,
-                        AliceSpecialEvent(
-                          id: 'evt_${DateTime.now().millisecondsSinceEpoch}',
-                          label: _aliceEventNameController.text,
-                          category: AliceSpecialEventCategory.activity,
-                          date: DateTime(
-                            _selectedDay.year,
-                            _selectedDay.month,
-                            _selectedDay.day,
-                          ),
-                          start: const TimeOfDay(hour: 18, minute: 0),
-                          end: const TimeOfDay(hour: 20, minute: 0),
-                          note: '',
-                          enabled: true,
-                        ),
-                      );
-                      setState(() {
-                        _showAliceEventEditor = false;
-                      });
-                    },
-                    child: const Text("Salva evento"),
-                  ),
-                ],
-              ),
-            ),
           Container(
             width: double.infinity,
             margin: const EdgeInsets.only(bottom: 12),
@@ -4062,9 +4222,255 @@ class _CalendarioScreenStepAStabileState
               ],
             ),
           ),
+
           Text(
-            "Orario: ${fmtTimeOfDay(coreStore.summerCampSpecialEventStore.getForDay(_selectedDay)?.start ?? _scuolaStart)}–${fmtTimeOfDay(coreStore.summerCampSpecialEventStore.getForDay(_selectedDay)?.end ?? _scuolaEnd)}",
+            "Orario: ${fmtTimeOfDay(coreStore.summerCampSpecialEventStore.getForDay(_selectedDay)?.start ?? (extraEvents.isNotEmpty ? extraEvents.first.start : (aliceEvent?.summerCampStart ?? _scuolaStart)))}–${fmtTimeOfDay(coreStore.summerCampSpecialEventStore.getForDay(_selectedDay)?.end ?? (extraEvents.isNotEmpty ? extraEvents.first.end : (aliceEvent?.summerCampEnd ?? _scuolaEnd)))}",
           ),
+
+          const SizedBox(height: 12),
+
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.deepPurple.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.deepPurple.withOpacity(0.18)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Eventi Alice del giorno",
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  hasExtraEvents
+                      ? "Eventi salvati: ${extraEvents.length}"
+                      : "Nessun evento Alice salvato per questo giorno.",
+                  style: TextStyle(color: Colors.black.withOpacity(0.68)),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _openNewAliceSpecialEventEditor,
+                        icon: const Icon(Icons.add),
+                        label: const Text("Nuovo evento Alice"),
+                      ),
+                    ),
+                  ],
+                ),
+                if (hasExtraEvents) ...[
+                  const SizedBox(height: 12),
+                  ...extraEvents.map(
+                    (e) => Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.black.withOpacity(0.08),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                _aliceSpecialCategoryIcon(e.category),
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  e.label,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            "Categoria: ${_aliceSpecialCategoryLabel(e.category)}",
+                            style: TextStyle(
+                              color: Colors.black.withOpacity(0.72),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Orario: ${fmtTimeOfDay(e.start)}–${fmtTimeOfDay(e.end)}",
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          if (e.note.trim().isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              "Nota: ${e.note}",
+                              style: TextStyle(
+                                color: Colors.black.withOpacity(0.72),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () =>
+                                      _startEditAliceSpecialEvent(e),
+                                  icon: const Icon(Icons.edit),
+                                  label: const Text("Modifica"),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _removeAliceSpecialEvent(e),
+                                  icon: const Icon(Icons.delete_outline),
+                                  label: const Text("Rimuovi"),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          if (_showAliceEventEditor) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.withOpacity(0.18)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _editingAliceSpecialEventId == null
+                        ? "Nuovo evento Alice"
+                        : "Modifica evento Alice",
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _aliceEventNameController,
+                    decoration: const InputDecoration(
+                      labelText: "Nome evento",
+                      hintText: "Es. Pallavolo / Musica / Dentista",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<AliceSpecialEventCategory>(
+                    value: _aliceEventCategory,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: "Categoria",
+                      border: OutlineInputBorder(),
+                    ),
+                    items: AliceSpecialEventCategory.values.map((c) {
+                      return DropdownMenuItem(
+                        value: c,
+                        child: Row(
+                          children: [
+                            Icon(_aliceSpecialCategoryIcon(c), size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(_aliceSpecialCategoryLabel(c)),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (v) {
+                      if (v == null) return;
+                      setState(() {
+                        _aliceEventCategory = v;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _pickAliceSpecialEventStart,
+                          icon: const Icon(Icons.login),
+                          label: Text(
+                            "Inizio: ${fmtTimeOfDay(_aliceEventStart)}",
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _pickAliceSpecialEventEnd,
+                          icon: const Icon(Icons.logout),
+                          label: Text("Fine: ${fmtTimeOfDay(_aliceEventEnd)}"),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _aliceEventNoteController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: "Note",
+                      hintText: "Nota facoltativa",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _saveAliceSpecialEvent,
+                          icon: const Icon(Icons.save),
+                          label: Text(
+                            _editingAliceSpecialEventId == null
+                                ? "Salva evento"
+                                : "Salva modifica",
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _cancelAliceSpecialEventEditor,
+                          icon: const Icon(Icons.close),
+                          label: const Text("Annulla"),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           const SizedBox(height: 12),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
