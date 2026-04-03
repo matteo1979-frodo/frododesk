@@ -902,16 +902,18 @@ class CoverageEngine {
       }
 
       if (!uscita13) {
-        final schoolOutStartDt = _atTime(d0, schoolOutStart);
-        final schoolOutEndDt = _atTime(d0, schoolOutEnd);
+        final schoolOutRealDt = _atTime(d0, schoolOutEnd);
+        final schoolOutPickupEndDt = schoolOutRealDt.add(
+          const Duration(minutes: 20),
+        );
         final labelSchoolOut =
-            "Alice uscita: ${_fmt(schoolOutStart)}–${_fmt(schoolOutEnd)}";
+            "Alice uscita: ${_fmt(schoolOutEnd)}–${_fmtTimeDate(schoolOutPickupEndDt)}";
 
         final schoolOutCoveredByChoice = _isSchoolCoverChoiceValid(
           choice: schoolOutCover,
           day: d0,
-          fasciaStart: schoolOutStartDt,
-          fasciaEnd: schoolOutEndDt,
+          fasciaStart: schoolOutRealDt,
+          fasciaEnd: schoolOutPickupEndDt,
           allowSandra: true,
           sandraMattinaAvailable: effSandraMattina,
           sandraPranzoAvailable: effSandraPranzo,
@@ -925,8 +927,8 @@ class CoverageEngine {
           entries.add(
             _CoverageGapEntry(
               label: labelSchoolOut,
-              fasciaStart: schoolOutStartDt,
-              fasciaEnd: schoolOutEndDt,
+              fasciaStart: schoolOutRealDt,
+              fasciaEnd: schoolOutPickupEndDt,
               isHomePresenceWindow: false,
               allowSandra: true,
             ),
@@ -936,8 +938,8 @@ class CoverageEngine {
             entries.add(
               _CoverageGapEntry(
                 label: labelSchoolOut,
-                fasciaStart: schoolOutStartDt,
-                fasciaEnd: schoolOutEndDt,
+                fasciaStart: schoolOutRealDt,
+                fasciaEnd: schoolOutPickupEndDt,
                 isHomePresenceWindow: false,
                 allowSandra: true,
               ),
@@ -945,7 +947,7 @@ class CoverageEngine {
           }
         }
 
-        normalSchoolHomeWindowStart = schoolOutEndDt;
+        normalSchoolHomeWindowStart = schoolOutPickupEndDt;
       }
 
       if (uscita13) {
