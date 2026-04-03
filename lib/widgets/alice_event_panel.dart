@@ -86,7 +86,7 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
   DateTime _onlyDate(DateTime d) => DateTime(d.year, d.month, d.day);
 
   String _fmtDate(DateTime d) {
-    return DateFormat('yyyy-MM-dd').format(d);
+    return DateFormat('dd-MM-yyyy').format(d);
   }
 
   String _fmtTime(TimeOfDay t) {

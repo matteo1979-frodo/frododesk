@@ -1,6 +1,6 @@
 # FRODODESK — MODULO EVENTI ALICE
 
-Ultimo aggiornamento: 1 Aprile 2026
+Ultimo aggiornamento: 2 Aprile 2026
 
 ## IDENTITÀ DEL MODULO
 
@@ -21,6 +21,92 @@ Gli Eventi Alice NON sono più solo informativi.
 
 ---
 
+## 🧠 NUOVA LOGICA STRUTTURALE (SCUOLA DINAMICA)
+
+Gli orari scuola NON sono più fissi.
+
+Sono ora basati su logica reale con buffer.
+
+---
+
+### 📍 ENTRATA SCUOLA
+
+- orario reale (es: 08:25)
+- buffer: -20 minuti
+
+👉 fascia reale:
+08:05 – 08:25
+
+---
+
+### 📍 USCITA SCUOLA
+
+- orario reale (es: 16:25)
+- buffer: +20 minuti
+
+👉 fascia reale:
+16:25 – 16:45
+
+---
+
+### 📍 USCITA ANTICIPATA
+
+Se attiva:
+
+👉 sostituisce completamente l’uscita scuola
+
+Viene utilizzata da:
+
+- UI
+- decisione scuola
+- CoverageEngine
+- buchi reali
+- Sandra
+
+---
+
+## 🍽️ PRANZO — LOGICA REALE
+
+Prima:
+❌ fisso 13:00–14:30
+
+Ora:
+
+👉 dinamico
+
+- start = uscita anticipata (se presente)
+- fallback = 13:00
+
+👉 esempio:
+- uscita 13:00 → pranzo 13:00–14:30
+- uscita 13:30 → pranzo 13:30–14:30
+
+---
+
+## 👶 SANDRA — ALLINEAMENTO
+
+Sandra NON usa più orari fissi.
+
+👉 legge:
+
+- uscita anticipata
+- fallback su fascia standard
+
+---
+
+## ⚠️ PRINCIPIO FONDAMENTALE
+
+TUTTI i livelli devono usare la stessa fonte:
+
+- UI
+- CoverageEngine
+- decisioni
+- Sandra
+
+👉 nessun valore duplicato hardcoded
+
+---
+
 ## NUOVA LOGICA INTRODOTTA
 
 Un Evento Alice con orario genera:
@@ -33,13 +119,13 @@ Un Evento Alice con orario genera:
 
 ### 2️⃣ PRIMA EVENTO (ACCOMPAGNAMENTO)
 
-Il sistema deve verificare:
+Il sistema verifica:
 
 👉 chi accompagna Alice
 
 Se nessuno è disponibile:
 
-👉 viene generato un buco reale
+👉 buco reale
 
 ---
 
@@ -47,23 +133,25 @@ Se nessuno è disponibile:
 
 Il sistema verifica:
 
-👉 chi è disponibile a prendere Alice
+👉 chi è disponibile
 
-- se qualcuno è disponibile → nessun buco
-- se nessuno è disponibile → buco reale
+Se nessuno:
+
+👉 buco reale
 
 ---
 
 ### 4️⃣ REGOLA FONDAMENTALE
 
-👉 NON si generano buchi automatici
+👉 nessun buco automatico
 
-Il sistema deve sempre verificare:
+Il sistema valuta sempre:
 
-- disponibilità reale persone
 - turni
 - eventi
-- stato (malattia, ferie, ecc.)
+- malattia
+- ferie
+- supporto
 
 ---
 
@@ -88,172 +176,106 @@ Campi ufficiali:
 
 ✔ model  
 ✔ store  
-✔ integrazione CoreStore  
-✔ editor base  
-✔ salvataggio evento  
-✔ visualizzazione  
-✔ multi-evento nello stesso giorno  
-✔ persistenza eventi stabile  
-✔ modifica evento  
-✔ eliminazione evento  
-✔ orari evento configurabili  
+✔ CoreStore integration  
+✔ editor eventi  
+✔ multi-evento  
+✔ persistenza  
+✔ modifica/eliminazione  
 
-✔ rilevazione conflitti tra eventi  
-✔ evidenziazione conflitti  
+✔ conflitti eventi  
+✔ UI conflitti  
 ✔ popup +N eventi  
 
-✔ gestione DATA evento  
-✔ spostamento eventi tra giorni  
-✔ store cross-day  
+✔ gestione date  
+✔ eventi cross-day  
+
+✔ periodi Alice  
+✔ orari dinamici scuola 🔥  
+✔ uscita anticipata integrata 🔥  
+✔ buffer 20 min entrata/uscita 🔥  
+✔ pranzo dinamico 🔥  
+✔ Sandra dinamica 🔥  
 
 ---
 
-## 🔥 NUOVO (1 Aprile — STRADA A QUASI COMPLETA)
+## 🔥 INTEGRAZIONE REALE
 
-### PERIODI ALICE (AliceEventPanel)
+✔ Eventi Alice influenzano:
 
-✔ gestione completa periodi:
-- scuola normale
-- vacanza
-- malattia
-- chiusura scuola
-- centro estivo
-
-✔ popup editor (stile eventi del giorno)
-
-✔ aggiunto bottone ANNULLA → reset editor
-
-✔ orari dinamici per evento:
-
-- ✔ Centro estivo → ingresso/uscita configurabili  
-- ✔ Scuola normale → ingresso/uscita configurabili 🔥 NUOVO  
-- ✔ Vacanza → nessun orario  
-- ✔ Malattia → nessun orario  
-- ✔ Chiusura scuola → nessun orario  
-
-✔ UI dinamica corretta:
-- mostra orari SOLO se servono
-- label cambia automaticamente:
-  - "Orari scuola"
-  - "Orari centro estivo"
-
----
-
-## 🔥 INTEGRAZIONE REALE GIÀ ATTIVA
-
-✔ Eventi Alice influenzano già:
-
-- copertura giornata
-- presenza Alice in casa
+- copertura
+- presenza
 - decisione scuola
 - uscita anticipata
-- buchi reali
+- buchi
 
-✔ gestione reale verificata:
-- se nessuno disponibile → BUCO
-- possibilità uso rete supporto
-- comportamento corretto con uscita 13:00
+✔ sistema reale verificato:
+
+- buco solo se nessuno disponibile
+- rete supporto funzionante
+- comportamento coerente con uscita variabile
 
 ---
 
-## 🔧 STRUTTURA UI ATTUALE
+## 🔧 STRUTTURA UI
 
-### 1️⃣ Eventi Alice del giorno (NUOVO)
-- UI moderna
-- eventi cliccabili
+### Eventi Alice del giorno
+- lista dinamica
 - conflitti visivi
 - azioni rapide
 
 ---
 
-### 2️⃣ Periodi Alice (STABILE)
-
-👉 AliceEventPanel
-
-Funzionalità:
-- creazione
-- modifica
-- eliminazione
-- gestione orari dinamici
-- popup editor
-- reset stato
+### Periodi Alice
+- scuola
+- vacanza
+- malattia
+- centro estivo
 
 ---
 
-## ⚠️ STATO ARCHITETTURALE
+## ⚠️ ARCHITETTURA
 
-👉 sistema DUPLICATO (voluto)
+Sistema volutamente doppio:
 
-- sopra → eventi giornalieri
-- sotto → periodi
+- eventi giornalieri
+- periodi
 
----
-
-## 🎯 STRATEGIA CONFERMATA
-
-NON unificare subito
+👉 NON unificare ora
 
 ---
 
 ## 🚧 NON ANCORA FATTO
 
-### STRADA A (quasi completa)
+### UI
+⬜ pulizia finale
 
-☑ editor popup  
-☑ orari dinamici  
-☑ annulla/reset  
-⬜ pulizia UI finale  
+### STRUTTURA
+⬜ unificazione eventi/periodi
 
----
-
-### STRADA B (NON INIZIATA)
-
-⬜ unificazione completa eventi + periodi  
-⬜ eliminazione AliceEventPanel  
-⬜ tutto dentro _cardScuola  
+### LOGICA
+⬜ conflitti forti con turni
+⬜ suggerimenti automatici
+⬜ integrazione IPS completa
 
 ---
 
-### LOGICA AVANZATA
-
-⬜ eventi → segnalazione forte conflitto con turni  
-⬜ eventi → suggerimenti automatici  
-⬜ eventi → integrazione completa IPS  
-
----
-
-### PRO FUTURI
+## 🚀 PRO FUTURI
 
 ⬜ Alice al seguito  
 ⬜ suggerimenti intelligenti  
 ⬜ eventi ricorrenti  
-⬜ storico/statistiche  
+⬜ statistiche  
 
 ---
 
-## 🔥 STEP STRATEGICO FUTURO
+## 🎯 STATO
 
-👉 TEST REALI SISTEMA
-
-Obiettivo:
-
-Verificare:
-
-- eventi → copertura
-- eventi → decisione scuola
-- eventi → buchi reali
-- eventi → rete supporto
-
----
-
-## PROSSIMO STEP
-
-👉 TEST GUIDATI
-
-(simulazione casi reali per trovare bug)
+✔ COMPLETATO  
+✔ STABILE  
+✔ USABILE NELLA VITA REALE  
 
 ---
 
 ## FRASE DI RIPARTENZA
 
-Ripartiamo da FrodoDesk — test collegamento Eventi Alice → copertura reale
+Ripartiamo da FrodoDesk — allineamento spiegazione buchi con orari dinamici reali

@@ -276,27 +276,57 @@ class CoverageEngine {
         aliceAtHomeDay ||
         (campEnd != null && campEnd.isBefore(lunchEnd));
 
-    if (shouldCheckPranzo &&
-        (aliceAtHomeDay || lunchCover == SchoolCoverChoice.none)) {
+    if (shouldCheckPranzo) {
       DateTime lunchCheckStart = lunchBaseStart;
+
+      // 🔥 SE ALICE È ACCOMPAGNATA, PARTI DOPO
+      final companionEnd = _getAliceCompanionEnd(
+        day: d0,
+        start: lunchBaseStart,
+        end: lunchEnd,
+      );
+
+      if (companionEnd != null && companionEnd.isAfter(lunchCheckStart)) {
+        lunchCheckStart = companionEnd;
+      }
 
       if (campEnd != null && campEnd.isAfter(lunchCheckStart)) {
         lunchCheckStart = campEnd;
       }
 
       if (lunchEnd.isAfter(lunchCheckStart)) {
-        servePranzo = !_isFasciaCovered(
-          day: d0,
-          fasciaStart: lunchCheckStart,
-          fasciaEnd: lunchEnd,
-          allowSandra: false,
-          sandraMattinaAvailable: false,
-          sandraPranzoAvailable: false,
-          sandraSeraAvailable: false,
-          isHomePresenceWindow: true,
-          overrides: overrides,
-          ferieStore: ferieStore,
-        );
+        DateTime probe = lunchCheckStart;
+        DateTime? firstUncoveredStart;
+
+        while (probe.isBefore(lunchEnd)) {
+          final nextProbe = probe.add(const Duration(minutes: 5));
+
+          final segEnd = nextProbe.isAfter(lunchEnd) ? lunchEnd : nextProbe;
+
+          final covered = _isFasciaCovered(
+            day: d0,
+            fasciaStart: probe,
+            fasciaEnd: segEnd,
+            allowSandra: false,
+            sandraMattinaAvailable: false,
+            sandraPranzoAvailable: false,
+            sandraSeraAvailable: false,
+            isHomePresenceWindow: true,
+            overrides: overrides,
+            ferieStore: ferieStore,
+          );
+
+          if (!covered) {
+            firstUncoveredStart = probe;
+            break;
+          }
+
+          probe = segEnd;
+        }
+
+        if (firstUncoveredStart != null) {
+          servePranzo = true;
+        }
       }
     }
 
@@ -921,7 +951,7 @@ class CoverageEngine {
       if (uscita13) {
         final startLunch = uscitaAnticipataAt ?? sandraPranzoStart;
         final lunchStart = _atTime(d0, startLunch);
-        final lunchEnd = _atTime(d0, sandraPranzoEnd);
+        final lunchEnd = lunchStart.add(const Duration(minutes: 20));
 
         final lunchCoveredByChoice = _isSchoolCoverChoiceValid(
           choice: lunchCover,
@@ -937,21 +967,44 @@ class CoverageEngine {
           ferieStore: ferieStore,
         );
 
+        final realLunchStart = TimeOfDay(
+          hour: startLunch.hour,
+          minute: startLunch.minute + 20,
+        );
+
         final labelLunch =
-            "Alice pranzo: ${_fmt(startLunch)}–${_fmt(sandraPranzoEnd)}";
+            "Alice pranzo: ${_fmt(startLunch)}–${_fmtTimeDate(lunchEnd)}";
+
+        final lunchCoveredInReality = _isFasciaCovered(
+          day: d0,
+          fasciaStart: lunchStart,
+          fasciaEnd: lunchStart.add(const Duration(minutes: 20)),
+          allowSandra: true,
+          sandraMattinaAvailable: effSandraMattina,
+          sandraPranzoAvailable: effSandraPranzo,
+          sandraSeraAvailable: effSandraSera,
+          isHomePresenceWindow: false,
+          overrides: overrides,
+          ferieStore: ferieStore,
+        );
+
+        final ritiroEnd = TimeOfDay(
+          hour: startLunch.hour,
+          minute: startLunch.minute + 20,
+        );
 
         if (lunchCover == SchoolCoverChoice.none) {
           entries.add(
             _CoverageGapEntry(
               label: labelLunch,
               fasciaStart: lunchStart,
-              fasciaEnd: lunchEnd,
+              fasciaEnd: lunchStart.add(const Duration(minutes: 20)),
               isHomePresenceWindow: false,
               allowSandra: true,
             ),
           );
         } else {
-          if (!lunchCoveredByChoice) {
+          if (!lunchCoveredByChoice && !lunchCoveredInReality) {
             entries.add(
               _CoverageGapEntry(
                 label: labelLunch,
@@ -1207,7 +1260,7 @@ class CoverageEngine {
     }
 
     if (aliceAtHome && !hasTimedAliceEvent) {
-      final fPranzoStart = _atTime(d0, sandraPranzoStart);
+      final fPranzoStart = _atTime(d0, uscitaAnticipataAt ?? sandraPranzoStart);
       final fPranzoEnd = _atTime(d0, sandraPranzoEnd);
 
       DateTime pranzoGapStart = fPranzoStart;
@@ -2286,6 +2339,14 @@ class CoverageEngine {
       personOverride: personOverride,
     );
 
+    final lunchChoice = daySettingsStore.lunchCoverForDay(day);
+
+    final isForcedActive =
+        ((personKey == 'matteo' && lunchChoice == SchoolCoverChoice.matteo) ||
+        (personKey == 'chiara' && lunchChoice == SchoolCoverChoice.chiara));
+
+    final adjustedBusy = isForcedActive ? <WorkShift>[] : effectiveBusy;
+
     final effectiveStatus =
         personOverride?.status ??
         diseaseStatus ??
@@ -2294,7 +2355,7 @@ class CoverageEngine {
     if (effectiveStatus == OverrideStatus.malattiaALetto) {
       return isHomePresenceWindow &&
           isTimeCovered(fasciaStart, fasciaEnd, <PersonAvailability>[
-            PersonAvailability(busyShifts: effectiveBusy),
+            PersonAvailability(busyShifts: adjustedBusy),
           ]);
     }
 
@@ -2304,12 +2365,12 @@ class CoverageEngine {
         return false;
       }
       return isTimeCovered(fasciaStart, fasciaEnd, <PersonAvailability>[
-        PersonAvailability(busyShifts: effectiveBusy),
+        PersonAvailability(busyShifts: adjustedBusy),
       ]);
     }
 
     return isTimeCovered(fasciaStart, fasciaEnd, <PersonAvailability>[
-      PersonAvailability(busyShifts: effectiveBusy),
+      PersonAvailability(busyShifts: adjustedBusy),
     ]);
   }
 
@@ -2485,6 +2546,47 @@ class CoverageEngine {
     });
 
     return events;
+  }
+
+  DateTime? _getAliceCompanionEnd({
+    required DateTime day,
+    required DateTime start,
+    required DateTime end,
+  }) {
+    final entries = aliceCompanionStore.entriesForDay(day);
+
+    DateTime? bestEnd;
+
+    for (final entry in entries) {
+      final entryStart = DateTime(
+        day.year,
+        day.month,
+        day.day,
+        entry.start.hour,
+        entry.start.minute,
+      );
+
+      final entryEnd = DateTime(
+        day.year,
+        day.month,
+        day.day,
+        entry.end.hour,
+        entry.end.minute,
+      );
+
+      final overlapsWindow =
+          entryStart.isBefore(end) && entryEnd.isAfter(start);
+
+      if (!overlapsWindow) continue;
+
+      if (entryStart.isAfter(start)) continue;
+
+      if (bestEnd == null || entryEnd.isAfter(bestEnd)) {
+        bestEnd = entryEnd;
+      }
+    }
+
+    return bestEnd;
   }
 
   DateTime _onlyDate(DateTime d) => DateTime(d.year, d.month, d.day);

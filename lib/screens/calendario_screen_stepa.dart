@@ -389,10 +389,19 @@ class _CalendarioScreenStepAStabileState
     final saved = daySettingsStore.schoolInCoverForDay(day);
     if (saved != SchoolCoverChoice.none) return saved;
 
+    final ingressoReale =
+        coreStore.aliceEventStore.getEventForDay(day)?.summerCampStart ??
+        const TimeOfDay(hour: 8, minute: 25);
+
+    final ingressoInizio = TimeOfDay(
+      hour: ((ingressoReale.hour * 60 + ingressoReale.minute - 20) ~/ 60) % 24,
+      minute: (ingressoReale.hour * 60 + ingressoReale.minute - 20) % 60,
+    );
+
     final coveredBySupport = _supportNetworkCoversRange(
       day: day,
-      start: const TimeOfDay(hour: 7, minute: 30),
-      end: _scuolaStart,
+      start: ingressoInizio,
+      end: ingressoReale,
     );
 
     return coveredBySupport ? SchoolCoverChoice.altro : SchoolCoverChoice.none;
@@ -416,7 +425,10 @@ class _CalendarioScreenStepAStabileState
 
   SchoolCoverChoice _effectiveLunchCover(DateTime day) {
     final saved = daySettingsStore.lunchCoverForDay(day);
-    if (saved != SchoolCoverChoice.none) return saved;
+    if (saved != SchoolCoverChoice.none) {
+      print('DEBUG LUNCH COVER: ${saved.name}');
+      return saved;
+    }
 
     final uscitaAt = _effUscitaAnticipataAt(day);
     if (uscitaAt == null) return SchoolCoverChoice.none;
@@ -428,6 +440,51 @@ class _CalendarioScreenStepAStabileState
     );
 
     return coveredBySupport ? SchoolCoverChoice.altro : SchoolCoverChoice.none;
+  }
+
+  TimeOfDay _effectiveSandraPranzoStart(DateTime day) {
+    final uscitaAt = _effUscitaAnticipataAt(day);
+    if (uscitaAt == null) return _engine.sandraPranzoStart;
+
+    final lunchCover = _effectiveLunchCover(day);
+
+    TimeOfDay? firstBusyStartWithinLunch(TimeOfDay from, List<WorkShift> busy) {
+      final fromMinutes = from.hour * 60 + from.minute;
+      final pranzoEndMinutes =
+          _engine.sandraPranzoEnd.hour * 60 + _engine.sandraPranzoEnd.minute;
+
+      for (final shift in busy) {
+        final startMinutes = shift.start.hour * 60 + shift.start.minute;
+
+        if (startMinutes >= fromMinutes && startMinutes < pranzoEndMinutes) {
+          return TimeOfDay(hour: shift.start.hour, minute: shift.start.minute);
+        }
+      }
+
+      return null;
+    }
+
+    if (lunchCover == SchoolCoverChoice.matteo) {
+      final matteoBusy = _turns.busyShiftsForPerson(
+        person: TurnPerson.matteo,
+        day: day,
+      );
+
+      return firstBusyStartWithinLunch(uscitaAt, matteoBusy) ??
+          _engine.sandraPranzoEnd;
+    }
+
+    if (lunchCover == SchoolCoverChoice.chiara) {
+      final chiaraBusy = _turns.busyShiftsForPerson(
+        person: TurnPerson.chiara,
+        day: day,
+      );
+
+      return firstBusyStartWithinLunch(uscitaAt, chiaraBusy) ??
+          _engine.sandraPranzoEnd;
+    }
+
+    return uscitaAt;
   }
 
   Future<void> _editEmergencyTimeRange({
@@ -926,8 +983,10 @@ class _CalendarioScreenStepAStabileState
     overrideStore.setForDay(day, ov);
   }
 
-  TimeOfDay _scuolaStart = const TimeOfDay(hour: 8, minute: 25);
-  TimeOfDay _scuolaEnd = const TimeOfDay(hour: 16, minute: 30);
+  TimeOfDay get _scuolaStart =>
+      coreStore.aliceEventStore.getEventForDay(_selectedDay)?.summerCampStart ??
+      const TimeOfDay(hour: 8, minute: 25);
+  TimeOfDay get _scuolaEnd => _effSchoolOutEnd(_selectedDay);
 
   DateTime _onlyDate(DateTime d) => DateTime(d.year, d.month, d.day);
 
@@ -987,6 +1046,16 @@ class _CalendarioScreenStepAStabileState
   }
 
   String _gapTitleWithAliceState(String label) {
+    final lower = label.toLowerCase();
+
+    if (lower.startsWith('alice pranzo:') ||
+        lower.startsWith('alice ingresso:') ||
+        lower.startsWith('alice uscita:') ||
+        lower.startsWith('alice centro estivo ingresso:') ||
+        lower.startsWith('alice centro estivo uscita:')) {
+      return label;
+    }
+
     final clean = cleanGapTitle(label);
 
     if (!clean.toLowerCase().startsWith('alice a casa')) {
@@ -2210,9 +2279,15 @@ class _CalendarioScreenStepAStabileState
     final outCover = _effectiveSchoolOutCover(d0);
     final lunchCover = _effectiveLunchCover(d0);
 
+    final ingressoReale = _scuolaStart;
+    final ingressoInizio = TimeOfDay(
+      hour: ((ingressoReale.hour * 60 + ingressoReale.minute - 20) ~/ 60) % 24,
+      minute: (ingressoReale.hour * 60 + ingressoReale.minute - 20) % 60,
+    );
+
     final supportInLines = _supportNetworkCoverageLines(
       day: d0,
-      start: const TimeOfDay(hour: 7, minute: 30),
+      start: ingressoInizio,
       end: _scuolaStart,
       contextLabel: "ingresso",
     );
@@ -4162,17 +4237,35 @@ class _CalendarioScreenStepAStabileState
 
     final lunchChoice = daySettingsStore.lunchCoverForDay(_selectedDay);
 
+    final aliceEvent = coreStore.aliceEventStore.getEventForDay(_selectedDay);
+
     final outStart = _effSchoolOutStart(_selectedDay);
-    final outEnd = _effSchoolOutEnd(_selectedDay);
+
+    final outEnd = aliceEvent?.summerCampEnd ?? _effSchoolOutEnd(_selectedDay);
 
     final bool hasCustomOut =
         daySettingsStore.schoolOutStartForDay(_selectedDay) != null ||
         daySettingsStore.schoolOutEndForDay(_selectedDay) != null;
 
-    final aliceEvent = coreStore.aliceEventStore.getEventForDay(_selectedDay);
-
     final bool hasAlicePeriodState =
         aliceEvent != null && aliceEvent.type != AliceEventType.schoolNormal;
+
+    final uscitaReale =
+        aliceEvent?.summerCampEnd ?? _effSchoolOutEnd(_selectedDay);
+
+    final uscitaFine = TimeOfDay(
+      hour: ((uscitaReale.hour * 60 + uscitaReale.minute + 20) ~/ 60) % 24,
+      minute: (uscitaReale.hour * 60 + uscitaReale.minute + 20) % 60,
+    );
+
+    final ingressoReale = aliceEvent?.summerCampStart ?? _scuolaStart;
+
+    final ingressoInizio = TimeOfDay(
+      hour: ((ingressoReale.hour * 60 + ingressoReale.minute - 20) ~/ 60) % 24,
+      minute: (ingressoReale.hour * 60 + ingressoReale.minute - 20) % 60,
+    );
+
+    final ingressoFine = ingressoReale;
 
     String? alicePeriodStateLabel() {
       if (aliceEvent == null) return null;
@@ -4390,8 +4483,16 @@ class _CalendarioScreenStepAStabileState
           ],
 
           Text(
-            "Orario: ${fmtTimeOfDay(coreStore.summerCampSpecialEventStore.getForDay(_selectedDay)?.start ?? (extraEvents.isNotEmpty ? extraEvents.first.start : (aliceEvent?.summerCampStart ?? _scuolaStart)))}–${fmtTimeOfDay(coreStore.summerCampSpecialEventStore.getForDay(_selectedDay)?.end ?? (extraEvents.isNotEmpty ? extraEvents.first.end : (aliceEvent?.summerCampEnd ?? _scuolaEnd)))}",
+            "Orario: ${fmtTimeOfDay(aliceEvent?.summerCampStart ?? _scuolaStart)}–${fmtTimeOfDay(uscita13Eff ? uscitaAt! : (aliceEvent?.summerCampEnd ?? _scuolaEnd))}",
           ),
+
+          if (uscita13Eff) ...[
+            const SizedBox(height: 6),
+            const Text(
+              "Uscita anticipata Alice scuola",
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.w800),
+            ),
+          ],
 
           const SizedBox(height: 12),
 
@@ -5121,7 +5222,8 @@ class _CalendarioScreenStepAStabileState
             value: _effectiveSchoolInCover(_selectedDay),
             isExpanded: true,
             decoration: InputDecoration(
-              labelText: "Ingresso 07:30–${fmtTimeOfDay(_scuolaStart)}",
+              labelText:
+                  "Ingresso ${fmtTimeOfDay(ingressoInizio)}–${fmtTimeOfDay(ingressoFine)}",
             ),
             items: SchoolCoverChoice.values.map((c) {
               return DropdownMenuItem(
@@ -5148,12 +5250,13 @@ class _CalendarioScreenStepAStabileState
           ),
           if (!uscita13Eff) ...[
             const SizedBox(height: 12),
+
             DropdownButtonFormField<SchoolCoverChoice>(
               value: _effectiveSchoolOutCover(_selectedDay),
               isExpanded: true,
               decoration: InputDecoration(
                 labelText:
-                    "Uscita ${fmtTimeOfDay(outStart)}–${fmtTimeOfDay(outEnd)}",
+                    "Uscita ${fmtTimeOfDay(uscitaReale)}–${fmtTimeOfDay(uscitaFine)}",
               ),
               items: SchoolCoverChoice.values.map((c) {
                 return DropdownMenuItem(
@@ -5194,7 +5297,7 @@ class _CalendarioScreenStepAStabileState
               isExpanded: true,
               decoration: InputDecoration(
                 labelText:
-                    "Pranzo ${fmtTimeOfDay(uscitaAt!)}–${fmtTimeOfDay(_engine.sandraPranzoEnd)}",
+                    "Pranzo ${fmtTimeOfDay(uscitaAt!)}–${fmtTimeOfDay(TimeOfDay(hour: ((uscitaAt!.hour * 60 + uscitaAt!.minute + 20) ~/ 60) % 24, minute: (uscitaAt!.hour * 60 + uscitaAt!.minute + 20) % 60))}",
               ),
               items: SchoolCoverChoice.values.map((c) {
                 return DropdownMenuItem(
@@ -5262,7 +5365,7 @@ class _CalendarioScreenStepAStabileState
           const SizedBox(height: 8),
           _sandraCompactRow(
             title: "Pranzo",
-            start: _engine.sandraPranzoStart,
+            start: _effectiveSandraPranzoStart(_selectedDay),
             end: _engine.sandraPranzoEnd,
             serve: sandraDecision.serveSandraPranzo,
             manual: manualPranzo,
@@ -5442,8 +5545,7 @@ class _CalendarioScreenStepAStabileState
     if (!mounted) return;
 
     setState(() {
-      _scuolaStart = start;
-      _scuolaEnd = end;
+      daySettingsStore.setSchoolOutTimesForDay(_selectedDay, start, end);
     });
   }
 
