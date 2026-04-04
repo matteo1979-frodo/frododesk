@@ -5621,7 +5621,9 @@ class _CalendarioScreenStepAStabileState
               fontWeight: FontWeight.w600,
             ),
           ),
+          const SizedBox(height: 6),
           if (cov.gapDetails.isNotEmpty) ...[
+            _buildSmartSandraSuggestion(cov.gapDetails.first.label),
             const SizedBox(height: 8),
             Text(
               "Primo problema: ${cov.gapDetails.first.label}",
@@ -5630,6 +5632,27 @@ class _CalendarioScreenStepAStabileState
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildSmartSandraSuggestion(String label) {
+    String suggestion;
+
+    final l = label.toLowerCase();
+
+    if (l.contains("mattina") || l.contains("ingresso")) {
+      suggestion = "Suggerimento: attiva Sandra (fascia mattina)";
+    } else if (l.contains("pranzo") || l.contains("13")) {
+      suggestion = "Suggerimento: attiva Sandra (fascia pranzo)";
+    } else if (l.contains("sera")) {
+      suggestion = "Suggerimento: attiva Sandra (fascia sera)";
+    } else {
+      suggestion = "Suggerimento: verifica copertura manuale";
+    }
+
+    return Text(
+      suggestion,
+      style: TextStyle(color: Colors.green, fontWeight: FontWeight.w700),
     );
   }
 
