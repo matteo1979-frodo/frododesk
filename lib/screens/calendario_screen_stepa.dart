@@ -5640,12 +5640,53 @@ class _CalendarioScreenStepAStabileState
 
     final l = label.toLowerCase();
 
-    if (l.contains("mattina") || l.contains("ingresso")) {
+    String? fascia;
+
+    final regex = RegExp(r'(\d{2}):(\d{2})');
+    final matches = regex.allMatches(label).toList();
+
+    if (matches.length >= 2) {
+      final h1 = int.parse(matches[0].group(1)!);
+      final m1 = int.parse(matches[0].group(2)!);
+
+      final totalMin = h1 * 60 + m1;
+
+      if (totalMin < 9 * 60) {
+        fascia = "mattina";
+      } else if (totalMin < 17 * 60) {
+        fascia = "pranzo";
+      } else {
+        fascia = "sera";
+      }
+    }
+
+    bool qualcunoPresente = false;
+
+    final matteoPlan = _turns.turnPlanForPersonDay(
+      person: TurnPerson.matteo,
+      day: _selectedDay,
+    );
+
+    final chiaraPlan = _turns.turnPlanForPersonDay(
+      person: TurnPerson.chiara,
+      day: _selectedDay,
+    );
+
+    if (fascia == "sera") {
+      qualcunoPresente = false;
+    }
+
+    if (fascia == "mattina") {
       suggestion = "Suggerimento: attiva Sandra (fascia mattina)";
-    } else if (l.contains("pranzo") || l.contains("13")) {
+    } else if (fascia == "pranzo") {
       suggestion = "Suggerimento: attiva Sandra (fascia pranzo)";
-    } else if (l.contains("sera")) {
-      suggestion = "Suggerimento: attiva Sandra (fascia sera)";
+    } else if (fascia == "sera") {
+      if (qualcunoPresente) {
+        suggestion = "Copertura già presente in fascia sera";
+      } else {
+        suggestion =
+            "Suggerimento: attiva Sandra (sera) oppure verifica se Chiara può coprire";
+      }
     } else {
       suggestion = "Suggerimento: verifica copertura manuale";
     }
