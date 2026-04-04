@@ -81,6 +81,7 @@ class _CalendarioScreenStepAStabileState
   bool _aliceSectionOpen = true;
   bool _decisionsSectionOpen = false;
   bool _permessoPanelOpen = false;
+  bool _turnManagementOpen = false;
   bool _showAliceEventEditor = false;
   bool _showAlicePeriodPanel = false;
 
@@ -3172,279 +3173,318 @@ class _CalendarioScreenStepAStabileState
             conflicts: chiaraEventConflicts,
           ),
           const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: () async {
-              final person = await showDialog<TurnPerson>(
-                context: context,
-                builder: (context) {
-                  return AlertDialog(
-                    title: const Text("Chi cambia turno?"),
-                    actions: [
-                      TextButton(
-                        onPressed: () =>
-                            Navigator.pop(context, TurnPerson.matteo),
-                        child: const Text("Matteo"),
-                      ),
-                      TextButton(
-                        onPressed: () =>
-                            Navigator.pop(context, TurnPerson.chiara),
-                        child: const Text("Chiara"),
-                      ),
-                    ],
-                  );
-                },
-              );
 
-              if (person == null) return;
-
-              final newTurn = await showDialog<TurnType>(
-                context: context,
-                builder: (context) {
-                  return AlertDialog(
-                    title: const Text("Nuovo turno"),
-                    actions: [
-                      TextButton(
-                        onPressed: () =>
-                            Navigator.pop(context, TurnType.mattina),
-                        child: const Text("Mattina"),
-                      ),
-                      TextButton(
-                        onPressed: () =>
-                            Navigator.pop(context, TurnType.pomeriggio),
-                        child: const Text("Pomeriggio"),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, TurnType.notte),
-                        child: const Text("Notte"),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, TurnType.off),
-                        child: const Text("OFF"),
-                      ),
-                    ],
-                  );
-                },
-              );
-
-              if (newTurn == null) return;
-
-              final personId = person == TurnPerson.matteo
-                  ? TurnPersonId.matteo
-                  : TurnPersonId.chiara;
-
-              final shiftId = newTurn == TurnType.mattina
-                  ? TurnOverrideShift.mattina
-                  : newTurn == TurnType.pomeriggio
-                  ? TurnOverrideShift.pomeriggio
-                  : newTurn == TurnType.notte
-                  ? TurnOverrideShift.notte
-                  : TurnOverrideShift.off;
-
-              turnOverrideStore.setDailyOverride(
-                person: personId,
-                day: _selectedDay,
-                newShift: shiftId,
-              );
-
-              setState(() {});
+          // 🔽 BLOCCO GESTIONE TURNI
+          InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: () {
+              setState(() {
+                _turnManagementOpen = !_turnManagementOpen;
+              });
             },
-            icon: const Icon(Icons.swap_horiz),
-            label: const Text("Cambio turno (solo oggi)"),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: () async {
-              final person = await showDialog<TurnPerson>(
-                context: context,
-                builder: (context) {
-                  return AlertDialog(
-                    title: const Text("Chi cambia turno nel periodo?"),
-                    actions: [
-                      TextButton(
-                        onPressed: () =>
-                            Navigator.pop(context, TurnPerson.matteo),
-                        child: const Text("Matteo"),
-                      ),
-                      TextButton(
-                        onPressed: () =>
-                            Navigator.pop(context, TurnPerson.chiara),
-                        child: const Text("Chiara"),
-                      ),
-                    ],
-                  );
-                },
-              );
-
-              if (person == null) return;
-              final startDay = await showDatePicker(
-                context: context,
-                initialDate: _selectedDay,
-                firstDate: DateTime(2024, 1, 1),
-                lastDate: DateTime(2035, 12, 31),
-                helpText: 'Data inizio periodo',
-                cancelText: 'Annulla',
-                confirmText: 'OK',
-                locale: const Locale('it', 'IT'),
-              );
-
-              if (startDay == null) return;
-
-              final endDay = await showDatePicker(
-                context: context,
-                initialDate: startDay,
-                firstDate: startDay,
-                lastDate: DateTime(2035, 12, 31),
-                helpText: 'Data fine periodo',
-                cancelText: 'Annulla',
-                confirmText: 'OK',
-                locale: const Locale('it', 'IT'),
-              );
-
-              if (endDay == null) return;
-
-              final newTurn = await showDialog<TurnType>(
-                context: context,
-                builder: (context) {
-                  return AlertDialog(
-                    title: const Text("Nuovo turno per il periodo"),
-                    actions: [
-                      TextButton(
-                        onPressed: () =>
-                            Navigator.pop(context, TurnType.mattina),
-                        child: const Text("Mattina"),
-                      ),
-                      TextButton(
-                        onPressed: () =>
-                            Navigator.pop(context, TurnType.pomeriggio),
-                        child: const Text("Pomeriggio"),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, TurnType.notte),
-                        child: const Text("Notte"),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, TurnType.off),
-                        child: const Text("OFF"),
-                      ),
-                    ],
-                  );
-                },
-              );
-
-              if (newTurn == null) return;
-
-              final personId = person == TurnPerson.matteo
-                  ? TurnPersonId.matteo
-                  : TurnPersonId.chiara;
-
-              final shiftId = newTurn == TurnType.mattina
-                  ? TurnOverrideShift.mattina
-                  : newTurn == TurnType.pomeriggio
-                  ? TurnOverrideShift.pomeriggio
-                  : newTurn == TurnType.notte
-                  ? TurnOverrideShift.notte
-                  : TurnOverrideShift.off;
-
-              turnOverrideStore.setPeriodOverride(
-                person: personId,
-                startDay: startDay,
-                endDay: endDay,
-                newShift: shiftId,
-              );
-
-              setState(() {});
-            },
-            icon: const Icon(Icons.date_range),
-            label: const Text("Cambio turno (periodo)"),
-          ),
-
-          const SizedBox(height: 8),
-
-          OutlinedButton.icon(
-            onPressed: _showNuovaRotazioneDialog,
-            icon: const Icon(Icons.autorenew),
-            label: const Text("Nuova rotazione"),
-          ),
-
-          const SizedBox(height: 8),
-
-          OutlinedButton.icon(
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) {
-                  return Dialog(
-                    insetPadding: const EdgeInsets.all(16),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: FourthShiftPanel(
-                        store: coreStore.fourthShiftStore,
-                        onChanged: () {
-                          setState(() {});
-                          ipsStore.refresh(now: _selectedDay);
-                        },
-                      ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      "Gestione turni e rotazioni",
+                      style: TextStyle(fontWeight: FontWeight.w900),
                     ),
-                  );
-                },
-              );
-            },
-            icon: const Icon(Icons.repeat),
-            label: const Text("Quarta squadra"),
+                  ),
+                  Icon(
+                    _turnManagementOpen ? Icons.expand_less : Icons.expand_more,
+                  ),
+                ],
+              ),
+            ),
           ),
 
           const SizedBox(height: 8),
 
-          _cardOverrideStepB(_getOverridesForDay(_selectedDay)),
+          if (_turnManagementOpen) ...[
+            OutlinedButton.icon(
+              onPressed: () async {
+                final person = await showDialog<TurnPerson>(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: const Text("Chi cambia turno?"),
+                      actions: [
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pop(context, TurnPerson.matteo),
+                          child: const Text("Matteo"),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pop(context, TurnPerson.chiara),
+                          child: const Text("Chiara"),
+                        ),
+                      ],
+                    );
+                  },
+                );
 
-          OutlinedButton.icon(
-            onPressed: () async {
-              final person = await showDialog<TurnPersonId>(
-                context: context,
-                builder: (context) {
-                  return AlertDialog(
-                    title: const Text("Quale nuova rotazione vuoi rimuovere?"),
-                    actions: [
-                      TextButton(
-                        onPressed: () =>
-                            Navigator.pop(context, TurnPersonId.matteo),
-                        child: const Text("Matteo"),
+                if (person == null) return;
+
+                final newTurn = await showDialog<TurnType>(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: const Text("Nuovo turno"),
+                      actions: [
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pop(context, TurnType.mattina),
+                          child: const Text("Mattina"),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pop(context, TurnType.pomeriggio),
+                          child: const Text("Pomeriggio"),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pop(context, TurnType.notte),
+                          child: const Text("Notte"),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, TurnType.off),
+                          child: const Text("OFF"),
+                        ),
+                      ],
+                    );
+                  },
+                );
+
+                if (newTurn == null) return;
+
+                final personId = person == TurnPerson.matteo
+                    ? TurnPersonId.matteo
+                    : TurnPersonId.chiara;
+
+                final shiftId = newTurn == TurnType.mattina
+                    ? TurnOverrideShift.mattina
+                    : newTurn == TurnType.pomeriggio
+                    ? TurnOverrideShift.pomeriggio
+                    : newTurn == TurnType.notte
+                    ? TurnOverrideShift.notte
+                    : TurnOverrideShift.off;
+
+                turnOverrideStore.setDailyOverride(
+                  person: personId,
+                  day: _selectedDay,
+                  newShift: shiftId,
+                );
+
+                setState(() {});
+              },
+              icon: const Icon(Icons.swap_horiz),
+              label: const Text("Cambio turno (solo oggi)"),
+            ),
+
+            const SizedBox(height: 8),
+
+            OutlinedButton.icon(
+              onPressed: () async {
+                final person = await showDialog<TurnPerson>(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: const Text("Chi cambia turno nel periodo?"),
+                      actions: [
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pop(context, TurnPerson.matteo),
+                          child: const Text("Matteo"),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pop(context, TurnPerson.chiara),
+                          child: const Text("Chiara"),
+                        ),
+                      ],
+                    );
+                  },
+                );
+
+                if (person == null) return;
+
+                final startDay = await showDatePicker(
+                  context: context,
+                  initialDate: _selectedDay,
+                  firstDate: DateTime(2024, 1, 1),
+                  lastDate: DateTime(2035, 12, 31),
+                  helpText: 'Data inizio periodo',
+                  cancelText: 'Annulla',
+                  confirmText: 'OK',
+                  locale: const Locale('it', 'IT'),
+                );
+
+                if (startDay == null) return;
+
+                final endDay = await showDatePicker(
+                  context: context,
+                  initialDate: startDay,
+                  firstDate: startDay,
+                  lastDate: DateTime(2035, 12, 31),
+                  helpText: 'Data fine periodo',
+                  cancelText: 'Annulla',
+                  confirmText: 'OK',
+                  locale: const Locale('it', 'IT'),
+                );
+
+                if (endDay == null) return;
+
+                final newTurn = await showDialog<TurnType>(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: const Text("Nuovo turno per il periodo"),
+                      actions: [
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pop(context, TurnType.mattina),
+                          child: const Text("Mattina"),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pop(context, TurnType.pomeriggio),
+                          child: const Text("Pomeriggio"),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pop(context, TurnType.notte),
+                          child: const Text("Notte"),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, TurnType.off),
+                          child: const Text("OFF"),
+                        ),
+                      ],
+                    );
+                  },
+                );
+
+                if (newTurn == null) return;
+
+                final personId = person == TurnPerson.matteo
+                    ? TurnPersonId.matteo
+                    : TurnPersonId.chiara;
+
+                final shiftId = newTurn == TurnType.mattina
+                    ? TurnOverrideShift.mattina
+                    : newTurn == TurnType.pomeriggio
+                    ? TurnOverrideShift.pomeriggio
+                    : newTurn == TurnType.notte
+                    ? TurnOverrideShift.notte
+                    : TurnOverrideShift.off;
+
+                turnOverrideStore.setPeriodOverride(
+                  person: personId,
+                  startDay: startDay,
+                  endDay: endDay,
+                  newShift: shiftId,
+                );
+
+                setState(() {});
+              },
+              icon: const Icon(Icons.date_range),
+              label: const Text("Cambio turno (periodo)"),
+            ),
+
+            const SizedBox(height: 8),
+
+            OutlinedButton.icon(
+              onPressed: _showNuovaRotazioneDialog,
+              icon: const Icon(Icons.autorenew),
+              label: const Text("Nuova rotazione"),
+            ),
+
+            const SizedBox(height: 8),
+
+            OutlinedButton.icon(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return Dialog(
+                      insetPadding: const EdgeInsets.all(16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: FourthShiftPanel(
+                          store: coreStore.fourthShiftStore,
+                          onChanged: () {
+                            setState(() {});
+                            ipsStore.refresh(now: _selectedDay);
+                          },
+                        ),
                       ),
-                      TextButton(
-                        onPressed: () =>
-                            Navigator.pop(context, TurnPersonId.chiara),
-                        child: const Text("Chiara"),
+                    );
+                  },
+                );
+              },
+              icon: const Icon(Icons.repeat),
+              label: const Text("Quarta squadra"),
+            ),
+
+            const SizedBox(height: 8),
+
+            _cardOverrideStepB(_getOverridesForDay(_selectedDay)),
+
+            const SizedBox(height: 8),
+
+            OutlinedButton.icon(
+              onPressed: () async {
+                final person = await showDialog<TurnPersonId>(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: const Text(
+                        "Quale nuova rotazione vuoi rimuovere?",
                       ),
-                    ],
-                  );
-                },
-              );
+                      actions: [
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pop(context, TurnPersonId.matteo),
+                          child: const Text("Matteo"),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pop(context, TurnPersonId.chiara),
+                          child: const Text("Chiara"),
+                        ),
+                      ],
+                    );
+                  },
+                );
 
-              if (person == null) return;
+                if (person == null) return;
 
-              final removed = coreStore.rotationOverrideStore.removeActiveFor(
-                person: person,
-                day: _selectedDay,
-              );
+                final removed = coreStore.rotationOverrideStore.removeActiveFor(
+                  person: person,
+                  day: _selectedDay,
+                );
 
-              if (!mounted) return;
+                if (!mounted) return;
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    removed
-                        ? "Nuova rotazione rimossa con successo."
-                        : "Nessuna nuova rotazione attiva da rimuovere.",
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      removed
+                          ? "Nuova rotazione rimossa con successo."
+                          : "Nessuna nuova rotazione attiva da rimuovere.",
+                    ),
                   ),
-                ),
-              );
+                );
 
-              setState(() {});
-            },
-            icon: const Icon(Icons.restore),
-            label: const Text("Rimuovi nuova rotazione attiva"),
-          ),
-
+                setState(() {});
+              },
+              icon: const Icon(Icons.restore),
+              label: const Text("Rimuovi nuova rotazione attiva"),
+            ),
+          ],
           const SizedBox(height: 8),
           Text(
             "Nota: se per Matteo o Chiara esiste un periodo attivo di Quarta Squadra, i turni mostrati qui sono già quelli della Quarta Squadra.",
