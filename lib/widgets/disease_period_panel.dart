@@ -27,6 +27,8 @@ class _DiseasePeriodPanelState extends State<DiseasePeriodPanel> {
   DateTime? _startDate;
   DateTime? _endDate;
 
+  bool _isOpen = false;
+
   String _fmtDate(DateTime d) => DateFormat('dd/MM/yyyy').format(d);
 
   String _personLabel(String personId) {
@@ -246,7 +248,9 @@ class _DiseasePeriodPanelState extends State<DiseasePeriodPanel> {
     );
 
     if (saved == true) {
-      setState(() {});
+      setState(() {
+        _isOpen = true;
+      });
       widget.onChanged();
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -279,63 +283,450 @@ class _DiseasePeriodPanelState extends State<DiseasePeriodPanel> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Malattia a periodo',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Gestisci i periodi di malattia. Il form di inserimento si apre solo quando serve.',
-              style: TextStyle(color: Colors.black.withOpacity(0.6)),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _openAddPeriodDialog,
-                icon: const Icon(Icons.open_in_new),
-                label: const Text('Apri Malattia'),
+            InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () {
+                setState(() {
+                  _isOpen = !_isOpen;
+                });
+              },
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Malattia a periodo',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Gestisci i periodi di malattia. Il form di inserimento si apre solo quando serve.',
+                          style: TextStyle(
+                            color: Colors.black.withOpacity(0.6),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(_isOpen ? Icons.expand_less : Icons.expand_more),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 10),
-            const Text(
-              'Periodi salvati',
-              style: TextStyle(fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 10),
-            if (periods.isEmpty)
-              Text(
-                'Nessun periodo malattia inserito.',
-                style: TextStyle(color: Colors.black.withOpacity(0.65)),
-              )
-            else
-              ...periods.map(
-                (p) => Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.black12),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '${_personLabel(p.personId)} • ${_typeLabel(p.type)}\n${_fmtDate(p.startDate)} → ${_fmtDate(p.endDate)}',
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => _removePeriod(p),
-                        icon: const Icon(Icons.delete_outline),
-                        tooltip: 'Rimuovi periodo',
-                      ),
-                    ],
-                  ),
+            if (_isOpen) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _openAddPeriodDialog,
+                  icon: const Icon(Icons.open_in_new),
+                  label: const Text('Apri Malattia'),
                 ),
               ),
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 10),
+              const Text(
+                'Periodi salvati',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 10),
+              if (periods.isEmpty)
+                Text(
+                  'Nessun periodo malattia inserito.',
+                  style: TextStyle(color: Colors.black.withOpacity(0.65)),
+                )
+              else
+                ...List.generate(periods.length, (index) {
+                  final p = periods[index];
+
+                  final isActive =
+                      !widget.selectedDay.isBefore(p.startDate) &&
+                      !widget.selectedDay.isAfter(p.endDate);
+
+                  return StatefulBuilder(
+                    builder: (context, setLocalState) {
+                      bool isExpanded = false;
+
+                      return StatefulBuilder(
+                        builder: (context, setInnerState) {
+                          return InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () {
+                              setInnerState(() {
+                                isExpanded = !isExpanded;
+                              });
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: (isActive ? Colors.blue : Colors.red)
+                                    .withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: (isActive ? Colors.blue : Colors.red)
+                                      .withOpacity(0.25),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.sick_outlined, size: 18),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              '${_personLabel(p.personId)} • ${_typeLabel(p.type)}',
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              '${_fmtDate(p.startDate)} → ${_fmtDate(p.endDate)}',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.black.withOpacity(
+                                                  0.6,
+                                                ),
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      if (isActive)
+                                        const Icon(
+                                          Icons.visibility,
+                                          size: 18,
+                                          color: Colors.blue,
+                                        ),
+                                      const SizedBox(width: 8),
+                                      Icon(
+                                        isExpanded
+                                            ? Icons.expand_less
+                                            : Icons.expand_more,
+                                        size: 20,
+                                        color: Colors.black54,
+                                      ),
+                                    ],
+                                  ),
+                                  if (isExpanded) ...[
+                                    const SizedBox(height: 10),
+                                    if (isActive)
+                                      const Text(
+                                        "Attivo sul giorno selezionato",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: OutlinedButton.icon(
+                                            onPressed: () async {
+                                              DateTime tempStart = p.startDate;
+                                              DateTime tempEnd = p.endDate;
+                                              DiseaseType tempType = p.type;
+
+                                              final saved = await showDialog<bool>(
+                                                context: context,
+                                                builder: (context) {
+                                                  return StatefulBuilder(
+                                                    builder: (context, setDialogState) {
+                                                      return AlertDialog(
+                                                        title: const Text(
+                                                          'Modifica malattia',
+                                                        ),
+                                                        content: SingleChildScrollView(
+                                                          child: Column(
+                                                            mainAxisSize:
+                                                                MainAxisSize
+                                                                    .min,
+                                                            children: [
+                                                              TextFormField(
+                                                                initialValue:
+                                                                    _personLabel(
+                                                                      p.personId,
+                                                                    ),
+                                                                enabled: false,
+                                                                decoration:
+                                                                    const InputDecoration(
+                                                                      labelText:
+                                                                          'Persona',
+                                                                    ),
+                                                              ),
+                                                              const SizedBox(
+                                                                height: 12,
+                                                              ),
+                                                              DropdownButtonFormField<
+                                                                DiseaseType
+                                                              >(
+                                                                value: tempType,
+                                                                decoration:
+                                                                    const InputDecoration(
+                                                                      labelText:
+                                                                          'Tipo malattia',
+                                                                    ),
+                                                                items: DiseaseType
+                                                                    .values
+                                                                    .map((t) {
+                                                                      return DropdownMenuItem(
+                                                                        value:
+                                                                            t,
+                                                                        child: Text(
+                                                                          _typeLabel(
+                                                                            t,
+                                                                          ),
+                                                                        ),
+                                                                      );
+                                                                    })
+                                                                    .toList(),
+                                                                onChanged: (v) {
+                                                                  if (v ==
+                                                                      null) {
+                                                                    return;
+                                                                  }
+                                                                  setDialogState(
+                                                                    () {
+                                                                      tempType =
+                                                                          v;
+                                                                    },
+                                                                  );
+                                                                },
+                                                              ),
+                                                              const SizedBox(
+                                                                height: 12,
+                                                              ),
+                                                              Row(
+                                                                children: [
+                                                                  Expanded(
+                                                                    child: OutlinedButton.icon(
+                                                                      onPressed: () async {
+                                                                        final picked = await showDatePicker(
+                                                                          context:
+                                                                              context,
+                                                                          initialDate:
+                                                                              tempStart,
+                                                                          firstDate: DateTime(
+                                                                            2024,
+                                                                            1,
+                                                                            1,
+                                                                          ),
+                                                                          lastDate: DateTime(
+                                                                            2035,
+                                                                            12,
+                                                                            31,
+                                                                          ),
+                                                                          helpText:
+                                                                              'Seleziona data inizio',
+                                                                          cancelText:
+                                                                              'Annulla',
+                                                                          confirmText:
+                                                                              'OK',
+                                                                          locale: const Locale(
+                                                                            'it',
+                                                                            'IT',
+                                                                          ),
+                                                                        );
+
+                                                                        if (picked ==
+                                                                            null) {
+                                                                          return;
+                                                                        }
+
+                                                                        setDialogState(() {
+                                                                          tempStart = DateTime(
+                                                                            picked.year,
+                                                                            picked.month,
+                                                                            picked.day,
+                                                                          );
+                                                                          if (tempEnd.isBefore(
+                                                                            tempStart,
+                                                                          )) {
+                                                                            tempEnd =
+                                                                                tempStart;
+                                                                          }
+                                                                        });
+                                                                      },
+                                                                      icon: const Icon(
+                                                                        Icons
+                                                                            .calendar_today,
+                                                                      ),
+                                                                      label: Text(
+                                                                        'Dal ${_fmtDate(tempStart)}',
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                  const SizedBox(
+                                                                    width: 8,
+                                                                  ),
+                                                                  Expanded(
+                                                                    child: OutlinedButton.icon(
+                                                                      onPressed: () async {
+                                                                        final picked = await showDatePicker(
+                                                                          context:
+                                                                              context,
+                                                                          initialDate:
+                                                                              tempEnd,
+                                                                          firstDate: DateTime(
+                                                                            2024,
+                                                                            1,
+                                                                            1,
+                                                                          ),
+                                                                          lastDate: DateTime(
+                                                                            2035,
+                                                                            12,
+                                                                            31,
+                                                                          ),
+                                                                          helpText:
+                                                                              'Seleziona data fine',
+                                                                          cancelText:
+                                                                              'Annulla',
+                                                                          confirmText:
+                                                                              'OK',
+                                                                          locale: const Locale(
+                                                                            'it',
+                                                                            'IT',
+                                                                          ),
+                                                                        );
+
+                                                                        if (picked ==
+                                                                            null) {
+                                                                          return;
+                                                                        }
+
+                                                                        setDialogState(() {
+                                                                          tempEnd = DateTime(
+                                                                            picked.year,
+                                                                            picked.month,
+                                                                            picked.day,
+                                                                          );
+                                                                        });
+                                                                      },
+                                                                      icon: const Icon(
+                                                                        Icons
+                                                                            .calendar_month,
+                                                                      ),
+                                                                      label: Text(
+                                                                        'Al ${_fmtDate(tempEnd)}',
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                        actions: [
+                                                          TextButton(
+                                                            onPressed: () =>
+                                                                Navigator.of(
+                                                                  context,
+                                                                ).pop(false),
+                                                            child: const Text(
+                                                              'Annulla',
+                                                            ),
+                                                          ),
+                                                          ElevatedButton.icon(
+                                                            onPressed: () {
+                                                              if (tempEnd
+                                                                  .isBefore(
+                                                                    tempStart,
+                                                                  )) {
+                                                                ScaffoldMessenger.of(
+                                                                  context,
+                                                                ).showSnackBar(
+                                                                  const SnackBar(
+                                                                    content: Text(
+                                                                      'La data fine non può essere prima della data inizio.',
+                                                                    ),
+                                                                  ),
+                                                                );
+                                                                return;
+                                                              }
+
+                                                              widget.store
+                                                                  .removePeriod(
+                                                                    p,
+                                                                  );
+                                                              widget.store.addPeriod(
+                                                                DiseasePeriod(
+                                                                  personId: p
+                                                                      .personId,
+                                                                  type:
+                                                                      tempType,
+                                                                  startDate:
+                                                                      tempStart,
+                                                                  endDate:
+                                                                      tempEnd,
+                                                                ),
+                                                              );
+
+                                                              Navigator.of(
+                                                                context,
+                                                              ).pop(true);
+                                                            },
+                                                            icon: const Icon(
+                                                              Icons.save,
+                                                            ),
+                                                            label: const Text(
+                                                              'Salva modifica',
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      );
+                                                    },
+                                                  );
+                                                },
+                                              );
+
+                                              if (saved == true) {
+                                                setState(() {});
+                                                widget.onChanged();
+                                              }
+                                            },
+                                            icon: const Icon(Icons.edit),
+                                            label: const Text("Modifica"),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: OutlinedButton.icon(
+                                            onPressed: () {
+                                              _removePeriod(p);
+                                            },
+                                            icon: const Icon(
+                                              Icons.delete_outline,
+                                            ),
+                                            label: const Text("Rimuovi"),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  );
+                }),
+            ],
           ],
         ),
       ),

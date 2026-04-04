@@ -4,18 +4,17 @@ import 'package:flutter/material.dart';
 import '../logic/ferie_period_store.dart';
 import '../models/day_override.dart';
 
-/// Pannello CNC per gestire "ferie lunghe" (periodi) per Matteo/Chiara.
-/// - Aggiungi periodo (start/end)
-/// - Vedi lista
-/// - Elimina singolo periodo
-///
-/// NOTE:
-/// - In-memory (come store). Persistenza dopo.
-/// - Non tocca Override Step B: qui stiamo solo costruendo il sottoprogramma UI.
 class FeriePeriodPanel extends StatefulWidget {
   final FeriePeriodStore store;
+  final DateTime? selectedDay;
+  final VoidCallback? onChanged;
 
-  const FeriePeriodPanel({super.key, required this.store});
+  const FeriePeriodPanel({
+    super.key,
+    required this.store,
+    this.selectedDay,
+    this.onChanged,
+  });
 
   @override
   State<FeriePeriodPanel> createState() => _FeriePeriodPanelState();
@@ -23,6 +22,8 @@ class FeriePeriodPanel extends StatefulWidget {
 
 class _FeriePeriodPanelState extends State<FeriePeriodPanel> {
   FeriePerson _person = FeriePerson.matteo;
+  bool _isOpen = false;
+  final Set<int> _expandedIndexes = <int>{};
 
   DateTime _onlyDate(DateTime d) => DateTime(d.year, d.month, d.day);
 
@@ -30,7 +31,7 @@ class _FeriePeriodPanelState extends State<FeriePeriodPanel> {
     final x = _onlyDate(d);
     final mm = x.month.toString().padLeft(2, '0');
     final dd = x.day.toString().padLeft(2, '0');
-    return "${x.year}-$mm-$dd";
+    return "$dd-$mm-${x.year}";
   }
 
   String _personLabel(FeriePerson p) {
@@ -40,6 +41,14 @@ class _FeriePeriodPanelState extends State<FeriePeriodPanel> {
       case FeriePerson.chiara:
         return "Chiara";
     }
+  }
+
+  bool _isActiveOnSelectedDay(FeriePeriod p) {
+    final selected = widget.selectedDay;
+    if (selected == null) return false;
+    final d0 = _onlyDate(selected);
+    return !d0.isBefore(_onlyDate(p.startDay)) &&
+        !d0.isAfter(_onlyDate(p.endDay));
   }
 
   Future<DateTime?> _pickDate({
@@ -81,7 +90,10 @@ class _FeriePeriodPanelState extends State<FeriePeriodPanel> {
       widget.store.add(
         FeriePeriod(person: _person, startDay: start, endDay: end),
       );
+      _isOpen = true;
     });
+
+    widget.onChanged?.call();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -92,9 +104,132 @@ class _FeriePeriodPanelState extends State<FeriePeriodPanel> {
     );
   }
 
+  Future<void> _editPeriod(FeriePeriod p) async {
+    DateTime tempStart = _onlyDate(p.startDay);
+    DateTime tempEnd = _onlyDate(p.endDay);
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Modifica ferie'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      initialValue: _personLabel(p.person),
+                      enabled: false,
+                      decoration: const InputDecoration(labelText: 'Persona'),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final picked = await _pickDate(
+                                initial: tempStart,
+                                helpText: "Seleziona INIZIO ferie",
+                              );
+                              if (picked == null) return;
+
+                              setDialogState(() {
+                                tempStart = picked;
+                                if (tempEnd.isBefore(tempStart)) {
+                                  tempEnd = tempStart;
+                                }
+                              });
+                            },
+                            icon: const Icon(Icons.calendar_today),
+                            label: Text('Dal ${_fmt(tempStart)}'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final picked = await _pickDate(
+                                initial: tempEnd,
+                                helpText: "Seleziona FINE ferie",
+                              );
+                              if (picked == null) return;
+
+                              setDialogState(() {
+                                tempEnd = picked;
+                              });
+                            },
+                            icon: const Icon(Icons.calendar_month),
+                            label: Text('Al ${_fmt(tempEnd)}'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Annulla'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    if (tempEnd.isBefore(tempStart)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'La data fine non può essere prima della data inizio.',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+
+                    widget.store.remove(p);
+                    widget.store.add(
+                      FeriePeriod(
+                        person: p.person,
+                        startDay: tempStart,
+                        endDay: tempEnd,
+                      ),
+                    );
+
+                    Navigator.of(context).pop(true);
+                  },
+                  icon: const Icon(Icons.save),
+                  label: const Text('Salva modifica'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (saved == true) {
+      setState(() {});
+      widget.onChanged?.call();
+    }
+  }
+
+  void _removePeriod(FeriePeriod p) {
+    setState(() {
+      widget.store.remove(p);
+    });
+
+    widget.onChanged?.call();
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Periodo ferie rimosso.')));
+  }
+
   @override
   Widget build(BuildContext context) {
-    final items = widget.store.periodsFor(_person);
+    final items = widget.store.all();
 
     return Card(
       elevation: 0,
@@ -104,79 +239,204 @@ class _FeriePeriodPanelState extends State<FeriePeriodPanel> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Ferie lunghe (periodi)",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              "Inserisci periodi 1–3 settimane (modificabili/eliminabili).",
-              style: TextStyle(color: Colors.black.withOpacity(0.6)),
-            ),
-            const SizedBox(height: 12),
-
-            // Selettore persona
-            Row(
-              children: [
-                const Text(
-                  "Persona:",
-                  style: TextStyle(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(width: 12),
-                DropdownButton<FeriePerson>(
-                  value: _person,
-                  items: FeriePerson.values.map((p) {
-                    return DropdownMenuItem(
-                      value: p,
-                      child: Text(_personLabel(p)),
-                    );
-                  }).toList(),
-                  onChanged: (v) {
-                    if (v == null) return;
-                    setState(() => _person = v);
-                  },
-                ),
-                const Spacer(),
-                ElevatedButton.icon(
-                  onPressed: _addPeriod,
-                  icon: const Icon(Icons.add),
-                  label: const Text("Aggiungi"),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 10),
-            const Divider(),
-            const SizedBox(height: 10),
-
-            if (items.isEmpty)
-              Text(
-                "Nessun periodo inserito per ${_personLabel(_person)}.",
-                style: TextStyle(color: Colors.black.withOpacity(0.65)),
-              )
-            else
-              Column(
-                children: items.map((p) {
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      "${_fmt(p.startDay)} → ${_fmt(p.endDay)}",
-                      style: const TextStyle(fontWeight: FontWeight.w800),
+            InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () {
+                setState(() {
+                  _isOpen = !_isOpen;
+                });
+              },
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Ferie lunghe (periodi)",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          "Inserisci periodi 1–3 settimane (modificabili/eliminabili).",
+                          style: TextStyle(
+                            color: Colors.black.withOpacity(0.6),
+                          ),
+                        ),
+                      ],
                     ),
-                    subtitle: Text(
-                      "Stato suggerito: ${OverrideStatus.ferie.name}",
-                      style: TextStyle(color: Colors.black.withOpacity(0.6)),
-                    ),
-                    trailing: IconButton(
-                      tooltip: "Elimina periodo",
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: () {
-                        setState(() => widget.store.remove(p));
-                      },
+                  ),
+                  Icon(_isOpen ? Icons.expand_less : Icons.expand_more),
+                ],
+              ),
+            ),
+            if (_isOpen) ...[
+              const SizedBox(height: 12),
+
+              Row(
+                children: [
+                  const Text(
+                    "Persona:",
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(width: 12),
+                  DropdownButton<FeriePerson>(
+                    value: _person,
+                    items: FeriePerson.values.map((p) {
+                      return DropdownMenuItem(
+                        value: p,
+                        child: Text(_personLabel(p)),
+                      );
+                    }).toList(),
+                    onChanged: (v) {
+                      if (v == null) return;
+                      setState(() {
+                        _person = v;
+                        _expandedIndexes.clear();
+                      });
+                    },
+                  ),
+                  const Spacer(),
+                  ElevatedButton.icon(
+                    onPressed: _addPeriod,
+                    icon: const Icon(Icons.add),
+                    label: const Text("Aggiungi"),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 10),
+              const Divider(),
+              const SizedBox(height: 10),
+
+              if (items.isEmpty)
+                Text(
+                  "Nessun periodo inserito per ${_personLabel(_person)}.",
+                  style: TextStyle(color: Colors.black.withOpacity(0.65)),
+                )
+              else
+                ...List.generate(items.length, (index) {
+                  final p = items[index];
+                  final isActive = _isActiveOnSelectedDay(p);
+                  final isExpanded = _expandedIndexes.contains(index);
+
+                  return InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () {
+                      setState(() {
+                        if (isExpanded) {
+                          _expandedIndexes.remove(index);
+                        } else {
+                          _expandedIndexes
+                            ..clear()
+                            ..add(index);
+                        }
+                      });
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: (isActive ? Colors.blue : Colors.teal)
+                            .withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: (isActive ? Colors.blue : Colors.teal)
+                              .withOpacity(0.25),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.beach_access_outlined, size: 18),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _personLabel(p.person),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      "${_fmt(p.startDay)} → ${_fmt(p.endDay)}",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.black.withOpacity(0.6),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isActive)
+                                const Icon(
+                                  Icons.visibility,
+                                  size: 18,
+                                  color: Colors.blue,
+                                ),
+                              const SizedBox(width: 8),
+                              Icon(
+                                isExpanded
+                                    ? Icons.expand_less
+                                    : Icons.expand_more,
+                                size: 20,
+                                color: Colors.black54,
+                              ),
+                            ],
+                          ),
+                          if (isExpanded) ...[
+                            const SizedBox(height: 10),
+                            Text(
+                              "Stato suggerito: ${OverrideStatus.ferie.name}",
+                              style: TextStyle(
+                                color: Colors.black.withOpacity(0.72),
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            if (isActive) ...[
+                              const Text(
+                                "Attivo sul giorno selezionato",
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: 6),
+                            ],
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => _editPeriod(p),
+                                    icon: const Icon(Icons.edit),
+                                    label: const Text("Modifica"),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () => _removePeriod(p),
+                                    icon: const Icon(Icons.delete_outline),
+                                    label: const Text("Rimuovi"),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   );
-                }).toList(),
-              ),
+                }),
+            ],
           ],
         ),
       ),

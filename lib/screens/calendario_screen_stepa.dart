@@ -2789,7 +2789,14 @@ class _CalendarioScreenStepAStabileState
             ),
           ),
           const SizedBox(height: 12),
-          FeriePeriodPanel(store: coreStore.feriePeriodStore),
+          FeriePeriodPanel(
+            store: coreStore.feriePeriodStore,
+            selectedDay: _selectedDay,
+            onChanged: () {
+              setState(() {});
+              ipsStore.refresh(now: _selectedDay);
+            },
+          ),
           const SizedBox(height: 12),
           DiseasePeriodPanel(
             selectedDay: _selectedDay,
