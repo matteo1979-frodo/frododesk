@@ -2763,7 +2763,7 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
-  Widget _buildRealitySection() {
+  Widget _buildRealitySection(CoverageResultStepA cov) {
     return _buildSectionBox(
       title: "REALTÀ DEL GIORNO",
       subtitle: "Turni, eventi adulti e stato reale delle persone oggi.",
@@ -2776,6 +2776,9 @@ class _CalendarioScreenStepAStabileState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (cov.gapDetails.isNotEmpty)
+            _buildActionSuggestionsPlaceholder(cov),
+          const SizedBox(height: 12),
           Container(key: _turniKey, child: _cardTurni()),
           const SizedBox(height: 12),
           Container(
@@ -2888,7 +2891,7 @@ class _CalendarioScreenStepAStabileState
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(flex: 5, child: _buildRealitySection()),
+        Expanded(flex: 5, child: _buildRealitySection(cov)),
         const SizedBox(width: 12),
         Expanded(
           flex: 4,
@@ -2913,7 +2916,7 @@ class _CalendarioScreenStepAStabileState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildRealitySection(),
+        _buildRealitySection(cov),
         const SizedBox(height: 12),
         _buildAliceSection(
           showSummerCampSpecialCard: showSummerCampSpecialCard,
@@ -2932,7 +2935,7 @@ class _CalendarioScreenStepAStabileState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildRealitySection(),
+        _buildRealitySection(cov),
         const SizedBox(height: 12),
         _buildAliceSection(
           showSummerCampSpecialCard: showSummerCampSpecialCard,
@@ -5575,6 +5578,57 @@ class _CalendarioScreenStepAStabileState
             child,
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildActionSuggestionsPlaceholder(CoverageResultStepA cov) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lightbulb_outline, size: 18),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  "Azioni consigliate",
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          Text(
+            cov.gapDetails.length == 1
+                ? "C'è 1 problema da gestire oggi"
+                : "Ci sono ${cov.gapDetails.length} problemi da gestire oggi",
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Valuta di attivare un supporto o modificare un turno",
+            style: TextStyle(
+              color: Colors.black.withOpacity(0.7),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (cov.gapDetails.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              "Primo problema: ${cov.gapDetails.first.label}",
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ],
+        ],
       ),
     );
   }

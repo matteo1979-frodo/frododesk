@@ -1,6 +1,6 @@
 # FRODODESK — PROJECT MEMORY
 
-Ultimo aggiornamento: 24 Marzo 2026
+Ultimo aggiornamento: 4 Aprile 2026
 
 ## IDENTITÀ DEL PROGETTO
 
@@ -1563,3 +1563,220 @@ Non sono:
 ✔ implementato  
 ✔ testato in app reale  
 ✔ comportamento coerente con la filosofia del sistema  
+
+---
+
+# 🔥 AGGIORNAMENTO — 4 APRILE 2026
+
+## Refactor reale della sezione “Realtà del giorno”
+
+Durante questa chat è stato fatto un salto importante nella leggibilità reale del calendario, senza toccare la logica di base del motore.
+
+La direzione emersa è stata questa:
+
+👉 nella sezione **Realtà del giorno** devono restare subito visibili solo le informazioni da leggere al volo  
+👉 tutto ciò che è azione/configurazione deve essere compatto e apribile solo quando serve
+
+Questa distinzione è diventata un principio strutturale della UI FrodoDesk.
+
+---
+
+## Ferie lunghe — evoluzione completa della UI
+
+Il pannello `FeriePeriodPanel` è stato trasformato nello stesso linguaggio visivo di `DiseasePeriodPanel` e della parte evoluta di Alice.
+
+### Prima
+- lista semplice
+- lettura piatta
+- nessuna gerarchia visiva
+- persona filtrata nel dropdown
+- poca percezione dello stato attivo
+
+### Dopo
+- pannello collassabile
+- card singole espandibili
+- visualizzazione di tutti i periodi salvati
+- occhio 👁 sul periodo attivo rispetto al giorno selezionato
+- pulsanti **Modifica** / **Rimuovi**
+- formato data coerente col resto del sistema (`gg-mm-aaaa`)
+
+### Significato
+Questo non è solo un miglioramento estetico.
+
+👉 il sistema ora mostra meglio la realtà attiva e riduce il carico mentale  
+👉 ferie e malattia parlano finalmente lo stesso linguaggio visivo
+
+---
+
+## Malattia a periodo — evoluzione completa della UI
+
+Anche `DiseasePeriodPanel` è stato portato a una forma molto più leggibile e coerente con il resto del calendario.
+
+### Evoluzione introdotta
+- pannello collassabile
+- card singole espandibili
+- segnale visivo del periodo attivo sul giorno selezionato
+- pulsanti **Modifica** / **Rimuovi**
+- struttura coerente con Alice e Ferie
+
+### Significato
+Matteo può ora leggere rapidamente:
+- chi è malato
+- di che tipo di malattia si tratta
+- se quel periodo è attivo oggi
+- ed eventualmente modificarlo senza caos
+
+Questo conferma un nuovo standard visivo FrodoDesk:
+
+👉 lista lunga piatta = da evitare  
+👉 card vive, richiudibili, leggibili al volo = strada corretta
+
+---
+
+## Turni — separazione realtà / azione
+
+Il cambiamento più importante di questa chat riguarda la card **Turni**.
+
+### Osservazione reale emersa
+La parte alta della card era corretta e piacevole:
+
+- Matteo
+- Chiara
+- turno
+- stato reale
+- eventi / conflitti
+
+Ma la parte sotto era diventata un muro di bottoni:
+
+- cambio turno
+- cambio turno periodo
+- nuova rotazione
+- quarta squadra
+- permessi
+- rimozione rotazione attiva
+
+Questo occupava troppo spazio e mescolava la realtà con gli strumenti operativi.
+
+### Decisione applicata
+È stato introdotto un nuovo blocco collassabile:
+
+👉 **Gestione turni e rotazioni**
+
+Dentro questo blocco vivono ora i comandi operativi:
+
+- cambio turno (solo oggi)
+- cambio turno (periodo)
+- nuova rotazione
+- quarta squadra
+- permessi
+- rimuovi nuova rotazione attiva
+
+### Significato architetturale
+Questa modifica è molto più importante di quanto sembri.
+
+Da ora in poi la card Turni separa:
+
+### sopra = realtà
+- cosa sta succedendo oggi
+- chi lavora
+- chi è in ferie o malattia
+- quali eventi/conflitti esistono
+
+### sotto = azione
+- cosa posso fare per cambiare la realtà
+
+Questa è una decisione strutturale molto forte nella filosofia FrodoDesk:
+
+👉 prima si legge  
+👉 poi si agisce
+
+### Effetto pratico
+- meno rumore visivo
+- maggiore scalabilità futura
+- spazio pronto per evoluzioni (es. quinta squadra)
+- uso più naturale nella vita reale
+
+---
+
+## Nuova decisione strategica — passaggio a Livello B
+
+A fine chat è stata presa una decisione di fase molto importante.
+
+FrodoDesk non deve più essere solo:
+
+- uno strumento operativo potente
+- una UI che mostra realtà e comandi
+
+Deve iniziare a diventare anche:
+
+👉 un sistema che **guida** nelle decisioni
+
+### Significato del Livello B
+Il sistema deve iniziare a proporre:
+
+- quali azioni hanno senso
+- quali alternative esistono
+- quale scelta è coerente con il problema rilevato
+
+Senza decidere al posto dell’utente.
+
+### Esempio target
+Se esiste un conflitto reale tra:
+
+- turno
+- evento
+- copertura
+
+il sistema dovrà iniziare a mostrare qualcosa tipo:
+
+👉 Azioni consigliate:
+- cambia turno
+- prendi permesso
+- sposta evento
+- porta Alice con te
+
+### Principio confermato
+FrodoDesk NON diventa un sistema automatico.
+
+Resta confermato il principio:
+
+👉 il sistema suggerisce  
+👉 la decisione resta umana
+
+Ma entra in una nuova fase:
+
+👉 da strumento operativo  
+👉 a **motore decisionale assistito**
+
+---
+
+## Stato della fase a fine chat
+
+Con questa chat la UI del calendario ha fatto un salto importante:
+
+- Ferie coerenti
+- Malattia coerente
+- Turni più puliti
+- Realtà del giorno più leggibile
+- separazione netta realtà / azione
+
+E soprattutto è stata definita la prossima direzione ufficiale del progetto:
+
+👉 costruzione del primo blocco **Azioni consigliate**  
+👉 sopra i Turni  
+👉 con primo caso semplice:
+- conflitto turno + evento
+
+---
+
+## Direzione corretta della prossima chat
+
+La prossima chat NON riparte da bug.
+
+Riparte da:
+
+- Livello B
+- primo blocco decisionale
+- “Azioni consigliate”
+- mantenendo la logica fuori dalla UI
+- partendo da un caso semplice e leggibile
