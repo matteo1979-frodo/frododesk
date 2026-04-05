@@ -5645,6 +5645,27 @@ class _CalendarioScreenStepAStabileState
     final regex = RegExp(r'(\d{2}):(\d{2})');
     final matches = regex.allMatches(label).toList();
 
+    TimeOfDay? startTime;
+    TimeOfDay? endTime;
+
+    if (matches.length >= 2) {
+      startTime = TimeOfDay(
+        hour: int.parse(matches[0].group(1)!),
+        minute: int.parse(matches[0].group(2)!),
+      );
+      endTime = TimeOfDay(
+        hour: int.parse(matches[1].group(1)!),
+        minute: int.parse(matches[1].group(2)!),
+      );
+    }
+    int? startMin;
+    int? endMin;
+
+    if (startTime != null && endTime != null) {
+      startMin = startTime.hour * 60 + startTime.minute;
+      endMin = endTime.hour * 60 + endTime.minute;
+    }
+
     if (matches.length >= 2) {
       final h1 = int.parse(matches[0].group(1)!);
       final m1 = int.parse(matches[0].group(2)!);
@@ -5672,8 +5693,26 @@ class _CalendarioScreenStepAStabileState
       day: _selectedDay,
     );
 
+    int matteoStartMin = matteoPlan.start.hour * 60 + matteoPlan.start.minute;
+    int matteoEndMin = matteoPlan.end.hour * 60 + matteoPlan.end.minute;
+
+    bool matteoCopreFascia = false;
+
+    if (!matteoPlan.isOff && startMin != null && endMin != null) {
+      matteoCopreFascia = matteoStartMin <= startMin && matteoEndMin >= endMin;
+    }
+
+    int chiaraStartMin = chiaraPlan.start.hour * 60 + chiaraPlan.start.minute;
+    int chiaraEndMin = chiaraPlan.end.hour * 60 + chiaraPlan.end.minute;
+
+    bool chiaraCopreFascia = false;
+
+    if (!chiaraPlan.isOff && startMin != null && endMin != null) {
+      chiaraCopreFascia = chiaraStartMin <= startMin && chiaraEndMin >= endMin;
+    }
+
     if (fascia == "sera") {
-      qualcunoPresente = false;
+      qualcunoPresente = matteoCopreFascia || chiaraCopreFascia;
     }
 
     if (fascia == "mattina") {
