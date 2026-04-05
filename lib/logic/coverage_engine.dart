@@ -529,38 +529,20 @@ class CoverageEngine {
   }
 
   bool isMatteoBusyBetween(DateTime start, DateTime end) {
-    final plan = turnEngine.turnPlanForPersonDay(
+    final busyShifts = turnEngine.busyShiftsForPerson(
       person: TurnPerson.matteo,
       day: start,
     );
 
     bool busyForTurn = false;
 
-    if (!plan.isOff) {
-      final workStart = DateTime(
-        start.year,
-        start.month,
-        start.day,
-        plan.start.hour,
-        plan.start.minute,
-      );
+    for (final shift in busyShifts) {
+      final overlap = start.isBefore(shift.end) && end.isAfter(shift.start);
 
-      DateTime workEnd = DateTime(
-        start.year,
-        start.month,
-        start.day,
-        plan.end.hour,
-        plan.end.minute,
-      );
-
-      final startMin = plan.start.hour * 60 + plan.start.minute;
-      final endMin = plan.end.hour * 60 + plan.end.minute;
-
-      if (endMin <= startMin) {
-        workEnd = workEnd.add(const Duration(days: 1));
+      if (overlap) {
+        busyForTurn = true;
+        break;
       }
-
-      busyForTurn = start.isBefore(workEnd) && end.isAfter(workStart);
     }
 
     final matteoEvents = realEventStore
@@ -602,38 +584,20 @@ class CoverageEngine {
   }
 
   bool isChiaraBusyBetween(DateTime start, DateTime end) {
-    final plan = turnEngine.turnPlanForPersonDay(
+    final busyShifts = turnEngine.busyShiftsForPerson(
       person: TurnPerson.chiara,
       day: start,
     );
 
     bool busyForTurn = false;
 
-    if (!plan.isOff) {
-      final workStart = DateTime(
-        start.year,
-        start.month,
-        start.day,
-        plan.start.hour,
-        plan.start.minute,
-      );
+    for (final shift in busyShifts) {
+      final overlap = start.isBefore(shift.end) && end.isAfter(shift.start);
 
-      DateTime workEnd = DateTime(
-        start.year,
-        start.month,
-        start.day,
-        plan.end.hour,
-        plan.end.minute,
-      );
-
-      final startMin = plan.start.hour * 60 + plan.start.minute;
-      final endMin = plan.end.hour * 60 + plan.end.minute;
-
-      if (endMin <= startMin) {
-        workEnd = workEnd.add(const Duration(days: 1));
+      if (overlap) {
+        busyForTurn = true;
+        break;
       }
-
-      busyForTurn = start.isBefore(workEnd) && end.isAfter(workStart);
     }
 
     final chiaraEvents = realEventStore
@@ -861,7 +825,11 @@ class CoverageEngine {
     if (aliceSchoolNormal) {
       final schoolInStart = DateTime(d0.year, d0.month, d0.day, 7, 30);
       final schoolInEnd = _atTime(d0, schoolStart);
-      final labelSchoolIn = "Alice ingresso: 07:30–${_fmt(schoolStart)}";
+      final schoolInRealStart = schoolInEnd.subtract(
+        const Duration(minutes: 20),
+      );
+      final labelSchoolIn =
+          "Alice ingresso: ${_fmtTimeDate(schoolInRealStart)}–${_fmt(schoolStart)}";
 
       final schoolInCoveredByChoice = _isSchoolCoverChoiceValid(
         choice: schoolInCover,
@@ -1251,7 +1219,7 @@ class CoverageEngine {
       if (!okCambioMattina) {
         entries.add(
           _CoverageGapEntry(
-            label: _labelDateRange(mattinaGapStart, mattinaGapEnd),
+            label: _homeGapLabel(mattinaGapStart, mattinaGapEnd),
             fasciaStart: mattinaGapStart,
             fasciaEnd: mattinaGapEnd,
             isHomePresenceWindow: true,
@@ -1290,7 +1258,7 @@ class CoverageEngine {
         if (!okPranzo) {
           entries.add(
             _CoverageGapEntry(
-              label: _labelDateRange(pranzoGapStart, pranzoGapEnd),
+              label: _homeGapLabel(pranzoGapStart, pranzoGapEnd),
               fasciaStart: pranzoGapStart,
               fasciaEnd: pranzoGapEnd,
               isHomePresenceWindow: true,
@@ -1327,7 +1295,7 @@ class CoverageEngine {
       if (!okSera) {
         entries.add(
           _CoverageGapEntry(
-            label: _labelDateRange(seraGapStart, seraGapEnd),
+            label: _homeGapLabel(seraGapStart, seraGapEnd),
             fasciaStart: seraGapStart,
             fasciaEnd: seraGapEnd,
             isHomePresenceWindow: true,
@@ -1671,8 +1639,7 @@ class CoverageEngine {
 
       if (sameKind) {
         current = _CoverageGapEntry(
-          label:
-              'Alice a casa: ${_fmtTimeDate(current.fasciaStart)}–${_fmtTimeDate(next.fasciaEnd)}',
+          label: _homeGapLabel(current.fasciaStart, next.fasciaEnd),
           fasciaStart: current.fasciaStart,
           fasciaEnd: next.fasciaEnd,
           isHomePresenceWindow: current.isHomePresenceWindow,
@@ -2600,6 +2567,9 @@ class CoverageEngine {
 
   String _labelDateRange(DateTime start, DateTime end) =>
       "${_fmtTimeDate(start)}–${_fmtTimeDate(end)}";
+
+  String _homeGapLabel(DateTime start, DateTime end) =>
+      "Alice a casa: ${_labelDateRange(start, end)}";
 
   String _fmt(TimeOfDay t) {
     final hh = t.hour.toString().padLeft(2, '0');

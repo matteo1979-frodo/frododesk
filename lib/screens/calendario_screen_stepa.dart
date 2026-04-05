@@ -5635,6 +5635,18 @@ class _CalendarioScreenStepAStabileState
                     style: const TextStyle(fontWeight: FontWeight.w900),
                   ),
                   const SizedBox(height: 4),
+                  Text(
+                    _gapTitleWithAliceState(
+                      gap.label.contains("Alice")
+                          ? gap.label
+                          : "Alice a casa: ${gap.label}",
+                    ),
+                    style: TextStyle(
+                      color: Colors.black.withOpacity(0.78),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
                   _buildSmartSandraSuggestion(gap.label),
                   const SizedBox(height: 8),
                 ],
@@ -5652,52 +5664,28 @@ class _CalendarioScreenStepAStabileState
   }
 
   Widget _buildSmartSandraSuggestion(String label) {
-    String suggestion;
-
-    final l = label.toLowerCase();
-
-    String? fascia;
-
     final regex = RegExp(r'(\d{2}):(\d{2})');
     final matches = regex.allMatches(label).toList();
 
-    TimeOfDay? startTime;
-    TimeOfDay? endTime;
-
-    if (matches.length >= 2) {
-      startTime = TimeOfDay(
-        hour: int.parse(matches[0].group(1)!),
-        minute: int.parse(matches[0].group(2)!),
-      );
-      endTime = TimeOfDay(
-        hour: int.parse(matches[1].group(1)!),
-        minute: int.parse(matches[1].group(2)!),
+    if (matches.length < 2) {
+      return Text(
+        "Suggerimento: verifica copertura manuale",
+        style: TextStyle(color: Colors.green, fontWeight: FontWeight.w700),
       );
     }
-    int? startMin;
-    int? endMin;
 
-    if (startTime != null && endTime != null) {
-      startMin = startTime.hour * 60 + startTime.minute;
-      endMin = endTime.hour * 60 + endTime.minute;
-    }
+    final startTime = TimeOfDay(
+      hour: int.parse(matches[0].group(1)!),
+      minute: int.parse(matches[0].group(2)!),
+    );
 
-    if (matches.length >= 2) {
-      final h1 = int.parse(matches[0].group(1)!);
-      final m1 = int.parse(matches[0].group(2)!);
+    final endTime = TimeOfDay(
+      hour: int.parse(matches[1].group(1)!),
+      minute: int.parse(matches[1].group(2)!),
+    );
 
-      final totalMin = h1 * 60 + m1;
-
-      if (totalMin < 9 * 60) {
-        fascia = "mattina";
-      } else if (totalMin < 17 * 60) {
-        fascia = "pranzo";
-      } else {
-        fascia = "sera";
-      }
-    }
-
-    bool qualcunoPresente = false;
+    final startMin = startTime.hour * 60 + startTime.minute;
+    final endMin = endTime.hour * 60 + endTime.minute;
 
     final matteoPlan = _turns.turnPlanForPersonDay(
       person: TurnPerson.matteo,
@@ -5709,69 +5697,81 @@ class _CalendarioScreenStepAStabileState
       day: _selectedDay,
     );
 
-    int matteoStartMin = matteoPlan.start.hour * 60 + matteoPlan.start.minute;
-    int matteoEndMin = matteoPlan.end.hour * 60 + matteoPlan.end.minute;
+    final matteoStartMin = matteoPlan.start.hour * 60 + matteoPlan.start.minute;
+    final matteoEndMin = matteoPlan.end.hour * 60 + matteoPlan.end.minute;
 
-    bool matteoCopreFascia = false;
+    final chiaraStartMin = chiaraPlan.start.hour * 60 + chiaraPlan.start.minute;
+    final chiaraEndMin = chiaraPlan.end.hour * 60 + chiaraPlan.end.minute;
 
-    if (!matteoPlan.isOff && startMin != null && endMin != null) {
-      matteoCopreFascia = matteoStartMin <= startMin && matteoEndMin >= endMin;
-    }
+    final startDT = DateTime(
+      _selectedDay.year,
+      _selectedDay.month,
+      _selectedDay.day,
+      startTime.hour,
+      startTime.minute,
+    );
 
-    int chiaraStartMin = chiaraPlan.start.hour * 60 + chiaraPlan.start.minute;
-    int chiaraEndMin = chiaraPlan.end.hour * 60 + chiaraPlan.end.minute;
+    final endDT = DateTime(
+      _selectedDay.year,
+      _selectedDay.month,
+      _selectedDay.day,
+      endTime.hour,
+      endTime.minute,
+    );
 
-    bool chiaraCopreFascia = false;
+    final matteoLibero = !_engine.isMatteoBusyBetween(startDT, endDT);
+    final chiaraLibera = !_engine.isChiaraBusyBetween(startDT, endDT);
 
-    if (!chiaraPlan.isOff && startMin != null && endMin != null) {
-      chiaraCopreFascia = chiaraStartMin <= startMin && chiaraEndMin >= endMin;
-    }
+    final supportoDisponibile = _supportNetworkCoversRange(
+      day: _selectedDay,
+      start: startTime,
+      end: endTime,
+    );
 
-    bool coperturaCombinata = false;
+    final sandraMattinaCopre =
+        _effSandraMattina(_selectedDay) &&
+        (_engine.sandraCambioMattinaStart.hour * 60 +
+                _engine.sandraCambioMattinaStart.minute) <=
+            startMin &&
+        (_engine.sandraCambioMattinaEnd.hour * 60 +
+                _engine.sandraCambioMattinaEnd.minute) >=
+            endMin;
 
-    if (startMin != null && endMin != null) {
-      final copreInizio =
-          (!matteoPlan.isOff &&
-              matteoStartMin <= startMin &&
-              matteoEndMin > startMin) ||
-          (!chiaraPlan.isOff &&
-              chiaraStartMin <= startMin &&
-              chiaraEndMin > startMin);
+    final sandraPranzoCopre =
+        _effSandraPranzo(_selectedDay) &&
+        (_effectiveSandraPranzoStart(_selectedDay).hour * 60 +
+                _effectiveSandraPranzoStart(_selectedDay).minute) <=
+            startMin &&
+        (_engine.sandraPranzoEnd.hour * 60 + _engine.sandraPranzoEnd.minute) >=
+            endMin;
 
-      final copreFine =
-          (!matteoPlan.isOff &&
-              matteoStartMin < endMin &&
-              matteoEndMin >= endMin) ||
-          (!chiaraPlan.isOff &&
-              chiaraStartMin < endMin &&
-              chiaraEndMin >= endMin);
+    final sandraSeraCopre =
+        _effSandraSera(_selectedDay) &&
+        (_engine.sandraSeraStart.hour * 60 + _engine.sandraSeraStart.minute) <=
+            startMin &&
+        (_engine.sandraSeraEnd.hour * 60 + _engine.sandraSeraEnd.minute) >=
+            endMin;
 
-      coperturaCombinata = copreInizio && copreFine;
-    }
+    final sandraDisponibile =
+        sandraMattinaCopre || sandraPranzoCopre || sandraSeraCopre;
 
-    if (fascia == "sera") {
-      qualcunoPresente =
-          matteoCopreFascia || chiaraCopreFascia || coperturaCombinata;
-    }
-    bool coperturaParziale =
-        !matteoCopreFascia && !chiaraCopreFascia && coperturaCombinata;
+    String suggestion;
 
-    if (fascia == "mattina") {
-      suggestion = "Suggerimento: attiva Sandra (fascia mattina)";
-    } else if (fascia == "pranzo") {
-      suggestion = "Suggerimento: attiva Sandra (fascia pranzo)";
-    } else if (fascia == "sera") {
-      if (coperturaParziale) {
-        suggestion =
-            "Copertura garantita tramite staffetta tra Matteo e Chiara";
-      } else if (qualcunoPresente) {
-        suggestion = "Copertura già presente in fascia sera";
-      } else {
-        suggestion =
-            "Suggerimento: attiva Sandra (sera) oppure verifica se Chiara può coprire";
-      }
+    if (matteoLibero && chiaraLibera) {
+      suggestion = "Suggerimento: possono coprire Matteo o Chiara";
+    } else if (matteoLibero) {
+      suggestion = "Suggerimento: può coprire Matteo";
+    } else if (chiaraLibera) {
+      suggestion = "Suggerimento: può coprire Chiara";
+    } else if (supportoDisponibile && sandraDisponibile) {
+      suggestion = "Suggerimento: verifica Supporto oppure Sandra";
+    } else if (supportoDisponibile) {
+      suggestion = "Suggerimento: verifica Supporto";
+    } else if (sandraDisponibile) {
+      suggestion = "Suggerimento: attiva Sandra";
     } else {
-      suggestion = "Suggerimento: verifica copertura manuale";
+      suggestion = suggestion =
+          "Suggerimento: nessun genitore libero: attiva Sandra o Supporto oppure modifica turno / chiedi permesso";
     }
 
     return Text(
