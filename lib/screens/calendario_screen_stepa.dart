@@ -5623,10 +5623,26 @@ class _CalendarioScreenStepAStabileState
           ),
           const SizedBox(height: 6),
           if (cov.gapDetails.isNotEmpty) ...[
-            _buildSmartSandraSuggestion(cov.gapDetails.first.label),
+            ...cov.gapDetails.asMap().entries.map((entry) {
+              final index = entry.key + 1;
+              final gap = entry.value;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Problema $index",
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 4),
+                  _buildSmartSandraSuggestion(gap.label),
+                  const SizedBox(height: 8),
+                ],
+              );
+            }),
             const SizedBox(height: 8),
             Text(
-              "Primo problema: ${cov.gapDetails.first.label}",
+              "Problemi rilevati (${cov.gapDetails.length}):",
               style: const TextStyle(fontWeight: FontWeight.w700),
             ),
           ],
@@ -5711,16 +5727,44 @@ class _CalendarioScreenStepAStabileState
       chiaraCopreFascia = chiaraStartMin <= startMin && chiaraEndMin >= endMin;
     }
 
-    if (fascia == "sera") {
-      qualcunoPresente = matteoCopreFascia || chiaraCopreFascia;
+    bool coperturaCombinata = false;
+
+    if (startMin != null && endMin != null) {
+      final copreInizio =
+          (!matteoPlan.isOff &&
+              matteoStartMin <= startMin &&
+              matteoEndMin > startMin) ||
+          (!chiaraPlan.isOff &&
+              chiaraStartMin <= startMin &&
+              chiaraEndMin > startMin);
+
+      final copreFine =
+          (!matteoPlan.isOff &&
+              matteoStartMin < endMin &&
+              matteoEndMin >= endMin) ||
+          (!chiaraPlan.isOff &&
+              chiaraStartMin < endMin &&
+              chiaraEndMin >= endMin);
+
+      coperturaCombinata = copreInizio && copreFine;
     }
+
+    if (fascia == "sera") {
+      qualcunoPresente =
+          matteoCopreFascia || chiaraCopreFascia || coperturaCombinata;
+    }
+    bool coperturaParziale =
+        !matteoCopreFascia && !chiaraCopreFascia && coperturaCombinata;
 
     if (fascia == "mattina") {
       suggestion = "Suggerimento: attiva Sandra (fascia mattina)";
     } else if (fascia == "pranzo") {
       suggestion = "Suggerimento: attiva Sandra (fascia pranzo)";
     } else if (fascia == "sera") {
-      if (qualcunoPresente) {
+      if (coperturaParziale) {
+        suggestion =
+            "Copertura garantita tramite staffetta tra Matteo e Chiara";
+      } else if (qualcunoPresente) {
         suggestion = "Copertura già presente in fascia sera";
       } else {
         suggestion =
