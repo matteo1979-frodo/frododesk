@@ -14,6 +14,111 @@ class OverrideStore extends ChangeNotifier {
 
   final Map<DateTime, DayOverrides> _byDay = {};
 
+  final Map<DateTime, Map<String, List<String>>> _forcedConflictEventIdsByDay =
+      {};
+
+  Map<String, dynamic> _forcedConflictMapToJson(
+    Map<String, List<String>> value,
+  ) {
+    return value.map((personKey, ids) => MapEntry(personKey, [...ids]..sort()));
+  }
+
+  Map<String, List<String>> _forcedConflictMapFromJson(dynamic raw) {
+    if (raw is! Map) return {};
+
+    final result = <String, List<String>>{};
+
+    for (final entry in raw.entries) {
+      final personKey = entry.key;
+      final value = entry.value;
+
+      if (personKey is! String || value is! List) continue;
+
+      final ids = value.whereType<String>().toList()..sort();
+      if (ids.isEmpty) continue;
+
+      result[personKey] = ids;
+    }
+
+    return result;
+  }
+
+  String _forcedConflictStorageKey({
+    required String personKey,
+    required List<String> eventIds,
+  }) {
+    final sorted = [...eventIds]..sort();
+    return "$personKey|${sorted.join("|")}";
+  }
+
+  List<String> _forcedConflictEventIdsFromStorageKey(String storageKey) {
+    final parts = storageKey.split('|');
+    if (parts.length < 2) return const [];
+    return parts.sublist(1).where((e) => e.trim().isNotEmpty).toList()..sort();
+  }
+
+  bool isForcedConflictForDay({
+    required DateTime day,
+    required String personKey,
+    required List<String> eventIds,
+  }) {
+    final key = _dayKey(day);
+    final byPerson = _forcedConflictEventIdsByDay[key];
+    if (byPerson == null) return false;
+
+    final savedIds = byPerson[personKey];
+    if (savedIds == null || savedIds.isEmpty) return false;
+
+    final currentIds = [...eventIds]..sort();
+
+    if (savedIds.length != currentIds.length) return false;
+
+    for (int i = 0; i < savedIds.length; i++) {
+      if (savedIds[i] != currentIds[i]) return false;
+    }
+
+    return true;
+  }
+
+  void setForcedConflictForDay({
+    required DateTime day,
+    required String personKey,
+    required List<String> eventIds,
+    required bool forced,
+  }) {
+    final key = _dayKey(day);
+    final current = Map<String, List<String>>.from(
+      _forcedConflictEventIdsByDay[key] ?? {},
+    );
+
+    if (forced) {
+      final ids = [...eventIds]..sort();
+      if (ids.isNotEmpty) {
+        current[personKey] = ids;
+      }
+    } else {
+      current.remove(personKey);
+    }
+
+    if (current.isEmpty) {
+      _forcedConflictEventIdsByDay.remove(key);
+    } else {
+      _forcedConflictEventIdsByDay[key] = current;
+    }
+
+    _save();
+    notifyListeners();
+  }
+
+  void clearForcedConflictsForDay(DateTime day) {
+    final key = _dayKey(day);
+
+    if (_forcedConflictEventIdsByDay.remove(key) != null) {
+      _save();
+      notifyListeners();
+    }
+  }
+
   /// Normalizza una DateTime a "solo giorno"
   DateTime _dayKey(DateTime d) => DateTime(d.year, d.month, d.day);
 
@@ -140,6 +245,12 @@ class OverrideStore extends ChangeNotifier {
           matteo: matteo,
           chiara: chiara,
         );
+
+        final forcedRaw = value['forcedConflicts'];
+        final forcedMap = _forcedConflictMapFromJson(forcedRaw);
+        if (forcedMap.isNotEmpty) {
+          _forcedConflictEventIdsByDay[dayKey(day)] = forcedMap;
+        }
       }
     } catch (_) {
       // ignora dati corrotti
@@ -153,13 +264,20 @@ class OverrideStore extends ChangeNotifier {
   Future<void> _save() async {
     final data = <String, dynamic>{};
 
-    for (final entry in _byDay.entries) {
-      final day = entry.key;
-      final ov = entry.value;
+    final allDays = <DateTime>{
+      ..._byDay.keys,
+      ..._forcedConflictEventIdsByDay.keys,
+    };
+
+    for (final day in allDays) {
+      final ov = _byDay[day] ?? DayOverrides.empty(day);
 
       data[_dateKey(day)] = {
         'matteo': _personOverrideToJson(ov.matteo),
         'chiara': _personOverrideToJson(ov.chiara),
+        'forcedConflicts': _forcedConflictMapToJson(
+          _forcedConflictEventIdsByDay[day] ?? {},
+        ),
       };
     }
 
