@@ -85,6 +85,8 @@ class _CalendarioScreenStepAStabileState
   bool _showAliceEventEditor = false;
   bool _showAlicePeriodPanel = false;
 
+  final Set<String> _forcedConflictKeys = <String>{};
+
   final Set<String> _expandedAliceEventIds = <String>{};
 
   final TextEditingController _aliceEventNameController =
@@ -855,8 +857,24 @@ class _CalendarioScreenStepAStabileState
 
   void _showTurnEventConflictActionsSheet({
     required String personName,
+    required String personKey,
     required List<TurnEventConflictResolution> conflicts,
   }) {
+    final override = overrideStore.getForDay(_selectedDay);
+
+    final personOverride = personKey == "matteo"
+        ? override.matteo
+        : override.chiara;
+
+    final disease = coreStore.diseasePeriodStore.getPeriodForDay(
+      personKey,
+      _selectedDay,
+    );
+
+    final isBedSick =
+        personOverride?.status == OverrideStatus.malattiaALetto ||
+        disease?.type == DiseaseType.bed;
+
     showModalBottomSheet<void>(
       isScrollControlled: true,
       context: context,
@@ -917,6 +935,25 @@ class _CalendarioScreenStepAStabileState
                     _closeSheetAndScrollTo(_overrideKey);
                   },
                 ),
+                if (isBedSick)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.warning_amber_rounded),
+                    title: const Text("Uscita imprescindibile"),
+                    subtitle: const Text(
+                      "Da usare solo se l’evento è davvero imprescindibile e devi uscire comunque nonostante la malattia a letto.",
+                    ),
+                    onTap: () {
+                      final forcedKey =
+                          "$personKey|${conflicts.map((c) => c.event.id).join("|")}";
+
+                      setState(() {
+                        _forcedConflictKeys.add(forcedKey);
+                      });
+
+                      Navigator.of(context).pop();
+                    },
+                  ),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.edit_calendar),
@@ -3143,6 +3180,7 @@ class _CalendarioScreenStepAStabileState
           if (matteoEventConflicts.isNotEmpty) ...[
             _turnEventConflictBox(
               personName: "Matteo",
+              personKey: "matteo",
               conflicts: matteoEventConflicts,
             ),
             const SizedBox(height: 12),
@@ -3150,6 +3188,7 @@ class _CalendarioScreenStepAStabileState
           if (chiaraEventConflicts.isNotEmpty) ...[
             _turnEventConflictBox(
               personName: "Chiara",
+              personKey: "chiara",
               conflicts: chiaraEventConflicts,
             ),
             const SizedBox(height: 12),
@@ -3567,18 +3606,45 @@ class _CalendarioScreenStepAStabileState
 
   Widget _turnEventConflictBox({
     required String personName,
+    required String personKey,
     required List<TurnEventConflictResolution> conflicts,
   }) {
+    final override = overrideStore.getForDay(_selectedDay);
+
+    final personOverride = personKey == "matteo"
+        ? override.matteo
+        : override.chiara;
+
+    final disease = coreStore.diseasePeriodStore.getPeriodForDay(
+      personKey,
+      _selectedDay,
+    );
+
+    final isBedSick =
+        personOverride?.status == OverrideStatus.malattiaALetto ||
+        disease?.type == DiseaseType.bed;
+
     final worst = _worstConflictState(conflicts);
-    final color = conflictStateColor(worst);
+
+    final forcedKey =
+        "$personKey|${conflicts.map((c) => c.event.id).join("|")}";
+    final isForced = _forcedConflictKeys.contains(forcedKey);
+
+    final color = isForced ? Colors.orange : conflictStateColor(worst);
 
     final String title;
     final String subtitle;
 
     switch (worst) {
       case TurnEventConflictState.open:
-        title = "Conflitto turno / evento — $personName";
-        subtitle = "Serve una decisione operativa.";
+        if (isBedSick) {
+          title = "⚠ Conflitto reale — $personName";
+          subtitle =
+              "Evento incompatibile con malattia a letto (uscita non possibile).";
+        } else {
+          title = "Conflitto turno / evento — $personName";
+          subtitle = "Serve una decisione operativa.";
+        }
         break;
       case TurnEventConflictState.partial:
         title = "Conflitto turno / evento — $personName";
@@ -3595,6 +3661,7 @@ class _CalendarioScreenStepAStabileState
       onTap: () {
         _showTurnEventConflictActionsSheet(
           personName: personName,
+          personKey: personKey,
           conflicts: conflicts,
         );
       },
@@ -3650,7 +3717,7 @@ class _CalendarioScreenStepAStabileState
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "Stato: ${conflictStateLabel(r.state)}",
+                        "Stato: ${isForced ? "Uscita imprescindibile" : conflictStateLabel(r.state)}",
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
                           color: conflictStateColor(r.state),
