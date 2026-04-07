@@ -3129,6 +3129,280 @@ class _CalendarioScreenStepAStabileState
 
   @override
   Widget build(BuildContext context) {
+    final realNow = DateTime.now();
+
+    final now = DateTime(
+      _selectedDay.year,
+      _selectedDay.month,
+      _selectedDay.day,
+      realNow.hour,
+      realNow.minute,
+      realNow.second,
+      realNow.millisecond,
+      realNow.microsecond,
+    );
+
+    final nowDay = _onlyDate(now);
+
+    final matteoOverride = _getOverridesForDay(nowDay).matteo;
+    final matteoDisease = coreStore.diseasePeriodStore.getPeriodForDay(
+      'matteo',
+      nowDay,
+    );
+
+    final matteoOnHoliday = coreStore.feriePeriodStore.isOnHoliday(
+      FeriePerson.matteo,
+      nowDay,
+    );
+
+    final matteoBedSick =
+        matteoOverride?.status == OverrideStatus.malattiaALetto ||
+        matteoDisease?.type == DiseaseType.bed;
+
+    final matteoEventsNow = coreStore.realEventStore
+        .eventsForDay(nowDay)
+        .where((e) => e.personKey == 'matteo');
+
+    bool matteoBusyForEventNow = false;
+
+    for (final event in matteoEventsNow) {
+      final eventStart = DateTime(
+        event.startDate.year,
+        event.startDate.month,
+        event.startDate.day,
+        event.startTime?.hour ?? 0,
+        event.startTime?.minute ?? 0,
+      );
+
+      DateTime eventEnd = DateTime(
+        event.endDate.year,
+        event.endDate.month,
+        event.endDate.day,
+        event.endTime?.hour ?? 23,
+        event.endTime?.minute ?? 59,
+      );
+
+      if (!eventEnd.isAfter(eventStart)) {
+        eventEnd = eventEnd.add(const Duration(days: 1));
+      }
+
+      final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
+
+      if (isNowInside) {
+        matteoBusyForEventNow = true;
+        break;
+      }
+    }
+
+    final matteoBusyForTurn = _engine.isMatteoBusyBetween(now, now);
+
+    final matteoBusyNow =
+        matteoBedSick || matteoBusyForTurn || matteoBusyForEventNow;
+
+    final String matteoNowLabel;
+
+    if (matteoBedSick) {
+      matteoNowLabel = "occupato • malattia a letto";
+    } else if (matteoOnHoliday) {
+      matteoNowLabel = "libero • ferie";
+    } else if (matteoBusyForEventNow) {
+      matteoNowLabel = "occupato • evento";
+    } else if (matteoBusyForTurn) {
+      matteoNowLabel = "occupato • turno";
+    } else {
+      matteoNowLabel = "libero";
+    }
+
+    final chiaraOverride = _getOverridesForDay(nowDay).chiara;
+    final chiaraDisease = coreStore.diseasePeriodStore.getPeriodForDay(
+      'chiara',
+      nowDay,
+    );
+
+    final chiaraOnHoliday = coreStore.feriePeriodStore.isOnHoliday(
+      FeriePerson.chiara,
+      nowDay,
+    );
+
+    final chiaraBedSick =
+        chiaraOverride?.status == OverrideStatus.malattiaALetto ||
+        chiaraDisease?.type == DiseaseType.bed;
+
+    final chiaraEventsNow = coreStore.realEventStore
+        .eventsForDay(nowDay)
+        .where((e) => e.personKey == 'chiara');
+
+    bool chiaraBusyForEventNow = false;
+
+    for (final event in chiaraEventsNow) {
+      final eventStart = DateTime(
+        event.startDate.year,
+        event.startDate.month,
+        event.startDate.day,
+        event.startTime?.hour ?? 0,
+        event.startTime?.minute ?? 0,
+      );
+
+      DateTime eventEnd = DateTime(
+        event.endDate.year,
+        event.endDate.month,
+        event.endDate.day,
+        event.endTime?.hour ?? 23,
+        event.endTime?.minute ?? 59,
+      );
+
+      if (!eventEnd.isAfter(eventStart)) {
+        eventEnd = eventEnd.add(const Duration(days: 1));
+      }
+
+      final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
+
+      if (isNowInside) {
+        chiaraBusyForEventNow = true;
+        break;
+      }
+    }
+
+    final chiaraBusyForTurn = _engine.isChiaraBusyBetween(now, now);
+
+    final chiaraBusyNow =
+        chiaraBedSick || chiaraBusyForTurn || chiaraBusyForEventNow;
+
+    final String chiaraNowLabel;
+    if (chiaraBedSick) {
+      chiaraNowLabel = "occupata • malattia a letto";
+    } else if (chiaraOnHoliday) {
+      chiaraNowLabel = "libera • ferie";
+    } else if (chiaraBusyForEventNow) {
+      chiaraNowLabel = "occupata • evento";
+    } else if (chiaraBusyForTurn) {
+      chiaraNowLabel = "occupata • turno";
+    } else {
+      chiaraNowLabel = "libera";
+    }
+
+    final alicePeriodNow = coreStore.aliceEventStore.getEventForDay(nowDay);
+    final aliceSpecialEventsNow = coreStore.aliceSpecialEventStore.eventsForDay(
+      nowDay,
+    );
+
+    bool _isNowInsideRange(TimeOfDay start, TimeOfDay end) {
+      final rangeStart = DateTime(
+        nowDay.year,
+        nowDay.month,
+        nowDay.day,
+        start.hour,
+        start.minute,
+      );
+
+      final rangeEnd = DateTime(
+        nowDay.year,
+        nowDay.month,
+        nowDay.day,
+        end.hour,
+        end.minute,
+      );
+
+      return now.isAfter(rangeStart) && now.isBefore(rangeEnd);
+    }
+
+    bool aliceIsOutNow = false;
+
+    if (alicePeriodNow != null || alicePeriodNow == null) {
+      final aliceEventsNow = coreStore.realEventStore
+          .eventsForDay(nowDay)
+          .where((e) => e.personKey == 'alice');
+
+      bool aliceBusyForEventNow = false;
+
+      for (final event in aliceEventsNow) {
+        final eventStart = DateTime(
+          event.startDate.year,
+          event.startDate.month,
+          event.startDate.day,
+          event.startTime?.hour ?? 0,
+          event.startTime?.minute ?? 0,
+        );
+
+        DateTime eventEnd = DateTime(
+          event.endDate.year,
+          event.endDate.month,
+          event.endDate.day,
+          event.endTime?.hour ?? 23,
+          event.endTime?.minute ?? 59,
+        );
+
+        if (!eventEnd.isAfter(eventStart)) {
+          eventEnd = eventEnd.add(const Duration(days: 1));
+        }
+
+        final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
+
+        if (isNowInside) {
+          aliceBusyForEventNow = true;
+          break;
+        }
+      }
+      if (aliceBusyForEventNow) {
+        aliceIsOutNow = true;
+      } else {
+        switch (alicePeriodNow?.type ?? AliceEventType.schoolNormal) {
+          case AliceEventType.schoolNormal:
+            final uscitaAt = _effUscitaAnticipataAt(nowDay);
+            final schoolEnd = uscitaAt ?? _effSchoolOutEnd(nowDay);
+
+            final schoolStart = _scuolaStart;
+            aliceIsOutNow = _isNowInsideRange(schoolStart, schoolEnd);
+            break;
+
+          case AliceEventType.summerCamp:
+            final campStart =
+                alicePeriodNow?.summerCampStart ??
+                const TimeOfDay(hour: 8, minute: 30);
+
+            final campEnd =
+                alicePeriodNow?.summerCampEnd ??
+                const TimeOfDay(hour: 16, minute: 30);
+
+            aliceIsOutNow = _isNowInsideRange(campStart, campEnd);
+            break;
+
+          case AliceEventType.vacation:
+          case AliceEventType.schoolClosure:
+          case AliceEventType.sickness:
+            aliceIsOutNow = false;
+            break;
+        }
+      }
+    }
+
+    for (final event in aliceSpecialEventsNow) {
+      final eventStart = DateTime(
+        nowDay.year,
+        nowDay.month,
+        nowDay.day,
+        event.start.hour,
+        event.start.minute,
+      );
+
+      final eventEnd = DateTime(
+        nowDay.year,
+        nowDay.month,
+        nowDay.day,
+        event.end.hour,
+        event.end.minute,
+      );
+
+      final isActiveNow = now.isAfter(eventStart) && now.isBefore(eventEnd);
+
+      if (isActiveNow) {
+        aliceIsOutNow = true;
+        break;
+      }
+    }
+
+    final aliceNowLabel = aliceIsOutNow ? "fuori" : "a casa";
+
     final cov = _computeCoverageStepA(_selectedDay);
     final isEmergency = _isEmergencyActive();
     final bool showSummerCampSpecialCard = _selectedDayIsSummerCampDay();
@@ -3191,6 +3465,40 @@ class _CalendarioScreenStepAStabileState
           children: [
             const SizedBox(height: 8),
             _buildIpsPressureLine(ipsCoverage30),
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.withOpacity(0.25)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "STATO ATTUALE FAMIGLIA",
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    "Riferito al giorno selezionato, all'ora attuale.",
+                    style: TextStyle(
+                      color: Colors.black.withOpacity(0.65),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text("Matteo: $matteoNowLabel"),
+                  const SizedBox(height: 4),
+                  Text("Chiara: $chiaraNowLabel"),
+                  const SizedBox(height: 4),
+                  Text("Alice: $aliceNowLabel"),
+                ],
+              ),
+            ),
             const SizedBox(height: 8),
             _weekNavBar(),
             const SizedBox(height: 8),

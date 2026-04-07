@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../logic/disease_period_store.dart';
 import '../models/disease_period.dart';
 
+import '../utils/time_visibility.dart';
+
 class DiseasePeriodPanel extends StatefulWidget {
   final DateTime selectedDay;
   final DiseasePeriodStore store;
@@ -273,7 +275,11 @@ class _DiseasePeriodPanelState extends State<DiseasePeriodPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final periods = widget.store.all;
+    final periods = widget.store.all
+        .where(
+          (p) => !isPastDateRange(startDate: p.startDate, endDate: p.endDate),
+        )
+        .toList();
 
     return Card(
       elevation: 0,

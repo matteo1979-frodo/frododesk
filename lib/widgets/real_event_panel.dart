@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../logic/real_event_store.dart';
 import '../models/real_event.dart';
 
+import '../utils/time_visibility.dart';
+
 class RealEventPanel extends StatefulWidget {
   final DateTime selectedDay;
   final RealEventStore store;
@@ -290,8 +292,8 @@ class _RealEventPanelState extends State<RealEventPanel> {
       },
     );
 
-   // titleCtrl.dispose();
-   // notesCtrl.dispose();
+    // titleCtrl.dispose();
+    // notesCtrl.dispose();
 
     if (result == null) return;
 
@@ -318,7 +320,17 @@ class _RealEventPanelState extends State<RealEventPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final events = store.eventsForDay(selectedDay);
+    final events = store
+        .eventsForDay(selectedDay)
+        .where(
+          (event) => !isPastTimedEvent(
+            startDate: event.startDate,
+            endDate: event.endDate,
+            startTime: event.startTime,
+            endTime: event.endTime,
+          ),
+        )
+        .toList();
 
     final matteoConflicts = store.overlappingPairsForPersonOnDay(
       day: selectedDay,
@@ -528,6 +540,47 @@ class _RealEventTile extends StatelessWidget {
     }
   }
 
+  bool _isNowActive(RealEvent event) {
+    final now = DateTime.now();
+
+    final startDate = DateTime(
+      event.startDate.year,
+      event.startDate.month,
+      event.startDate.day,
+    );
+
+    final endDate = DateTime(
+      event.endDate.year,
+      event.endDate.month,
+      event.endDate.day,
+    );
+
+    // Evento su più giorni (tutto il giorno)
+    if (event.startTime == null || event.endTime == null) {
+      return !now.isBefore(startDate) &&
+          !now.isAfter(endDate.add(const Duration(days: 1)));
+    }
+
+    // Evento con orario nello stesso giorno
+    final eventStart = DateTime(
+      event.startDate.year,
+      event.startDate.month,
+      event.startDate.day,
+      event.startTime!.hour,
+      event.startTime!.minute,
+    );
+
+    final eventEnd = DateTime(
+      event.endDate.year,
+      event.endDate.month,
+      event.endDate.day,
+      event.endTime!.hour,
+      event.endTime!.minute,
+    );
+
+    return now.isAfter(eventStart) && now.isBefore(eventEnd);
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasTimes = event.startTime != null || event.endTime != null;
@@ -551,9 +604,35 @@ class _RealEventTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  event.title,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_isNowActive(event)) ...[
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Text(
+                          "🔴 IN CORSO",
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ),
+                    ],
+                    Text(
+                      event.title,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ],
                 ),
                 if (hasPerson)
                   Padding(

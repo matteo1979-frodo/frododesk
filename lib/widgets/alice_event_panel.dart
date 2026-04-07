@@ -627,7 +627,16 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
   @override
   Widget build(BuildContext context) {
     final current = _eventForSelectedDay();
-    final events = widget.store.events;
+    final today = _onlyDate(DateTime.now());
+
+    bool isPastPeriod(AliceEventPeriod event) {
+      final end = _onlyDate(event.end);
+      return end.isBefore(today);
+    }
+
+    final events = widget.store.events
+        .where((event) => !isPastPeriod(event))
+        .toList();
     final specialSummerCampEvents = widget.summerCampSpecialEventStore.getAll();
 
     return Card(

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import '../logic/ferie_period_store.dart';
 import '../models/day_override.dart';
 
+import '../utils/time_visibility.dart';
+
 class FeriePeriodPanel extends StatefulWidget {
   final FeriePeriodStore store;
   final DateTime? selectedDay;
@@ -229,7 +231,12 @@ class _FeriePeriodPanelState extends State<FeriePeriodPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final items = widget.store.all();
+    final items = widget.store
+        .all()
+        .where(
+          (p) => !isPastDateRange(startDate: p.startDay, endDate: p.endDay),
+        )
+        .toList();
 
     return Card(
       elevation: 0,
