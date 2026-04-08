@@ -39,6 +39,7 @@ import '../widgets/extra_events_dialog.dart';
 import '../logic/summer_camp_special_event_store.dart';
 
 import '../utils/calendario_formatters.dart';
+import '../utils/status_visual.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -3433,6 +3434,10 @@ class _CalendarioScreenStepAStabileState
 
     final int ipsCoverage30 = (baseIpsCoverage30 + forcedPenalty).clamp(0, 100);
 
+    final matteoVisual = getStatusVisual(matteoNowLabel);
+    final chiaraVisual = getStatusVisual(chiaraNowLabel);
+    final aliceVisual = getStatusVisual(aliceNowLabel);
+
     return Scaffold(
       appBar: AppBar(
         title: InkWell(
@@ -3468,34 +3473,289 @@ class _CalendarioScreenStepAStabileState
             Container(
               width: double.infinity,
               margin: const EdgeInsets.only(top: 8),
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue.withOpacity(0.25)),
+                color: Colors.indigo.withOpacity(0.07),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.indigo.withOpacity(0.22)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    "STATO ATTUALE FAMIGLIA",
-                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.family_restroom,
+                        size: 18,
+                        color: Colors.indigo.shade700,
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          "STATO ATTUALE FAMIGLIA",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.75),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: Colors.indigo.withOpacity(0.14),
+                          ),
+                        ),
+                        child: Text(
+                          DateFormat('HH:mm', 'it_IT').format(realNow),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.indigo.shade700,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 4),
                   Text(
-                    "Riferito al giorno selezionato, all'ora attuale.",
+                    "Fotografia reale riferita al giorno selezionato, all'ora attuale.",
                     style: TextStyle(
                       color: Colors.black.withOpacity(0.65),
                       fontWeight: FontWeight.w600,
                       fontSize: 12,
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  Text("Matteo: $matteoNowLabel"),
-                  const SizedBox(height: 4),
-                  Text("Chiara: $chiaraNowLabel"),
-                  const SizedBox(height: 4),
-                  Text("Alice: $aliceNowLabel"),
+                  const SizedBox(height: 14),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: matteoBusyNow
+                          ? Colors.red.withOpacity(0.08)
+                          : Colors.green.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: matteoBusyNow
+                            ? Colors.red.withOpacity(0.35)
+                            : Colors.green.withOpacity(0.35),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          matteoBusyNow ? Icons.block : Icons.check_circle,
+                          size: 18,
+                          color: matteoBusyNow ? Colors.red : Colors.green,
+                        ),
+                        const SizedBox(width: 8),
+                        const SizedBox(
+                          width: 62,
+                          child: Text(
+                            "Matteo",
+                            style: TextStyle(fontWeight: FontWeight.w900),
+                          ),
+                        ),
+                        Expanded(
+                          child: RichText(
+                            text: TextSpan(
+                              children: [
+                                WidgetSpan(
+                                  alignment: PlaceholderAlignment.middle,
+                                  child: TweenAnimationBuilder<double>(
+                                    duration: const Duration(milliseconds: 800),
+                                    tween: Tween(
+                                      begin: 1.0,
+                                      end: matteoBusyNow ? 1.2 : 1.0,
+                                    ),
+                                    builder: (context, value, child) {
+                                      return Transform.scale(
+                                        scale: value,
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                            right: 10,
+                                          ),
+                                          child: Transform.translate(
+                                            offset: const Offset(0, -5),
+                                            child: Text(
+                                              matteoVisual.emoji,
+                                              style: const TextStyle(
+                                                fontSize: 22,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: matteoNowLabel,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    color: matteoVisual.color,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: chiaraBusyNow
+                          ? Colors.red.withOpacity(0.08)
+                          : Colors.green.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: chiaraBusyNow
+                            ? Colors.red.withOpacity(0.35)
+                            : Colors.green.withOpacity(0.35),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          chiaraBusyNow ? Icons.block : Icons.check_circle,
+                          size: 18,
+                          color: chiaraBusyNow ? Colors.red : Colors.green,
+                        ),
+                        const SizedBox(width: 8),
+                        const SizedBox(
+                          width: 62,
+                          child: Text(
+                            "Chiara",
+                            style: TextStyle(fontWeight: FontWeight.w900),
+                          ),
+                        ),
+                        Expanded(
+                          child: RichText(
+                            text: TextSpan(
+                              children: [
+                                WidgetSpan(
+                                  alignment: PlaceholderAlignment.middle,
+                                  child: TweenAnimationBuilder<double>(
+                                    duration: const Duration(milliseconds: 800),
+                                    tween: Tween(
+                                      begin: 1.0,
+                                      end: chiaraBusyNow ? 1.2 : 1.0,
+                                    ),
+                                    builder: (context, value, child) {
+                                      return Transform.scale(
+                                        scale: value,
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                            right: 10,
+                                          ),
+                                          child: Transform.translate(
+                                            offset: const Offset(0, -5),
+                                            child: Text(
+                                              chiaraVisual.emoji,
+                                              style: const TextStyle(
+                                                fontSize: 22,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: chiaraNowLabel,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    color: chiaraVisual.color,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: aliceIsOutNow
+                          ? Colors.orange.withOpacity(0.10)
+                          : Colors.blue.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: aliceIsOutNow
+                            ? Colors.orange.withOpacity(0.35)
+                            : Colors.blue.withOpacity(0.35),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          aliceIsOutNow ? Icons.directions_walk : Icons.home,
+                          size: 18,
+                          color: aliceIsOutNow ? Colors.orange : Colors.blue,
+                        ),
+                        const SizedBox(width: 8),
+                        const SizedBox(
+                          width: 62,
+                          child: Text(
+                            "Alice",
+                            style: TextStyle(fontWeight: FontWeight.w900),
+                          ),
+                        ),
+                        Expanded(
+                          child: RichText(
+                            text: TextSpan(
+                              children: [
+                                WidgetSpan(
+                                  alignment: PlaceholderAlignment.middle,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(right: 10),
+                                    child: Transform.translate(
+                                      offset: const Offset(0, -5),
+                                      child: Text(
+                                        aliceVisual.emoji,
+                                        style: const TextStyle(fontSize: 22),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: aliceNowLabel,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    color: aliceVisual.color,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
