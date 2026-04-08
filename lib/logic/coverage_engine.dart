@@ -698,21 +698,6 @@ class CoverageEngine {
     final bool hasTimedAliceEvent =
         firstAliceEvent != null && lastAliceEvent != null;
 
-    final DateTime? firstAliceEventStart = hasTimedAliceEvent
-        ? _atTime(d0, firstAliceEvent!.start)
-        : null;
-    final DateTime? lastAliceEventEnd = hasTimedAliceEvent
-        ? _atTime(d0, lastAliceEvent!.end)
-        : null;
-
-    print(
-      "Alice timed events: ${aliceSpecialEvents.length} | first: $firstAliceEventStart | last: $lastAliceEventEnd",
-    );
-
-    print(
-      "Coverage day: ${d0.year}-${d0.month}-${d0.day} | AliceSpecialEvents attivi: ${aliceSpecialEvents.length}",
-    );
-
     final bool isWeekend =
         d0.weekday == DateTime.saturday || d0.weekday == DateTime.sunday;
     final bool aliceSchoolNormal = isAliceSchoolNormalDay(d0) && !isWeekend;
@@ -741,6 +726,101 @@ class CoverageEngine {
         : null;
 
     DateTime? normalSchoolHomeWindowStart;
+
+    void addAliceTimedEventImpact({
+      required DateTime homeWindowStart,
+      required DateTime homeWindowEnd,
+    }) {
+      DateTime cursor = homeWindowStart;
+
+      for (final event in aliceSpecialEvents) {
+        final actualStart = _atTime(d0, event.start);
+        final actualEnd = _atTime(d0, event.end);
+
+        final accompanimentStart = actualStart.subtract(
+          const Duration(minutes: 20),
+        );
+        final pickupEnd = actualEnd.add(const Duration(minutes: 20));
+
+        final effectiveAccompanimentStart =
+            accompanimentStart.isBefore(homeWindowStart)
+            ? homeWindowStart
+            : accompanimentStart;
+
+        if (effectiveAccompanimentStart.isAfter(cursor)) {
+          entries.addAll(
+            _uncoveredHomeSegments(
+              day: d0,
+              windowStart: cursor,
+              windowEnd: effectiveAccompanimentStart,
+              labelPrefix: 'Alice a casa dopo ${event.label}',
+              sandraMattinaAvailable: effSandraMattina,
+              sandraPranzoAvailable: effSandraPranzo,
+              sandraSeraAvailable: effSandraSera,
+              overrides: overrides,
+              ferieStore: ferieStore,
+            ),
+          );
+        }
+
+        if (actualStart.isAfter(effectiveAccompanimentStart)) {
+          entries.addAll(
+            _uncoveredExternalSegments(
+              day: d0,
+              windowStart: effectiveAccompanimentStart,
+              windowEnd: actualStart,
+              labelPrefix: 'Accompagnamento Alice ${event.label}',
+              sandraMattinaAvailable: effSandraMattina,
+              sandraPranzoAvailable: effSandraPranzo,
+              sandraSeraAvailable: effSandraSera,
+              overrides: overrides,
+              ferieStore: ferieStore,
+            ),
+          );
+        }
+
+        if (actualEnd.isAfter(cursor)) {
+          cursor = actualEnd;
+        }
+
+        final effectivePickupEnd = pickupEnd.isAfter(homeWindowEnd)
+            ? homeWindowEnd
+            : pickupEnd;
+
+        if (effectivePickupEnd.isAfter(cursor)) {
+          entries.addAll(
+            _uncoveredExternalSegments(
+              day: d0,
+              windowStart: cursor,
+              windowEnd: effectivePickupEnd,
+              labelPrefix: 'Ritiro Alice ${event.label}',
+              sandraMattinaAvailable: effSandraMattina,
+              sandraPranzoAvailable: effSandraPranzo,
+              sandraSeraAvailable: effSandraSera,
+              overrides: overrides,
+              ferieStore: ferieStore,
+            ),
+          );
+          cursor = effectivePickupEnd;
+        }
+      }
+
+      if (homeWindowEnd.isAfter(cursor)) {
+        entries.addAll(
+          _uncoveredHomeSegments(
+            day: d0,
+            windowStart: cursor,
+            windowEnd: homeWindowEnd,
+            labelPrefix: 'Alice a casa',
+            sandraMattinaAvailable: effSandraMattina,
+            sandraPranzoAvailable: effSandraPranzo,
+            sandraSeraAvailable: effSandraSera,
+            overrides: overrides,
+            ferieStore: ferieStore,
+          ),
+        );
+      }
+    }
 
     if (aliceAtHome && !hasTimedAliceEvent) {
       final aliceHomeStart = _atTime(d0, sandraCambioMattinaStart);
@@ -778,48 +858,10 @@ class CoverageEngine {
       final homeWindowStart = _atTime(d0, sandraCambioMattinaStart);
       final homeWindowEnd = _atTime(d0, sandraSeraStart);
 
-      DateTime cursor = homeWindowStart;
-
-      for (final event in aliceSpecialEvents) {
-        final eventStart = _atTime(d0, event.start);
-        final eventEnd = _atTime(d0, event.end);
-
-        if (eventStart.isAfter(cursor)) {
-          entries.addAll(
-            _uncoveredHomeSegments(
-              day: d0,
-              windowStart: cursor,
-              windowEnd: eventStart,
-              labelPrefix: 'Alice a casa',
-              sandraMattinaAvailable: effSandraMattina,
-              sandraPranzoAvailable: effSandraPranzo,
-              sandraSeraAvailable: effSandraSera,
-              overrides: overrides,
-              ferieStore: ferieStore,
-            ),
-          );
-        }
-
-        if (eventEnd.isAfter(cursor)) {
-          cursor = eventEnd;
-        }
-      }
-
-      if (homeWindowEnd.isAfter(cursor)) {
-        entries.addAll(
-          _uncoveredHomeSegments(
-            day: d0,
-            windowStart: cursor,
-            windowEnd: homeWindowEnd,
-            labelPrefix: 'Alice a casa',
-            sandraMattinaAvailable: effSandraMattina,
-            sandraPranzoAvailable: effSandraPranzo,
-            sandraSeraAvailable: effSandraSera,
-            overrides: overrides,
-            ferieStore: ferieStore,
-          ),
-        );
-      }
+      addAliceTimedEventImpact(
+        homeWindowStart: homeWindowStart,
+        homeWindowEnd: homeWindowEnd,
+      );
     }
 
     if (aliceSchoolNormal) {
@@ -1127,67 +1169,10 @@ class CoverageEngine {
           );
         }
       } else {
-        final firstStart = _atTime(d0, firstAliceEvent!.start);
-        final lastEnd = _atTime(d0, lastAliceEvent!.end);
-
-        if (firstStart.isAfter(normalSchoolHomeWindowStart)) {
-          final preEntries = _uncoveredExternalSegments(
-            day: d0,
-            windowStart: normalSchoolHomeWindowStart,
-            windowEnd: firstStart,
-            labelPrefix: 'Accompagnamento Alice evento',
-            sandraMattinaAvailable: effSandraMattina,
-            sandraPranzoAvailable: effSandraPranzo,
-            sandraSeraAvailable: effSandraSera,
-            overrides: overrides,
-            ferieStore: ferieStore,
-          );
-
-          entries.addAll(preEntries);
-        }
-
-        DateTime cursor = _atTime(d0, firstAliceEvent.start);
-
-        for (final event in aliceSpecialEvents) {
-          final eventStart = _atTime(d0, event.start);
-          final eventEnd = _atTime(d0, event.end);
-
-          if (eventStart.isAfter(cursor)) {
-            entries.addAll(
-              _uncoveredHomeSegments(
-                day: d0,
-                windowStart: cursor,
-                windowEnd: eventStart,
-                labelPrefix: 'Alice a casa',
-                sandraMattinaAvailable: effSandraMattina,
-                sandraPranzoAvailable: effSandraPranzo,
-                sandraSeraAvailable: effSandraSera,
-                overrides: overrides,
-                ferieStore: ferieStore,
-              ),
-            );
-          }
-
-          if (eventEnd.isAfter(cursor)) {
-            cursor = eventEnd;
-          }
-        }
-
-        if (homeWindowEnd.isAfter(lastEnd)) {
-          final postEntries = _uncoveredExternalSegments(
-            day: d0,
-            windowStart: lastEnd,
-            windowEnd: homeWindowEnd,
-            labelPrefix: 'Ritiro Alice evento',
-            sandraMattinaAvailable: effSandraMattina,
-            sandraPranzoAvailable: effSandraPranzo,
-            sandraSeraAvailable: effSandraSera,
-            overrides: overrides,
-            ferieStore: ferieStore,
-          );
-
-          entries.addAll(postEntries);
-        }
+        addAliceTimedEventImpact(
+          homeWindowStart: normalSchoolHomeWindowStart,
+          homeWindowEnd: homeWindowEnd,
+        );
       }
     }
 
@@ -1629,17 +1614,55 @@ class CoverageEngine {
     final merged = <_CoverageGapEntry>[];
     var current = sorted.first;
 
+    bool canMergeLabels(_CoverageGapEntry a, _CoverageGapEntry b) {
+      final aLower = a.label.toLowerCase();
+      final bLower = b.label.toLowerCase();
+
+      final aIsHome = aLower.startsWith('alice a casa:');
+      final bIsHome = bLower.startsWith('alice a casa:');
+
+      final aIsEventMove =
+          aLower.startsWith('accompagnamento alice evento:') ||
+          aLower.startsWith('ritiro alice evento:');
+      final bIsEventMove =
+          bLower.startsWith('accompagnamento alice evento:') ||
+          bLower.startsWith('ritiro alice evento:');
+
+      if (aIsHome && bIsHome) return true;
+      if (aIsEventMove && bIsEventMove) return true;
+      if (aIsEventMove && bIsHome) return true;
+      if (aIsHome && bIsEventMove) return true;
+
+      return false;
+    }
+
+    String mergedLabel(_CoverageGapEntry a, _CoverageGapEntry b) {
+      final aLower = a.label.toLowerCase();
+      final bLower = b.label.toLowerCase();
+
+      final hasHome =
+          aLower.startsWith('alice a casa:') ||
+          bLower.startsWith('alice a casa:');
+
+      if (hasHome) {
+        return _homeGapLabel(a.fasciaStart, b.fasciaEnd);
+      }
+
+      return 'Gestione Alice evento: ${_labelDateRange(a.fasciaStart, b.fasciaEnd)}';
+    }
+
     for (var i = 1; i < sorted.length; i++) {
       final next = sorted[i];
 
       final sameKind =
           current.isHomePresenceWindow == next.isHomePresenceWindow &&
           current.allowSandra == next.allowSandra &&
-          current.fasciaEnd.isAtSameMomentAs(next.fasciaStart);
+          current.fasciaEnd.isAtSameMomentAs(next.fasciaStart) &&
+          canMergeLabels(current, next);
 
       if (sameKind) {
         current = _CoverageGapEntry(
-          label: _homeGapLabel(current.fasciaStart, next.fasciaEnd),
+          label: mergedLabel(current, next),
           fasciaStart: current.fasciaStart,
           fasciaEnd: next.fasciaEnd,
           isHomePresenceWindow: current.isHomePresenceWindow,
@@ -2568,8 +2591,15 @@ class CoverageEngine {
   String _labelDateRange(DateTime start, DateTime end) =>
       "${_fmtTimeDate(start)}–${_fmtTimeDate(end)}";
 
-  String _homeGapLabel(DateTime start, DateTime end) =>
-      "Alice a casa: ${_labelDateRange(start, end)}";
+  String _homeGapLabel(DateTime start, DateTime end, {String? eventLabel}) {
+    final base = _labelDateRange(start, end);
+
+    if (eventLabel != null && eventLabel.isNotEmpty) {
+      return "Alice a casa dopo $eventLabel: $base";
+    }
+
+    return "Alice a casa: $base";
+  }
 
   String _fmt(TimeOfDay t) {
     final hh = t.hour.toString().padLeft(2, '0');

@@ -3480,7 +3480,6 @@ class _CalendarioScreenStepAStabileState
           return "fuori • visita";
         case AliceSpecialEventCategory.sport:
           return "fuori • sport";
-
         case AliceSpecialEventCategory.activity:
           return "fuori • attività";
         case AliceSpecialEventCategory.other:
@@ -3502,14 +3501,16 @@ class _CalendarioScreenStepAStabileState
       if (lower.contains('danza') ||
           lower.contains('ballo') ||
           lower.contains('pallavolo') ||
-          lower.contains('sport') ||
-          lower.contains('teatro') ||
+          lower.contains('sport')) {
+        return "fuori • sport";
+      }
+      if (lower.contains('teatro') ||
           lower.contains('ripetizioni') ||
           lower.contains('corso')) {
         return "fuori • attività";
       }
 
-      return "fuori • attività";
+      return "fuori";
     }
 
     final String aliceNowLabel = aliceIsOutNow
