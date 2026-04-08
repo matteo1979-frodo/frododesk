@@ -1,10 +1,17 @@
 # FRODODESK — MODULO EVENTI ALICE
 
-Ultimo aggiornamento: 2 Aprile 2026
+Ultimo aggiornamento: 8 Aprile 2026
+
+---
 
 ## IDENTITÀ DEL MODULO
 
-Questo modulo gestisce gli **Eventi Alice reali/speciali**, cioè gli eventi della vita reale di Alice che possono influenzare la giornata, la copertura e le decisioni familiari.
+Questo modulo gestisce gli **Eventi Alice reali/speciali**, cioè gli eventi della vita reale di Alice che possono influenzare:
+
+- la presenza reale
+- la copertura
+- le decisioni familiari
+- il linguaggio del sistema
 
 ---
 
@@ -12,40 +19,108 @@ Questo modulo gestisce gli **Eventi Alice reali/speciali**, cioè gli eventi del
 
 Gli Eventi Alice NON sono più solo informativi.
 
-👉 Sono diventati entità reali, persistenti e modificabili  
-👉 Supportano conflitti, azioni e spostamenti nel tempo  
+👉 Sono entità:
+- persistenti
+- modificabili
+- con impatto reale sul sistema
 
-👉 🔥 NUOVO:
-- influenzano già la logica reale di copertura (buchi / presenza)
-- integrati con decisione scuola e uscita anticipata
+👉 🔥 NUOVO (APRILE 2026):
+- collegamento iniziale con **linguaggio stato Alice**
+- base per sistema visivo (emoji + colori)
 
 ---
 
-## 🧠 NUOVA LOGICA STRUTTURALE (SCUOLA DINAMICA)
+## 🧠 ARCHITETTURA — 3 LIVELLI (FONDAMENTALE)
+
+Il modulo ora segue questa separazione:
+
+### 1️⃣ LOGICA
+→ dove si trova Alice realmente
+
+### 2️⃣ LINGUAGGIO
+→ come il sistema descrive lo stato
+
+### 3️⃣ VISUALE
+→ emoji + colore (status_visual)
+
+---
+
+## 🔧 IMPLEMENTAZIONE ATTUALE (LINGUAGGIO BASE)
+
+```dart
+final isAliceSick = alicePeriodNow?.type == AliceEventType.sickness;
+
+// ⚠️ TEMPORANEO (placeholder)
+final isSchoolNow = aliceIsOutNow;
+
+final aliceNowLabel = aliceIsOutNow
+    ? (isSchoolNow ? "fuori • scuola" : "fuori")
+    : (isAliceSick ? "a casa • malata" : "a casa");
+    ## ⚠️ LIMITAZIONE ATTUALE
+
+- `isSchoolNow` NON è reale  
+- NON legge gli eventi Alice  
+- è solo un placeholder tecnico per evitare blocchi  
+
+👉 il sistema è pronto, ma non ancora collegato ai dati reali  
+
+---
+
+## 🎯 OBIETTIVO PROSSIMO STEP
+
+Collegare Alice agli eventi reali già presenti nel sistema:
+
+- scuola  
+- centro estivo  
+- gite  
+- danza / attività  
+- visite  
+
+---
+
+## 🚀 RISULTATO ATTESO
+
+Alice deve generare automaticamente:
+
+- "fuori • scuola"  
+- "fuori • centro estivo"  
+- "fuori • danza"  
+- "fuori • gita"  
+- "fuori • visita"  
+- "a casa • malata"  
+- "a casa"  
+
+👉 senza modificare la UI  
+
+---
+
+## 🔒 REGOLA FONDAMENTALE
+
+- NON modificare la UI  
+- NON toccare `status_visual`  
+- modificare SOLO il linguaggio (`aliceNowLabel`)  
+
+---
+
+## 🧠 LOGICA SCUOLA DINAMICA
 
 Gli orari scuola NON sono più fissi.
 
-Sono ora basati su logica reale con buffer.
+### 📍 ENTRATA
+- orario reale (es: 08:25)  
+- buffer: -20 minuti  
+
+👉 fascia reale:  
+08:05 – 08:25  
 
 ---
 
-### 📍 ENTRATA SCUOLA
+### 📍 USCITA
+- orario reale (es: 16:25)  
+- buffer: +20 minuti  
 
-- orario reale (es: 08:25)
-- buffer: -20 minuti
-
-👉 fascia reale:
-08:05 – 08:25
-
----
-
-### 📍 USCITA SCUOLA
-
-- orario reale (es: 16:25)
-- buffer: +20 minuti
-
-👉 fascia reale:
-16:25 – 16:45
+👉 fascia reale:  
+16:25 – 16:45  
 
 ---
 
@@ -53,33 +128,27 @@ Sono ora basati su logica reale con buffer.
 
 Se attiva:
 
-👉 sostituisce completamente l’uscita scuola
+👉 sostituisce completamente l’uscita scuola  
 
-Viene utilizzata da:
-
-- UI
-- decisione scuola
-- CoverageEngine
-- buchi reali
-- Sandra
+Usata da:
+- UI  
+- CoverageEngine  
+- Sandra  
+- buchi reali  
 
 ---
 
-## 🍽️ PRANZO — LOGICA REALE
+## 🍽️ PRANZO — LOGICA DINAMICA
 
-Prima:
-❌ fisso 13:00–14:30
+Prima:  
+❌ fisso 13:00–14:30  
 
 Ora:
 
-👉 dinamico
+👉 dinamico  
 
-- start = uscita anticipata (se presente)
-- fallback = 13:00
-
-👉 esempio:
-- uscita 13:00 → pranzo 13:00–14:30
-- uscita 13:30 → pranzo 13:30–14:30
+- start = uscita anticipata (se presente)  
+- fallback = 13:00  
 
 ---
 
@@ -89,193 +158,125 @@ Sandra NON usa più orari fissi.
 
 👉 legge:
 
-- uscita anticipata
-- fallback su fascia standard
+- uscita anticipata  
+- fasce reali  
+- CoverageEngine  
 
 ---
 
-## ⚠️ PRINCIPIO FONDAMENTALE
+## ⚠️ PRINCIPIO SISTEMA
 
-TUTTI i livelli devono usare la stessa fonte:
+TUTTO usa la stessa fonte:
 
-- UI
-- CoverageEngine
-- decisioni
-- Sandra
+- UI  
+- CoverageEngine  
+- decisioni  
+- Sandra  
 
-👉 nessun valore duplicato hardcoded
+👉 nessun valore duplicato  
 
 ---
 
-## NUOVA LOGICA INTRODOTTA
+## 🔥 LOGICA EVENTI REALI
 
-Un Evento Alice con orario genera:
+Un evento Alice genera:
 
 ### 1️⃣ DURANTE EVENTO
-- Alice NON è a casa
-- nessun bisogno di copertura casa
+- Alice NON è a casa  
 
 ---
 
-### 2️⃣ PRIMA EVENTO (ACCOMPAGNAMENTO)
-
-Il sistema verifica:
-
-👉 chi accompagna Alice
-
-Se nessuno è disponibile:
-
-👉 buco reale
+### 2️⃣ PRIMA EVENTO
+→ verifica accompagnamento  
 
 ---
 
-### 3️⃣ DOPO EVENTO (RITIRO)
-
-Il sistema verifica:
-
-👉 chi è disponibile
-
-Se nessuno:
-
-👉 buco reale
+### 3️⃣ DOPO EVENTO
+→ verifica ritiro  
 
 ---
 
-### 4️⃣ REGOLA FONDAMENTALE
+### 4️⃣ REGOLA
 
-👉 nessun buco automatico
+👉 il sistema NON inventa buchi  
+👉 valuta sempre:
 
-Il sistema valuta sempre:
-
-- turni
-- eventi
-- malattia
-- ferie
-- supporto
-
----
-
-## MODELLO EVENTO ALICE
-
-Campi ufficiali:
-
-- `id`
-- `label`
-- `category`
-- `date`
-- `start`
-- `end`
-- `note`
-- `enabled`
+- turni  
+- eventi  
+- malattia  
+- ferie  
+- supporto  
 
 ---
 
-## 🧠 STATO REALE ATTUALE
+## 🧩 MODELLO EVENTO
 
-### FATTO
+Campi:
 
-✔ model  
-✔ store  
-✔ CoreStore integration  
-✔ editor eventi  
-✔ multi-evento  
-✔ persistenza  
-✔ modifica/eliminazione  
-
-✔ conflitti eventi  
-✔ UI conflitti  
-✔ popup +N eventi  
-
-✔ gestione date  
-✔ eventi cross-day  
-
-✔ periodi Alice  
-✔ orari dinamici scuola 🔥  
-✔ uscita anticipata integrata 🔥  
-✔ buffer 20 min entrata/uscita 🔥  
-✔ pranzo dinamico 🔥  
-✔ Sandra dinamica 🔥  
+- id  
+- label  
+- category  
+- date  
+- start  
+- end  
+- note  
+- enabled  
 
 ---
 
-## 🔥 INTEGRAZIONE REALE
+## 🧠 STATO REALE
 
-✔ Eventi Alice influenzano:
+### ✔ COMPLETATO
 
-- copertura
-- presenza
-- decisione scuola
-- uscita anticipata
-- buchi
-
-✔ sistema reale verificato:
-
-- buco solo se nessuno disponibile
-- rete supporto funzionante
-- comportamento coerente con uscita variabile
+- model ✔  
+- store ✔  
+- CoreStore ✔  
+- editor ✔  
+- multi-evento ✔  
+- persistenza ✔  
+- conflitti ✔  
+- UI eventi ✔  
 
 ---
 
-## 🔧 STRUTTURA UI
+### 🔥 COMPLETATO RECENTE
 
-### Eventi Alice del giorno
-- lista dinamica
-- conflitti visivi
-- azioni rapide
-
----
-
-### Periodi Alice
-- scuola
-- vacanza
-- malattia
-- centro estivo
-
----
-
-## ⚠️ ARCHITETTURA
-
-Sistema volutamente doppio:
-
-- eventi giornalieri
-- periodi
-
-👉 NON unificare ora
+- orari scuola dinamici ✔  
+- uscita anticipata ✔  
+- pranzo dinamico ✔  
+- Sandra dinamica ✔  
+- base linguaggio Alice ✔  
 
 ---
 
 ## 🚧 NON ANCORA FATTO
 
-### UI
-⬜ pulizia finale
-
-### STRUTTURA
-⬜ unificazione eventi/periodi
-
 ### LOGICA
-⬜ conflitti forti con turni
-⬜ suggerimenti automatici
-⬜ integrazione IPS completa
+⬜ collegamento eventi → stato Alice (**PRIORITÀ**)  
+
+### UI
+⬜ rifinitura  
+
+### SISTEMA
+⬜ conflitti forti turni/eventi  
+⬜ suggerimenti automatici  
+⬜ IPS completo  
 
 ---
 
-## 🚀 PRO FUTURI
+## 🚀 FUTURO
 
-⬜ Alice al seguito  
-⬜ suggerimenti intelligenti  
-⬜ eventi ricorrenti  
-⬜ statistiche  
-
----
-
-## 🎯 STATO
-
-✔ COMPLETATO  
-✔ STABILE  
-✔ USABILE NELLA VITA REALE  
+- Alice al seguito  
+- suggerimenti intelligenti  
+- eventi ricorrenti  
+- statistiche  
 
 ---
 
-## FRASE DI RIPARTENZA
+## 🎯 STATO MODULO
 
-Ripartiamo da FrodoDesk — allineamento spiegazione buchi con orari dinamici reali
+🟡 IN COSTRUZIONE (fase avanzata)
+
+- sistema reale ✔  
+- linguaggio base ✔  
+- collegamento eventi ❌ (prossimo step)  

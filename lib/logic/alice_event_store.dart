@@ -263,7 +263,13 @@ class AliceEventStore {
   }
 
   bool isSchoolNormalDay(DateTime day) {
-    final eventType = getEventTypeForDay(day);
+    final d = _normalizeDay(day);
+
+    if (d.weekday == DateTime.saturday || d.weekday == DateTime.sunday) {
+      return false;
+    }
+
+    final eventType = getEventTypeForDay(d);
 
     return eventType != AliceEventType.vacation &&
         eventType != AliceEventType.schoolClosure &&

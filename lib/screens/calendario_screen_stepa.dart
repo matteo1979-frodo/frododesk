@@ -429,10 +429,6 @@ class _CalendarioScreenStepAStabileState
 
   SchoolCoverChoice _effectiveLunchCover(DateTime day) {
     final saved = daySettingsStore.lunchCoverForDay(day);
-    if (saved != SchoolCoverChoice.none) {
-      print('DEBUG LUNCH COVER: ${saved.name}');
-      return saved;
-    }
 
     final uscitaAt = _effUscitaAnticipataAt(day);
     if (uscitaAt == null) return SchoolCoverChoice.none;
@@ -3349,6 +3345,15 @@ class _CalendarioScreenStepAStabileState
       } else {
         switch (alicePeriodNow?.type ?? AliceEventType.schoolNormal) {
           case AliceEventType.schoolNormal:
+            final isRealSchoolDay = coreStore.aliceEventStore.isSchoolNormalDay(
+              nowDay,
+            );
+
+            if (!isRealSchoolDay) {
+              aliceIsOutNow = false;
+              break;
+            }
+
             final uscitaAt = _effUscitaAnticipataAt(nowDay);
             final schoolEnd = uscitaAt ?? _effSchoolOutEnd(nowDay);
 
@@ -3402,7 +3407,123 @@ class _CalendarioScreenStepAStabileState
       }
     }
 
-    final aliceNowLabel = aliceIsOutNow ? "fuori" : "a casa";
+    final isAliceSick = alicePeriodNow?.type == AliceEventType.sickness;
+
+    AliceSpecialEvent? activeAliceSpecialEventNow;
+    for (final event in aliceSpecialEventsNow) {
+      final eventStart = DateTime(
+        nowDay.year,
+        nowDay.month,
+        nowDay.day,
+        event.start.hour,
+        event.start.minute,
+      );
+
+      final eventEnd = DateTime(
+        nowDay.year,
+        nowDay.month,
+        nowDay.day,
+        event.end.hour,
+        event.end.minute,
+      );
+
+      final isActiveNow = now.isAfter(eventStart) && now.isBefore(eventEnd);
+
+      if (isActiveNow) {
+        activeAliceSpecialEventNow = event;
+        break;
+      }
+    }
+
+    RealEvent? activeAliceRealEventNow;
+    final aliceRealEventsNow = coreStore.realEventStore
+        .eventsForDay(nowDay)
+        .where((e) => e.personKey == 'alice');
+
+    for (final event in aliceRealEventsNow) {
+      final eventStart = DateTime(
+        event.startDate.year,
+        event.startDate.month,
+        event.startDate.day,
+        event.startTime?.hour ?? 0,
+        event.startTime?.minute ?? 0,
+      );
+
+      DateTime eventEnd = DateTime(
+        event.endDate.year,
+        event.endDate.month,
+        event.endDate.day,
+        event.endTime?.hour ?? 23,
+        event.endTime?.minute ?? 59,
+      );
+
+      if (!eventEnd.isAfter(eventStart)) {
+        eventEnd = eventEnd.add(const Duration(days: 1));
+      }
+
+      final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
+
+      if (isNowInside) {
+        activeAliceRealEventNow = event;
+        break;
+      }
+    }
+
+    String _aliceOutsideLabelFromText(
+      String text, {
+      AliceSpecialEventCategory? category,
+    }) {
+      switch (category) {
+        case AliceSpecialEventCategory.school:
+          return "fuori • scuola";
+        case AliceSpecialEventCategory.health:
+          return "fuori • visita";
+        case AliceSpecialEventCategory.sport:
+          return "fuori • sport";
+
+        case AliceSpecialEventCategory.activity:
+          return "fuori • attività";
+        case AliceSpecialEventCategory.other:
+        case null:
+          break;
+      }
+
+      final lower = text.toLowerCase();
+
+      if (lower.contains('centro estivo')) return "fuori • centro estivo";
+      if (lower.contains('gita')) return "fuori • gita";
+      if (lower.contains('visita') ||
+          lower.contains('dentista') ||
+          lower.contains('medic') ||
+          lower.contains('pediatra')) {
+        return "fuori • visita";
+      }
+      if (lower.contains('scuola')) return "fuori • scuola";
+      if (lower.contains('danza') ||
+          lower.contains('ballo') ||
+          lower.contains('pallavolo') ||
+          lower.contains('sport') ||
+          lower.contains('teatro') ||
+          lower.contains('ripetizioni') ||
+          lower.contains('corso')) {
+        return "fuori • attività";
+      }
+
+      return "fuori • attività";
+    }
+
+    final String aliceNowLabel = aliceIsOutNow
+        ? (activeAliceSpecialEventNow != null
+              ? _aliceOutsideLabelFromText(
+                  activeAliceSpecialEventNow!.label,
+                  category: activeAliceSpecialEventNow!.category,
+                )
+              : activeAliceRealEventNow != null
+              ? _aliceOutsideLabelFromText(activeAliceRealEventNow!.title)
+              : (alicePeriodNow?.type == AliceEventType.summerCamp
+                    ? "fuori • centro estivo"
+                    : "fuori • scuola"))
+        : (isAliceSick ? "a casa • malata" : "a casa");
 
     final cov = _computeCoverageStepA(_selectedDay);
     final isEmergency = _isEmergencyActive();
