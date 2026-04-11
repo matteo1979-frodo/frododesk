@@ -445,7 +445,7 @@ class CoverageEngine {
     );
 
     return analysis.details.any(
-      (detail) => detail.label.toLowerCase().startsWith('alice a casa:'),
+      (detail) => detail.label.toLowerCase().startsWith('alice a casa'),
     );
   }
 
@@ -488,7 +488,7 @@ class CoverageEngine {
 
     return analysis.details
         .where(
-          (detail) => detail.label.toLowerCase().startsWith('alice a casa:'),
+          (detail) => detail.label.toLowerCase().startsWith('alice a casa'),
         )
         .toList(growable: false);
   }
@@ -528,123 +528,83 @@ class CoverageEngine {
     );
   }
 
-  bool isMatteoBusyBetween(DateTime start, DateTime end) {
-    final busyShifts = turnEngine.busyShiftsForPerson(
+  bool isMatteoBusyBetween(
+    DateTime start,
+    DateTime end, {
+    DayOverrides? overrides,
+    FeriePeriodStore? ferieStore,
+    bool isHomePresenceWindow = false,
+  }) {
+    final available = _canSpecificPersonCoverRange(
+      personKey: 'matteo',
       person: TurnPerson.matteo,
       day: start,
+      fasciaStart: start,
+      fasciaEnd: end,
+      isHomePresenceWindow: isHomePresenceWindow,
+      overrides: overrides ?? DayOverrides.empty(_onlyDate(start)),
+      ferieStore: ferieStore,
     );
 
-    bool busyForTurn = false;
-
-    for (final shift in busyShifts) {
-      final overlap = start.isBefore(shift.end) && end.isAfter(shift.start);
-
-      if (overlap) {
-        busyForTurn = true;
-        break;
-      }
-    }
-
-    final matteoEvents = realEventStore
-        .eventsForDay(start)
-        .where((e) => e.personKey == 'matteo');
-
-    bool busyForEvent = false;
-
-    for (final event in matteoEvents) {
-      final eventStart = DateTime(
-        event.startDate.year,
-        event.startDate.month,
-        event.startDate.day,
-        event.startTime?.hour ?? 0,
-        event.startTime?.minute ?? 0,
-      );
-
-      DateTime eventEnd = DateTime(
-        event.endDate.year,
-        event.endDate.month,
-        event.endDate.day,
-        event.endTime?.hour ?? 23,
-        event.endTime?.minute ?? 59,
-      );
-
-      if (!eventEnd.isAfter(eventStart)) {
-        eventEnd = eventEnd.add(const Duration(days: 1));
-      }
-
-      final overlap = start.isBefore(eventEnd) && end.isAfter(eventStart);
-
-      if (overlap) {
-        busyForEvent = true;
-        break;
-      }
-    }
-
-    return busyForTurn || busyForEvent;
+    return !available;
   }
 
-  bool isChiaraBusyBetween(DateTime start, DateTime end) {
-    final busyShifts = turnEngine.busyShiftsForPerson(
+  bool isChiaraBusyBetween(
+    DateTime start,
+    DateTime end, {
+    DayOverrides? overrides,
+    FeriePeriodStore? ferieStore,
+    bool isHomePresenceWindow = false,
+  }) {
+    final available = _canSpecificPersonCoverRange(
+      personKey: 'chiara',
       person: TurnPerson.chiara,
       day: start,
+      fasciaStart: start,
+      fasciaEnd: end,
+      isHomePresenceWindow: isHomePresenceWindow,
+      overrides: overrides ?? DayOverrides.empty(_onlyDate(start)),
+      ferieStore: ferieStore,
     );
 
-    bool busyForTurn = false;
-
-    for (final shift in busyShifts) {
-      final overlap = start.isBefore(shift.end) && end.isAfter(shift.start);
-
-      if (overlap) {
-        busyForTurn = true;
-        break;
-      }
-    }
-
-    final chiaraEvents = realEventStore
-        .eventsForDay(start)
-        .where((e) => e.personKey == 'chiara');
-
-    bool busyForEvent = false;
-
-    for (final event in chiaraEvents) {
-      final eventStart = DateTime(
-        event.startDate.year,
-        event.startDate.month,
-        event.startDate.day,
-        event.startTime?.hour ?? 0,
-        event.startTime?.minute ?? 0,
-      );
-
-      DateTime eventEnd = DateTime(
-        event.endDate.year,
-        event.endDate.month,
-        event.endDate.day,
-        event.endTime?.hour ?? 23,
-        event.endTime?.minute ?? 59,
-      );
-
-      if (!eventEnd.isAfter(eventStart)) {
-        eventEnd = eventEnd.add(const Duration(days: 1));
-      }
-
-      final overlap = start.isBefore(eventEnd) && end.isAfter(eventStart);
-
-      if (overlap) {
-        busyForEvent = true;
-        break;
-      }
-    }
-
-    return busyForTurn || busyForEvent;
+    return !available;
   }
 
-  bool isSomeoneAvailable(DateTime start, DateTime end) {
-    final matteoBusy = isMatteoBusyBetween(start, end);
-    final chiaraBusy = isChiaraBusyBetween(start, end);
+  bool isSomeoneAvailable(
+    DateTime start,
+    DateTime end, {
+    DayOverrides? overrides,
+    FeriePeriodStore? ferieStore,
+    bool isHomePresenceWindow = false,
+  }) {
+    final effectiveOverrides =
+        overrides ?? DayOverrides.empty(_onlyDate(start));
 
-    if (!matteoBusy || !chiaraBusy) {
-      return true;
-    }
+    final matteoAvailable = _canSpecificPersonCoverRange(
+      personKey: 'matteo',
+      person: TurnPerson.matteo,
+      day: start,
+      fasciaStart: start,
+      fasciaEnd: end,
+      isHomePresenceWindow: isHomePresenceWindow,
+      overrides: effectiveOverrides,
+      ferieStore: ferieStore,
+    );
+
+    if (matteoAvailable) return true;
+
+    final chiaraAvailable = _canSpecificPersonCoverRange(
+      personKey: 'chiara',
+      person: TurnPerson.chiara,
+      day: start,
+      fasciaStart: start,
+      fasciaEnd: end,
+      isHomePresenceWindow: isHomePresenceWindow,
+      overrides: effectiveOverrides,
+      ferieStore: ferieStore,
+    );
+
+    if (chiaraAvailable) return true;
 
     return false;
   }
@@ -684,6 +644,23 @@ class CoverageEngine {
     );
 
     final bool aliceAtHome = isAliceAtHomeDay(d0);
+    final aliceType = getAliceEventTypeForDay(d0);
+
+    String _aliceHomeBaseLabel(AliceEventType? aliceType) {
+      switch (aliceType) {
+        case AliceEventType.vacation:
+          return 'Alice a casa (Vacanza)';
+        case AliceEventType.sickness:
+          return 'Alice a casa (Malata)';
+        case AliceEventType.schoolClosure:
+          return 'Alice a casa (Scuola chiusa)';
+        default:
+          return 'Alice a casa';
+      }
+    }
+
+    final AliceEventType? aliceDayType = getAliceEventTypeForDay(d0);
+    final String? aliceDayTypeName = aliceDayType?.name.toLowerCase();
 
     final aliceSpecialEvents = _enabledTimedAliceEventsForDay(d0);
     final bool hasAliceSpecialEvents = aliceSpecialEvents.isNotEmpty;
@@ -727,6 +704,27 @@ class CoverageEngine {
 
     DateTime? normalSchoolHomeWindowStart;
 
+    String _homeLabelAfterTimedEvents() {
+      if (aliceAtHome) {
+        if (aliceDayTypeName == 'vacation') {
+          return 'Alice a casa (Vacanza)';
+        }
+
+        if (aliceDayTypeName == 'sickness') {
+          return 'Alice a casa (Malattia)';
+        }
+
+        if (aliceDayTypeName == 'schoolclosure' ||
+            aliceDayTypeName == 'school_closed' ||
+            aliceDayTypeName == 'closure') {
+          return 'Alice a casa (Scuola chiusa)';
+        }
+      }
+
+      final lastLabel = lastAliceEvent?.label ?? 'evento';
+      return 'Alice a casa dopo $lastLabel';
+    }
+
     void addAliceTimedEventImpact({
       required DateTime homeWindowStart,
       required DateTime homeWindowEnd,
@@ -753,7 +751,7 @@ class CoverageEngine {
               day: d0,
               windowStart: cursor,
               windowEnd: effectiveAccompanimentStart,
-              labelPrefix: 'Alice a casa dopo ${event.label}',
+              labelPrefix: 'Alice a casa prima di ${event.label}',
               sandraMattinaAvailable: effSandraMattina,
               sandraPranzoAvailable: effSandraPranzo,
               sandraSeraAvailable: effSandraSera,
@@ -811,7 +809,7 @@ class CoverageEngine {
             day: d0,
             windowStart: cursor,
             windowEnd: homeWindowEnd,
-            labelPrefix: 'Alice a casa',
+            labelPrefix: _homeLabelAfterTimedEvents(),
             sandraMattinaAvailable: effSandraMattina,
             sandraPranzoAvailable: effSandraPranzo,
             sandraSeraAvailable: effSandraSera,
@@ -844,7 +842,7 @@ class CoverageEngine {
           day: d0,
           windowStart: aliceHomeStart,
           windowEnd: aliceHomeEnd,
-          labelPrefix: 'Alice a casa',
+          labelPrefix: _aliceHomeBaseLabel(aliceType),
           sandraMattinaAvailable: effSandraMattina,
           sandraPranzoAvailable: effSandraPranzo,
           sandraSeraAvailable: effSandraSera,
@@ -979,11 +977,6 @@ class CoverageEngine {
           ferieStore: ferieStore,
         );
 
-        final realLunchStart = TimeOfDay(
-          hour: startLunch.hour,
-          minute: startLunch.minute + 20,
-        );
-
         final labelLunch =
             "Alice pranzo: ${_fmt(startLunch)}–${_fmtTimeDate(lunchEnd)}";
 
@@ -998,11 +991,6 @@ class CoverageEngine {
           isHomePresenceWindow: false,
           overrides: overrides,
           ferieStore: ferieStore,
-        );
-
-        final ritiroEnd = TimeOfDay(
-          hour: startLunch.hour,
-          minute: startLunch.minute + 20,
         );
 
         if (lunchCover == SchoolCoverChoice.none) {
@@ -1138,7 +1126,7 @@ class CoverageEngine {
             day: d0,
             windowStart: aliceHomeStart,
             windowEnd: aliceHomeEnd,
-            labelPrefix: 'Alice a casa',
+            labelPrefix: _aliceHomeBaseLabel(aliceType),
             sandraMattinaAvailable: effSandraMattina,
             sandraPranzoAvailable: effSandraPranzo,
             sandraSeraAvailable: effSandraSera,
@@ -1159,7 +1147,7 @@ class CoverageEngine {
               day: d0,
               windowStart: normalSchoolHomeWindowStart,
               windowEnd: homeWindowEnd,
-              labelPrefix: 'Alice a casa',
+              labelPrefix: _aliceHomeBaseLabel(aliceType),
               sandraMattinaAvailable: effSandraMattina,
               sandraPranzoAvailable: effSandraPranzo,
               sandraSeraAvailable: effSandraSera,
@@ -1615,18 +1603,11 @@ class CoverageEngine {
     var current = sorted.first;
 
     bool canMergeLabels(_CoverageGapEntry a, _CoverageGapEntry b) {
-      final aLower = a.label.toLowerCase();
-      final bLower = b.label.toLowerCase();
+      final aIsHome = _isAliceHomeLabel(a.label);
+      final bIsHome = _isAliceHomeLabel(b.label);
 
-      final aIsHome = aLower.startsWith('alice a casa:');
-      final bIsHome = bLower.startsWith('alice a casa:');
-
-      final aIsEventMove =
-          aLower.startsWith('accompagnamento alice evento:') ||
-          aLower.startsWith('ritiro alice evento:');
-      final bIsEventMove =
-          bLower.startsWith('accompagnamento alice evento:') ||
-          bLower.startsWith('ritiro alice evento:');
+      final aIsEventMove = _isAliceEventMoveLabel(a.label);
+      final bIsEventMove = _isAliceEventMoveLabel(b.label);
 
       if (aIsHome && bIsHome) return true;
       if (aIsEventMove && bIsEventMove) return true;
@@ -1637,12 +1618,7 @@ class CoverageEngine {
     }
 
     String mergedLabel(_CoverageGapEntry a, _CoverageGapEntry b) {
-      final aLower = a.label.toLowerCase();
-      final bLower = b.label.toLowerCase();
-
-      final hasHome =
-          aLower.startsWith('alice a casa:') ||
-          bLower.startsWith('alice a casa:');
+      final hasHome = _isAliceHomeLabel(a.label) || _isAliceHomeLabel(b.label);
 
       if (hasHome) {
         return _homeGapLabel(a.fasciaStart, b.fasciaEnd);
@@ -1712,12 +1688,13 @@ class CoverageEngine {
   int _scoreGapLabel(String label) {
     final lower = label.toLowerCase();
 
-    if (lower.startsWith('alice a casa:')) return 100;
+    if (_isAliceHomeLabel(lower)) return 100;
     if (lower.startsWith('alice ingresso:')) return 95;
     if (lower.startsWith('alice uscita:')) return 95;
     if (lower.startsWith('alice pranzo:')) return 95;
     if (lower.startsWith('alice centro estivo ingresso:')) return 95;
     if (lower.startsWith('alice centro estivo uscita:')) return 95;
+    if (_isAliceEventMoveLabel(lower)) return 90;
     if (lower.startsWith('centro estivo speciale:')) return 90;
     if (label.contains(':')) return 80;
 
@@ -2581,6 +2558,18 @@ class CoverageEngine {
     return bestEnd;
   }
 
+  bool _isAliceHomeLabel(String label) {
+    final lower = label.toLowerCase();
+    return lower.startsWith('alice a casa');
+  }
+
+  bool _isAliceEventMoveLabel(String label) {
+    final lower = label.toLowerCase();
+    return lower.startsWith('accompagnamento alice ') ||
+        lower.startsWith('ritiro alice ') ||
+        lower.startsWith('gestione alice evento:');
+  }
+
   DateTime _onlyDate(DateTime d) => DateTime(d.year, d.month, d.day);
 
   DateTime _atTime(DateTime d0, TimeOfDay t) =>
@@ -2592,13 +2581,11 @@ class CoverageEngine {
       "${_fmtTimeDate(start)}–${_fmtTimeDate(end)}";
 
   String _homeGapLabel(DateTime start, DateTime end, {String? eventLabel}) {
-    final base = _labelDateRange(start, end);
-
-    if (eventLabel != null && eventLabel.isNotEmpty) {
-      return "Alice a casa dopo $eventLabel: $base";
+    if (eventLabel != null && eventLabel.trim().isNotEmpty) {
+      return "Alice a casa dopo $eventLabel: ${_fmtTimeDate(start)}–${_fmtTimeDate(end)}";
     }
 
-    return "Alice a casa: $base";
+    return "Alice a casa: ${_fmtTimeDate(start)}–${_fmtTimeDate(end)}";
   }
 
   String _fmt(TimeOfDay t) {

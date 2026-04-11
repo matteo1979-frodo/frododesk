@@ -3138,7 +3138,7 @@ class _CalendarioScreenStepAStabileState
       realNow.millisecond,
       realNow.microsecond,
     );
-
+    final realEventStore = coreStore.realEventStore;
     final nowDay = _onlyDate(now);
 
     final matteoOverride = _getOverridesForDay(nowDay).matteo;
@@ -3192,6 +3192,18 @@ class _CalendarioScreenStepAStabileState
     }
 
     final matteoBusyForTurn = _engine.isMatteoBusyBetween(now, now);
+
+    final matteoPlan = _turns.turnPlanForPersonDay(
+      person: TurnPerson.matteo,
+      day: _selectedDay,
+    );
+
+    String matteoTurnLabel = "Turno non previsto";
+
+    if (!matteoPlan.isOff) {
+      matteoTurnLabel =
+          "Turno ${fmtTimeOfDay(matteoPlan.start)}–${fmtTimeOfDay(matteoPlan.end)}";
+    }
 
     final matteoBusyNow =
         matteoBedSick || matteoBusyForTurn || matteoBusyForEventNow;
@@ -3655,227 +3667,768 @@ class _CalendarioScreenStepAStabileState
                     ),
                   ),
                   const SizedBox(height: 14),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: matteoBusyNow
-                          ? Colors.red.withOpacity(0.08)
-                          : Colors.green.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
+                  GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          final matteoEvents = realEventStore
+                              .eventsForDay(_selectedDay)
+                              .where((e) => e.personKey == 'matteo')
+                              .toList();
+
+                          final matteoPastEvents = matteoEvents.where((e) {
+                            if (e.endTime == null) return false;
+
+                            final eventEnd = DateTime(
+                              _selectedDay.year,
+                              _selectedDay.month,
+                              _selectedDay.day,
+                              e.endTime!.hour,
+                              e.endTime!.minute,
+                            );
+
+                            return now.isAfter(eventEnd);
+                          }).toList();
+
+                          final matteoNowEvents = matteoEvents.where((e) {
+                            if (e.startTime == null || e.endTime == null) {
+                              return false;
+                            }
+
+                            final eventStart = DateTime(
+                              _selectedDay.year,
+                              _selectedDay.month,
+                              _selectedDay.day,
+                              e.startTime!.hour,
+                              e.startTime!.minute,
+                            );
+
+                            final eventEnd = DateTime(
+                              _selectedDay.year,
+                              _selectedDay.month,
+                              _selectedDay.day,
+                              e.endTime!.hour,
+                              e.endTime!.minute,
+                            );
+
+                            return now.isAfter(eventStart) &&
+                                now.isBefore(eventEnd);
+                          }).toList();
+
+                          final matteoFutureEvents = matteoEvents.where((e) {
+                            if (e.startTime == null) return false;
+
+                            final eventStart = DateTime(
+                              _selectedDay.year,
+                              _selectedDay.month,
+                              _selectedDay.day,
+                              e.startTime!.hour,
+                              e.startTime!.minute,
+                            );
+
+                            return now.isBefore(eventStart);
+                          }).toList();
+
+                          String fmtTime(TimeOfDay? t) {
+                            if (t == null) return '--:--';
+                            final hh = t.hour.toString().padLeft(2, '0');
+                            final mm = t.minute.toString().padLeft(2, '0');
+                            return '$hh:$mm';
+                          }
+
+                          Widget buildEventLine({
+                            required String prefix,
+                            required dynamic event,
+                            Color? color,
+                            FontWeight fontWeight = FontWeight.normal,
+                          }) {
+                            return Text(
+                              "$prefix${event.title} ${fmtTime(event.startTime)} - ${fmtTime(event.endTime)}",
+                              style: TextStyle(
+                                color: color,
+                                fontWeight: fontWeight,
+                              ),
+                            );
+                          }
+
+                          return AlertDialog(
+                            title: const Text("Matteo"),
+                            content: SingleChildScrollView(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    "Stato attuale",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    matteoNowLabel,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      color: matteoVisual.color,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 16),
+
+                                  const Text(
+                                    "Turno previsto",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(matteoTurnLabel),
+                                  Text(
+                                    "Stato attuale: $matteoNowLabel",
+                                    style: TextStyle(
+                                      color: matteoVisual.color,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 16),
+
+                                  const Text(
+                                    "Eventi della giornata",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 10),
+
+                                  const Text(
+                                    "Prima",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  if (matteoPastEvents.isEmpty)
+                                    Text(
+                                      "• Nessun evento già concluso",
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    )
+                                  else
+                                    ...matteoPastEvents.map(
+                                      (e) => buildEventLine(
+                                        prefix: "✓ ",
+                                        event: e,
+                                      ),
+                                    ),
+
+                                  const SizedBox(height: 10),
+
+                                  const Text(
+                                    "Adesso",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  if (matteoNowEvents.isEmpty)
+                                    Text(
+                                      "• Nessun evento in corso",
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    )
+                                  else
+                                    ...matteoNowEvents.map(
+                                      (e) => buildEventLine(
+                                        prefix: "👉 ",
+                                        event: e,
+                                        color: Colors.orange,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+
+                                  const SizedBox(height: 10),
+
+                                  const Text(
+                                    "Dopo",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  if (matteoFutureEvents.isEmpty)
+                                    Text(
+                                      "• Nessun evento successivo",
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    )
+                                  else
+                                    ...matteoFutureEvents.map(
+                                      (e) => buildEventLine(
+                                        prefix: "• ",
+                                        event: e,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                                child: const Text("Chiudi"),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
                         color: matteoBusyNow
-                            ? Colors.red.withOpacity(0.35)
-                            : Colors.green.withOpacity(0.35),
+                            ? Colors.red.withOpacity(0.08)
+                            : Colors.green.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: matteoBusyNow
+                              ? Colors.red.withOpacity(0.35)
+                              : Colors.green.withOpacity(0.35),
+                        ),
                       ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          matteoBusyNow ? Icons.block : Icons.check_circle,
-                          size: 18,
-                          color: matteoBusyNow ? Colors.red : Colors.green,
-                        ),
-                        const SizedBox(width: 8),
-                        const SizedBox(
-                          width: 62,
-                          child: Text(
-                            "Matteo",
-                            style: TextStyle(fontWeight: FontWeight.w900),
+                      child: Row(
+                        children: [
+                          Icon(
+                            matteoBusyNow ? Icons.block : Icons.check_circle,
+                            size: 18,
+                            color: matteoBusyNow ? Colors.red : Colors.green,
                           ),
-                        ),
-                        Expanded(
-                          child: RichText(
-                            text: TextSpan(
-                              children: [
-                                WidgetSpan(
-                                  alignment: PlaceholderAlignment.middle,
-                                  child: TweenAnimationBuilder<double>(
-                                    duration: const Duration(milliseconds: 800),
-                                    tween: Tween(
-                                      begin: 1.0,
-                                      end: matteoBusyNow ? 1.2 : 1.0,
-                                    ),
-                                    builder: (context, value, child) {
-                                      return Transform.scale(
-                                        scale: value,
-                                        child: Padding(
-                                          padding: const EdgeInsets.only(
-                                            right: 10,
-                                          ),
-                                          child: Transform.translate(
-                                            offset: const Offset(0, -5),
-                                            child: Text(
-                                              matteoVisual.emoji,
-                                              style: const TextStyle(
-                                                fontSize: 22,
+                          const SizedBox(width: 8),
+                          const SizedBox(
+                            width: 62,
+                            child: Text(
+                              "Matteo",
+                              style: TextStyle(fontWeight: FontWeight.w900),
+                            ),
+                          ),
+                          Expanded(
+                            child: RichText(
+                              text: TextSpan(
+                                children: [
+                                  WidgetSpan(
+                                    alignment: PlaceholderAlignment.middle,
+                                    child: TweenAnimationBuilder<double>(
+                                      duration: const Duration(
+                                        milliseconds: 800,
+                                      ),
+                                      tween: Tween(
+                                        begin: 1.0,
+                                        end: matteoBusyNow ? 1.2 : 1.0,
+                                      ),
+                                      builder: (context, value, child) {
+                                        return Transform.scale(
+                                          scale: value,
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(
+                                              right: 10,
+                                            ),
+                                            child: Transform.translate(
+                                              offset: const Offset(0, -5),
+                                              child: Text(
+                                                matteoVisual.emoji,
+                                                style: const TextStyle(
+                                                  fontSize: 22,
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                      );
-                                    },
+                                        );
+                                      },
+                                    ),
                                   ),
-                                ),
-                                TextSpan(
-                                  text: matteoNowLabel,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    color: matteoVisual.color,
+                                  TextSpan(
+                                    text: matteoNowLabel,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      color: matteoVisual.color,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: chiaraBusyNow
-                          ? Colors.red.withOpacity(0.08)
-                          : Colors.green.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
+                  GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          final chiaraEvents = realEventStore
+                              .eventsForDay(_selectedDay)
+                              .where((e) => e.personKey == 'chiara')
+                              .toList();
+
+                          final chiaraPastEvents = chiaraEvents.where((e) {
+                            if (e.endTime == null) return false;
+
+                            final eventEnd = DateTime(
+                              _selectedDay.year,
+                              _selectedDay.month,
+                              _selectedDay.day,
+                              e.endTime!.hour,
+                              e.endTime!.minute,
+                            );
+
+                            return now.isAfter(eventEnd);
+                          }).toList();
+
+                          final chiaraNowEvents = chiaraEvents.where((e) {
+                            if (e.startTime == null || e.endTime == null) {
+                              return false;
+                            }
+
+                            final eventStart = DateTime(
+                              _selectedDay.year,
+                              _selectedDay.month,
+                              _selectedDay.day,
+                              e.startTime!.hour,
+                              e.startTime!.minute,
+                            );
+
+                            final eventEnd = DateTime(
+                              _selectedDay.year,
+                              _selectedDay.month,
+                              _selectedDay.day,
+                              e.endTime!.hour,
+                              e.endTime!.minute,
+                            );
+
+                            return now.isAfter(eventStart) &&
+                                now.isBefore(eventEnd);
+                          }).toList();
+
+                          final chiaraFutureEvents = chiaraEvents.where((e) {
+                            if (e.startTime == null) return false;
+
+                            final eventStart = DateTime(
+                              _selectedDay.year,
+                              _selectedDay.month,
+                              _selectedDay.day,
+                              e.startTime!.hour,
+                              e.startTime!.minute,
+                            );
+
+                            return now.isBefore(eventStart);
+                          }).toList();
+
+                          final chiaraPlan = _turns.turnPlanForPersonDay(
+                            person: TurnPerson.chiara,
+                            day: _selectedDay,
+                          );
+
+                          String chiaraTurnLabel = "Turno non previsto";
+
+                          if (!chiaraPlan.isOff) {
+                            chiaraTurnLabel =
+                                "Turno ${fmtTimeOfDay(chiaraPlan.start)}–${fmtTimeOfDay(chiaraPlan.end)}";
+                          }
+
+                          String fmtTime(TimeOfDay? t) {
+                            if (t == null) return '--:--';
+                            final hh = t.hour.toString().padLeft(2, '0');
+                            final mm = t.minute.toString().padLeft(2, '0');
+                            return '$hh:$mm';
+                          }
+
+                          Widget buildEventLine({
+                            required String prefix,
+                            required dynamic event,
+                            Color? color,
+                            FontWeight fontWeight = FontWeight.normal,
+                          }) {
+                            return Text(
+                              "$prefix${event.title} ${fmtTime(event.startTime)} - ${fmtTime(event.endTime)}",
+                              style: TextStyle(
+                                color: color,
+                                fontWeight: fontWeight,
+                              ),
+                            );
+                          }
+
+                          return AlertDialog(
+                            title: const Text("Chiara"),
+                            content: SingleChildScrollView(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    "Stato attuale",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    chiaraNowLabel,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      color: chiaraVisual.color,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    "Turno previsto",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(chiaraTurnLabel),
+                                  Text(
+                                    "Stato attuale: $chiaraNowLabel",
+                                    style: TextStyle(
+                                      color: chiaraVisual.color,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    "Eventi della giornata",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  const Text(
+                                    "Prima",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  if (chiaraPastEvents.isEmpty)
+                                    Text(
+                                      "• Nessun evento già concluso",
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    )
+                                  else
+                                    ...chiaraPastEvents.map(
+                                      (e) => buildEventLine(
+                                        prefix: "✓ ",
+                                        event: e,
+                                      ),
+                                    ),
+                                  const SizedBox(height: 10),
+                                  const Text(
+                                    "Adesso",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  if (chiaraNowEvents.isEmpty)
+                                    Text(
+                                      "• Nessun evento in corso",
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    )
+                                  else
+                                    ...chiaraNowEvents.map(
+                                      (e) => buildEventLine(
+                                        prefix: "👉 ",
+                                        event: e,
+                                        color: Colors.orange,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  const SizedBox(height: 10),
+                                  const Text(
+                                    "Dopo",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  if (chiaraFutureEvents.isEmpty)
+                                    Text(
+                                      "• Nessun evento successivo",
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    )
+                                  else
+                                    ...chiaraFutureEvents.map(
+                                      (e) => buildEventLine(
+                                        prefix: "• ",
+                                        event: e,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                                child: const Text("Chiudi"),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
                         color: chiaraBusyNow
-                            ? Colors.red.withOpacity(0.35)
-                            : Colors.green.withOpacity(0.35),
+                            ? Colors.red.withOpacity(0.08)
+                            : Colors.green.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: chiaraBusyNow
+                              ? Colors.red.withOpacity(0.35)
+                              : Colors.green.withOpacity(0.35),
+                        ),
                       ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          chiaraBusyNow ? Icons.block : Icons.check_circle,
-                          size: 18,
-                          color: chiaraBusyNow ? Colors.red : Colors.green,
-                        ),
-                        const SizedBox(width: 8),
-                        const SizedBox(
-                          width: 62,
-                          child: Text(
-                            "Chiara",
-                            style: TextStyle(fontWeight: FontWeight.w900),
+                      child: Row(
+                        children: [
+                          Icon(
+                            chiaraBusyNow ? Icons.block : Icons.check_circle,
+                            size: 18,
+                            color: chiaraBusyNow ? Colors.red : Colors.green,
                           ),
-                        ),
-                        Expanded(
-                          child: RichText(
-                            text: TextSpan(
-                              children: [
-                                WidgetSpan(
-                                  alignment: PlaceholderAlignment.middle,
-                                  child: TweenAnimationBuilder<double>(
-                                    duration: const Duration(milliseconds: 800),
-                                    tween: Tween(
-                                      begin: 1.0,
-                                      end: chiaraBusyNow ? 1.2 : 1.0,
-                                    ),
-                                    builder: (context, value, child) {
-                                      return Transform.scale(
-                                        scale: value,
-                                        child: Padding(
-                                          padding: const EdgeInsets.only(
-                                            right: 10,
-                                          ),
-                                          child: Transform.translate(
-                                            offset: const Offset(0, -5),
-                                            child: Text(
-                                              chiaraVisual.emoji,
-                                              style: const TextStyle(
-                                                fontSize: 22,
+                          const SizedBox(width: 8),
+                          const SizedBox(
+                            width: 62,
+                            child: Text(
+                              "Chiara",
+                              style: TextStyle(fontWeight: FontWeight.w900),
+                            ),
+                          ),
+                          Expanded(
+                            child: RichText(
+                              text: TextSpan(
+                                children: [
+                                  WidgetSpan(
+                                    alignment: PlaceholderAlignment.middle,
+                                    child: TweenAnimationBuilder<double>(
+                                      duration: const Duration(
+                                        milliseconds: 800,
+                                      ),
+                                      tween: Tween(
+                                        begin: 1.0,
+                                        end: chiaraBusyNow ? 1.2 : 1.0,
+                                      ),
+                                      builder: (context, value, child) {
+                                        return Transform.scale(
+                                          scale: value,
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(
+                                              right: 10,
+                                            ),
+                                            child: Transform.translate(
+                                              offset: const Offset(0, -5),
+                                              child: Text(
+                                                chiaraVisual.emoji,
+                                                style: const TextStyle(
+                                                  fontSize: 22,
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
-                                      );
-                                    },
+                                        );
+                                      },
+                                    ),
                                   ),
-                                ),
-                                TextSpan(
-                                  text: chiaraNowLabel,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    color: chiaraVisual.color,
+                                  TextSpan(
+                                    text: chiaraNowLabel,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      color: chiaraVisual.color,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: aliceIsOutNow
-                          ? Colors.orange.withOpacity(0.10)
-                          : Colors.blue.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: aliceIsOutNow
-                            ? Colors.orange.withOpacity(0.35)
-                            : Colors.blue.withOpacity(0.35),
+                  GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          final aliceEvents = coreStore.aliceSpecialEventStore
+                              .eventsForDay(_selectedDay);
+
+                          String fmtTime(TimeOfDay? t) {
+                            if (t == null) return '--:--';
+                            final hh = t.hour.toString().padLeft(2, '0');
+                            final mm = t.minute.toString().padLeft(2, '0');
+                            return '$hh:$mm';
+                          }
+
+                          return AlertDialog(
+                            title: const Text("Alice"),
+                            content: SingleChildScrollView(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    "Stato attuale",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    aliceNowLabel,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      color: aliceVisual.color,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 16),
+
+                                  const Text(
+                                    "Eventi della giornata",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+
+                                  if (aliceEvents.isEmpty)
+                                    Text(
+                                      "• Nessun evento per oggi",
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    )
+                                  else
+                                    ...aliceEvents.map(
+                                      (e) => Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 6,
+                                        ),
+                                        child: Text(
+                                          "• ${e.label} ${fmtTime(e.start)} - ${fmtTime(e.end)}",
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text("Chiudi"),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
                       ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          aliceIsOutNow ? Icons.directions_walk : Icons.home,
-                          size: 18,
-                          color: aliceIsOutNow ? Colors.orange : Colors.blue,
+                      decoration: BoxDecoration(
+                        color: aliceIsOutNow
+                            ? Colors.orange.withOpacity(0.10)
+                            : Colors.blue.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: aliceIsOutNow
+                              ? Colors.orange.withOpacity(0.35)
+                              : Colors.blue.withOpacity(0.35),
                         ),
-                        const SizedBox(width: 8),
-                        const SizedBox(
-                          width: 62,
-                          child: Text(
-                            "Alice",
-                            style: TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            aliceIsOutNow ? Icons.directions_walk : Icons.home,
+                            size: 18,
+                            color: aliceIsOutNow ? Colors.orange : Colors.blue,
                           ),
-                        ),
-                        Expanded(
-                          child: RichText(
-                            text: TextSpan(
-                              children: [
-                                WidgetSpan(
-                                  alignment: PlaceholderAlignment.middle,
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(right: 10),
-                                    child: Transform.translate(
-                                      offset: const Offset(0, -5),
-                                      child: Text(
-                                        aliceVisual.emoji,
-                                        style: const TextStyle(fontSize: 22),
+                          const SizedBox(width: 8),
+                          const SizedBox(
+                            width: 62,
+                            child: Text(
+                              "Alice",
+                              style: TextStyle(fontWeight: FontWeight.w900),
+                            ),
+                          ),
+                          Expanded(
+                            child: RichText(
+                              text: TextSpan(
+                                children: [
+                                  WidgetSpan(
+                                    alignment: PlaceholderAlignment.middle,
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(right: 10),
+                                      child: Transform.translate(
+                                        offset: const Offset(0, -5),
+                                        child: Text(
+                                          aliceVisual.emoji,
+                                          style: const TextStyle(fontSize: 22),
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                                TextSpan(
-                                  text: aliceNowLabel,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    color: aliceVisual.color,
+                                  TextSpan(
+                                    text: aliceNowLabel,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      color: aliceVisual.color,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],

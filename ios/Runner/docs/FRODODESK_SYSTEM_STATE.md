@@ -1,6 +1,6 @@
 # FRODODESK — SYSTEM STATE
 
-Ultimo aggiornamento: 30 Marzo 2026
+Ultimo aggiornamento: Aprile 2026
 
 ---
 
@@ -166,6 +166,73 @@ Il sistema ora gestisce correttamente:
 
 ---
 
+# 🔥 NUOVO — POPUP STATO PERSONA (MATTEO)
+
+Durante questa sessione è stato introdotto un nuovo blocco UI:
+
+👉 Popup stato persona (prima versione reale)
+
+### Struttura implementata:
+
+#### 1️⃣ Stato attuale
+- mostra lo stato reale della persona (lavoro, malattia, ferie, ecc.)
+- coerente con il motore
+
+#### 2️⃣ Turno previsto
+- mostra il turno della giornata
+- attualmente derivato dai dati del motore
+
+⚠️ Problema identificato:
+- il turno mostrato include il tempo di viaggio
+  (es: 05:00–14:30)
+
+👉 questo NON è corretto per la UI
+
+✔ Il motore è corretto  
+❗ la UI deve essere corretta
+
+#### 3️⃣ Eventi della giornata (NUOVA STRUTTURA)
+
+Eventi separati in tre blocchi reali:
+
+- Prima (✓ eventi conclusi)
+- Adesso (👉 evento in corso)
+- Dopo (• eventi futuri)
+
+✔ separazione reale  
+✔ ordinamento corretto  
+✔ fallback “nessun evento” funzionante  
+✔ eliminata confusione precedente  
+
+---
+
+# 🧠 PRINCIPIO EMERSO (FONDAMENTALE)
+
+Separazione obbligatoria tra:
+
+### MOTORE
+- usa orari reali con viaggio
+- serve per calcolo copertura
+
+### UI
+- deve mostrare realtà percepita umana
+- NON deve includere viaggio
+
+---
+
+# 📌 STATO ATTUALE
+
+✔ popup funzionante  
+✔ eventi corretti  
+✔ struttura riutilizzabile  
+
+❗ DA FARE:
+
+- correggere visualizzazione turno (rimuovere viaggio)
+- mostrare orario reale turno (06:00–14:00)
+
+---
+
 # STATO UI
 
 ✔ calendario funzionante  
@@ -173,7 +240,7 @@ Il sistema ora gestisce correttamente:
 ✔ card leggibili  
 ✔ editor eventi Alice integrato  
 
-⚠️ UI ancora da rifinire (fase successiva)
+⚠️ UI in fase di evoluzione reale
 
 ---
 
@@ -190,36 +257,31 @@ Il sistema ora gestisce correttamente:
 Attualmente:
 
 - piccoli problemi UI (non bloccanti)
-- possibili duplicazioni nei “Buchi del giorno”
 
-👉 nessun bug critico bloccante
+👉 nessun bug critico
 
 ---
 
 # DIREZIONE OPERATIVA
 
-Ordine ufficiale aggiornato:
-
 ## 1️⃣ PRIORITÀ ATTUALE
-👉 stabilizzazione logica eventi Alice (FASE A completata)
+👉 correzione turno UI (separazione da viaggio)
 
 ## 2️⃣ PROSSIMO STEP
-👉 rendere reale il controllo disponibilità (`isSomeoneAvailable`)
+👉 rendere il turno umano reale visibile
 
 ## 3️⃣ DOPO
-👉 sviluppo completo modulo Eventi Alice (UI + salvataggio + modifica)
+👉 estendere popup a Chiara e Alice
 
 ---
 
 # SIGNIFICATO DELLA FASE ATTUALE
 
-Il sistema è ufficialmente passato a:
+Il sistema evolve da:
 
-✔ motore decisionale reale basato su eventi
-
-Non è più:
-
-❌ calendario evoluto
+❌ calendario + copertura  
+👉 verso  
+✔ sistema di lettura della giornata umana
 
 ---
 
@@ -233,4 +295,4 @@ Non è più:
 
 # FRASE DI RIPARTENZA UFFICIALE
 
-Ripartiamo da FrodoDesk — Eventi Alice collegati alla copertura reale (FASE A completata: accompagnamento + ritiro con controllo disponibilità). Prossimo passo: rendere reale `isSomeoneAvailable` e avviare sviluppo completo modulo Eventi Alice (editor avanzato + salvataggio).
+Ripartiamo da FrodoDesk — popup stato persona introdotto (Matteo) con eventi separati Prima / Adesso / Dopo. Problema aperto: turno mostra orari con viaggio → da correggere mostrando turno reale umano (06:00–14:00).

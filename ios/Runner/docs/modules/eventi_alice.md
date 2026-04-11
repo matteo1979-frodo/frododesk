@@ -1,6 +1,6 @@
 # FRODODESK — MODULO EVENTI ALICE
 
-Ultimo aggiornamento: 8 Aprile 2026
+Ultimo aggiornamento: 9 Aprile 2026
 
 ---
 
@@ -28,364 +28,264 @@ Gli Eventi Alice NON sono più solo informativi.
 - collegamento reale con **linguaggio stato Alice**
 - collegamento reale con **copertura**
 - base per sistema visivo (emoji + colori)
-- prime etichette umane collegate al nome vero evento
+- etichette umane collegate al nome reale evento
 
 ---
 
 ## 🧠 ARCHITETTURA — 3 LIVELLI (FONDAMENTALE)
 
-Il modulo ora segue questa separazione:
+### 1️⃣ LOGICA  
+→ dove si trova Alice realmente  
 
-### 1️⃣ LOGICA
-→ dove si trova Alice realmente
+### 2️⃣ LINGUAGGIO  
+→ come il sistema descrive lo stato  
 
-### 2️⃣ LINGUAGGIO
-→ come il sistema descrive lo stato
-
-### 3️⃣ VISUALE
+### 3️⃣ VISUALE  
 → emoji + colore (status_visual)
 
 ---
 
 ## 🔧 IMPLEMENTAZIONE ATTUALE (LINGUAGGIO REALE)
 
-Il placeholder temporaneo è stato superato.
+Il placeholder è stato eliminato.
 
 Ora il linguaggio legge realmente:
 
-- stato periodo Alice
-- eventi Alice temporizzati
-- eventi reali Alice
-- categorie evento
-- fallback testuale quando necessario
+- stato periodo Alice  
+- eventi Alice temporizzati  
+- eventi reali Alice  
+- categorie evento  
+- fallback testuale  
 
-Schema logico attuale:
+---
 
-```dart
-final isAliceSick = alicePeriodNow?.type == AliceEventType.sickness;
+## 🎯 RISULTATO RAGGIUNTO
 
-final String aliceNowLabel = aliceIsOutNow
-    ? (activeAliceSpecialEventNow != null
-          ? _aliceOutsideLabelFromText(
-              activeAliceSpecialEventNow!.label,
-              category: activeAliceSpecialEventNow!.category,
-            )
-          : activeAliceRealEventNow != null
-          ? _aliceOutsideLabelFromText(activeAliceRealEventNow!.title)
-          : (alicePeriodNow?.type == AliceEventType.summerCamp
-                ? "fuori • centro estivo"
-                : "fuori • scuola"))
-    : (isAliceSick ? "a casa • malata" : "a casa");
-    ✅ SUPERATO
-Prima
-final isSchoolNow = aliceIsOutNow;
-Problema
-isSchoolNow NON era reale
-Alice risultava “fuori • scuola” anche quando non doveva
-il weekend veniva letto male
-Ora
-weekend corretto
-evento reale letto
-categoria evento letta
-stato Alice coerente
-🎯 RISULTATO ATTUALE RAGGIUNTO
+Alice genera automaticamente:
 
-Alice ora può generare automaticamente:
+- "fuori • scuola"
+- "fuori • centro estivo"
+- "fuori • sport"
+- "fuori • attività"
+- "fuori • visita"
+- "fuori • gita"
+- "a casa • malata"
+- "a casa"
 
-"fuori • scuola"
-"fuori • centro estivo"
-"fuori • sport"
-"fuori • attività"
-"fuori • visita"
-"fuori • gita"
-"a casa • malata"
-"a casa"
+👉 senza modificare UI  
+👉 senza toccare status_visual  
 
-👉 senza modificare la UI
-👉 senza toccare status_visual
+---
 
-🔒 REGOLA FONDAMENTALE
-NON modificare la UI
-NON toccare status_visual
-il linguaggio deve nascere dalla logica reale
-🧠 CATEGORIE EVENTI ALICE
+## 🔒 REGOLA FONDAMENTALE
 
-Scelta strutturale fissata:
+- NON modificare UI  
+- NON toccare status_visual  
+- il linguaggio nasce SOLO dalla logica reale  
 
-school
-health
-sport
-activity
-other
-Traduzione attuale
-school → fuori • scuola
-health → fuori • visita
-sport → fuori • sport
-activity → fuori • attività
-other → fallback testuale / fallback umano
+---
 
-👉 decisione ufficiale: sport e activity restano distinti
+## 🧠 LOGICA STATO CASA — AGGIORNAMENTO STRUTTURALE
 
-🧠 LOGICA SCUOLA DINAMICA
+🔥 **NUOVA REGOLA STABILE INTRODOTTA**
 
-Gli orari scuola NON sono più fissi.
+La gestione di "Alice a casa" ora segue una gerarchia precisa.
 
-📍 ENTRATA
-orario reale (es: 08:25)
-buffer: -20 minuti
+---
 
-👉 fascia reale:
-08:05 – 08:25
+### 1️⃣ STATO GIORNO DOMINANTE
 
-📍 USCITA
-orario reale (es: 16:25)
-buffer: +20 minuti
+Se il giorno è:
 
-👉 fascia reale:
-16:25 – 16:45
+- vacation  
+- sickness  
+- schoolClosure  
 
-📍 USCITA ANTICIPATA
+👉 il sistema mostra:
 
-Se attiva:
+- Alice a casa (Vacanza)  
+- Alice a casa (Malata)  
+- Alice a casa (Scuola chiusa)  
 
-👉 sostituisce completamente l’uscita scuola
+👉 PRIORITÀ MASSIMA  
+👉 non viene mai trasformato in “dopo evento”
 
-Usata da:
+---
 
-UI
-CoverageEngine
-Sandra
-buchi reali
-🍽️ PRANZO — LOGICA DINAMICA
+### 2️⃣ EVENTO TEMPORALE
+
+Se esiste un evento reale:
+
+👉 il sistema genera:
+
+- Alice a casa dopo danza  
+- Alice a casa dopo visita  
+- Alice a casa dopo sport  
+
+👉 SOLO fuori dall’intervallo evento  
+
+---
+
+### 3️⃣ FALLBACK SCUOLA
+
+Se:
+
+- giorno normale  
+- nessun evento  
+
+👉 il sistema genera:
+
+Alice a casa dopo scuola  
+
+---
+
+## 🧠 PRINCIPIO CONSOLIDATO
+
+👉 lo stato giorno NON deve schiacciare la realtà temporale  
+
+MA  
+
+👉 quando è dominante (vacanza / malattia / chiusura scuola)  
+vince sempre  
+
+---
+
+## 🔥 LOGICA EVENTI ALICE → COPERTURA
+
+Un evento Alice genera impatto reale:
+
+1️⃣ DURANTE EVENTO → Alice fuori  
+2️⃣ PRIMA EVENTO → accompagnamento  
+3️⃣ DOPO EVENTO → ritiro  
+4️⃣ DOPO → ritorno stato reale  
+
+---
+
+## ⏱️ BUFFER EVENTI
+
+- 20 minuti prima  
+- 20 minuti dopo  
+
+---
+
+## 🧠 PRINCIPIO REALTÀ
+
+Evento ≠ genitore occupato tutto il tempo  
+
+✔ accompagnamento → vincolo  
+✔ evento → libero  
+✔ ritiro → vincolo  
+
+---
+
+## 🧾 LINGUAGGIO UMANO
 
 Prima:
-❌ fisso 13:00–14:30
+- Ritiro Alice evento  
 
 Ora:
+- Ritiro Alice danza  
+- Accompagnamento Alice danza  
 
-👉 dinamico
+---
 
-start = uscita anticipata (se presente)
-fallback = 13:00
-👶 SANDRA — ALLINEAMENTO
+## ⚠️ DECISIONE IMPORTANTE
 
-Sandra NON usa più orari fissi.
+NON unire automaticamente i buchi  
 
-👉 legge:
+👉 ogni blocco può avere soluzione diversa  
 
-uscita anticipata
-fasce reali
-CoverageEngine
-⚠️ PRINCIPIO SISTEMA
+---
 
-TUTTO usa la stessa fonte:
+## 🧠 SCOPERTA STRUTTURALE
 
-UI
-CoverageEngine
-decisioni
-Sandra
+👉 dopo scuola / evento  
+Alice deve tornare a casa  
 
-👉 nessun valore duplicato
+NON deve restare “fuori”  
 
-🔥 LOGICA EVENTI ALICE → COPERTURA
+---
 
-Un evento Alice genera impatto reale sul motore.
+## 🧩 MODELLO EVENTO
 
-1️⃣ DURANTE EVENTO
-Alice NON è a casa
-2️⃣ PRIMA EVENTO
-verifica accompagnamento
-3️⃣ DOPO EVENTO
-verifica ritiro
-4️⃣ DOPO RITIRO
-Alice torna nel suo stato reale di giornata
-⏱️ BUFFER EVENTI ALICE
+- id  
+- label  
+- category  
+- date  
+- start  
+- end  
+- note  
+- enabled  
 
-Decisione ufficiale fissata:
+---
 
-👉 per gli eventi Alice temporizzati usare:
+## 🧠 STATO REALE
 
-20 minuti prima
-20 minuti dopo
+✔ model  
+✔ store  
+✔ CoreStore  
+✔ editor  
+✔ multi-evento  
+✔ persistenza  
+✔ conflitti  
+✔ UI  
 
-Quindi:
+---
 
-pre-evento = accompagnamento
-post-evento = ritiro
-🧠 PRINCIPIO REALTÀ
+## 🔥 COMPLETATO RECENTE
 
-Un evento Alice NON occupa automaticamente il genitore per tutta la sua durata.
+✔ linguaggio "Alice a casa dopo..."  
+✔ separazione stato giorno vs evento  
+✔ eliminazione ricorsione (bug critico risolto)  
+✔ funzione pura per stato casa  
 
-Regola corretta:
+---
 
-accompagnamento = vincolo reale
-evento = Alice fuori, ma non per forza genitore occupato
-ritiro = vincolo reale
+## 🚧 NON ANCORA FATTO
 
-👉 questa distinzione è stata riconosciuta come fondamentale durante la chat
+LOGICA  
+⬜ scuola come evento reale  
 
-🔥 ESEMPIO REALE VALIDATO
+LINGUAGGIO  
+⬜ perfezionamento casi complessi  
 
-Caso testato:
+SISTEMA  
+⬜ conflitti forti  
+⬜ suggerimenti  
+⬜ IPS  
 
-Alice in vacanza
-evento danza in mezzo alla giornata
-sistema prima produceva lettura troppo grossolana
-sistema poi corretto fino a ottenere buchi più coerenti:
-ritiro evento
-ritorno a casa
-🧾 LINGUAGGIO UMANO EVENTI
+---
 
-Miglioramento già introdotto:
+## 🎯 STATO MODULO
 
-prima:
+🟢 STABILE
 
-Ritiro Alice evento
+✔ crash risolto  
+✔ logica coerente  
+✔ linguaggio realistico  
 
-ora:
+---
 
-Ritiro Alice danza
-Accompagnamento Alice danza
+## 🚀 PROSSIMO STEP
 
-👉 il sistema usa il label reale dell’evento
+👉 collegare completamente:
 
-Questo rende il motore molto più umano e leggibile.
+- eventi Alice  
+- accompagnamento  
+- ritiro  
+- impatto reale su copertura  
 
-⚠️ DECISIONE IMPORTANTE EMERSA
+---
 
-NON sempre conviene unire i buchi.
+## 🧱 NOTA ARCHITETTURALE
 
-Per esempio:
+Questa modifica:
 
-ritiro evento
-Alice a casa dopo evento
+👉 separa definitivamente:
 
-possono richiedere soluzioni diverse:
-
-Sandra solo per ritiro
-supporto solo per casa dopo
-genitore solo per uno dei due
-
-👉 quindi priorità operativa > estetica
-
-🧠 PRIORITÀ TESTO — REGOLA FISSATA
-
-Distinzione emersa come fondamentale:
-
-1️⃣ Stato giorno dominante
-
-Esempi:
-
-vacanza
-malattia
-scuola chiusa
-
-Se Alice è a casa per stato giorno:
-👉 è giusto che prevalga lo stato giorno
-
-Esempio corretto:
-
-Alice a casa (Vacanza)
-2️⃣ Evento temporale
-
-Esempi:
-
-scuola
-danza
-sport
-visite
-
-L’evento domina solo nel suo intervallo reale.
-
-Fuori da quell’intervallo:
-👉 Alice torna a casa
-
-E in certi casi il linguaggio corretto può essere:
-
-Alice a casa dopo scuola
-Alice a casa dopo danza
-🧠 SCOPERTA STRUTTURALE DELLA CHAT
-
-Regola chiave emersa e validata:
-
-👉 lo stato giorno NON deve schiacciare la realtà temporale
-
-Esempio corretto:
-
-Alice a scuola 08:30–16:30
-rientro 16:30–16:50
-dopo 16:50:
-NON deve restare “a scuola”
-deve diventare “Alice a casa dopo scuola”
-🧩 MODELLO EVENTO
-
-Campi:
-
-id
-label
-category
-date
-start
-end
-note
-enabled
-🧠 STATO REALE
-✔ COMPLETATO
-model ✔
-store ✔
-CoreStore ✔
-editor ✔
-multi-evento ✔
-persistenza ✔
-conflitti ✔
-UI eventi ✔
-🔥 COMPLETATO RECENTE
-orari scuola dinamici ✔
-uscita anticipata ✔
-pranzo dinamico ✔
-Sandra dinamica ✔
-linguaggio Alice reale ✔
-weekend fix ✔
-categorie stabili ✔
-impatto reale eventi Alice sulla copertura ✔
-etichette umane per accompagnamento / ritiro ✔
-🚧 NON ANCORA FATTO
-LOGICA
-
-⬜ trasformare scuola da stato giorno a evento temporale reale (PROSSIMO STEP)
-
-LINGUAGGIO
-
-⬜ completare in modo definitivo il comportamento “Alice a casa dopo scuola” / “Alice a casa dopo evento” secondo priorità stato giorno vs evento
-
-UI
-
-⬜ rifinitura
-
-SISTEMA
-
-⬜ conflitti forti turni/eventi
-⬜ suggerimenti automatici
-⬜ IPS completo
-
-🚀 FUTURO
-Alice al seguito
-suggerimenti intelligenti
-eventi ricorrenti
-statistiche
-🎯 STATO MODULO
-
-🟡 IN COSTRUZIONE AVANZATA
-
-già raggiunto
-sistema reale ✔
-linguaggio base ✔
-collegamento eventi → stato Alice ✔
-collegamento eventi → copertura ✔
-linguaggio umano eventi ✔
-prossimo fronte vero
-scuola come evento temporale reale
-rientro da scuola gestito come realtà temporale
-linguaggio “Alice a casa dopo scuola”
-
-Aspetto il tuo **“fatto”**. Dopo ti mando il blocco nuova chat perfetto.
+- logica  
+- linguaggio  
+- struttura  
+
+👉 elimina dipendenze pericolose  
+👉 rende il sistema scalabile
