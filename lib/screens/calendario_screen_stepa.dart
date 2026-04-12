@@ -165,7 +165,7 @@ class _CalendarioScreenStepAStabileState
     hour: 16,
     minute: 25,
   );
-  static const TimeOfDay _schoolOutDefaultEnd = TimeOfDay(hour: 17, minute: 15);
+  static const TimeOfDay _schoolOutDefaultEnd = TimeOfDay(hour: 16, minute: 25);
 
   TimeOfDay _effSchoolOutStart(DateTime day) =>
       daySettingsStore.schoolOutStartForDay(day) ?? _schoolOutDefaultStart;
@@ -1242,8 +1242,8 @@ class _CalendarioScreenStepAStabileState
     return "$left ($stateLabel): $right";
   }
 
-  String _companionActionTextForGap(String label) {
-    final match = RegExp(r'(\d{2}:\d{2})–(\d{2}:\d{2})').firstMatch(label);
+  String _companionActionTextForGap(CoverageGapDetail gap) {
+    final match = RegExp(r'(\d{2}:\d{2})–(\d{2}:\d{2})').firstMatch(gap.label);
     if (match == null) return "Porta Alice con te";
 
     TimeOfDay parse(String t) {
@@ -1267,13 +1267,17 @@ class _CalendarioScreenStepAStabileState
               e.end.minute == end.minute,
         );
 
-    final who = person == AliceCompanionPerson.matteo ? "Matteo" : "Chiara";
+    final who = person == AliceCompanionPerson.matteo
+        ? "Matteo"
+        : person == AliceCompanionPerson.chiara
+        ? "Chiara"
+        : "Nessuno";
 
     return existing ? "Togli Alice da $who" : "Porta Alice con $who";
   }
 
-  String _companionButtonTextForGap(String label) {
-    final match = RegExp(r'(\d{2}:\d{2})–(\d{2}:\d{2})').firstMatch(label);
+  String _companionButtonTextForGap(CoverageGapDetail gap) {
+    final match = RegExp(r'(\d{2}:\d{2})–(\d{2}:\d{2})').firstMatch(gap.label);
     if (match == null) return "Porta Alice con te";
 
     TimeOfDay parse(String t) {
@@ -2332,6 +2336,29 @@ class _CalendarioScreenStepAStabileState
     bool matteoBusy = false;
     bool chiaraBusy = false;
 
+    final ov = _getOverridesForDay(day);
+
+    final matteoDisease = coreStore.diseasePeriodStore.getPeriodForDay(
+      'matteo',
+      _onlyDate(day),
+    );
+
+    final chiaraDisease = coreStore.diseasePeriodStore.getPeriodForDay(
+      'chiara',
+      _onlyDate(day),
+    );
+
+    final matteoBedSick =
+        ov.matteo?.status == OverrideStatus.malattiaALetto ||
+        matteoDisease?.type == DiseaseType.bed;
+
+    final chiaraBedSick =
+        ov.chiara?.status == OverrideStatus.malattiaALetto ||
+        chiaraDisease?.type == DiseaseType.bed;
+
+    if (matteoBedSick) matteoBusy = true;
+    if (chiaraBedSick) chiaraBusy = true;
+
     final matteoPlan = _turns.turnPlanForPersonDay(
       person: TurnPerson.matteo,
       day: day,
@@ -2339,7 +2366,7 @@ class _CalendarioScreenStepAStabileState
     if (!matteoPlan.isOff) {
       final workStart = toDT(matteoPlan.start);
       final workEnd = toDT(matteoPlan.end);
-      matteoBusy = overlaps(workStart, workEnd, gapStart, gapEnd);
+      matteoBusy = matteoBusy || overlaps(workStart, workEnd, gapStart, gapEnd);
     }
 
     final chiaraPlan = _turns.turnPlanForPersonDay(
@@ -2349,7 +2376,7 @@ class _CalendarioScreenStepAStabileState
     if (!chiaraPlan.isOff) {
       final workStart = toDT(chiaraPlan.start);
       final workEnd = toDT(chiaraPlan.end);
-      chiaraBusy = overlaps(workStart, workEnd, gapStart, gapEnd);
+      chiaraBusy = chiaraBusy || overlaps(workStart, workEnd, gapStart, gapEnd);
     }
 
     final events = coreStore.realEventStore.eventsForDay(_onlyDate(day));
@@ -2382,7 +2409,11 @@ class _CalendarioScreenStepAStabileState
     if (!matteoBusy && chiaraBusy) return AliceCompanionPerson.matteo;
     if (!chiaraBusy && matteoBusy) return AliceCompanionPerson.chiara;
 
-    return AliceCompanionPerson.matteo;
+    // entrambi disponibili → scegli Matteo (ok)
+    if (!matteoBusy && !chiaraBusy) return AliceCompanionPerson.matteo;
+
+    // entrambi occupati → nessuno può portarla
+    return AliceCompanionPerson.nessuno;
   }
 
   Widget _buildDayGapsBox(CoverageResultStepA cov) {
@@ -2477,8 +2508,10 @@ class _CalendarioScreenStepAStabileState
 
             return CoverageGapDetail(
               label:
-                  "Alice con $who: ${fmtTimeOfDay(e.start)}–${fmtTimeOfDay(e.end)}",
+                  "Alice con $who: ${fmtTimeOfDay(TimeOfDay(hour: e.start.hour, minute: e.start.minute))}–${fmtTimeOfDay(TimeOfDay(hour: e.end.hour, minute: e.end.minute))}",
               lines: const [],
+              start: TimeOfDay(hour: e.start.hour, minute: e.start.minute),
+              end: TimeOfDay(hour: e.end.hour, minute: e.end.minute),
             );
           }).toList();
 
@@ -2707,9 +2740,7 @@ class _CalendarioScreenStepAStabileState
                       // trigger rebuild
                     });
                   },
-                  child: Text(
-                    _companionActionTextForGap(visibleGapDetails[i].label),
-                  ),
+                  child: Text(_companionActionTextForGap(visibleGapDetails[i])),
                 ),
 
                 const SizedBox(height: 6),
@@ -3191,7 +3222,10 @@ class _CalendarioScreenStepAStabileState
       }
     }
 
-    final matteoBusyForTurn = _engine.isMatteoBusyBetween(now, now);
+    final matteoBusyForTurn = _engine.isMatteoBusyBetween(
+      now,
+      now.add(const Duration(minutes: 1)),
+    );
 
     final matteoPlan = _turns.turnPlanForPersonDay(
       person: TurnPerson.matteo,
@@ -3272,7 +3306,10 @@ class _CalendarioScreenStepAStabileState
       }
     }
 
-    final chiaraBusyForTurn = _engine.isChiaraBusyBetween(now, now);
+    final chiaraBusyForTurn = _engine.isChiaraBusyBetween(
+      now,
+      now.add(const Duration(minutes: 1)),
+    );
 
     final chiaraBusyNow =
         chiaraBedSick || chiaraBusyForTurn || chiaraBusyForEventNow;
@@ -4290,14 +4327,186 @@ class _CalendarioScreenStepAStabileState
                       showDialog(
                         context: context,
                         builder: (context) {
-                          final aliceEvents = coreStore.aliceSpecialEventStore
+                          final aliceSpecialEvents = coreStore
+                              .aliceSpecialEventStore
                               .eventsForDay(_selectedDay);
+
+                          final aliceRealEvents = coreStore.realEventStore
+                              .eventsForDay(_selectedDay)
+                              .where((e) => e.personKey == 'alice')
+                              .toList();
+
+                          final alicePeriod = coreStore.aliceEventStore
+                              .getEventForDay(_selectedDay);
 
                           String fmtTime(TimeOfDay? t) {
                             if (t == null) return '--:--';
                             final hh = t.hour.toString().padLeft(2, '0');
                             final mm = t.minute.toString().padLeft(2, '0');
                             return '$hh:$mm';
+                          }
+
+                          String periodLabel(AliceEventType type) {
+                            switch (type) {
+                              case AliceEventType.schoolNormal:
+                                return "Scuola";
+                              case AliceEventType.vacation:
+                                return "Vacanza";
+                              case AliceEventType.schoolClosure:
+                                return "Scuola chiusa";
+                              case AliceEventType.sickness:
+                                return "Malattia";
+                              case AliceEventType.summerCamp:
+                                return "Centro estivo";
+                            }
+                          }
+
+                          final List<Map<String, dynamic>> aliceDayEvents = [];
+
+                          if (alicePeriod != null) {
+                            if (alicePeriod.type ==
+                                AliceEventType.schoolNormal) {
+                              final isRealSchoolDay = coreStore.aliceEventStore
+                                  .isSchoolNormalDay(_selectedDay);
+
+                              if (isRealSchoolDay) {
+                                final schoolStart = _scuolaStart;
+                                final schoolEnd =
+                                    _effUscitaAnticipataAt(_selectedDay) ??
+                                    _effSchoolOutEnd(_selectedDay);
+
+                                aliceDayEvents.add({
+                                  'title': "Scuola",
+                                  'start': schoolStart,
+                                  'end': schoolEnd,
+                                });
+                              }
+                            } else if (alicePeriod.type ==
+                                AliceEventType.summerCamp) {
+                              aliceDayEvents.add({
+                                'title': "Centro estivo",
+                                'start':
+                                    alicePeriod.summerCampStart ??
+                                    const TimeOfDay(hour: 8, minute: 30),
+                                'end':
+                                    alicePeriod.summerCampEnd ??
+                                    const TimeOfDay(hour: 16, minute: 30),
+                              });
+                            }
+                          } else {
+                            final isRealSchoolDay = coreStore.aliceEventStore
+                                .isSchoolNormalDay(_selectedDay);
+
+                            if (isRealSchoolDay) {
+                              final schoolStart = _scuolaStart;
+                              final schoolEnd =
+                                  _effUscitaAnticipataAt(_selectedDay) ??
+                                  _effSchoolOutEnd(_selectedDay);
+
+                              aliceDayEvents.add({
+                                'title': "Scuola",
+                                'start': schoolStart,
+                                'end': schoolEnd,
+                              });
+                            }
+                          }
+
+                          for (final e in aliceSpecialEvents) {
+                            aliceDayEvents.add({
+                              'title': e.label,
+                              'start': e.start,
+                              'end': e.end,
+                            });
+                          }
+
+                          for (final e in aliceRealEvents) {
+                            aliceDayEvents.add({
+                              'title': e.title,
+                              'start': e.startTime,
+                              'end': e.endTime,
+                            });
+                          }
+
+                          aliceDayEvents.sort((a, b) {
+                            final aStart = a['start'] as TimeOfDay?;
+                            final bStart = b['start'] as TimeOfDay?;
+
+                            final aMin = aStart == null
+                                ? 9999
+                                : aStart.hour * 60 + aStart.minute;
+                            final bMin = bStart == null
+                                ? 9999
+                                : bStart.hour * 60 + bStart.minute;
+
+                            return aMin.compareTo(bMin);
+                          });
+
+                          DateTime toDateTime(
+                            TimeOfDay? t, {
+                            bool endOfDay = false,
+                          }) {
+                            if (t == null) {
+                              return DateTime(
+                                _selectedDay.year,
+                                _selectedDay.month,
+                                _selectedDay.day,
+                                endOfDay ? 23 : 0,
+                                endOfDay ? 59 : 0,
+                              );
+                            }
+
+                            return DateTime(
+                              _selectedDay.year,
+                              _selectedDay.month,
+                              _selectedDay.day,
+                              t.hour,
+                              t.minute,
+                            );
+                          }
+
+                          final alicePastEvents = aliceDayEvents.where((e) {
+                            final end = toDateTime(
+                              e['end'] as TimeOfDay?,
+                              endOfDay: true,
+                            );
+                            return now.isAfter(end);
+                          }).toList();
+
+                          final aliceNowEvents = aliceDayEvents.where((e) {
+                            final start = toDateTime(e['start'] as TimeOfDay?);
+                            final end = toDateTime(
+                              e['end'] as TimeOfDay?,
+                              endOfDay: true,
+                            );
+                            return now.isAfter(start) && now.isBefore(end);
+                          }).toList();
+
+                          final aliceFutureEvents = aliceDayEvents.where((e) {
+                            final start = toDateTime(e['start'] as TimeOfDay?);
+                            return now.isBefore(start);
+                          }).toList();
+
+                          Widget buildEventLine({
+                            required String prefix,
+                            required Map<String, dynamic> event,
+                            Color? color,
+                            FontWeight fontWeight = FontWeight.normal,
+                          }) {
+                            final start = event['start'] as TimeOfDay?;
+                            final end = event['end'] as TimeOfDay?;
+                            final title = event['title'] as String;
+
+                            final timeText = (start != null || end != null)
+                                ? " ${fmtTime(start)} - ${fmtTime(end)}"
+                                : "";
+
+                            return Text(
+                              "$prefix$title$timeText",
+                              style: TextStyle(
+                                color: color,
+                                fontWeight: fontWeight,
+                              ),
+                            );
                           }
 
                           return AlertDialog(
@@ -4321,6 +4530,18 @@ class _CalendarioScreenStepAStabileState
                                       color: aliceVisual.color,
                                     ),
                                   ),
+                                  if (alicePeriod != null &&
+                                      alicePeriod.type !=
+                                          AliceEventType.schoolNormal) ...[
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      "Stato giorno: ${periodLabel(alicePeriod.type)}",
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.black.withOpacity(0.7),
+                                      ),
+                                    ),
+                                  ],
 
                                   const SizedBox(height: 16),
 
@@ -4330,28 +4551,81 @@ class _CalendarioScreenStepAStabileState
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
 
-                                  if (aliceEvents.isEmpty)
+                                  const SizedBox(height: 10),
+
+                                  const Text(
+                                    "Prima",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  if (alicePastEvents.isEmpty)
                                     Text(
-                                      "• Nessun evento per oggi",
+                                      "• Nessun evento già concluso",
                                       style: TextStyle(
                                         color: Colors.grey.shade700,
                                         fontStyle: FontStyle.italic,
                                       ),
                                     )
                                   else
-                                    ...aliceEvents.map(
-                                      (e) => Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: 6,
-                                        ),
-                                        child: Text(
-                                          "• ${e.label} ${fmtTime(e.start)} - ${fmtTime(e.end)}",
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
+                                    ...alicePastEvents.map(
+                                      (e) => buildEventLine(
+                                        prefix: "✓ ",
+                                        event: e,
+                                      ),
+                                    ),
+
+                                  const SizedBox(height: 10),
+
+                                  const Text(
+                                    "Adesso",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  if (aliceNowEvents.isEmpty)
+                                    Text(
+                                      "• Nessun evento in corso",
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    )
+                                  else
+                                    ...aliceNowEvents.map(
+                                      (e) => buildEventLine(
+                                        prefix: "👉 ",
+                                        event: e,
+                                        color: Colors.orange,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+
+                                  const SizedBox(height: 10),
+
+                                  const Text(
+                                    "Dopo",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  if (aliceFutureEvents.isEmpty)
+                                    Text(
+                                      "• Nessun evento successivo",
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    )
+                                  else
+                                    ...aliceFutureEvents.map(
+                                      (e) => buildEventLine(
+                                        prefix: "• ",
+                                        event: e,
                                       ),
                                     ),
                                 ],
@@ -5770,8 +6044,7 @@ class _CalendarioScreenStepAStabileState
         aliceEvent != null && aliceEvent.type != AliceEventType.schoolNormal;
 
     final uscitaReale =
-        aliceEvent?.summerCampEnd ?? _effSchoolOutEnd(_selectedDay);
-
+        aliceEvent?.summerCampEnd ?? _effSchoolOutStart(_selectedDay);
     final uscitaFine = TimeOfDay(
       hour: ((uscitaReale.hour * 60 + uscitaReale.minute + 20) ~/ 60) % 24,
       minute: (uscitaReale.hour * 60 + uscitaReale.minute + 20) % 60,
@@ -6002,7 +6275,7 @@ class _CalendarioScreenStepAStabileState
           ],
 
           Text(
-            "Orario: ${fmtTimeOfDay(aliceEvent?.summerCampStart ?? _scuolaStart)}–${fmtTimeOfDay(uscita13Eff ? uscitaAt! : (aliceEvent?.summerCampEnd ?? _scuolaEnd))}",
+            "Orario: ${fmtTimeOfDay(aliceEvent?.summerCampStart ?? _scuolaStart)}–${fmtTimeOfDay(uscita13Eff ? uscitaAt! : (daySettingsStore.schoolOutStartForDay(_selectedDay) ?? _scuolaEnd))}",
           ),
 
           if (uscita13Eff) ...[
@@ -6775,7 +7048,7 @@ class _CalendarioScreenStepAStabileState
               isExpanded: true,
               decoration: InputDecoration(
                 labelText:
-                    "Uscita ${fmtTimeOfDay(uscitaReale)}–${fmtTimeOfDay(uscitaFine)}",
+                    "Uscita ${fmtTimeOfDay(uscitaReale)}–${fmtTimeOfDay(TimeOfDay(hour: (uscitaReale.hour + ((uscitaReale.minute + 20) ~/ 60)), minute: (uscitaReale.minute + 20) % 60))}",
               ),
               items: SchoolCoverChoice.values.map((c) {
                 return DropdownMenuItem(
@@ -7256,8 +7529,11 @@ class _CalendarioScreenStepAStabileState
     );
     if (start == null) return;
 
-    final end = await showTimePicker(context: context, initialTime: _scuolaEnd);
-    if (end == null) return;
+    // 👉 END NON È PIÙ SCELTO: è automatico (+20 min)
+    final end = TimeOfDay(
+      hour: (start.hour + ((start.minute + 20) ~/ 60)) % 24,
+      minute: (start.minute + 20) % 60,
+    );
 
     if (!mounted) return;
 

@@ -381,7 +381,7 @@ class CoverageEngine {
     SchoolCoverChoice schoolInCover = SchoolCoverChoice.none,
     SchoolCoverChoice schoolOutCover = SchoolCoverChoice.none,
     TimeOfDay schoolOutStart = const TimeOfDay(hour: 16, minute: 25),
-    TimeOfDay schoolOutEnd = const TimeOfDay(hour: 17, minute: 15),
+    TimeOfDay schoolOutEnd = const TimeOfDay(hour: 16, minute: 25),
     SchoolCoverChoice lunchCover = SchoolCoverChoice.none,
     TimeOfDay? uscitaAnticipataAt,
     TimeOfDay? summerCampStart,
@@ -419,7 +419,7 @@ class CoverageEngine {
     SchoolCoverChoice schoolInCover = SchoolCoverChoice.none,
     SchoolCoverChoice schoolOutCover = SchoolCoverChoice.none,
     TimeOfDay schoolOutStart = const TimeOfDay(hour: 16, minute: 25),
-    TimeOfDay schoolOutEnd = const TimeOfDay(hour: 17, minute: 15),
+    TimeOfDay schoolOutEnd = const TimeOfDay(hour: 16, minute: 25),
     SchoolCoverChoice lunchCover = SchoolCoverChoice.none,
     TimeOfDay? uscitaAnticipataAt,
     TimeOfDay? summerCampStart,
@@ -461,7 +461,7 @@ class CoverageEngine {
     SchoolCoverChoice schoolInCover = SchoolCoverChoice.none,
     SchoolCoverChoice schoolOutCover = SchoolCoverChoice.none,
     TimeOfDay schoolOutStart = const TimeOfDay(hour: 16, minute: 25),
-    TimeOfDay schoolOutEnd = const TimeOfDay(hour: 17, minute: 15),
+    TimeOfDay schoolOutEnd = const TimeOfDay(hour: 16, minute: 25),
     SchoolCoverChoice lunchCover = SchoolCoverChoice.none,
     TimeOfDay? uscitaAnticipataAt,
     TimeOfDay? summerCampStart,
@@ -621,7 +621,7 @@ class CoverageEngine {
     SchoolCoverChoice schoolInCover = SchoolCoverChoice.none,
     SchoolCoverChoice schoolOutCover = SchoolCoverChoice.none,
     TimeOfDay schoolOutStart = const TimeOfDay(hour: 16, minute: 25),
-    TimeOfDay schoolOutEnd = const TimeOfDay(hour: 17, minute: 15),
+    TimeOfDay schoolOutEnd = const TimeOfDay(hour: 16, minute: 25),
     SchoolCoverChoice lunchCover = SchoolCoverChoice.none,
     TimeOfDay? uscitaAnticipataAt,
     TimeOfDay? summerCampStart,
@@ -910,12 +910,11 @@ class CoverageEngine {
       }
 
       if (!uscita13) {
-        final schoolOutRealDt = _atTime(d0, schoolOutEnd);
-        final schoolOutPickupEndDt = schoolOutRealDt.add(
-          const Duration(minutes: 20),
-        );
+        final schoolOutRealDt = _atTime(d0, schoolOutStart);
+        final schoolOutPickupEndDt = _atTime(d0, schoolOutEnd);
+
         final labelSchoolOut =
-            "Alice uscita: ${_fmt(schoolOutEnd)}–${_fmtTimeDate(schoolOutPickupEndDt)}";
+            "Alice uscita: ${_fmt(schoolOutStart)}–${_fmtTimeDate(schoolOutPickupEndDt)}";
 
         final schoolOutCoveredByChoice = _isSchoolCoverChoiceValid(
           choice: schoolOutCover,
@@ -1306,6 +1305,14 @@ class CoverageEngine {
             sandraSeraAvailable: effSandraSera,
             overrides: overrides,
             ferieStore: ferieStore,
+          ),
+          start: TimeOfDay(
+            hour: entry.fasciaStart.hour,
+            minute: entry.fasciaStart.minute,
+          ),
+          end: TimeOfDay(
+            hour: entry.fasciaEnd.hour,
+            minute: entry.fasciaEnd.minute,
           ),
         ),
       );
@@ -2632,8 +2639,15 @@ class CoverageDayAnalysis {
 class CoverageGapDetail {
   final String label;
   final List<String> lines;
+  final TimeOfDay start;
+  final TimeOfDay end;
 
-  const CoverageGapDetail({required this.label, required this.lines});
+  const CoverageGapDetail({
+    required this.label,
+    required this.lines,
+    required this.start,
+    required this.end,
+  });
 }
 
 class _CoverageGapEntry {

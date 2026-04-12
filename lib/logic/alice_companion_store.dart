@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum AliceCompanionPerson { matteo, chiara }
+enum AliceCompanionPerson { matteo, chiara, nessuno }
 
 class AliceCompanionEntry {
   final DateTime day;
