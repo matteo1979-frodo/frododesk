@@ -12,6 +12,7 @@ import 'disease_period_store.dart';
 import 'fourth_shift_store.dart';
 import 'turn_override_store.dart';
 import 'rotation_override_store.dart';
+import 'school_store.dart';
 
 import 'turn_engine.dart';
 
@@ -65,6 +66,9 @@ class CoreStore {
   // ✅ NEW: Override turni (giornaliero / periodo / nuova rotazione)
   late final TurnOverrideStore turnOverrideStore;
   late final RotationOverrideStore rotationOverrideStore;
+
+  // ✅ NEW: Scuola strutturata
+  late final SchoolStore schoolStore;
 
   // ✅ NEW: unico motore turni (standard + 4a squadra)
   late final TurnEngine turnEngine;
@@ -130,6 +134,9 @@ class CoreStore {
     turnOverrideStore = TurnOverrideStore();
     rotationOverrideStore = RotationOverrideStore();
 
+    // ✅ NEW: Scuola strutturata
+    schoolStore = SchoolStore();
+
     // 2) TurnEngine (stato reale centrale)
     turnEngine = TurnEngine(
       fourthShiftStore: fourthShiftStore,
@@ -184,6 +191,7 @@ class CoreStore {
     await fourthShiftStore.load();
     await rotationOverrideStore.load();
     await realEventStore.load();
+    await schoolStore.load();
   }
 
   /// Risolve una navigationKey (da IpsDetail) in una destinazione logica.

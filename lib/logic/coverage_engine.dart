@@ -31,6 +31,9 @@ import 'summer_camp_special_event_store.dart';
 
 import 'alice_companion_store.dart';
 
+// ✅ NEW: Scuola strutturata
+import 'school_store.dart';
+
 class CoverageEngine {
   final TurnEngine turnEngine;
   final DaySettingsStore daySettingsStore;
@@ -53,6 +56,9 @@ class CoverageEngine {
   // ✅ NEW: Eventi speciali centro estivo (aggancio strutturale)
   final SummerCampSpecialEventStore summerCampSpecialEventStore;
 
+  // ✅ NEW: Scuola strutturata
+  final SchoolStore schoolStore;
+
   // Finestre Sandra (mutabili: UI le edita)
   TimeOfDay sandraCambioMattinaStart;
   TimeOfDay sandraCambioMattinaEnd;
@@ -74,6 +80,7 @@ class CoverageEngine {
     AliceSpecialEventStore? aliceSpecialEventStore,
     SummerCampScheduleStore? summerCampScheduleStore,
     SummerCampSpecialEventStore? summerCampSpecialEventStore,
+    SchoolStore? schoolStore,
     TimeOfDay? sandraCambioMattinaStart,
     TimeOfDay? sandraCambioMattinaEnd,
     TimeOfDay? sandraPranzoStart,
@@ -93,6 +100,7 @@ class CoverageEngine {
            summerCampScheduleStore ?? SummerCampScheduleStore(),
        summerCampSpecialEventStore =
            summerCampSpecialEventStore ?? SummerCampSpecialEventStore(),
+       schoolStore = schoolStore ?? SchoolStore(),
        sandraCambioMattinaStart =
            sandraCambioMattinaStart ?? const TimeOfDay(hour: 5, minute: 0),
        sandraCambioMattinaEnd =
@@ -130,7 +138,25 @@ class CoverageEngine {
   }
 
   bool isAliceSchoolNormalDay(DateTime day) {
-    return aliceEventStore.isSchoolNormalDay(day);
+    final d0 = _onlyDate(day);
+
+    final isWeekend =
+        d0.weekday == DateTime.saturday || d0.weekday == DateTime.sunday;
+    if (isWeekend) return false;
+
+    final type = aliceEventStore.getEventTypeForDay(d0);
+    if (type == AliceEventType.vacation ||
+        type == AliceEventType.sickness ||
+        type == AliceEventType.schoolClosure ||
+        type == AliceEventType.summerCamp) {
+      return false;
+    }
+
+    final period = schoolStore.activePeriodForDay(d0);
+    if (period == null) return false;
+
+    final dayConfig = period.weekConfig.forWeekday(d0.weekday);
+    return dayConfig.enabled;
   }
 
   bool isAliceSummerCampOperationalDay(DateTime day) {
@@ -514,14 +540,55 @@ class CoverageEngine {
       sandraMattinaOn: sandraAvailable,
       sandraPranzoOn: sandraAvailable,
       sandraSeraOn: sandraAvailable,
-      schoolStart: const TimeOfDay(hour: 8, minute: 25),
+      schoolStart: (() {
+        final cfg = schoolStore
+            .activePeriodForDay(_onlyDate(day))
+            ?.weekConfig
+            .forWeekday(_onlyDate(day).weekday);
+        if (cfg == null || !cfg.enabled) {
+          return const TimeOfDay(hour: 8, minute: 25);
+        }
+        return TimeOfDay(
+          hour: cfg.entryMinutes ~/ 60,
+          minute: cfg.entryMinutes % 60,
+        );
+      })(),
       overrides: overrides,
       ferieStore: ferieStore,
       schoolInCover: schoolInCover,
       schoolOutCover: schoolOutCover,
       lunchCover: lunchCover,
-      schoolOutStart: schoolOutStart ?? const TimeOfDay(hour: 16, minute: 25),
-      schoolOutEnd: schoolOutEnd ?? const TimeOfDay(hour: 17, minute: 15),
+      schoolOutStart:
+          schoolOutStart ??
+          (() {
+            final cfg = schoolStore
+                .activePeriodForDay(_onlyDate(day))
+                ?.weekConfig
+                .forWeekday(_onlyDate(day).weekday);
+            if (cfg == null || !cfg.enabled) {
+              return const TimeOfDay(hour: 16, minute: 25);
+            }
+            return TimeOfDay(
+              hour: cfg.exitRealMinutes ~/ 60,
+              minute: cfg.exitRealMinutes % 60,
+            );
+          })(),
+      schoolOutEnd:
+          schoolOutEnd ??
+          (() {
+            final cfg = schoolStore
+                .activePeriodForDay(_onlyDate(day))
+                ?.weekConfig
+                .forWeekday(_onlyDate(day).weekday);
+            if (cfg == null || !cfg.enabled) {
+              return const TimeOfDay(hour: 17, minute: 15);
+            }
+            final returnMinutes = cfg.returnHomeMinutes;
+            return TimeOfDay(
+              hour: returnMinutes ~/ 60,
+              minute: returnMinutes % 60,
+            );
+          })(),
       uscitaAnticipataAt: uscitaAnticipataAt,
       summerCampStart: summerCampStart,
       summerCampEnd: summerCampEnd,

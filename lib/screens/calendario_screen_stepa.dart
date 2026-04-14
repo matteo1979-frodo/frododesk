@@ -18,6 +18,7 @@ import '../models/turn_override.dart';
 import '../models/work_shift.dart';
 import '../models/rotation_override.dart';
 import '../models/alice_special_event.dart';
+import '../models/school_model.dart';
 import '../logic/core_store.dart';
 import '../logic/alice_special_event_store.dart';
 import '../models/week_identity.dart';
@@ -1128,10 +1129,38 @@ class _CalendarioScreenStepAStabileState
     overrideStore.setForDay(day, ov);
   }
 
-  TimeOfDay get _scuolaStart =>
-      coreStore.aliceEventStore.getEventForDay(_selectedDay)?.summerCampStart ??
-      const TimeOfDay(hour: 8, minute: 25);
-  TimeOfDay get _scuolaEnd => _effSchoolOutEnd(_selectedDay);
+  TimeOfDay get _scuolaStart {
+    final d0 = _onlyDate(_selectedDay);
+    final cfg = coreStore.schoolStore
+        .activePeriodForDay(d0)
+        ?.weekConfig
+        .forWeekday(d0.weekday);
+
+    if (cfg == null || !cfg.enabled) {
+      return const TimeOfDay(hour: 8, minute: 25);
+    }
+
+    return TimeOfDay(
+      hour: cfg.entryMinutes ~/ 60,
+      minute: cfg.entryMinutes % 60,
+    );
+  }
+
+  TimeOfDay get _scuolaEnd {
+    final d0 = _onlyDate(_selectedDay);
+    final cfg = coreStore.schoolStore
+        .activePeriodForDay(d0)
+        ?.weekConfig
+        .forWeekday(d0.weekday);
+
+    if (cfg == null || !cfg.enabled) {
+      return const TimeOfDay(hour: 17, minute: 15);
+    }
+
+    final returnMinutes = cfg.returnHomeMinutes;
+
+    return TimeOfDay(hour: returnMinutes ~/ 60, minute: returnMinutes % 60);
+  }
 
   DateTime _onlyDate(DateTime d) => DateTime(d.year, d.month, d.day);
 
@@ -2037,13 +2066,11 @@ class _CalendarioScreenStepAStabileState
 
     final sandraDecision = _sandraDecisionForDay(d0);
 
-    final analysis = _engine.analyzeDayV2(
+    final analysis = _engine.analyzeDay(
       day: d0,
       uscita13: uscita13Eff,
-      sandraMattinaOn: _effSandraMattina(d0),
-      sandraPranzoOn: _effSandraPranzo(d0),
-      sandraSeraOn: _effSandraSera(d0),
-      schoolStart: _scuolaStart,
+      sandraAvailable:
+          _effSandraMattina(d0) || _effSandraPranzo(d0) || _effSandraSera(d0),
       overrides: ov,
       ferieStore: coreStore.feriePeriodStore,
       schoolInCover: schoolInCover,
@@ -3354,50 +3381,65 @@ class _CalendarioScreenStepAStabileState
 
     bool aliceIsOutNow = false;
 
-    if (alicePeriodNow != null || alicePeriodNow == null) {
-      final aliceEventsNow = coreStore.realEventStore
-          .eventsForDay(nowDay)
-          .where((e) => e.personKey == 'alice');
+    final aliceEventsNow = coreStore.realEventStore
+        .eventsForDay(nowDay)
+        .where((e) => e.personKey == 'alice');
 
-      bool aliceBusyForEventNow = false;
+    bool aliceBusyForEventNow = false;
 
-      for (final event in aliceEventsNow) {
-        final eventStart = DateTime(
-          event.startDate.year,
-          event.startDate.month,
-          event.startDate.day,
-          event.startTime?.hour ?? 0,
-          event.startTime?.minute ?? 0,
-        );
+    for (final event in aliceEventsNow) {
+      final eventStart = DateTime(
+        event.startDate.year,
+        event.startDate.month,
+        event.startDate.day,
+        event.startTime?.hour ?? 0,
+        event.startTime?.minute ?? 0,
+      );
 
-        DateTime eventEnd = DateTime(
-          event.endDate.year,
-          event.endDate.month,
-          event.endDate.day,
-          event.endTime?.hour ?? 23,
-          event.endTime?.minute ?? 59,
-        );
+      DateTime eventEnd = DateTime(
+        event.endDate.year,
+        event.endDate.month,
+        event.endDate.day,
+        event.endTime?.hour ?? 23,
+        event.endTime?.minute ?? 59,
+      );
 
-        if (!eventEnd.isAfter(eventStart)) {
-          eventEnd = eventEnd.add(const Duration(days: 1));
-        }
-
-        final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
-
-        if (isNowInside) {
-          aliceBusyForEventNow = true;
-          break;
-        }
+      if (!eventEnd.isAfter(eventStart)) {
+        eventEnd = eventEnd.add(const Duration(days: 1));
       }
-      if (aliceBusyForEventNow) {
-        aliceIsOutNow = true;
-      } else {
-        switch (alicePeriodNow?.type ?? AliceEventType.schoolNormal) {
-          case AliceEventType.schoolNormal:
-            final isRealSchoolDay = coreStore.aliceEventStore.isSchoolNormalDay(
-              nowDay,
-            );
 
+      final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
+
+      if (isNowInside) {
+        aliceBusyForEventNow = true;
+        break;
+      }
+    }
+
+    final isRealSchoolDay =
+        coreStore.schoolStore
+            .activePeriodForDay(nowDay)
+            ?.weekConfig
+            .forWeekday(nowDay.weekday)
+            .enabled ??
+        false;
+
+    if (aliceBusyForEventNow) {
+      aliceIsOutNow = true;
+    } else {
+      if (alicePeriodNow == null) {
+        if (!isRealSchoolDay) {
+          aliceIsOutNow = false;
+        } else {
+          final uscitaAt = _effUscitaAnticipataAt(nowDay);
+          final schoolEnd = uscitaAt ?? _effSchoolOutEnd(nowDay);
+          final schoolStart = _scuolaStart;
+
+          aliceIsOutNow = _isNowInsideRange(schoolStart, schoolEnd);
+        }
+      } else {
+        switch (alicePeriodNow.type) {
+          case AliceEventType.schoolNormal:
             if (!isRealSchoolDay) {
               aliceIsOutNow = false;
               break;
@@ -3405,18 +3447,18 @@ class _CalendarioScreenStepAStabileState
 
             final uscitaAt = _effUscitaAnticipataAt(nowDay);
             final schoolEnd = uscitaAt ?? _effSchoolOutEnd(nowDay);
-
             final schoolStart = _scuolaStart;
+
             aliceIsOutNow = _isNowInsideRange(schoolStart, schoolEnd);
             break;
 
           case AliceEventType.summerCamp:
             final campStart =
-                alicePeriodNow?.summerCampStart ??
+                alicePeriodNow.summerCampStart ??
                 const TimeOfDay(hour: 8, minute: 30);
 
             final campEnd =
-                alicePeriodNow?.summerCampEnd ??
+                alicePeriodNow.summerCampEnd ??
                 const TimeOfDay(hour: 16, minute: 30);
 
             aliceIsOutNow = _isNowInsideRange(campStart, campEnd);
@@ -3572,7 +3614,9 @@ class _CalendarioScreenStepAStabileState
               ? _aliceOutsideLabelFromText(activeAliceRealEventNow!.title)
               : (alicePeriodNow?.type == AliceEventType.summerCamp
                     ? "fuori • centro estivo"
-                    : "fuori • scuola"))
+                    : (coreStore.aliceEventStore.isSchoolNormalDay(_selectedDay)
+                          ? "fuori • scuola"
+                          : "fuori • casa")))
         : (isAliceSick ? "a casa • malata" : "a casa");
 
     final cov = _computeCoverageStepA(_selectedDay);
@@ -4366,8 +4410,13 @@ class _CalendarioScreenStepAStabileState
                           if (alicePeriod != null) {
                             if (alicePeriod.type ==
                                 AliceEventType.schoolNormal) {
-                              final isRealSchoolDay = coreStore.aliceEventStore
-                                  .isSchoolNormalDay(_selectedDay);
+                              final isRealSchoolDay =
+                                  coreStore.schoolStore
+                                      .activePeriodForDay(_selectedDay)
+                                      ?.weekConfig
+                                      .forWeekday(_selectedDay.weekday)
+                                      .enabled ??
+                                  false;
 
                               if (isRealSchoolDay) {
                                 final schoolStart = _scuolaStart;
@@ -4394,8 +4443,13 @@ class _CalendarioScreenStepAStabileState
                               });
                             }
                           } else {
-                            final isRealSchoolDay = coreStore.aliceEventStore
-                                .isSchoolNormalDay(_selectedDay);
+                            final isRealSchoolDay =
+                                coreStore.schoolStore
+                                    .activePeriodForDay(_selectedDay)
+                                    ?.weekConfig
+                                    .forWeekday(_selectedDay.weekday)
+                                    .enabled ??
+                                false;
 
                             if (isRealSchoolDay) {
                               final schoolStart = _scuolaStart;
@@ -6043,6 +6097,27 @@ class _CalendarioScreenStepAStabileState
     final bool hasAlicePeriodState =
         aliceEvent != null && aliceEvent.type != AliceEventType.schoolNormal;
 
+    final activeSchoolPeriod = coreStore.schoolStore.activePeriodForDay(
+      _selectedDay,
+    );
+    final schoolPeriodLabel =
+        activeSchoolPeriod?.name ?? "Nessun periodo attivo";
+
+    final schoolDayConfig = activeSchoolPeriod?.weekConfig.forWeekday(
+      _selectedDay.weekday,
+    );
+    final isSchoolDayActive =
+        schoolDayConfig != null && schoolDayConfig.enabled;
+    final schoolWeekdayLabel = [
+      "Lunedì",
+      "Martedì",
+      "Mercoledì",
+      "Giovedì",
+      "Venerdì",
+      "Sabato",
+      "Domenica",
+    ][_selectedDay.weekday - 1];
+
     final uscitaReale =
         aliceEvent?.summerCampEnd ?? _effSchoolOutStart(_selectedDay);
     final uscitaFine = TimeOfDay(
@@ -6056,6 +6131,7 @@ class _CalendarioScreenStepAStabileState
       hour: ((ingressoReale.hour * 60 + ingressoReale.minute - 20) ~/ 60) % 24,
       minute: (ingressoReale.hour * 60 + ingressoReale.minute - 20) % 60,
     );
+    final accompagnamento = ingressoInizio;
 
     final ingressoFine = ingressoReale;
 
@@ -6154,20 +6230,22 @@ class _CalendarioScreenStepAStabileState
         return extraEvents.first.label;
       }
 
-      if (aliceEvent == null) return "Scuola normale";
-
-      switch (aliceEvent.type) {
-        case AliceEventType.schoolNormal:
-          return "Scuola normale";
-        case AliceEventType.vacation:
-          return "Vacanza";
-        case AliceEventType.schoolClosure:
-          return "Scuola chiusa";
-        case AliceEventType.sickness:
-          return "Malattia";
-        case AliceEventType.summerCamp:
-          return "Centro estivo";
+      if (aliceEvent != null) {
+        switch (aliceEvent.type) {
+          case AliceEventType.vacation:
+            return "Vacanza";
+          case AliceEventType.schoolClosure:
+            return "Scuola chiusa";
+          case AliceEventType.sickness:
+            return "Malattia";
+          case AliceEventType.summerCamp:
+            return "Centro estivo";
+          case AliceEventType.schoolNormal:
+            break;
+        }
       }
+
+      return isSchoolDayActive ? "Scuola" : "A casa";
     }
 
     Color aliceEventColor() {
@@ -6978,10 +7056,78 @@ class _CalendarioScreenStepAStabileState
             },
           ),
           const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: _pickSchoolTimes,
-            icon: const Icon(Icons.edit),
-            label: const Text("Modifica scuola"),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.indigo.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.indigo.withOpacity(0.18)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.school, size: 18),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        "Scuola",
+                        style: TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Periodo attivo: $schoolPeriodLabel",
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isSchoolDayActive
+                      ? "Oggi: giorno scuola attivo"
+                      : "Oggi: nessuna scuola prevista",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: isSchoolDayActive ? Colors.green : Colors.orange,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Giorno letto dal periodo: $schoolWeekdayLabel",
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Accompagnamento automatico: ${fmtTimeOfDay(accompagnamento)}",
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "Ingresso reale: ${fmtTimeOfDay(ingressoReale)}",
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "Uscita reale: ${fmtTimeOfDay(uscitaReale)}",
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "Rientro automatico: ${fmtTimeOfDay(uscitaFine)}",
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 10),
+
+                OutlinedButton.icon(
+                  onPressed: _openSchoolPanel,
+                  icon: const Icon(Icons.settings),
+                  label: const Text("Apri gestione Scuola"),
+                ),
+              ],
+            ),
           ),
           if (!uscita13Eff) ...[
             const SizedBox(height: 10),
@@ -6997,9 +7143,9 @@ class _CalendarioScreenStepAStabileState
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
-              onPressed: _editSchoolOutTimesForDay,
-              icon: const Icon(Icons.edit_calendar),
-              label: const Text("Modifica uscita"),
+              onPressed: null,
+              icon: const Icon(Icons.lock),
+              label: const Text("Uscita (gestita da Scuola)"),
             ),
           ],
           const SizedBox(height: 14),
@@ -7540,6 +7686,803 @@ class _CalendarioScreenStepAStabileState
     setState(() {
       daySettingsStore.setSchoolOutTimesForDay(_selectedDay, start, end);
     });
+  }
+
+  void _openSchoolPanel() {
+    final activeSchoolPeriod = coreStore.schoolStore.activePeriodForDay(
+      _selectedDay,
+    );
+
+    final schoolPeriodLabel =
+        activeSchoolPeriod?.name ?? "Nessun periodo attivo";
+
+    final schoolDayConfig = activeSchoolPeriod?.weekConfig.forWeekday(
+      _selectedDay.weekday,
+    );
+
+    final isSchoolDayActive =
+        schoolDayConfig != null && schoolDayConfig.enabled;
+
+    final schoolWeekdayLabel = [
+      "Lunedì",
+      "Martedì",
+      "Mercoledì",
+      "Giovedì",
+      "Venerdì",
+      "Sabato",
+      "Domenica",
+    ][_selectedDay.weekday - 1];
+
+    final ingressoReale =
+        coreStore.aliceEventStore
+            .getEventForDay(_selectedDay)
+            ?.summerCampStart ??
+        _scuolaStart;
+
+    final uscitaReale =
+        coreStore.aliceEventStore.getEventForDay(_selectedDay)?.summerCampEnd ??
+        _effSchoolOutStart(_selectedDay);
+
+    final accompagnamento = TimeOfDay(
+      hour: ((ingressoReale.hour * 60 + ingressoReale.minute - 20) ~/ 60) % 24,
+      minute: (ingressoReale.hour * 60 + ingressoReale.minute - 20) % 60,
+    );
+
+    final rientro = TimeOfDay(
+      hour: ((uscitaReale.hour * 60 + uscitaReale.minute + 20) ~/ 60) % 24,
+      minute: (uscitaReale.hour * 60 + uscitaReale.minute + 20) % 60,
+    );
+
+    void openDayEditor({
+      required SchoolPeriod period,
+      required String dayLabel,
+      required SchoolDayConfig current,
+      required SchoolPeriod Function(SchoolDayConfig updatedDay)
+      buildUpdatedPeriod,
+    }) {
+      bool active = current.enabled;
+
+      TimeOfDay ingresso = TimeOfDay(
+        hour: current.entryMinutes ~/ 60,
+        minute: current.entryMinutes % 60,
+      );
+
+      TimeOfDay uscita = TimeOfDay(
+        hour: current.exitRealMinutes ~/ 60,
+        minute: current.exitRealMinutes % 60,
+      );
+
+      showDialog(
+        context: context,
+        builder: (context) {
+          return StatefulBuilder(
+            builder: (context, setStateDialog) {
+              return AlertDialog(
+                title: Text(dayLabel),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SwitchListTile(
+                      title: const Text("Giorno attivo"),
+                      value: active,
+                      onChanged: (v) {
+                        setStateDialog(() {
+                          active = v;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: ingresso,
+                        );
+                        if (picked == null) return;
+
+                        setStateDialog(() {
+                          ingresso = picked;
+                        });
+                      },
+                      icon: const Icon(Icons.login),
+                      label: Text("Ingresso: ${fmtTimeOfDay(ingresso)}"),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: uscita,
+                        );
+                        if (picked == null) return;
+
+                        setStateDialog(() {
+                          uscita = picked;
+                        });
+                      },
+                      icon: const Icon(Icons.logout),
+                      label: Text("Uscita: ${fmtTimeOfDay(uscita)}"),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("Annulla"),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      final updatedDay = current.copyWith(
+                        enabled: active,
+                        entryMinutes: ingresso.hour * 60 + ingresso.minute,
+                        exitRealMinutes: uscita.hour * 60 + uscita.minute,
+                      );
+
+                      final updatedPeriod = buildUpdatedPeriod(updatedDay);
+
+                      setState(() {
+                        coreStore.schoolStore.updatePeriod(updatedPeriod);
+                      });
+
+                      Navigator.pop(context); // chiude popup giorno
+                      Navigator.pop(context); // chiude popup settimana
+                    },
+                    child: const Text("Salva"),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    }
+
+    Widget buildWeekDayRow({
+      required String label,
+      required SchoolDayConfig config,
+      required VoidCallback onTap,
+    }) {
+      final ingresso = TimeOfDay(
+        hour: config.entryMinutes ~/ 60,
+        minute: config.entryMinutes % 60,
+      );
+
+      final uscita = TimeOfDay(
+        hour: config.exitRealMinutes ~/ 60,
+        minute: config.exitRealMinutes % 60,
+      );
+
+      return InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+              Text(
+                config.enabled ? "ATTIVO" : "OFF",
+                style: TextStyle(
+                  color: config.enabled ? Colors.green : Colors.grey,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                config.enabled
+                    ? "${fmtTimeOfDay(ingresso)}–${fmtTimeOfDay(uscita)}"
+                    : "-",
+                style: TextStyle(
+                  color: Colors.black.withOpacity(0.65),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Scuola"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Periodo attivo: $schoolPeriodLabel"),
+              const SizedBox(height: 6),
+              Text(
+                isSchoolDayActive
+                    ? "Oggi: giorno scuola attivo"
+                    : "Oggi: nessuna scuola prevista",
+                style: TextStyle(
+                  color: isSchoolDayActive ? Colors.green : Colors.orange,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text("Giorno: $schoolWeekdayLabel"),
+              const Divider(height: 20),
+              Text("Accompagnamento: ${fmtTimeOfDay(accompagnamento)}"),
+              Text("Ingresso reale: ${fmtTimeOfDay(ingressoReale)}"),
+              Text("Uscita reale: ${fmtTimeOfDay(uscitaReale)}"),
+              Text("Rientro: ${fmtTimeOfDay(rientro)}"),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+
+                final periods = coreStore.schoolStore.periods;
+
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    return AlertDialog(
+                      title: const Text("Periodi scuola"),
+                      content: SizedBox(
+                        width: double.maxFinite,
+                        child: periods.isEmpty
+                            ? const Text("Nessun periodo scuola salvato.")
+                            : Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: periods.map((p) {
+                                  final isActive =
+                                      coreStore.schoolStore
+                                          .activePeriodForDay(_selectedDay)
+                                          ?.id ==
+                                      p.id;
+
+                                  return Container(
+                                    width: double.infinity,
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: isActive
+                                          ? Colors.green.withOpacity(0.1)
+                                          : Colors.white,
+                                      border: Border.all(
+                                        color: isActive
+                                            ? Colors.green
+                                            : Colors.black.withOpacity(0.1),
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: InkWell(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                            onTap: () {
+                                              showDialog(
+                                                context: context,
+                                                builder: (context) {
+                                                  return AlertDialog(
+                                                    title: Text(
+                                                      "Periodo: ${p.name}",
+                                                    ),
+                                                    content: Column(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          "Nome: ${p.name}",
+                                                          style:
+                                                              const TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w800,
+                                                              ),
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 8,
+                                                        ),
+                                                        Text(
+                                                          "Inizio: ${DateFormat('d MMM yyyy', 'it_IT').format(p.startDate)}",
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 4,
+                                                        ),
+                                                        Text(
+                                                          "Fine: ${DateFormat('d MMM yyyy', 'it_IT').format(p.endDate)}",
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 16,
+                                                        ),
+                                                        OutlinedButton.icon(
+                                                          onPressed: () {
+                                                            showDialog(
+                                                              context: context,
+                                                              builder: (context) {
+                                                                return AlertDialog(
+                                                                  title: Text(
+                                                                    "Settimana: ${p.name}",
+                                                                  ),
+                                                                  content: Column(
+                                                                    mainAxisSize:
+                                                                        MainAxisSize
+                                                                            .min,
+                                                                    crossAxisAlignment:
+                                                                        CrossAxisAlignment
+                                                                            .start,
+                                                                    children: [
+                                                                      buildWeekDayRow(
+                                                                        label:
+                                                                            "Lunedì",
+                                                                        config: p
+                                                                            .weekConfig
+                                                                            .monday,
+                                                                        onTap: () {
+                                                                          openDayEditor(
+                                                                            period:
+                                                                                p,
+                                                                            dayLabel:
+                                                                                "Lunedì",
+                                                                            current:
+                                                                                p.weekConfig.monday,
+                                                                            buildUpdatedPeriod:
+                                                                                (
+                                                                                  updatedDay,
+                                                                                ) => p.copyWith(
+                                                                                  weekConfig: p.weekConfig.copyWith(
+                                                                                    monday: updatedDay,
+                                                                                  ),
+                                                                                ),
+                                                                          );
+                                                                        },
+                                                                      ),
+                                                                      const SizedBox(
+                                                                        height:
+                                                                            6,
+                                                                      ),
+                                                                      buildWeekDayRow(
+                                                                        label:
+                                                                            "Martedì",
+                                                                        config: p
+                                                                            .weekConfig
+                                                                            .tuesday,
+                                                                        onTap: () {
+                                                                          openDayEditor(
+                                                                            period:
+                                                                                p,
+                                                                            dayLabel:
+                                                                                "Martedì",
+                                                                            current:
+                                                                                p.weekConfig.tuesday,
+                                                                            buildUpdatedPeriod:
+                                                                                (
+                                                                                  updatedDay,
+                                                                                ) => p.copyWith(
+                                                                                  weekConfig: p.weekConfig.copyWith(
+                                                                                    tuesday: updatedDay,
+                                                                                  ),
+                                                                                ),
+                                                                          );
+                                                                        },
+                                                                      ),
+                                                                      const SizedBox(
+                                                                        height:
+                                                                            6,
+                                                                      ),
+                                                                      buildWeekDayRow(
+                                                                        label:
+                                                                            "Mercoledì",
+                                                                        config: p
+                                                                            .weekConfig
+                                                                            .wednesday,
+                                                                        onTap: () {
+                                                                          openDayEditor(
+                                                                            period:
+                                                                                p,
+                                                                            dayLabel:
+                                                                                "Mercoledì",
+                                                                            current:
+                                                                                p.weekConfig.wednesday,
+                                                                            buildUpdatedPeriod:
+                                                                                (
+                                                                                  updatedDay,
+                                                                                ) => p.copyWith(
+                                                                                  weekConfig: p.weekConfig.copyWith(
+                                                                                    wednesday: updatedDay,
+                                                                                  ),
+                                                                                ),
+                                                                          );
+                                                                        },
+                                                                      ),
+                                                                      const SizedBox(
+                                                                        height:
+                                                                            6,
+                                                                      ),
+                                                                      buildWeekDayRow(
+                                                                        label:
+                                                                            "Giovedì",
+                                                                        config: p
+                                                                            .weekConfig
+                                                                            .thursday,
+                                                                        onTap: () {
+                                                                          openDayEditor(
+                                                                            period:
+                                                                                p,
+                                                                            dayLabel:
+                                                                                "Giovedì",
+                                                                            current:
+                                                                                p.weekConfig.thursday,
+                                                                            buildUpdatedPeriod:
+                                                                                (
+                                                                                  updatedDay,
+                                                                                ) => p.copyWith(
+                                                                                  weekConfig: p.weekConfig.copyWith(
+                                                                                    thursday: updatedDay,
+                                                                                  ),
+                                                                                ),
+                                                                          );
+                                                                        },
+                                                                      ),
+                                                                      const SizedBox(
+                                                                        height:
+                                                                            6,
+                                                                      ),
+                                                                      buildWeekDayRow(
+                                                                        label:
+                                                                            "Venerdì",
+                                                                        config: p
+                                                                            .weekConfig
+                                                                            .friday,
+                                                                        onTap: () {
+                                                                          openDayEditor(
+                                                                            period:
+                                                                                p,
+                                                                            dayLabel:
+                                                                                "Venerdì",
+                                                                            current:
+                                                                                p.weekConfig.friday,
+                                                                            buildUpdatedPeriod:
+                                                                                (
+                                                                                  updatedDay,
+                                                                                ) => p.copyWith(
+                                                                                  weekConfig: p.weekConfig.copyWith(
+                                                                                    friday: updatedDay,
+                                                                                  ),
+                                                                                ),
+                                                                          );
+                                                                        },
+                                                                      ),
+                                                                      const SizedBox(
+                                                                        height:
+                                                                            6,
+                                                                      ),
+                                                                      buildWeekDayRow(
+                                                                        label:
+                                                                            "Sabato",
+                                                                        config: p
+                                                                            .weekConfig
+                                                                            .saturday,
+                                                                        onTap: () {
+                                                                          openDayEditor(
+                                                                            period:
+                                                                                p,
+                                                                            dayLabel:
+                                                                                "Sabato",
+                                                                            current:
+                                                                                p.weekConfig.saturday,
+                                                                            buildUpdatedPeriod:
+                                                                                (
+                                                                                  updatedDay,
+                                                                                ) => p.copyWith(
+                                                                                  weekConfig: p.weekConfig.copyWith(
+                                                                                    saturday: updatedDay,
+                                                                                  ),
+                                                                                ),
+                                                                          );
+                                                                        },
+                                                                      ),
+                                                                      const SizedBox(
+                                                                        height:
+                                                                            6,
+                                                                      ),
+                                                                      _dayRow(
+                                                                        "Domenica",
+                                                                        false,
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                  actions: [
+                                                                    TextButton(
+                                                                      onPressed: () =>
+                                                                          Navigator.pop(
+                                                                            context,
+                                                                          ),
+                                                                      child: const Text(
+                                                                        "Chiudi",
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                );
+                                                              },
+                                                            );
+                                                          },
+                                                          icon: const Icon(
+                                                            Icons
+                                                                .calendar_month,
+                                                          ),
+                                                          label: const Text(
+                                                            "Modifica settimana",
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () =>
+                                                            Navigator.pop(
+                                                              context,
+                                                            ),
+                                                        child: const Text(
+                                                          "Chiudi",
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  );
+                                                },
+                                              );
+                                            },
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  "${p.name}${isActive ? " (attivo)" : ""}",
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w800,
+                                                    color: isActive
+                                                        ? Colors.green
+                                                        : Colors.black,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  "${DateFormat('d MMM yyyy', 'it_IT').format(p.startDate)} → ${DateFormat('d MMM yyyy', 'it_IT').format(p.endDate)}",
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Colors.black
+                                                        .withOpacity(0.6),
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete_outline,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed: () {
+                                            setState(() {
+                                              coreStore.schoolStore
+                                                  .removePeriod(p.id);
+                                            });
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+
+                            final nameController = TextEditingController();
+
+                            DateTime? startDate;
+                            DateTime? endDate;
+
+                            showDialog(
+                              context: context,
+                              builder: (context) {
+                                return StatefulBuilder(
+                                  builder: (context, setStateDialog) {
+                                    return AlertDialog(
+                                      title: const Text("Nuovo periodo scuola"),
+                                      content: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          TextField(
+                                            controller: nameController,
+                                            decoration: const InputDecoration(
+                                              labelText: "Nome periodo",
+                                              hintText:
+                                                  "Es. Elementari 2025/2026",
+                                            ),
+                                          ),
+                                          const SizedBox(height: 10),
+                                          OutlinedButton(
+                                            onPressed: () async {
+                                              final picked =
+                                                  await showDatePicker(
+                                                    context: context,
+                                                    initialDate: DateTime.now(),
+                                                    firstDate: DateTime(2020),
+                                                    lastDate: DateTime(2030),
+                                                  );
+                                              if (picked != null) {
+                                                setStateDialog(
+                                                  () => startDate = picked,
+                                                );
+                                              }
+                                            },
+                                            child: Text(
+                                              startDate == null
+                                                  ? "Data inizio"
+                                                  : "Inizio: ${DateFormat('d MMM yyyy', 'it_IT').format(startDate!)}",
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          OutlinedButton(
+                                            onPressed: () async {
+                                              final picked =
+                                                  await showDatePicker(
+                                                    context: context,
+                                                    initialDate:
+                                                        startDate ??
+                                                        DateTime.now(),
+                                                    firstDate: DateTime(2020),
+                                                    lastDate: DateTime(2030),
+                                                  );
+                                              if (picked != null) {
+                                                setStateDialog(
+                                                  () => endDate = picked,
+                                                );
+                                              }
+                                            },
+                                            child: Text(
+                                              endDate == null
+                                                  ? "Data fine"
+                                                  : "Fine: ${DateFormat('d MMM yyyy', 'it_IT').format(endDate!)}",
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: const Text("Annulla"),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () {
+                                            if (nameController.text
+                                                    .trim()
+                                                    .isEmpty ||
+                                                startDate == null ||
+                                                endDate == null) {
+                                              return;
+                                            }
+
+                                            coreStore.schoolStore.addPeriod(
+                                              SchoolPeriod(
+                                                id: DateTime.now()
+                                                    .millisecondsSinceEpoch
+                                                    .toString(),
+                                                name: nameController.text
+                                                    .trim(),
+                                                startDate: startDate!,
+                                                endDate: endDate!,
+                                                weekConfig: SchoolWeekConfig(
+                                                  monday: const SchoolDayConfig(
+                                                    enabled: true,
+                                                    entryMinutes: 8 * 60 + 25,
+                                                    exitRealMinutes:
+                                                        16 * 60 + 25,
+                                                  ),
+                                                  tuesday:
+                                                      const SchoolDayConfig(
+                                                        enabled: true,
+                                                        entryMinutes:
+                                                            8 * 60 + 25,
+                                                        exitRealMinutes:
+                                                            16 * 60 + 25,
+                                                      ),
+                                                  wednesday:
+                                                      const SchoolDayConfig(
+                                                        enabled: true,
+                                                        entryMinutes:
+                                                            8 * 60 + 25,
+                                                        exitRealMinutes:
+                                                            16 * 60 + 25,
+                                                      ),
+                                                  thursday:
+                                                      const SchoolDayConfig(
+                                                        enabled: true,
+                                                        entryMinutes:
+                                                            8 * 60 + 25,
+                                                        exitRealMinutes:
+                                                            16 * 60 + 25,
+                                                      ),
+                                                  friday: const SchoolDayConfig(
+                                                    enabled: true,
+                                                    entryMinutes: 8 * 60 + 25,
+                                                    exitRealMinutes:
+                                                        16 * 60 + 25,
+                                                  ),
+                                                  saturday:
+                                                      const SchoolDayConfig.off(),
+                                                ),
+                                              ),
+                                            );
+
+                                            setState(() {});
+                                            Navigator.pop(context);
+                                          },
+                                          child: const Text("Salva"),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
+                            );
+                          },
+                          child: const Text("Nuovo periodo"),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text("Chiudi"),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+              child: const Text("Gestisci periodi"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Chiudi"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _dayRow(String label, bool active) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
+        Text(
+          active ? "ATTIVO" : "OFF",
+          style: TextStyle(
+            color: active ? Colors.green : Colors.grey,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
   }
 
   void _showExtraEventsDialog({

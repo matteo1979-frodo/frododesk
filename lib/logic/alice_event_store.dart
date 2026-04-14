@@ -18,11 +18,11 @@ class AliceEventPeriod {
   final DateTime end;
   final AliceEventType type;
 
-  // ✅ Centro estivo
+  // Centro estivo
   final TimeOfDay? summerCampStart;
   final TimeOfDay? summerCampEnd;
 
-  // ✅ NUOVO: scuola normale con orari
+  // Legacy / eventuale uso futuro
   final TimeOfDay? schoolStart;
   final TimeOfDay? schoolEnd;
 
@@ -102,11 +102,15 @@ class AliceEventStore {
         final endDay = map['endDay'];
         final typeIndex = map['typeIndex'];
 
-        // ✅ NUOVO (facoltativo, retrocompatibile)
         final scStartHour = map['scStartHour'];
         final scStartMinute = map['scStartMinute'];
         final scEndHour = map['scEndHour'];
         final scEndMinute = map['scEndMinute'];
+
+        final schoolStartHour = map['schoolStartHour'];
+        final schoolStartMinute = map['schoolStartMinute'];
+        final schoolEndHour = map['schoolEndHour'];
+        final schoolEndMinute = map['schoolEndMinute'];
 
         if (startYear is! int ||
             startMonth is! int ||
@@ -122,23 +126,46 @@ class AliceEventStore {
           continue;
         }
 
-        TimeOfDay? scStart;
-        TimeOfDay? scEnd;
+        final type = AliceEventType.values[typeIndex];
+
+        // ✅ Regola nuova:
+        // schoolNormal NON deve più vivere come periodo salvato nello store.
+        if (type == AliceEventType.schoolNormal) {
+          continue;
+        }
+
+        TimeOfDay? summerCampStart;
+        TimeOfDay? summerCampEnd;
+        TimeOfDay? schoolStart;
+        TimeOfDay? schoolEnd;
 
         if (scStartHour is int && scStartMinute is int) {
-          scStart = TimeOfDay(hour: scStartHour, minute: scStartMinute);
+          summerCampStart = TimeOfDay(hour: scStartHour, minute: scStartMinute);
         }
 
         if (scEndHour is int && scEndMinute is int) {
-          scEnd = TimeOfDay(hour: scEndHour, minute: scEndMinute);
+          summerCampEnd = TimeOfDay(hour: scEndHour, minute: scEndMinute);
+        }
+
+        if (schoolStartHour is int && schoolStartMinute is int) {
+          schoolStart = TimeOfDay(
+            hour: schoolStartHour,
+            minute: schoolStartMinute,
+          );
+        }
+
+        if (schoolEndHour is int && schoolEndMinute is int) {
+          schoolEnd = TimeOfDay(hour: schoolEndHour, minute: schoolEndMinute);
         }
 
         final event = AliceEventPeriod(
           start: DateTime(startYear, startMonth, startDay),
           end: DateTime(endYear, endMonth, endDay),
-          type: AliceEventType.values[typeIndex],
-          summerCampStart: scStart,
-          summerCampEnd: scEnd,
+          type: type,
+          summerCampStart: summerCampStart,
+          summerCampEnd: summerCampEnd,
+          schoolStart: schoolStart,
+          schoolEnd: schoolEnd,
         );
 
         _events.add(event);
@@ -151,6 +178,11 @@ class AliceEventStore {
   }
 
   void addEvent(AliceEventPeriod event) {
+    // ✅ schoolNormal non va salvato come evento speciale
+    if (event.type == AliceEventType.schoolNormal) {
+      return;
+    }
+
     _events.add(event);
     _sortEvents();
     _save();
@@ -158,6 +190,15 @@ class AliceEventStore {
 
   void updateEvent(int index, AliceEventPeriod event) {
     _checkIndex(index);
+
+    // ✅ se qualcuno prova a "modificare" in schoolNormal,
+    // il periodo speciale viene rimosso.
+    if (event.type == AliceEventType.schoolNormal) {
+      _events.removeAt(index);
+      _save();
+      return;
+    }
+
     _events[index] = event;
     _sortEvents();
     _save();
@@ -183,6 +224,9 @@ class AliceEventStore {
 
     for (final event in _events) {
       if (!event.includesDay(day)) continue;
+
+      // ✅ sicurezza extra: ignora schoolNormal anche se arrivasse da dati legacy
+      if (event.type == AliceEventType.schoolNormal) continue;
 
       if (winner == null) {
         winner = event;
@@ -318,6 +362,7 @@ class AliceEventStore {
 
   Future<void> _save() async {
     final data = _events
+        .where((event) => event.type != AliceEventType.schoolNormal)
         .map(
           (event) => {
             'startYear': event.start.year,
@@ -327,12 +372,14 @@ class AliceEventStore {
             'endMonth': event.end.month,
             'endDay': event.end.day,
             'typeIndex': event.type.index,
-
-            // ✅ NUOVO
             'scStartHour': event.summerCampStart?.hour,
             'scStartMinute': event.summerCampStart?.minute,
             'scEndHour': event.summerCampEnd?.hour,
             'scEndMinute': event.summerCampEnd?.minute,
+            'schoolStartHour': event.schoolStart?.hour,
+            'schoolStartMinute': event.schoolStart?.minute,
+            'schoolEndHour': event.schoolEnd?.hour,
+            'schoolEndMinute': event.schoolEnd?.minute,
           },
         )
         .toList();

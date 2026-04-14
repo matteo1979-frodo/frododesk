@@ -42,15 +42,152 @@ Il sistema è:
 
 ---
 
-# STATO ATTUALE — NUOVA FASE
+# 🔥 NUOVA FASE ATTIVA
 
-👉 Costruzione modulo **Eventi Alice (reali)**
+👉 BLOCCO SCUOLA — INTEGRAZIONE COMPLETA NEL SISTEMA
 
 Obiettivo:
 
-- rappresentare la vita reale di Alice
-- integrare eventi dentro il motore
-- collegare eventi → copertura → decisioni
+- eliminare completamente gestione manuale giornaliera
+- rendere la scuola una fonte unica di verità
+- collegare scuola → stato Alice → copertura → UI
+
+---
+
+# 🧠 DECISIONE STRUTTURALE (FONDAMENTALE)
+
+La scuola NON è più:
+
+❌ modifica giornaliera  
+❌ gestione separata dalla logica  
+
+Diventa:
+
+✔ sistema strutturato a periodi  
+✔ orario settimanale stabile  
+✔ fonte unica per lo stato di Alice  
+✔ integrata nel motore di copertura  
+
+---
+
+# STATO REALE BLOCCO SCUOLA
+
+✔ SchoolStore attivo  
+✔ Periodi funzionanti  
+✔ Lettura settimanale funzionante  
+✔ Orari letti correttamente dal motore  
+
+⚠️ PROBLEMA ATTUALE:
+
+👉 La UI NON è ancora completamente allineata al nuovo sistema
+
+Sintomi:
+
+- “Stato Alice: scuola normale” mostrato anche quando NON dovrebbe
+- “Alice fuori · scuola” non coerente con la logica reale
+
+👉 Questo indica che:
+
+❌ alcune parti UI leggono ancora la logica vecchia  
+✔ il motore invece è corretto  
+
+---
+
+# STRUTTURA BLOCCO SCUOLA
+
+## Livello 1 — Periodi
+
+Il sistema gestisce più periodi:
+
+- Elementari
+- Medie
+- Futuri periodi
+
+Ogni periodo contiene:
+
+- nome periodo
+- data inizio
+- data fine
+- configurazione settimanale
+
+---
+
+## Livello 2 — Orario settimanale
+
+Per ogni giorno (lun–sab):
+
+- attivo / non attivo
+- ora ingresso
+- ora uscita reale
+
+👉 Il sistema calcola automaticamente:
+
+- rientro a casa = uscita + 20 minuti
+
+⚠️ IMPORTANTE:
+Il rientro NON viene salvato  
+È sempre calcolato
+
+---
+
+# 🧠 LOGICA DI PRIORITÀ
+
+Ordine corretto del sistema:
+
+1. Eventi Alice (vacanza, malattia, centro estivo)
+2. Eventi temporanei Alice (giornalieri)
+3. Periodo scuola attivo
+4. Orario settimanale
+5. Motore copertura
+
+---
+
+# 🔥 CORREZIONE CRITICA ESEGUITA
+
+Problema risolto:
+
+❌ Il sistema usava l’orario di fine come uscita scuola  
+✔ Ora distingue correttamente:
+
+- uscita reale = orario scuola
+- rientro = uscita + 20 min
+
+---
+
+# PRINCIPIO CHIAVE (IMPORTANTISSIMO)
+
+Separazione obbligatoria:
+
+### DATO REALE
+- uscita scuola = dato vero
+
+### LOGICA
+- rientro = uscita + 20 min
+
+👉 Il sistema NON deve mai confondere i due
+
+---
+
+# STATO COPERTURA
+
+✔ motore stabile  
+✔ combinazione Matteo + Chiara corretta  
+✔ gestione post-notte corretta  
+✔ gestione eventi temporanei corretta  
+✔ gestione centro estivo funzionante  
+✔ gestione accompagnamento / ritiro funzionante  
+
+👉 considerato affidabile sui casi testati  
+
+---
+
+# STATO EVENTI ALICE
+
+✔ AliceEventStore attivo  
+✔ AliceSpecialEventStore attivo  
+✔ eventi temporanei integrati  
+✔ gestione accompagnamento / ritiro  
+✔ eliminati falsi buchi  
 
 ---
 
@@ -79,157 +216,7 @@ Obiettivo:
 - SettingsStore  
 - SummerCampScheduleStore  
 - SummerCampSpecialEventStore  
-
----
-
-# FUNZIONALITÀ ATTUALI
-
-Il sistema gestisce:
-
-- turni lavoro automatici  
-- quarta squadra  
-- riposo post-notte  
-- eventi reali calendario  
-- eventi Alice (periodi base)  
-- eventi Alice reali (nuovo sistema in costruzione)  
-- rete di supporto  
-- copertura Sandra  
-- rilevazione buchi giornata  
-- override giornalieri  
-- ferie lunghe  
-- malattia a periodo  
-- conflitti turno ↔ evento  
-- gestione permesso / ferie come risoluzione  
-
----
-
-# STATO EVENTI ALICE
-
-✔ creato model `AliceSpecialEvent`  
-✔ creato store `AliceSpecialEventStore`  
-✔ integrato in CoreStore  
-✔ lettura eventi in `_cardScuola()`  
-✔ editor base funzionante  
-✔ inserimento evento reale funzionante  
-
-Esempio reale validato:
-
-👉 pallavolo (18:00–20:00)
-
----
-
-# STATO COPERTURA
-
-✔ motore stabile  
-✔ combinazione Matteo + Chiara corretta  
-✔ gestione post-notte corretta  
-✔ gestione eventi temporanei corretta  
-✔ gestione centro estivo funzionante  
-
-👉 considerato affidabile sui casi testati  
-
----
-
-# 🔥 AGGIORNAMENTO — EVENTI ALICE → COPERTURA (FASE A COMPLETATA)
-
-Durante questa sessione è stato realizzato il primo collegamento reale tra:
-
-👉 Eventi Alice  
-👉 motore di copertura  
-
-### Risultato ottenuto:
-
-Il sistema ora gestisce correttamente:
-
-#### ✔ 1. DURANTE EVENTO
-- Alice NON viene più considerata “a casa”
-- nessun bisogno di copertura casa
-
-#### ✔ 2. PRIMA EVENTO (ACCOMPAGNAMENTO)
-- viene generato un buco SOLO se nessuno è disponibile
-- eliminati falsi positivi
-
-#### ✔ 3. DOPO EVENTO (RITIRO)
-- introdotta logica di verifica disponibilità
-- buco NON generato se un adulto è disponibile
-
-#### ✔ 4. CONTROLLO REALE DISPONIBILITÀ
-- introdotto primo livello di logica:
-  👉 non basta evento → serve verifica persone
-
----
-
-### Stato attuale del motore:
-
-👉 Il sistema NON genera più buchi finti  
-👉 I buchi sono coerenti con la realtà operativa  
-
----
-
-# 🔥 NUOVO — POPUP STATO PERSONA (MATTEO)
-
-Durante questa sessione è stato introdotto un nuovo blocco UI:
-
-👉 Popup stato persona (prima versione reale)
-
-### Struttura implementata:
-
-#### 1️⃣ Stato attuale
-- mostra lo stato reale della persona (lavoro, malattia, ferie, ecc.)
-- coerente con il motore
-
-#### 2️⃣ Turno previsto
-- mostra il turno della giornata
-- attualmente derivato dai dati del motore
-
-⚠️ Problema identificato:
-- il turno mostrato include il tempo di viaggio
-  (es: 05:00–14:30)
-
-👉 questo NON è corretto per la UI
-
-✔ Il motore è corretto  
-❗ la UI deve essere corretta
-
-#### 3️⃣ Eventi della giornata (NUOVA STRUTTURA)
-
-Eventi separati in tre blocchi reali:
-
-- Prima (✓ eventi conclusi)
-- Adesso (👉 evento in corso)
-- Dopo (• eventi futuri)
-
-✔ separazione reale  
-✔ ordinamento corretto  
-✔ fallback “nessun evento” funzionante  
-✔ eliminata confusione precedente  
-
----
-
-# 🧠 PRINCIPIO EMERSO (FONDAMENTALE)
-
-Separazione obbligatoria tra:
-
-### MOTORE
-- usa orari reali con viaggio
-- serve per calcolo copertura
-
-### UI
-- deve mostrare realtà percepita umana
-- NON deve includere viaggio
-
----
-
-# 📌 STATO ATTUALE
-
-✔ popup funzionante  
-✔ eventi corretti  
-✔ struttura riutilizzabile  
-
-❗ DA FARE:
-
-- correggere visualizzazione turno (rimuovere viaggio)
-- mostrare orario reale turno (06:00–14:00)
+- SchoolStore ✅
 
 ---
 
@@ -237,62 +224,44 @@ Separazione obbligatoria tra:
 
 ✔ calendario funzionante  
 ✔ struttura a blocchi attiva  
-✔ card leggibili  
-✔ editor eventi Alice integrato  
+✔ eventi Alice integrati  
 
-⚠️ UI in fase di evoluzione reale
+⚠️ PROBLEMA ATTUALE (CRITICO):
 
----
+👉 UI non allineata alla nuova logica scuola
 
-# STATO REFACTOR
+- stato Alice letto ancora da vecchia logica
+- incongruenza tra motore e visualizzazione
 
-✔ fase 1 helper completata  
-✔ file calendario alleggerito  
-✔ nessun errore introdotto  
+👉 PROSSIMO INTERVENTO:
 
----
-
-# BUG ATTIVI (RIDOTTI)
-
-Attualmente:
-
-- piccoli problemi UI (non bloccanti)
-
-👉 nessun bug critico
+✔ allineamento completo UI → CoverageEngine / SchoolStore  
 
 ---
 
 # DIREZIONE OPERATIVA
 
 ## 1️⃣ PRIORITÀ ATTUALE
-👉 correzione turno UI (separazione da viaggio)
+👉 allineamento UI allo stato reale del sistema
 
-## 2️⃣ PROSSIMO STEP
-👉 rendere il turno umano reale visibile
+## 2️⃣ STEP IMMEDIATO
+👉 correggere lettura stato Alice in UI
 
 ## 3️⃣ DOPO
-👉 estendere popup a Chiara e Alice
+👉 rifinitura blocco scuola UI (popup unico)
 
 ---
 
-# SIGNIFICATO DELLA FASE ATTUALE
+# SIGNIFICATO DELLA FASE
 
 Il sistema evolve da:
 
-❌ calendario + copertura  
+❌ UI scollegata dalla logica  
 👉 verso  
-✔ sistema di lettura della giornata umana
-
----
-
-# MODULI DOCS ATTIVI
-
-- core/SYSTEM_STATE.md  
-- core/RULES.md  
-- modules/eventi_alice.md  
+✔ UI = specchio esatto del motore  
 
 ---
 
 # FRASE DI RIPARTENZA UFFICIALE
 
-Ripartiamo da FrodoDesk — popup stato persona introdotto (Matteo) con eventi separati Prima / Adesso / Dopo. Problema aperto: turno mostra orari con viaggio → da correggere mostrando turno reale umano (06:00–14:00).
+Ripartiamo da FrodoDesk — ALLINEAMENTO UI STATO ALICE: eliminare letture vecchie e collegare completamente la UI al nuovo sistema scuola e al motore di copertura.

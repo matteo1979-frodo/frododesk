@@ -394,7 +394,7 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                "Evento attivo Alice: Scuola normale",
+                "Evento attivo Alice: Nessun evento speciale",
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   color: _typeColor(AliceEventType.schoolNormal),
@@ -693,7 +693,9 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
             const SizedBox(height: 10),
 
             DropdownButtonFormField<AliceEventType>(
-              value: _draftType,
+              value: _draftType == AliceEventType.schoolNormal
+                  ? null
+                  : _draftType,
               selectedItemBuilder: (context) {
                 return AliceEventType.values.map((t) {
                   final text = t == AliceEventType.schoolNormal
@@ -714,18 +716,21 @@ class _AliceEventPanelState extends State<AliceEventPanel> {
                 labelText: "Imposta nuovo stato",
                 border: OutlineInputBorder(),
               ),
-              items: AliceEventType.values.map((t) {
-                return DropdownMenuItem(
-                  value: t,
-                  child: Row(
-                    children: [
-                      Icon(_typeIcon(t), size: 18, color: _typeColor(t)),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(_label(t))),
-                    ],
-                  ),
-                );
-              }).toList(),
+              items: AliceEventType.values
+                  .where((t) => t != AliceEventType.schoolNormal)
+                  .map((t) {
+                    return DropdownMenuItem(
+                      value: t,
+                      child: Row(
+                        children: [
+                          Icon(_typeIcon(t), size: 18, color: _typeColor(t)),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(_label(t))),
+                        ],
+                      ),
+                    );
+                  })
+                  .toList(),
               onChanged: (v) {
                 if (v == null) return;
                 setState(() {

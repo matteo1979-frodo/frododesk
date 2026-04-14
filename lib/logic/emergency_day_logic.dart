@@ -114,7 +114,8 @@ class EmergencyDayLogic {
   }) {
     if (parentOperational) return EmergencyEventOutcome.coveredOk;
     // nessun genitore operativo
-    if (sandraCovers || parentFragile) return EmergencyEventOutcome.coveredFragile;
+    if (sandraCovers || parentFragile)
+      return EmergencyEventOutcome.coveredFragile;
     return EmergencyEventOutcome.uncovered;
   }
 
@@ -153,7 +154,10 @@ class EmergencyDayLogic {
     required bool parentFragileAfternoon,
   }) {
     final k = emergencyDayKey(day);
-    final forced = isForcedEmergency(matteo: matteoStatus, chiara: chiaraStatus);
+    final forced = isForcedEmergency(
+      matteo: matteoStatus,
+      chiara: chiaraStatus,
+    );
     final enabled = settings.effectiveEnabled(forced: forced);
 
     // Se emergenza non è attiva, non mostriamo nulla (la UI resterà in modalità normale).
