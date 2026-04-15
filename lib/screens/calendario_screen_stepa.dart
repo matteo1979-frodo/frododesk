@@ -168,11 +168,44 @@ class _CalendarioScreenStepAStabileState
   );
   static const TimeOfDay _schoolOutDefaultEnd = TimeOfDay(hour: 16, minute: 45);
 
-  TimeOfDay _effSchoolOutStart(DateTime day) =>
-      daySettingsStore.schoolOutStartForDay(day) ?? _schoolOutDefaultStart;
+  TimeOfDay _effSchoolOutStart(DateTime day) {
+    final custom = daySettingsStore.schoolOutStartForDay(day);
+    if (custom != null) return custom;
 
-  TimeOfDay _effSchoolOutEnd(DateTime day) =>
-      daySettingsStore.schoolOutEndForDay(day) ?? _schoolOutDefaultEnd;
+    final d0 = _onlyDate(day);
+    final cfg = coreStore.schoolStore
+        .activePeriodForDay(d0)
+        ?.weekConfig
+        .forWeekday(d0.weekday);
+
+    if (cfg == null || !cfg.enabled) {
+      return _schoolOutDefaultStart;
+    }
+
+    return TimeOfDay(
+      hour: cfg.exitRealMinutes ~/ 60,
+      minute: cfg.exitRealMinutes % 60,
+    );
+  }
+
+  TimeOfDay _effSchoolOutEnd(DateTime day) {
+    final custom = daySettingsStore.schoolOutEndForDay(day);
+    if (custom != null) return custom;
+
+    final d0 = _onlyDate(day);
+    final cfg = coreStore.schoolStore
+        .activePeriodForDay(d0)
+        ?.weekConfig
+        .forWeekday(d0.weekday);
+
+    if (cfg == null || !cfg.enabled) {
+      return _schoolOutDefaultEnd;
+    }
+
+    final returnMinutes = cfg.returnHomeMinutes;
+
+    return TimeOfDay(hour: returnMinutes ~/ 60, minute: returnMinutes % 60);
+  }
 
   Future<void> _editSchoolOutTimesForDay() async {
     final start0 = _effSchoolOutStart(_selectedDay);
@@ -396,7 +429,24 @@ class _CalendarioScreenStepAStabileState
 
     final ingressoReale =
         coreStore.aliceEventStore.getEventForDay(day)?.summerCampStart ??
-        const TimeOfDay(hour: 8, minute: 25);
+        TimeOfDay(
+          hour:
+              (coreStore.schoolStore
+                      .activePeriodForDay(_onlyDate(day))
+                      ?.weekConfig
+                      .forWeekday(_onlyDate(day).weekday)
+                      .entryMinutes ??
+                  (_scuolaStart.hour * 60 + _scuolaStart.minute)) ~/
+              60,
+          minute:
+              (coreStore.schoolStore
+                      .activePeriodForDay(_onlyDate(day))
+                      ?.weekConfig
+                      .forWeekday(_onlyDate(day).weekday)
+                      .entryMinutes ??
+                  (_scuolaStart.hour * 60 + _scuolaStart.minute)) %
+              60,
+        );
 
     final ingressoInizio = TimeOfDay(
       hour: ((ingressoReale.hour * 60 + ingressoReale.minute - 20) ~/ 60) % 24,
@@ -430,6 +480,9 @@ class _CalendarioScreenStepAStabileState
 
   SchoolCoverChoice _effectiveLunchCover(DateTime day) {
     final saved = daySettingsStore.lunchCoverForDay(day);
+
+    // 👉 PRIORITÀ: scelta utente
+    if (saved != SchoolCoverChoice.none) return saved;
 
     final uscitaAt = _effUscitaAnticipataAt(day);
     if (uscitaAt == null) return SchoolCoverChoice.none;

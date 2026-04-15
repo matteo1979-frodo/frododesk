@@ -1,6 +1,6 @@
 FRODODESK — ROADMAP
 
-Ultimo aggiornamento: Aprile 2026 (post fix UI scuola)
+Ultimo aggiornamento: Aprile 2026 (post fix motore scuola + support network)
 
 ---
 
@@ -24,7 +24,7 @@ un passo alla volta, blocchi stabili prima di passare al successivo.
 Il sistema entra in una nuova evoluzione:
 
 👉 da costruzione strutturale della scuola  
-👉 a allineamento completo tra motore, stato Alice e UI
+👉 a allineamento completo tra motore, stato Alice, copertura e UI
 
 ---
 
@@ -76,7 +76,7 @@ Stato: COMPLETATO (USO REALE)
 
 # 🔥 BLOCCO E — SCUOLA
 
-## Stato: IN FASE FINALE DI RIFINITURA UI
+## Stato: MOTORE QUASI COMPLETATO / RIFINITURA FINALE IN CORSO
 
 ---
 
@@ -119,6 +119,16 @@ Stato: COMPLETATO (USO REALE)
 ✔ eliminata duplicazione `aliceNowLabel`  
 ✔ rimosso utilizzo improprio di `schoolNormal` come evento speciale
 
+### STEP E7 — FIX MOTORE SCUOLA REALE
+✔ CoverageEngine ora usa lo SchoolStore reale del CoreStore  
+✔ bug `DEBUG PERIOD -> null` risolto  
+✔ buchi ingresso/uscita tornati a comparire correttamente  
+✔ uscita scuola letta in modo dinamico dal periodo reale  
+✔ rientro automatico (+20 min) funzionante nel motore  
+✔ ingresso scuola verificato e confermato dinamico  
+✔ support network validato sul tempo reale  
+✔ eliminato falso positivo di copertura con fascia non compatibile
+
 ---
 
 ## LOGICA COMPLETA ATTUALE
@@ -146,16 +156,17 @@ Ordine corretto del sistema:
 
 ## PROBLEMA ATTUALE RESIDUO
 
-⚠️ NON è più un problema di motore
+⚠️ NON è più un problema generale della scuola  
+⚠️ NON è più un problema di lettura ingresso/uscita standard
 
 Il problema rimasto è:
 
-👉 rifinitura finale UI del blocco Alice / Scuola
+👉 uscita anticipata non ancora collegata correttamente al motore di copertura
 
-In particolare:
-- card Alice / Scuola ancora da pulire
-- box scuola e popup scuola da rendere più coerenti quando il giorno è OFF
-- editor Eventi Alice da ripulire definitivamente
+Sintomo attuale:
+- la UI aggiorna correttamente l’orario
+- la decisione scuola copertura si aggiorna
+- ❌ il buco non si chiude
 
 ---
 
@@ -177,29 +188,34 @@ In particolare:
 ✔ COMPLETATO
 
 ### STEP E6 — RIFINITURA UI BLOCCO ALICE
+🔄 PARZIALMENTE SUPERATO DALLA PRIORITÀ MOTORE
+
+### STEP E7 — FIX MOTORE SCUOLA REALE
+✔ COMPLETATO
+
+### STEP E8 — USCITA ANTICIPATA NEL MOTORE
 🔥 IN CORSO
 
 Obiettivo:
-- eliminare residui UI non coerenti
-- rifinire card Alice / Scuola
-- rifinire box scuola / popup
-- chiudere definitivamente editor eventi Alice
+- collegare uscita anticipata reale al CoverageEngine
+- chiudere davvero il buco quando la copertura è impostata correttamente
+- verificare coerenza completa UI → decisione → motore
 
 ---
 
 # PIANO OPERATIVO CONFERMATO
 
-## A — pulizia card Alice / Scuola
+## A — fix uscita anticipata nel motore
 👉 priorità immediata
 
-## B — allineamento box scuola + popup
+## B — test reale completo casi scuola
 👉 subito dopo A
 
-## C — pulizia editor eventi Alice
-👉 dopo B
+## C — rifinitura UI card Alice / Scuola
+👉 dopo stabilizzazione motore
 
-## D — test strutturale completo
-👉 chiusura finale blocco scuola
+## D — chiusura finale blocco scuola
+👉 dopo test strutturale completo
 
 ---
 
@@ -247,10 +263,13 @@ STATISTICHE
 ✔ Stato Alice corretto  
 ✔ Popup Alice corretto  
 ✔ Giorni ON/OFF scuola letti correttamente  
+✔ Ingresso scuola letto correttamente dal sistema reale  
+✔ Uscita scuola letta correttamente dal sistema reale  
+✔ Support network verificato su fascia reale  
 
 🔥 In corso:
 
-👉 rifinitura finale UI blocco Alice / Scuola
+👉 fix uscita anticipata nel motore copertura
 
 ---
 
@@ -260,14 +279,16 @@ NON fare:
 
 ❌ modifiche multiple  
 ❌ salti di fase  
-❌ rattoppi UI senza capire la fonte dati
+❌ rattoppi UI senza capire la fonte dati  
+❌ considerare valida una copertura solo perché “attiva”
 
 Fare:
 
 ✔ un passo alla volta  
 ✔ fonte di verità unica  
 ✔ test immediato  
-✔ motore prima, UI coerente dopo
+✔ motore prima, UI coerente dopo  
+✔ copertura valida solo se compatibile con la fascia reale
 
 ---
 
@@ -276,9 +297,9 @@ Fare:
 Ripartiamo da FrodoDesk — BLOCCO SCUOLA
 
 STEP A:
-👉 pulizia completa della card Alice / Scuola
+👉 fix uscita anticipata nel motore di copertura
 
 Poi:
-👉 STEP B — allineamento box scuola + popup  
-👉 STEP C — pulizia editor eventi Alice  
-👉 STEP D — test strutturale completo
+👉 STEP B — test reale completo scuola  
+👉 STEP C — rifinitura UI card Alice / Scuola  
+👉 STEP D — chiusura finale blocco scuola

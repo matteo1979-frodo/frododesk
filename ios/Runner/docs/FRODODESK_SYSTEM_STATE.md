@@ -1,6 +1,6 @@
 # FRODODESK — SYSTEM STATE
 
-Ultimo aggiornamento: Aprile 2026 (post fix scuola UI)
+Ultimo aggiornamento: Aprile 2026 (post fix scuola motore + support network)
 
 ---
 
@@ -77,17 +77,41 @@ Diventa:
 ✔ Lettura settimanale funzionante  
 ✔ Orari letti correttamente dal motore  
 
-🔥 FIX COMPLETATO:
+---
 
-✔ UI ora allineata allo stato reale scuola  
-✔ Giorni OFF scuola correttamente gestiti  
-✔ Stato Alice coerente tra:
-- card principale
-- popup stato attuale
-- eventi giornata  
+# 🔧 FIX SCUOLA — APRILE 2026
 
-✔ Eliminata duplicazione logica stato Alice  
-✔ Rimossa logica legacy non allineata  
+✔ Orario ingresso letto da SchoolStore  
+✔ Orario uscita letto da SchoolStore  
+✔ Rientro automatico = uscita + 20 min (calcolato, non salvato)  
+
+✔ Buco ingresso calcolato su orario reale  
+✔ Buco uscita calcolato su orario reale  
+
+✔ UI completamente allineata al motore  
+
+---
+
+# 🔥 FIX CRITICO — SUPPORT NETWORK
+
+Problema precedente:
+
+❌ Il sistema considerava copertura valida anche se NON compatibile con l’orario reale  
+(es: Sandra 07:00–08:25 copriva ingresso 09:05–09:25)
+
+Causa:
+
+❌ uso di fallback orario fisso (08:25)  
+❌ mancato controllo reale della fascia temporale  
+
+Soluzione:
+
+✔ ingresso reale ora letto da SchoolStore anche nel controllo copertura  
+✔ validazione supporto fatta su intervallo reale  
+
+Risultato:
+
+👉 la copertura è valida SOLO se copre davvero la fascia richiesta  
 
 ---
 
@@ -102,96 +126,17 @@ La UI NON decide più lo stato
 
 ---
 
-# 🔥 PROBLEMA RISOLTO (CRITICO)
-
-Sintomo precedente:
-
-❌ “Alice fuori • scuola” anche nei giorni OFF  
-❌ popup incoerente (scuola visiva ma non reale)
-
-Causa:
-
-❌ duplicazione logica (UI + motore)  
-❌ uso di funzioni legacy (isSchoolNormalDay non coerente)
-
-Soluzione:
-
-✔ centralizzazione su SchoolStore  
-✔ uso di isRealSchoolDay coerente  
-✔ rimozione aliceNowLabel duplicato  
-
----
-
-# STRUTTURA BLOCCO SCUOLA
-
-## Livello 1 — Periodi
-
-Il sistema gestisce più periodi:
-
-- Elementari
-- Medie
-- Futuri periodi
-
-Ogni periodo contiene:
-
-- nome periodo
-- data inizio
-- data fine
-- configurazione settimanale
-
----
-
-## Livello 2 — Orario settimanale
-
-Per ogni giorno (lun–sab):
-
-- attivo / non attivo
-- ora ingresso
-- ora uscita reale
-
-👉 Il sistema calcola automaticamente:
-
-- rientro a casa = uscita + 20 minuti
-
-⚠️ IMPORTANTE:
-Il rientro NON viene salvato  
-È sempre calcolato
-
----
-
-# 🧠 LOGICA DI PRIORITÀ
-
-Ordine corretto del sistema:
-
-1. Eventi Alice (vacanza, malattia, centro estivo)
-2. Eventi temporanei Alice (giornalieri)
-3. Periodo scuola attivo
-4. Orario settimanale
-5. Motore copertura
-
----
-
-# 🔥 CORREZIONE CRITICA ESEGUITA
-
-Problema risolto:
-
-❌ Il sistema usava l’orario di fine come uscita scuola  
-✔ Ora distingue correttamente:
-
-- uscita reale = orario scuola
-- rientro = uscita + 20 min
-
----
-
 # PRINCIPIO CHIAVE (IMPORTANTISSIMO)
 
 Separazione obbligatoria:
 
 ### DATO REALE
+- ingresso scuola = dato vero
 - uscita scuola = dato vero
 
 ### LOGICA
-- rientro = uscita + 20 min
+- accompagnamento = ingresso - 20 min  
+- rientro = uscita + 20 min  
 
 👉 Il sistema NON deve mai confondere i due
 
@@ -206,7 +151,29 @@ Separazione obbligatoria:
 ✔ gestione centro estivo funzionante  
 ✔ gestione accompagnamento / ritiro funzionante  
 
+✔ support network ora validato correttamente nel tempo  
+
 👉 considerato affidabile sui casi testati  
+
+---
+
+# ⚠️ BUG ATTIVO IDENTIFICATO
+
+👉 USCITA ANTICIPATA NON IMPATTA IL MOTORE
+
+Sintomo:
+
+- UI aggiorna correttamente orario uscita anticipata  
+- decisione scuola si aggiorna  
+- ❌ il buco NON si chiude  
+
+Causa probabile:
+
+👉 CoverageEngine NON usa ancora uscita anticipata reale  
+
+Stato:
+
+👉 da correggere nel prossimo step (motore)
 
 ---
 
@@ -254,25 +221,23 @@ Separazione obbligatoria:
 ✔ calendario funzionante  
 ✔ struttura a blocchi attiva  
 ✔ eventi Alice integrati  
-✔ stato Alice ora coerente  
+✔ stato Alice coerente  
 
-⚠️ AREA DA RIFINIRE:
-
-👉 blocco UI Alice / Scuola ancora da pulire completamente
+✔ scuola completamente allineata al motore  
 
 ---
 
 # DIREZIONE OPERATIVA
 
 ## 1️⃣ PRIORITÀ ATTUALE
-👉 pulizia completa UI blocco Alice
+👉 fix uscita anticipata nel motore copertura
 
 ## 2️⃣ STEP CONFERMATI
 
-A — pulizia card Alice / Scuola  
-B — allineamento box scuola + popup  
-C — pulizia editor eventi Alice  
-D — test strutturale completo  
+A — collegare uscita anticipata al CoverageEngine  
+B — verificare chiusura buchi dinamici  
+C — test completo casi reali  
+D — rifinitura UI finale  
 
 ---
 
@@ -280,12 +245,12 @@ D — test strutturale completo
 
 Il sistema evolve da:
 
-❌ UI scollegata dalla logica  
+❌ simulazione approssimativa  
 👉 verso  
-✔ UI = specchio esatto del motore  
+✔ simulazione reale basata su tempo e logica coerente  
 
 ---
 
 # FRASE DI RIPARTENZA UFFICIALE
 
-Ripartiamo da FrodoDesk — PULIZIA BLOCCO ALICE (STEP A): eliminare residui UI non coerenti e rendere la card Alice perfettamente allineata al sistema scuola e al motore di copertura.
+Ripartiamo da FrodoDesk — FIX USCITA ANTICIPATA: collegare l’orario reale al motore di copertura e verificare la chiusura corretta dei buchi.

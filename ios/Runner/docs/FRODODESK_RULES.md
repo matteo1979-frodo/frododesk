@@ -1,6 +1,6 @@
 FRODODESK — RULES
 
-Ultimo aggiornamento: 24 Marzo 2026
+Ultimo aggiornamento: Aprile 2026 (copertura reale temporale fix)
 
 
 IDENTITÀ DEL SISTEMA
@@ -225,8 +225,6 @@ Formato:
 👉 JSON esportabile
 
 ⚠️ Non sempre obbligatorio, ma obbligatorio se c’è rischio
-
-
 8️⃣ Controllo finale
 
 Verificare:
@@ -344,8 +342,6 @@ normale → conflitto pieno
 malattia → valutazione diversa  
 
 (non ancora implementato)
-
-
 # 🔴 NUOVA REGOLA STRUTTURALE — NOTTE / POST-NOTTE
 
 (Introdotta 19 Marzo 2026)
@@ -488,6 +484,8 @@ Qualsiasi aggiornamento deve essere:
 
 👉 SOLO AGGIUNTA  
 👉 MAI SOSTITUZIONE E RENDERE SEMPRE FILE INTERO
+
+
 ---
 
 # AGGIORNAMENTO — 24 MARZO 2026
@@ -584,7 +582,6 @@ purché:
 - nessuna parte venga persa  
 - ordine corretto mantenuto  
 - contenuto completo garantito  
-
 ---
 
 # AGGIORNAMENTO — 24 MARZO 2026 (REGOLA BLOCCHI GRANDI DEFINITIVA)
@@ -663,6 +660,8 @@ Qualsiasi file grosso deve essere:
 - senza mai superare circa 1200 righe per blocco
 
 Questa è da considerare regola strutturale ufficiale del metodo FrodoDesk.
+
+
 ---
 
 ## 🔥 REGOLA OPERATIVA — AZIONI REVERSIBILI (25 Marzo 2026)
@@ -686,7 +685,7 @@ Il sistema NON deve mai:
 
 👉 Il sistema suggerisce  
 👉 L’utente decide  
-👉 L’utente può sempre tornare indietro
+👉 L’utente può sempre tornare indietro  
 
 ### Applicazione concreta
 
@@ -697,7 +696,7 @@ Esempio:
 Deve:
 
 - risolvere il buco quando attivo
-- far riapparire il buco quando disattivato
+- far riapparire il buco quando disattivato  
 
 ### Significato strutturale
 
@@ -705,10 +704,89 @@ Le azioni nel sistema NON sono modifiche permanenti.
 
 Sono:
 
-👉 simulazioni operative temporanee
+👉 simulazioni operative temporanee  
 
 ### Obiettivo
 
 - mantenere sempre visibile la realtà
 - permettere confronto tra soluzioni
 - evitare automatismi che falsano la percezione del sistema
+
+
+---
+
+# 🔴 NUOVA REGOLA CRITICA — COPERTURA REALE TEMPORALE (Aprile 2026)
+
+## Problema emerso
+
+Il sistema considerava coperta una fascia anche quando il supporto NON copriva realmente l’intervallo necessario.
+
+Esempio reale:
+
+- buco: 09:05–09:25  
+- supporto attivo: 07:00–08:25  
+
+❌ Il sistema segnava “coperto”  
+✔ In realtà il buco restava  
+
+---
+
+## Regola corretta
+
+👉 Una copertura è valida SOLO se copre completamente l’intervallo richiesto  
+
+Condizione obbligatoria:
+
+supportStart ≤ gapStart  
+AND  
+supportEnd ≥ gapEnd  
+
+---
+
+## Implicazione
+
+NON basta:
+
+- avere supporto attivo nel giorno  
+- avere supporto parziale  
+- avere orari vicini  
+
+Serve:
+
+👉 copertura esatta dell’intervallo  
+
+---
+
+## Regola operativa per il motore
+
+Le funzioni tipo:
+
+_supportNetworkCoversRange(...)
+
+devono verificare SEMPRE:
+
+👉 copertura completa del range  
+
+---
+
+## Obiettivo
+
+- eliminare falsi positivi  
+- garantire coerenza reale  
+- rendere il sistema affidabile nelle decisioni  
+
+---
+
+## Significato strutturale
+
+Questa regola separa:
+
+❌ presenza simbolica  
+✔ copertura reale operativa  
+
+---
+
+## Principio finale
+
+👉 Il sistema NON deve mai “pensare che basti”  
+👉 Deve verificare che COPRA davvero  
