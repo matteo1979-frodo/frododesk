@@ -1,6 +1,6 @@
 FRODODESK — ROADMAP
 
-Ultimo aggiornamento: Aprile 2026
+Ultimo aggiornamento: Aprile 2026 (post fix UI scuola)
 
 ---
 
@@ -24,7 +24,7 @@ un passo alla volta, blocchi stabili prima di passare al successivo.
 Il sistema entra in una nuova evoluzione:
 
 👉 da costruzione strutturale della scuola  
-👉 a **allineamento completo tra motore, stato Alice e UI**
+👉 a allineamento completo tra motore, stato Alice e UI
 
 ---
 
@@ -76,27 +76,27 @@ Stato: COMPLETATO (USO REALE)
 
 # 🔥 BLOCCO E — SCUOLA
 
-## Stato: QUASI COMPLETATO (STRUTTURA + MOTORE OK)
+## Stato: IN FASE FINALE DI RIFINITURA UI
 
 ---
 
 ## COSA È STATO COMPLETATO
 
-### STEP 1 — STRUTTURA DATI
+### STEP E1 — STRUTTURA DATI
 ✔ SchoolPeriod  
 ✔ SchoolWeekConfig  
 ✔ SchoolDayConfig
 
-### STEP 2 — STORE
+### STEP E2 — STORE
 ✔ SchoolStore
 
-### STEP 3 — UI PERIODI
+### STEP E3 — UI PERIODI
 ✔ creazione periodo  
 ✔ eliminazione periodo  
 ✔ visualizzazione periodo attivo  
 ✔ dettaglio periodo
 
-### STEP 4 — UI SETTIMANA
+### STEP E4 — UI SETTIMANA
 ✔ popup settimana  
 ✔ giorni letti dal periodo  
 ✔ stato ATTIVO / OFF  
@@ -106,10 +106,18 @@ Stato: COMPLETATO (USO REALE)
 ✔ visualizzazione orari accanto ai giorni  
 ✔ salvataggio reale per lun–sab
 
-### STEP 5 — MOTORE
+### STEP E5 — MOTORE
 ✔ CoverageEngine legge SchoolStore  
 ✔ il giorno scuola viene deciso dal periodo attivo  
 ✔ il motore legge ingresso / uscita / rientro dal nuovo sistema
+
+### STEP E6 — ALLINEAMENTO UI STATO ALICE
+✔ risolto “Alice fuori • scuola” nei giorni OFF  
+✔ risolto popup incoerente  
+✔ risolto stato Alice non allineato al motore  
+✔ introdotto uso coerente di SchoolStore nella UI  
+✔ eliminata duplicazione `aliceNowLabel`  
+✔ rimosso utilizzo improprio di `schoolNormal` come evento speciale
 
 ---
 
@@ -138,16 +146,16 @@ Ordine corretto del sistema:
 
 ## PROBLEMA ATTUALE RESIDUO
 
-⚠️ NON è più un problema di struttura o motore
+⚠️ NON è più un problema di motore
 
 Il problema rimasto è:
 
-👉 alcune parti UI leggono ancora la logica vecchia di Alice/scuola
+👉 rifinitura finale UI del blocco Alice / Scuola
 
-Sintomi già verificati:
-- compare ancora “Stato Alice: Scuola normale” quando non dovrebbe
-- compare ancora “Alice fuori · scuola” anche quando il nuovo sistema dice altro
-- incongruenza tra box scuola e stato reale Alice
+In particolare:
+- card Alice / Scuola ancora da pulire
+- box scuola e popup scuola da rendere più coerenti quando il giorno è OFF
+- editor Eventi Alice da ripulire definitivamente
 
 ---
 
@@ -166,16 +174,32 @@ Sintomi già verificati:
 ✔ COMPLETATO
 
 ### STEP E5 — ALLINEAMENTO UI A STATO ALICE REALE
+✔ COMPLETATO
+
+### STEP E6 — RIFINITURA UI BLOCCO ALICE
 🔥 IN CORSO
 
 Obiettivo:
-- eliminare letture vecchie
-- fare leggere la UI solo dal nuovo sistema
-- rendere coerenti:
-  - box scuola
-  - stato Alice
-  - realtà del giorno
-  - copertura
+- eliminare residui UI non coerenti
+- rifinire card Alice / Scuola
+- rifinire box scuola / popup
+- chiudere definitivamente editor eventi Alice
+
+---
+
+# PIANO OPERATIVO CONFERMATO
+
+## A — pulizia card Alice / Scuola
+👉 priorità immediata
+
+## B — allineamento box scuola + popup
+👉 subito dopo A
+
+## C — pulizia editor eventi Alice
+👉 dopo B
+
+## D — test strutturale completo
+👉 chiusura finale blocco scuola
 
 ---
 
@@ -220,10 +244,13 @@ STATISTICHE
 ✔ Periodi scuola funzionanti  
 ✔ Settimana scuola modificabile funzionante  
 ✔ Motore scuola collegato al nuovo sistema  
+✔ Stato Alice corretto  
+✔ Popup Alice corretto  
+✔ Giorni ON/OFF scuola letti correttamente  
 
 🔥 In corso:
 
-👉 allineamento UI allo stato reale di Alice/scuola
+👉 rifinitura finale UI blocco Alice / Scuola
 
 ---
 
@@ -248,5 +275,10 @@ Fare:
 
 Ripartiamo da FrodoDesk — BLOCCO SCUOLA
 
-STEP 1:
-👉 analisi di `calendario_screen_stepa.dart` per trovare dove la UI legge ancora la vecchia logica di Alice/scuola e riallinearla completamente al nuovo sistema.
+STEP A:
+👉 pulizia completa della card Alice / Scuola
+
+Poi:
+👉 STEP B — allineamento box scuola + popup  
+👉 STEP C — pulizia editor eventi Alice  
+👉 STEP D — test strutturale completo

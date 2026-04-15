@@ -156,6 +156,7 @@ class CoreStore {
       aliceSpecialEventStore: aliceSpecialEventStore,
       summerCampScheduleStore: summerCampScheduleStore,
       summerCampSpecialEventStore: summerCampSpecialEventStore,
+      schoolStore: schoolStore,
     );
 
     // 4) Adapter Copertura

@@ -166,7 +166,7 @@ class _CalendarioScreenStepAStabileState
     hour: 16,
     minute: 25,
   );
-  static const TimeOfDay _schoolOutDefaultEnd = TimeOfDay(hour: 16, minute: 25);
+  static const TimeOfDay _schoolOutDefaultEnd = TimeOfDay(hour: 16, minute: 45);
 
   TimeOfDay _effSchoolOutStart(DateTime day) =>
       daySettingsStore.schoolOutStartForDay(day) ?? _schoolOutDefaultStart;

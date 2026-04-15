@@ -1,6 +1,6 @@
 # FRODODESK — SYSTEM STATE
 
-Ultimo aggiornamento: Aprile 2026
+Ultimo aggiornamento: Aprile 2026 (post fix scuola UI)
 
 ---
 
@@ -77,19 +77,48 @@ Diventa:
 ✔ Lettura settimanale funzionante  
 ✔ Orari letti correttamente dal motore  
 
-⚠️ PROBLEMA ATTUALE:
+🔥 FIX COMPLETATO:
 
-👉 La UI NON è ancora completamente allineata al nuovo sistema
+✔ UI ora allineata allo stato reale scuola  
+✔ Giorni OFF scuola correttamente gestiti  
+✔ Stato Alice coerente tra:
+- card principale
+- popup stato attuale
+- eventi giornata  
 
-Sintomi:
+✔ Eliminata duplicazione logica stato Alice  
+✔ Rimossa logica legacy non allineata  
 
-- “Stato Alice: scuola normale” mostrato anche quando NON dovrebbe
-- “Alice fuori · scuola” non coerente con la logica reale
+---
 
-👉 Questo indica che:
+# 🧠 LOGICA CONSOLIDATA (POST FIX)
 
-❌ alcune parti UI leggono ancora la logica vecchia  
-✔ il motore invece è corretto  
+Fonte unica di verità:
+
+👉 SchoolStore + AliceEventStore
+
+La UI NON decide più lo stato  
+👉 lo legge dal motore
+
+---
+
+# 🔥 PROBLEMA RISOLTO (CRITICO)
+
+Sintomo precedente:
+
+❌ “Alice fuori • scuola” anche nei giorni OFF  
+❌ popup incoerente (scuola visiva ma non reale)
+
+Causa:
+
+❌ duplicazione logica (UI + motore)  
+❌ uso di funzioni legacy (isSchoolNormalDay non coerente)
+
+Soluzione:
+
+✔ centralizzazione su SchoolStore  
+✔ uso di isRealSchoolDay coerente  
+✔ rimozione aliceNowLabel duplicato  
 
 ---
 
@@ -225,30 +254,25 @@ Separazione obbligatoria:
 ✔ calendario funzionante  
 ✔ struttura a blocchi attiva  
 ✔ eventi Alice integrati  
+✔ stato Alice ora coerente  
 
-⚠️ PROBLEMA ATTUALE (CRITICO):
+⚠️ AREA DA RIFINIRE:
 
-👉 UI non allineata alla nuova logica scuola
-
-- stato Alice letto ancora da vecchia logica
-- incongruenza tra motore e visualizzazione
-
-👉 PROSSIMO INTERVENTO:
-
-✔ allineamento completo UI → CoverageEngine / SchoolStore  
+👉 blocco UI Alice / Scuola ancora da pulire completamente
 
 ---
 
 # DIREZIONE OPERATIVA
 
 ## 1️⃣ PRIORITÀ ATTUALE
-👉 allineamento UI allo stato reale del sistema
+👉 pulizia completa UI blocco Alice
 
-## 2️⃣ STEP IMMEDIATO
-👉 correggere lettura stato Alice in UI
+## 2️⃣ STEP CONFERMATI
 
-## 3️⃣ DOPO
-👉 rifinitura blocco scuola UI (popup unico)
+A — pulizia card Alice / Scuola  
+B — allineamento box scuola + popup  
+C — pulizia editor eventi Alice  
+D — test strutturale completo  
 
 ---
 
@@ -264,4 +288,4 @@ Il sistema evolve da:
 
 # FRASE DI RIPARTENZA UFFICIALE
 
-Ripartiamo da FrodoDesk — ALLINEAMENTO UI STATO ALICE: eliminare letture vecchie e collegare completamente la UI al nuovo sistema scuola e al motore di copertura.
+Ripartiamo da FrodoDesk — PULIZIA BLOCCO ALICE (STEP A): eliminare residui UI non coerenti e rendere la card Alice perfettamente allineata al sistema scuola e al motore di copertura.

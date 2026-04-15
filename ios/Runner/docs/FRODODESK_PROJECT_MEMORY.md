@@ -1,6 +1,8 @@
 # FRODODESK — PROJECT MEMORY
 
-Ultimo aggiornamento: Aprile 2026
+Ultimo aggiornamento: Aprile 2026 (post fix UI scuola)
+
+---
 
 ## IDENTITÀ DEL PROGETTO
 
@@ -140,11 +142,11 @@ Il progetto è passato da:
 
 👉 STRUTTURA COMPLETATA  
 👉 MOTORE COLLEGATO  
-👉 UI NON ANCORA ALLINEATA
+👉 UI ORA ALLINEATA (BASE)
 
 ---
 
-## Problema iniziale (risolto)
+## Problema iniziale (RISOLTO)
 
 La gestione scuola manuale causava:
 
@@ -154,9 +156,52 @@ La gestione scuola manuale causava:
 
 ---
 
-## Soluzione implementata
+## 🔥 BUG CRITICO RISOLTO
 
-### 1️⃣ Sistema a periodi
+Sintomi precedenti:
+
+❌ Alice risultava “fuori • scuola” anche nei giorni OFF  
+❌ popup incoerente (scuola mostrata ma non reale)  
+❌ mismatch tra:
+- stato Alice
+- eventi giornata
+- configurazione scuola  
+
+---
+
+## CAUSA
+
+❌ duplicazione logica (UI + motore)  
+❌ utilizzo funzioni legacy non allineate  
+❌ più punti di calcolo dello stato Alice  
+
+---
+
+## SOLUZIONE IMPLEMENTATA
+
+✔ centralizzazione logica su SchoolStore  
+✔ introduzione controllo reale giorno scuola (isRealSchoolDay)  
+✔ rimozione logica duplicata aliceNowLabel  
+✔ allineamento UI → motore  
+
+👉 UNA SOLA VERITÀ
+
+---
+
+## RISULTATO
+
+✔ giorni OFF scuola corretti  
+✔ stato Alice coerente  
+✔ popup coerente  
+✔ eventi giornata coerenti  
+
+👉 comportamento reale rispettato
+
+---
+
+# STRUTTURA BLOCCO SCUOLA
+
+## 1️⃣ Sistema a periodi
 
 ✔ Elementari  
 ✔ Medie  
@@ -170,7 +215,7 @@ Ogni periodo contiene:
 
 ---
 
-### 2️⃣ Orario settimanale
+## 2️⃣ Orario settimanale
 
 Per ogni giorno:
 
@@ -184,7 +229,7 @@ Per ogni giorno:
 
 ---
 
-### 3️⃣ Calcolo automatico
+## 3️⃣ Calcolo automatico
 
 👉 rientro = uscita + 20 minuti  
 
@@ -227,35 +272,15 @@ Ordine:
 
 ---
 
-## PROBLEMA ATTUALE (CRITICO)
+# STATO UI (POST FIX)
 
-⚠️ UI NON ALLINEATA
+✔ stato Alice corretto  
+✔ popup allineato  
+✔ eventi giornata coerenti  
 
-Sintomi:
+⚠️ DA RIFINIRE:
 
-- “Stato Alice: scuola normale” anche quando non dovrebbe
-- “Alice fuori · scuola” incoerente
-- mismatch tra:
-  - box scuola
-  - stato Alice
-  - copertura reale
-
-👉 causa:
-
-❌ UI usa ancora vecchie funzioni/logiche  
-✔ motore usa nuova struttura  
-
----
-
-## CONCLUSIONE TECNICA
-
-Sistema attuale:
-
-✔ dati corretti  
-✔ logica corretta  
-❌ visualizzazione parzialmente errata  
-
-👉 serve allineamento UI → motore
+👉 UI secondaria blocco Alice / Scuola
 
 ---
 
@@ -302,23 +327,20 @@ Deve:
 ✔ scuola strutturata  
 ✔ settimana scuola modificabile  
 ✔ motore collegato alla scuola  
+✔ stato Alice corretto (FIX COMPLETATO)
 
 🔥 aperto:
 
-👉 allineamento UI stato Alice
+👉 rifinitura UI blocco Alice
 
 ---
 
-# PROSSIMI STEP REALI
+# PROSSIMI STEP REALI (AGGIORNATI)
 
-1️⃣ Analisi UI calendario  
-→ trovare dove legge stato Alice
-
-2️⃣ Eliminazione logica vecchia  
-→ sostituire con lettura da SchoolStore
-
-3️⃣ Allineamento completo  
-→ stato Alice = motore reale
+A — pulizia card Alice / Scuola  
+B — allineamento box scuola + popup  
+C — pulizia editor eventi Alice  
+D — test strutturale completo  
 
 ---
 
@@ -340,4 +362,4 @@ Deve:
 
 # FRASE DI RIPARTENZA UFFICIALE
 
-Ripartiamo da FrodoDesk — ALLINEAMENTO UI STATO ALICE: eliminare completamente le vecchie letture e collegare la UI al sistema scuola e al motore reale.
+Ripartiamo da FrodoDesk — STEP A: pulizia completa della card Alice / Scuola per eliminare ogni residuo UI non coerente e rendere il blocco perfettamente allineato al sistema reale.
