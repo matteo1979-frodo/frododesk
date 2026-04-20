@@ -26,7 +26,6 @@ Quando la chat sta per chiudersi scrivere:
 
 Chiudiamo la chat FrodoDesk
 
-
 ---
 
 # 🔧 COSA DEVE FARE FRODO (OBBLIGATORIO)
@@ -40,6 +39,7 @@ Frodo deve eseguire QUESTO ORDINE PRECISO:
 - analizza tutto il lavoro fatto
 - identifica il modulo coinvolto
 - identifica i file codice toccati
+- identifica eventuali modifiche instabili o rollback effettuati
 
 ---
 
@@ -53,9 +53,9 @@ File da aggiornare:
 
 docs/modules/eventi_alice.md
 
-
 ⚠️ NON tutti i file  
 ⚠️ NON SYSTEM_STATE se non serve  
+⚠️ NON includere file riportati indietro (rollback)
 
 ---
 
@@ -66,7 +66,7 @@ Per ogni file:
 👉 fornire il file COMPLETO pronto da copiare
 
 NON modifiche parziali  
-NON spiegazioni spezzate  
+NON spiegazioni spezzate
 
 ---
 
@@ -78,17 +78,16 @@ FRODODESK — APERTURA
 
 Ti invio:
 
-docs/FRODODESK_SYSTEM_STATE.md
-docs/FRODODESK_RULES.md
+docs/FRODODESK_SYSTEM_STATE.md  
+docs/FRODODESK_RULES.md  
 docs/modules/[modulo corretto]
 
 File codice reale:
 
 [file reale]
 
-Obiettivo:
+Obiettivo:  
 [obiettivo preciso della prossima chat]
-
 
 ⚠️ questo blocco deve essere:
 - già corretto
@@ -103,11 +102,10 @@ Frodo deve anche scrivere chiaramente:
 
 File da inviare nella nuova chat:
 
-SYSTEM_STATE
-RULES
-modulo specifico
+SYSTEM_STATE  
+RULES  
+modulo specifico  
 file codice reale
-
 
 ---
 
@@ -124,10 +122,10 @@ L’utente deve fare ESATTAMENTE questo:
 
 # 🚫 COSA NON FARE
 
-- non aggiornare tutti i moduli
-- non riscrivere SYSTEM_STATE ogni volta
-- non inventare file da mandare
-- non lasciare decisioni all’utente
+- non aggiornare tutti i moduli  
+- non riscrivere SYSTEM_STATE ogni volta  
+- non inventare file da mandare  
+- non lasciare decisioni all’utente  
 
 ---
 
@@ -139,10 +137,10 @@ L’utente deve fare ESATTAMENTE questo:
 
 # 🎯 RISULTATO
 
-- zero confusione
-- zero errori
-- continuità perfetta
-- nessuna chat bloccata
+- zero confusione  
+- zero errori  
+- continuità perfetta  
+- nessuna chat bloccata  
 
 ---
 
@@ -151,4 +149,4 @@ L’utente deve fare ESATTAMENTE questo:
 Da questo momento:
 
 👉 FrodoDesk diventa un sistema guidato  
-👉 non dipende più dalla memoria dell’utente  
+👉 non dipende più dalla memoria dell’utente

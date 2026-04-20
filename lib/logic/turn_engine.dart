@@ -9,6 +9,7 @@ import 'fourth_shift_store.dart';
 import 'fourth_shift_cycle_logic.dart';
 import 'turn_override_store.dart';
 import 'rotation_override_store.dart';
+import 'calendar_logic.dart';
 
 enum TurnPerson { matteo, chiara }
 
@@ -473,6 +474,8 @@ class TurnEngine {
     final periodOverride = _turnoTipoPeriodOverride(p, day);
     if (periodOverride != null) return periodOverride;
 
+    if (isItalianHoliday(day)) return _TurnoTipo.off;
+
     final rotation = rotationOverrideStore.activeFor(
       person: _personModelFor(p),
       day: day,
@@ -526,6 +529,8 @@ class TurnEngine {
 
     final fourthShiftTipo = _turnoTipoFourthShift(p, day);
     if (fourthShiftTipo != null) return fourthShiftTipo;
+
+    if (isItalianHoliday(day)) return _TurnoTipo.off;
 
     if (_isWeekend(day.weekday)) return _TurnoTipo.off;
     return (p == TurnPerson.matteo)

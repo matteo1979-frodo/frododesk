@@ -152,11 +152,7 @@ class CoverageEngine {
       return false;
     }
 
-    final period = schoolStore.activePeriodForDay(d0);
-    if (period == null) return false;
-
-    final dayConfig = period.weekConfig.forWeekday(d0.weekday);
-    return dayConfig.enabled;
+    return schoolStore.hasSchoolOn(d0);
   }
 
   bool isAliceSummerCampOperationalDay(DateTime day) {

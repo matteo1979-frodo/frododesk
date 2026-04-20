@@ -3469,13 +3469,7 @@ class _CalendarioScreenStepAStabileState
       }
     }
 
-    final isRealSchoolDay =
-        coreStore.schoolStore
-            .activePeriodForDay(nowDay)
-            ?.weekConfig
-            .forWeekday(nowDay.weekday)
-            .enabled ??
-        false;
+    final isRealSchoolDay = coreStore.schoolStore.hasSchoolOn(nowDay);
 
     if (aliceBusyForEventNow) {
       aliceIsOutNow = true;
@@ -4463,13 +4457,8 @@ class _CalendarioScreenStepAStabileState
                           if (alicePeriod != null) {
                             if (alicePeriod.type ==
                                 AliceEventType.schoolNormal) {
-                              final isRealSchoolDay =
-                                  coreStore.schoolStore
-                                      .activePeriodForDay(_selectedDay)
-                                      ?.weekConfig
-                                      .forWeekday(_selectedDay.weekday)
-                                      .enabled ??
-                                  false;
+                              final isRealSchoolDay = coreStore.schoolStore
+                                  .hasSchoolOn(_selectedDay);
 
                               if (isRealSchoolDay) {
                                 final schoolStart = _scuolaStart;
@@ -6156,11 +6145,7 @@ class _CalendarioScreenStepAStabileState
     final schoolPeriodLabel =
         activeSchoolPeriod?.name ?? "Nessun periodo attivo";
 
-    final schoolDayConfig = activeSchoolPeriod?.weekConfig.forWeekday(
-      _selectedDay.weekday,
-    );
-    final isSchoolDayActive =
-        schoolDayConfig != null && schoolDayConfig.enabled;
+    final isSchoolDayActive = coreStore.schoolStore.hasSchoolOn(_selectedDay);
     final schoolWeekdayLabel = [
       "Lunedì",
       "Martedì",
@@ -7749,12 +7734,7 @@ class _CalendarioScreenStepAStabileState
     final schoolPeriodLabel =
         activeSchoolPeriod?.name ?? "Nessun periodo attivo";
 
-    final schoolDayConfig = activeSchoolPeriod?.weekConfig.forWeekday(
-      _selectedDay.weekday,
-    );
-
-    final isSchoolDayActive =
-        schoolDayConfig != null && schoolDayConfig.enabled;
+    final isSchoolDayActive = coreStore.schoolStore.hasSchoolOn(_selectedDay);
 
     final schoolWeekdayLabel = [
       "Lunedì",

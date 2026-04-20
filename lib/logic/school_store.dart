@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../models/school_model.dart';
 import 'persistence_store.dart';
+import 'calendar_logic.dart';
 
 class SchoolStore {
   static const String _storageKey = 'school_periods_v1';
@@ -107,6 +108,8 @@ class SchoolStore {
   SchoolDayConfig? schoolDayConfigFor(DateTime day) {
     final activePeriod = activePeriodForDay(day);
     if (activePeriod == null) return null;
+
+    if (isItalianHoliday(day)) return null;
 
     final weekdayConfig = activePeriod.weekConfig.forWeekday(day.weekday);
     if (!weekdayConfig.enabled) return null;
