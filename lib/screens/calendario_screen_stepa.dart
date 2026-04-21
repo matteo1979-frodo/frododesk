@@ -5452,6 +5452,23 @@ class _CalendarioScreenStepAStabileState
               ) ==
               selectedDay;
 
+      final createdDay = DateTime(
+        p.createdDay.year,
+        p.createdDay.month,
+        p.createdDay.day,
+      );
+
+      final differenceDays = selectedDay.difference(createdDay).inDays;
+
+      String? carryLabel;
+      if (differenceDays == 1) {
+        carryLabel = "da ieri";
+      } else if (differenceDays > 1) {
+        carryLabel = "da $differenceDays giorni";
+      } else {
+        carryLabel = null;
+      }
+
       return Container(
         margin: const EdgeInsets.only(bottom: 6),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -5496,6 +5513,18 @@ class _CalendarioScreenStepAStabileState
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  if (carryLabel != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2, bottom: 2),
+                      child: Text(
+                        carryLabel!,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.orange.shade800,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
                   Text(
                     p.testo,
                     style: TextStyle(
