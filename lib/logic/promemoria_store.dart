@@ -52,7 +52,8 @@ class PromemoriaStore {
         persona: persona,
         testo: testo,
         done: false,
-        day: DateTime(day.year, day.month, day.day),
+        createdDay: DateTime(day.year, day.month, day.day),
+        completedDay: null,
       ),
     );
     await save();
@@ -71,11 +72,20 @@ class PromemoriaStore {
     await save();
   }
 
-  Future<void> toggleDone(String id, bool done) async {
-    final index = _items.indexWhere((p) => p.id == id);
-    if (index == -1) return;
+Future<void> toggleDone(String id, bool done, {DateTime? completedDay}) async {
+  final index = _items.indexWhere((p) => p.id == id);
+  if (index == -1) return;
 
-    _items[index] = _items[index].copyWith(done: done);
-    await save();
-  }
+  final normalizedDay = completedDay == null
+      ? null
+      : DateTime(completedDay.year, completedDay.month, completedDay.day);
+
+  _items[index] = _items[index].copyWith(
+    done: done,
+    completedDay: done ? normalizedDay : null,
+    clearCompletedDay: !done,
+  );
+
+  await save();
+}
 }

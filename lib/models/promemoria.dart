@@ -3,14 +3,16 @@ class Promemoria {
   final String persona;
   final String testo;
   final bool done;
-  final DateTime day;
+  final DateTime createdDay;
+  final DateTime? completedDay;
 
   Promemoria({
     required this.id,
     required this.persona,
     required this.testo,
     required this.done,
-    required this.day,
+    required this.createdDay,
+    required this.completedDay,
   });
 
   Promemoria copyWith({
@@ -18,14 +20,19 @@ class Promemoria {
     String? persona,
     String? testo,
     bool? done,
-    DateTime? day,
+    DateTime? createdDay,
+    DateTime? completedDay,
+    bool clearCompletedDay = false,
   }) {
     return Promemoria(
       id: id ?? this.id,
       persona: persona ?? this.persona,
       testo: testo ?? this.testo,
       done: done ?? this.done,
-      day: day ?? this.day,
+      createdDay: createdDay ?? this.createdDay,
+      completedDay: clearCompletedDay
+          ? null
+          : (completedDay ?? this.completedDay),
     );
   }
 
@@ -35,7 +42,8 @@ class Promemoria {
       'persona': persona,
       'testo': testo,
       'done': done,
-      'day': day.toIso8601String(),
+      'createdDay': createdDay.toIso8601String(),
+      'completedDay': completedDay?.toIso8601String(),
     };
   }
 
@@ -44,8 +52,11 @@ class Promemoria {
       id: json['id'] as String,
       persona: json['persona'] as String,
       testo: json['testo'] as String,
-      done: json['done'] as bool,
-      day: DateTime.parse(json['day'] as String),
+      done: json['done'] as bool? ?? false,
+      createdDay: DateTime.parse(json['createdDay'] as String),
+      completedDay: json['completedDay'] == null
+          ? null
+          : DateTime.parse(json['completedDay'] as String),
     );
   }
 }

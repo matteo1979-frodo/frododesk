@@ -5410,9 +5410,25 @@ class _CalendarioScreenStepAStabileState
       return _promemoriaStore.items.where((p) {
         if (p.persona != persona) return false;
 
-        final itemDay = DateTime(p.day.year, p.day.month, p.day.day);
+        final createdDay = DateTime(
+          p.createdDay.year,
+          p.createdDay.month,
+          p.createdDay.day,
+        );
 
-        return itemDay == selectedDay;
+        if (createdDay.isAfter(selectedDay)) return false;
+
+        if (p.completedDay == null) {
+          return true;
+        }
+
+        final completedDay = DateTime(
+          p.completedDay!.year,
+          p.completedDay!.month,
+          p.completedDay!.day,
+        );
+
+        return !selectedDay.isAfter(completedDay);
       }).toList();
     }
 
@@ -5421,7 +5437,20 @@ class _CalendarioScreenStepAStabileState
       bool insideDialog = false,
       VoidCallback? refreshDialog,
     }) {
-      final bool done = p.done;
+      final selectedDay = DateTime(
+        _selectedDay.year,
+        _selectedDay.month,
+        _selectedDay.day,
+      );
+
+      final bool done =
+          p.completedDay != null &&
+          DateTime(
+                p.completedDay!.year,
+                p.completedDay!.month,
+                p.completedDay!.day,
+              ) ==
+              selectedDay;
 
       return Container(
         margin: const EdgeInsets.only(bottom: 6),
@@ -5442,7 +5471,12 @@ class _CalendarioScreenStepAStabileState
               onChanged: (value) async {
                 final newValue = value ?? false;
 
-                await _promemoriaStore.toggleDone(p.id, newValue);
+                await _promemoriaStore.toggleDone(
+                  p.id,
+                  newValue,
+                  completedDay: _selectedDay,
+                );
+
                 await _loadPromemoria();
 
                 if (refreshDialog != null) {
