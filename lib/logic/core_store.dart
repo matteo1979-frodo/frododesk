@@ -27,6 +27,7 @@ import 'ips/ips_detail_snapshot.dart';
 import 'ips/ips_module_status.dart';
 import 'ips/ips_types.dart' as types;
 import '../models/ips_snapshot.dart' as snap;
+import 'promemoria_store.dart';
 
 class CoreStore {
   late final SettingsStore settingsStore;
@@ -57,6 +58,8 @@ class CoreStore {
 
   // ✅ NEW: Rete di supporto
   late final SupportNetworkStore supportNetworkStore;
+
+  late final PromemoriaStore promemoriaStore;
 
   late final AliceCompanionStore aliceCompanionStore;
 
@@ -124,6 +127,9 @@ class CoreStore {
 
     // ✅ NEW: Rete di supporto
     supportNetworkStore = SupportNetworkStore();
+
+    promemoriaStore = PromemoriaStore();
+    promemoriaStore.load();
 
     aliceCompanionStore = AliceCompanionStore();
 
