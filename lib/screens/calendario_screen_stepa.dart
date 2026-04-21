@@ -41,6 +41,8 @@ import '../logic/summer_camp_special_event_store.dart';
 
 import '../utils/calendario_formatters.dart';
 import '../utils/status_visual.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -103,6 +105,23 @@ class _CalendarioScreenStepAStabileState
   String? _editingAliceSpecialEventId;
 
   DateTime _aliceEventDate = DateTime.now();
+  final List<Map<String, dynamic>> _mockPromemoria = [];
+
+  void _addMockPromemoria({required String persona, required String testo}) {
+    setState(() {
+      _mockPromemoria.add({'persona': persona, 'testo': testo, 'done': false});
+    });
+
+    _savePromemoria(); // 👈 QUESTA RIGA
+  }
+
+  Future<void> _savePromemoria() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final encoded = jsonEncode(_mockPromemoria);
+
+    await prefs.setString('promemoria_giorno', encoded);
+  }
 
   Future<void> _scrollTo(GlobalKey key) async {
     final ctx = key.currentContext;
@@ -2954,6 +2973,24 @@ class _CalendarioScreenStepAStabileState
     final d = widget.initialSelectedDay ?? DateTime.now();
     _selectedDay = DateTime(d.year, d.month, d.day);
     _syncWeekWithSelectedDay();
+    _loadPromemoria();
+  }
+
+  Future<void> _loadPromemoria() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('promemoria_giorno');
+
+    if (raw == null || raw.isEmpty) return;
+
+    final decoded = jsonDecode(raw);
+
+    if (decoded is List) {
+      setState(() {
+        _mockPromemoria
+          ..clear()
+          ..addAll(decoded.map((e) => Map<String, dynamic>.from(e)));
+      });
+    }
   }
 
   @override
@@ -3232,6 +3269,493 @@ class _CalendarioScreenStepAStabileState
           isEmergency: isEmergency,
         );
       },
+    );
+  }
+
+  _FamilyNowSnapshot _buildFamilyNowSnapshot() {
+    final realNow = DateTime.now();
+
+    final now = DateTime(
+      _selectedDay.year,
+      _selectedDay.month,
+      _selectedDay.day,
+      realNow.hour,
+      realNow.minute,
+      realNow.second,
+      realNow.millisecond,
+      realNow.microsecond,
+    );
+
+    final realEventStore = coreStore.realEventStore;
+    final nowDay = _onlyDate(now);
+
+    final matteoOverride = _getOverridesForDay(nowDay).matteo;
+    final matteoDisease = coreStore.diseasePeriodStore.getPeriodForDay(
+      'matteo',
+      nowDay,
+    );
+
+    final matteoOnHoliday = coreStore.feriePeriodStore.isOnHoliday(
+      FeriePerson.matteo,
+      nowDay,
+    );
+
+    final matteoBedSick =
+        matteoOverride?.status == OverrideStatus.malattiaALetto ||
+        matteoDisease?.type == DiseaseType.bed;
+
+    final matteoEventsNow = coreStore.realEventStore
+        .eventsForDay(nowDay)
+        .where((e) => e.personKey == 'matteo');
+
+    bool matteoBusyForEventNow = false;
+
+    for (final event in matteoEventsNow) {
+      final eventStart = DateTime(
+        event.startDate.year,
+        event.startDate.month,
+        event.startDate.day,
+        event.startTime?.hour ?? 0,
+        event.startTime?.minute ?? 0,
+      );
+
+      DateTime eventEnd = DateTime(
+        event.endDate.year,
+        event.endDate.month,
+        event.endDate.day,
+        event.endTime?.hour ?? 23,
+        event.endTime?.minute ?? 59,
+      );
+
+      if (!eventEnd.isAfter(eventStart)) {
+        eventEnd = eventEnd.add(const Duration(days: 1));
+      }
+
+      final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
+
+      if (isNowInside) {
+        matteoBusyForEventNow = true;
+        break;
+      }
+    }
+
+    final matteoBusyForTurn = _engine.isMatteoBusyBetween(
+      now,
+      now.add(const Duration(minutes: 1)),
+    );
+
+    final matteoPlan = _turns.turnPlanForPersonDay(
+      person: TurnPerson.matteo,
+      day: _selectedDay,
+    );
+
+    String matteoTurnLabel = "Turno non previsto";
+
+    if (!matteoPlan.isOff) {
+      matteoTurnLabel =
+          "Turno ${fmtTimeOfDay(matteoPlan.start)}–${fmtTimeOfDay(matteoPlan.end)}";
+    }
+
+    final matteoBusyNow =
+        matteoBedSick || matteoBusyForTurn || matteoBusyForEventNow;
+
+    final String matteoNowLabel;
+
+    if (matteoBedSick) {
+      matteoNowLabel = "occupato • malattia a letto";
+    } else if (matteoOnHoliday) {
+      matteoNowLabel = "libero • ferie";
+    } else if (matteoBusyForEventNow) {
+      matteoNowLabel = "occupato • evento";
+    } else if (matteoBusyForTurn) {
+      matteoNowLabel = "occupato • turno";
+    } else {
+      matteoNowLabel = "libero";
+    }
+
+    final chiaraOverride = _getOverridesForDay(nowDay).chiara;
+    final chiaraDisease = coreStore.diseasePeriodStore.getPeriodForDay(
+      'chiara',
+      nowDay,
+    );
+
+    final chiaraOnHoliday = coreStore.feriePeriodStore.isOnHoliday(
+      FeriePerson.chiara,
+      nowDay,
+    );
+
+    final chiaraBedSick =
+        chiaraOverride?.status == OverrideStatus.malattiaALetto ||
+        chiaraDisease?.type == DiseaseType.bed;
+
+    final chiaraEventsNow = coreStore.realEventStore
+        .eventsForDay(nowDay)
+        .where((e) => e.personKey == 'chiara');
+
+    bool chiaraBusyForEventNow = false;
+
+    for (final event in chiaraEventsNow) {
+      final eventStart = DateTime(
+        event.startDate.year,
+        event.startDate.month,
+        event.startDate.day,
+        event.startTime?.hour ?? 0,
+        event.startTime?.minute ?? 0,
+      );
+
+      DateTime eventEnd = DateTime(
+        event.endDate.year,
+        event.endDate.month,
+        event.endDate.day,
+        event.endTime?.hour ?? 23,
+        event.endTime?.minute ?? 59,
+      );
+
+      if (!eventEnd.isAfter(eventStart)) {
+        eventEnd = eventEnd.add(const Duration(days: 1));
+      }
+
+      final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
+
+      if (isNowInside) {
+        chiaraBusyForEventNow = true;
+        break;
+      }
+    }
+
+    final chiaraBusyForTurn = _engine.isChiaraBusyBetween(
+      now,
+      now.add(const Duration(minutes: 1)),
+    );
+
+    final chiaraBusyNow =
+        chiaraBedSick || chiaraBusyForTurn || chiaraBusyForEventNow;
+
+    final String chiaraNowLabel;
+    if (chiaraBedSick) {
+      chiaraNowLabel = "occupata • malattia a letto";
+    } else if (chiaraOnHoliday) {
+      chiaraNowLabel = "libera • ferie";
+    } else if (chiaraBusyForEventNow) {
+      chiaraNowLabel = "occupata • evento";
+    } else if (chiaraBusyForTurn) {
+      chiaraNowLabel = "occupata • turno";
+    } else {
+      chiaraNowLabel = "libera";
+    }
+
+    final alicePeriodNow = coreStore.aliceEventStore.getEventForDay(nowDay);
+    final aliceSpecialEventsNow = coreStore.aliceSpecialEventStore.eventsForDay(
+      nowDay,
+    );
+
+    bool isNowInsideRange(TimeOfDay start, TimeOfDay end) {
+      final rangeStart = DateTime(
+        nowDay.year,
+        nowDay.month,
+        nowDay.day,
+        start.hour,
+        start.minute,
+      );
+
+      final rangeEnd = DateTime(
+        nowDay.year,
+        nowDay.month,
+        nowDay.day,
+        end.hour,
+        end.minute,
+      );
+
+      return now.isAfter(rangeStart) && now.isBefore(rangeEnd);
+    }
+
+    bool aliceIsOutNow = false;
+
+    final aliceEventsNow = coreStore.realEventStore
+        .eventsForDay(nowDay)
+        .where((e) => e.personKey == 'alice');
+
+    bool aliceBusyForEventNow = false;
+
+    for (final event in aliceEventsNow) {
+      final eventStart = DateTime(
+        event.startDate.year,
+        event.startDate.month,
+        event.startDate.day,
+        event.startTime?.hour ?? 0,
+        event.startTime?.minute ?? 0,
+      );
+
+      DateTime eventEnd = DateTime(
+        event.endDate.year,
+        event.endDate.month,
+        event.endDate.day,
+        event.endTime?.hour ?? 23,
+        event.endTime?.minute ?? 59,
+      );
+
+      if (!eventEnd.isAfter(eventStart)) {
+        eventEnd = eventEnd.add(const Duration(days: 1));
+      }
+
+      final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
+
+      if (isNowInside) {
+        aliceBusyForEventNow = true;
+        break;
+      }
+    }
+
+    final isRealSchoolDay = coreStore.schoolStore.hasSchoolOn(nowDay);
+
+    if (aliceBusyForEventNow) {
+      aliceIsOutNow = true;
+    } else {
+      if (alicePeriodNow == null) {
+        if (!isRealSchoolDay) {
+          aliceIsOutNow = false;
+        } else {
+          final uscitaAt = _effUscitaAnticipataAt(nowDay);
+          final schoolEnd = uscitaAt ?? _effSchoolOutEnd(nowDay);
+          final schoolStart = _scuolaStart;
+
+          aliceIsOutNow = isNowInsideRange(schoolStart, schoolEnd);
+        }
+      } else {
+        switch (alicePeriodNow.type) {
+          case AliceEventType.schoolNormal:
+            if (!isRealSchoolDay) {
+              aliceIsOutNow = false;
+              break;
+            }
+
+            final uscitaAt = _effUscitaAnticipataAt(nowDay);
+            final schoolEnd = uscitaAt ?? _effSchoolOutEnd(nowDay);
+            final schoolStart = _scuolaStart;
+
+            aliceIsOutNow = isNowInsideRange(schoolStart, schoolEnd);
+            break;
+
+          case AliceEventType.summerCamp:
+            final campStart =
+                alicePeriodNow.summerCampStart ??
+                const TimeOfDay(hour: 8, minute: 30);
+
+            final campEnd =
+                alicePeriodNow.summerCampEnd ??
+                const TimeOfDay(hour: 16, minute: 30);
+
+            aliceIsOutNow = isNowInsideRange(campStart, campEnd);
+            break;
+
+          case AliceEventType.vacation:
+          case AliceEventType.schoolClosure:
+          case AliceEventType.sickness:
+            aliceIsOutNow = false;
+            break;
+        }
+      }
+    }
+
+    for (final event in aliceSpecialEventsNow) {
+      final eventStart = DateTime(
+        nowDay.year,
+        nowDay.month,
+        nowDay.day,
+        event.start.hour,
+        event.start.minute,
+      );
+
+      final eventEnd = DateTime(
+        nowDay.year,
+        nowDay.month,
+        nowDay.day,
+        event.end.hour,
+        event.end.minute,
+      );
+
+      final isActiveNow = now.isAfter(eventStart) && now.isBefore(eventEnd);
+
+      if (isActiveNow) {
+        aliceIsOutNow = true;
+        break;
+      }
+    }
+
+    final isAliceSick = alicePeriodNow?.type == AliceEventType.sickness;
+
+    AliceSpecialEvent? activeAliceSpecialEventNow;
+    for (final event in aliceSpecialEventsNow) {
+      final eventStart = DateTime(
+        nowDay.year,
+        nowDay.month,
+        nowDay.day,
+        event.start.hour,
+        event.start.minute,
+      );
+
+      final eventEnd = DateTime(
+        nowDay.year,
+        nowDay.month,
+        nowDay.day,
+        event.end.hour,
+        event.end.minute,
+      );
+
+      final isActiveNow = now.isAfter(eventStart) && now.isBefore(eventEnd);
+
+      if (isActiveNow) {
+        activeAliceSpecialEventNow = event;
+        break;
+      }
+    }
+
+    RealEvent? activeAliceRealEventNow;
+    final aliceRealEventsNow = coreStore.realEventStore
+        .eventsForDay(nowDay)
+        .where((e) => e.personKey == 'alice');
+
+    for (final event in aliceRealEventsNow) {
+      final eventStart = DateTime(
+        event.startDate.year,
+        event.startDate.month,
+        event.startDate.day,
+        event.startTime?.hour ?? 0,
+        event.startTime?.minute ?? 0,
+      );
+
+      DateTime eventEnd = DateTime(
+        event.endDate.year,
+        event.endDate.month,
+        event.endDate.day,
+        event.endTime?.hour ?? 23,
+        event.endTime?.minute ?? 59,
+      );
+
+      if (!eventEnd.isAfter(eventStart)) {
+        eventEnd = eventEnd.add(const Duration(days: 1));
+      }
+
+      final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
+
+      if (isNowInside) {
+        activeAliceRealEventNow = event;
+        break;
+      }
+    }
+
+    String aliceOutsideLabelFromText(
+      String text, {
+      AliceSpecialEventCategory? category,
+    }) {
+      switch (category) {
+        case AliceSpecialEventCategory.school:
+          return "fuori • scuola";
+        case AliceSpecialEventCategory.health:
+          return "fuori • visita";
+        case AliceSpecialEventCategory.sport:
+          return "fuori • sport";
+        case AliceSpecialEventCategory.activity:
+          return "fuori • attività";
+        case AliceSpecialEventCategory.other:
+        case null:
+          break;
+      }
+
+      final lower = text.toLowerCase();
+
+      if (lower.contains('centro estivo')) return "fuori • centro estivo";
+      if (lower.contains('gita')) return "fuori • gita";
+      if (lower.contains('visita') ||
+          lower.contains('dentista') ||
+          lower.contains('medic') ||
+          lower.contains('pediatra')) {
+        return "fuori • visita";
+      }
+      if (lower.contains('scuola')) return "fuori • scuola";
+      if (lower.contains('danza') ||
+          lower.contains('ballo') ||
+          lower.contains('pallavolo') ||
+          lower.contains('sport')) {
+        return "fuori • sport";
+      }
+      if (lower.contains('teatro') ||
+          lower.contains('ripetizioni') ||
+          lower.contains('corso')) {
+        return "fuori • attività";
+      }
+
+      return "fuori";
+    }
+
+    final String aliceNowLabel = aliceIsOutNow
+        ? (activeAliceSpecialEventNow != null
+              ? aliceOutsideLabelFromText(
+                  activeAliceSpecialEventNow.label,
+                  category: activeAliceSpecialEventNow.category,
+                )
+              : activeAliceRealEventNow != null
+              ? aliceOutsideLabelFromText(activeAliceRealEventNow.title)
+              : (alicePeriodNow?.type == AliceEventType.summerCamp
+                    ? "fuori • centro estivo"
+                    : (coreStore.aliceEventStore.isSchoolNormalDay(_selectedDay)
+                          ? "fuori • scuola"
+                          : "fuori • casa")))
+        : (isAliceSick ? "a casa • malata" : "a casa");
+
+    final cov = _computeCoverageStepA(_selectedDay);
+    final isEmergency = _isEmergencyActive();
+    final bool showSummerCampSpecialCard = _selectedDayIsSummerCampDay();
+
+    final baseIpsCoverage30 = coreStore.coverageAdapter.riskScore30Days(
+      startDay: _selectedDay,
+    );
+
+    final hasForcedConflictToday =
+        overrideStore.isForcedConflictForDay(
+          day: _selectedDay,
+          personKey: 'matteo',
+          eventIds: _eventsForPersonOnDay(
+            personKey: 'matteo',
+            day: _selectedDay,
+          ).map((e) => e.id).toList(),
+        ) ||
+        overrideStore.isForcedConflictForDay(
+          day: _selectedDay,
+          personKey: 'chiara',
+          eventIds: _eventsForPersonOnDay(
+            personKey: 'chiara',
+            day: _selectedDay,
+          ).map((e) => e.id).toList(),
+        );
+
+    final forcedPenalty = hasForcedConflictToday ? 15 : 0;
+
+    final int ipsCoverage30 = (baseIpsCoverage30 + forcedPenalty).clamp(0, 100);
+
+    final matteoVisual = getStatusVisual(matteoNowLabel);
+    final chiaraVisual = getStatusVisual(chiaraNowLabel);
+    final aliceVisual = getStatusVisual(aliceNowLabel);
+
+    return _FamilyNowSnapshot(
+      realNow: realNow,
+      now: now,
+      realEventStore: realEventStore,
+      nowDay: nowDay,
+      matteoBusyNow: matteoBusyNow,
+      chiaraBusyNow: chiaraBusyNow,
+      aliceIsOutNow: aliceIsOutNow,
+      matteoNowLabel: matteoNowLabel,
+      chiaraNowLabel: chiaraNowLabel,
+      aliceNowLabel: aliceNowLabel,
+      matteoTurnLabel: matteoTurnLabel,
+      cov: cov,
+      isEmergency: isEmergency,
+      showSummerCampSpecialCard: showSummerCampSpecialCard,
+      ipsCoverage30: ipsCoverage30,
+      matteoVisual: matteoVisual,
+      chiaraVisual: chiaraVisual,
+      aliceVisual: aliceVisual,
     );
   }
 
@@ -3654,11 +4178,11 @@ class _CalendarioScreenStepAStabileState
     final String aliceNowLabel = aliceIsOutNow
         ? (activeAliceSpecialEventNow != null
               ? _aliceOutsideLabelFromText(
-                  activeAliceSpecialEventNow!.label,
-                  category: activeAliceSpecialEventNow!.category,
+                  activeAliceSpecialEventNow.label,
+                  category: activeAliceSpecialEventNow.category,
                 )
               : activeAliceRealEventNow != null
-              ? _aliceOutsideLabelFromText(activeAliceRealEventNow!.title)
+              ? _aliceOutsideLabelFromText(activeAliceRealEventNow.title)
               : (alicePeriodNow?.type == AliceEventType.summerCamp
                     ? "fuori • centro estivo"
                     : (coreStore.aliceEventStore.isSchoolNormalDay(_selectedDay)
@@ -3844,6 +4368,26 @@ class _CalendarioScreenStepAStabileState
                                 now.isBefore(eventEnd);
                           }).toList();
 
+                          String fmtTime(TimeOfDay? t) {
+                            if (t == null) return '--:--';
+                            final hh = t.hour.toString().padLeft(2, '0');
+                            final mm = t.minute.toString().padLeft(2, '0');
+                            return '$hh:$mm';
+                          }
+
+                          String matteoCurrentEventLabel() {
+                            if (matteoNowEvents.isEmpty) return "Nessun evento";
+
+                            final first = matteoNowEvents.first;
+                            final base =
+                                "${first.title} ${fmtTime(first.startTime)}–${fmtTime(first.endTime)}";
+
+                            if (matteoNowEvents.length == 1) return base;
+
+                            final extra = matteoNowEvents.length - 1;
+                            return "$base  +$extra altri";
+                          }
+
                           final matteoFutureEvents = matteoEvents.where((e) {
                             if (e.startTime == null) return false;
 
@@ -3857,13 +4401,6 @@ class _CalendarioScreenStepAStabileState
 
                             return now.isBefore(eventStart);
                           }).toList();
-
-                          String fmtTime(TimeOfDay? t) {
-                            if (t == null) return '--:--';
-                            final hh = t.hour.toString().padLeft(2, '0');
-                            final mm = t.minute.toString().padLeft(2, '0');
-                            return '$hh:$mm';
-                          }
 
                           Widget buildEventLine({
                             required String prefix,
@@ -3901,15 +4438,8 @@ class _CalendarioScreenStepAStabileState
                                       color: matteoVisual.color,
                                     ),
                                   ),
+                                  const SizedBox(height: 6),
 
-                                  const SizedBox(height: 16),
-
-                                  const Text(
-                                    "Turno previsto",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
                                   const SizedBox(height: 6),
                                   Text(matteoTurnLabel),
                                   Text(
@@ -3919,18 +4449,14 @@ class _CalendarioScreenStepAStabileState
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
-
                                   const SizedBox(height: 16),
-
                                   const Text(
                                     "Eventi della giornata",
                                     style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
-
                                   const SizedBox(height: 10),
-
                                   const Text(
                                     "Prima",
                                     style: TextStyle(
@@ -3953,9 +4479,7 @@ class _CalendarioScreenStepAStabileState
                                         event: e,
                                       ),
                                     ),
-
                                   const SizedBox(height: 10),
-
                                   const Text(
                                     "Adesso",
                                     style: TextStyle(
@@ -3980,9 +4504,7 @@ class _CalendarioScreenStepAStabileState
                                         fontWeight: FontWeight.w900,
                                       ),
                                     ),
-
                                   const SizedBox(height: 10),
-
                                   const Text(
                                     "Dopo",
                                     style: TextStyle(
@@ -4185,6 +4707,19 @@ class _CalendarioScreenStepAStabileState
                             return '$hh:$mm';
                           }
 
+                          String chiaraCurrentEventLabel() {
+                            if (chiaraNowEvents.isEmpty) return "Nessun evento";
+
+                            final first = chiaraNowEvents.first;
+                            final base =
+                                "${first.title} ${fmtTime(first.startTime)}–${fmtTime(first.endTime)}";
+
+                            if (chiaraNowEvents.length == 1) return base;
+
+                            final extra = chiaraNowEvents.length - 1;
+                            return "$base  +$extra altri";
+                          }
+
                           Widget buildEventLine({
                             required String prefix,
                             required dynamic event,
@@ -4221,6 +4756,8 @@ class _CalendarioScreenStepAStabileState
                                       color: chiaraVisual.color,
                                     ),
                                   ),
+                                  const SizedBox(height: 6),
+
                                   const SizedBox(height: 16),
                                   const Text(
                                     "Turno previsto",
@@ -4638,18 +5175,14 @@ class _CalendarioScreenStepAStabileState
                                       ),
                                     ),
                                   ],
-
                                   const SizedBox(height: 16),
-
                                   const Text(
                                     "Eventi della giornata",
                                     style: TextStyle(
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
-
                                   const SizedBox(height: 10),
-
                                   const Text(
                                     "Prima",
                                     style: TextStyle(
@@ -4672,9 +5205,7 @@ class _CalendarioScreenStepAStabileState
                                         event: e,
                                       ),
                                     ),
-
                                   const SizedBox(height: 10),
-
                                   const Text(
                                     "Adesso",
                                     style: TextStyle(
@@ -4699,9 +5230,7 @@ class _CalendarioScreenStepAStabileState
                                         fontWeight: FontWeight.w900,
                                       ),
                                     ),
-
                                   const SizedBox(height: 10),
-
                                   const Text(
                                     "Dopo",
                                     style: TextStyle(
@@ -4806,6 +5335,7 @@ class _CalendarioScreenStepAStabileState
             ),
             const SizedBox(height: 8),
             _weekNavBar(),
+            _buildTaskSectionMock(),
             const SizedBox(height: 8),
             _buildEmergencyBannerDebug(),
             const SizedBox(height: 12),
@@ -4848,6 +5378,355 @@ class _CalendarioScreenStepAStabileState
           icon: const Icon(Icons.chevron_right),
         ),
       ],
+    );
+  }
+
+  Widget _buildTaskSectionMock() {
+    String emoji(String persona) {
+      switch (persona) {
+        case 'Matteo':
+          return '👨';
+        case 'Chiara':
+          return '👩';
+        case 'Alice':
+          return '👧';
+        case 'Famiglia':
+          return '👨‍👩‍👧';
+        default:
+          return '📝';
+      }
+    }
+
+    List<Map<String, dynamic>> itemsFor(String persona) {
+      return _mockPromemoria.where((p) => p['persona'] == persona).toList();
+    }
+
+    Widget buildPromemoriaRow(
+      Map<String, dynamic> p, {
+      bool insideDialog = false,
+      VoidCallback? refreshDialog,
+    }) {
+      final bool done = p['done'] == true;
+
+      return Container(
+        margin: const EdgeInsets.only(bottom: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: done ? Colors.green.withOpacity(0.14) : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: done
+                ? Colors.green.withOpacity(0.45)
+                : Colors.grey.withOpacity(0.2),
+          ),
+        ),
+        child: Row(
+          children: [
+            Checkbox(
+              value: done,
+              onChanged: (value) {
+                setState(() {
+                  p['done'] = value ?? false;
+                });
+
+                if (refreshDialog != null) {
+                  refreshDialog();
+                }
+              },
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "${emoji(p['persona'])} ${p['persona']}",
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    p['testo'],
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: done ? Colors.green.shade800 : Colors.black,
+                      decoration: done ? TextDecoration.lineThrough : null,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () {
+                    final controller = TextEditingController(text: p['testo']);
+
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        String persona = p['persona'];
+
+                        return StatefulBuilder(
+                          builder: (context, setStateDialog) {
+                            return AlertDialog(
+                              title: const Text('Modifica promemoria'),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  DropdownButton<String>(
+                                    value: persona,
+                                    isExpanded: true,
+                                    items:
+                                        [
+                                          'Matteo',
+                                          'Chiara',
+                                          'Alice',
+                                          'Famiglia',
+                                        ].map((item) {
+                                          return DropdownMenuItem(
+                                            value: item,
+                                            child: Text(
+                                              "${emoji(item)}  $item",
+                                            ),
+                                          );
+                                        }).toList(),
+                                    onChanged: (value) {
+                                      if (value == null) return;
+                                      setStateDialog(() {
+                                        persona = value;
+                                      });
+                                    },
+                                  ),
+                                  TextField(controller: controller),
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Annulla'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    final testo = controller.text.trim();
+                                    if (testo.isEmpty) return;
+
+                                    setState(() {
+                                      p['persona'] = persona;
+                                      p['testo'] = testo;
+                                    });
+
+                                    Navigator.pop(context);
+
+                                    if (refreshDialog != null) {
+                                      refreshDialog();
+                                    }
+                                  },
+                                  child: const Text('Salva'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () {
+                    setState(() {
+                      _mockPromemoria.remove(p);
+                    });
+
+                    if (refreshDialog != null) {
+                      refreshDialog();
+                    }
+
+                    if (insideDialog && itemsFor(p['persona']).isEmpty) {
+                      Navigator.pop(context);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    void openPromemoriaPopup(String persona) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return StatefulBuilder(
+            builder: (context, setStateDialog) {
+              final items = itemsFor(persona);
+
+              return AlertDialog(
+                title: Text("Promemoria • $persona"),
+                content: SizedBox(
+                  width: double.maxFinite,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: items
+                          .map(
+                            (p) => buildPromemoriaRow(
+                              p,
+                              insideDialog: true,
+                              refreshDialog: () {
+                                setStateDialog(() {});
+                              },
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("Chiudi"),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    }
+
+    Widget buildPersonaButton(String persona) {
+      final items = itemsFor(persona);
+      if (items.isEmpty) return const SizedBox.shrink();
+
+      return Padding(
+        padding: const EdgeInsets.only(right: 8, bottom: 8),
+        child: OutlinedButton(
+          onPressed: () => openPromemoriaPopup(persona),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          child: Text(
+            "${emoji(persona)} $persona (${items.length})",
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.withOpacity(0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Promemoria del giorno",
+            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () {
+              final controller = TextEditingController();
+              String persona = 'Matteo';
+
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return StatefulBuilder(
+                    builder: (context, setStateDialog) {
+                      return AlertDialog(
+                        title: const Text('Nuovo promemoria'),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            DropdownButton<String>(
+                              value: persona,
+                              isExpanded: true,
+                              items: ['Matteo', 'Chiara', 'Alice', 'Famiglia']
+                                  .map(
+                                    (p) => DropdownMenuItem(
+                                      value: p,
+                                      child: Text("${emoji(p)}  $p"),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (value) {
+                                if (value == null) return;
+                                setStateDialog(() {
+                                  persona = value;
+                                });
+                              },
+                            ),
+                            TextField(
+                              controller: controller,
+                              decoration: const InputDecoration(
+                                hintText: 'Scrivi il promemoria...',
+                              ),
+                            ),
+                          ],
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Annulla'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              final testo = controller.text.trim();
+                              if (testo.isEmpty) return;
+
+                              _addMockPromemoria(
+                                persona: persona,
+                                testo: testo,
+                              );
+
+                              Navigator.pop(context);
+                            },
+                            child: const Text('Salva'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              );
+            },
+            child: const Text('+ Aggiungi promemoria'),
+          ),
+          if (_mockPromemoria.isEmpty)
+            Text(
+              "• Nessun promemoria per oggi",
+              style: TextStyle(
+                color: Colors.grey.shade700,
+                fontStyle: FontStyle.italic,
+              ),
+            )
+          else
+            Wrap(
+              children: [
+                buildPersonaButton('Matteo'),
+                buildPersonaButton('Chiara'),
+                buildPersonaButton('Alice'),
+                buildPersonaButton('Famiglia'),
+              ],
+            ),
+        ],
+      ),
     );
   }
 
@@ -8610,4 +9489,46 @@ class _DateRange {
   final DateTime end;
 
   const _DateRange({required this.start, required this.end});
+}
+
+class _FamilyNowSnapshot {
+  final DateTime realNow;
+  final DateTime now;
+  final dynamic realEventStore;
+  final DateTime nowDay;
+  final bool matteoBusyNow;
+  final bool chiaraBusyNow;
+  final bool aliceIsOutNow;
+  final String matteoNowLabel;
+  final String chiaraNowLabel;
+  final String aliceNowLabel;
+  final String matteoTurnLabel;
+  final CoverageResultStepA cov;
+  final bool isEmergency;
+  final bool showSummerCampSpecialCard;
+  final int ipsCoverage30;
+  final StatusVisual matteoVisual;
+  final StatusVisual chiaraVisual;
+  final StatusVisual aliceVisual;
+
+  const _FamilyNowSnapshot({
+    required this.realNow,
+    required this.now,
+    required this.realEventStore,
+    required this.nowDay,
+    required this.matteoBusyNow,
+    required this.chiaraBusyNow,
+    required this.aliceIsOutNow,
+    required this.matteoNowLabel,
+    required this.chiaraNowLabel,
+    required this.aliceNowLabel,
+    required this.matteoTurnLabel,
+    required this.cov,
+    required this.isEmergency,
+    required this.showSummerCampSpecialCard,
+    required this.ipsCoverage30,
+    required this.matteoVisual,
+    required this.chiaraVisual,
+    required this.aliceVisual,
+  });
 }

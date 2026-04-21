@@ -40,6 +40,7 @@ Frodo deve eseguire QUESTO ORDINE PRECISO:
 - identifica il modulo coinvolto
 - identifica i file codice toccati
 - identifica eventuali modifiche instabili o rollback effettuati
+- identificare lo stato stabile raggiunto (cosa è diventato definitivo)
 
 ---
 
@@ -87,7 +88,7 @@ File codice reale:
 [file reale]
 
 Obiettivo:  
-[obiettivo preciso della prossima chat]
+[un solo micro-step chiaro e chiuso]
 
 ⚠️ questo blocco deve essere:
 - già corretto
