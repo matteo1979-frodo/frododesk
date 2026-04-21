@@ -43,6 +43,7 @@ import '../utils/calendario_formatters.dart';
 import '../utils/status_visual.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../logic/promemoria_store.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -75,6 +76,8 @@ class _CalendarioScreenStepAStabileState
   CoverageEngine get _engine => coreStore.coverageEngine;
   TurnEngine get _turns => coreStore.turnEngine;
 
+  final PromemoriaStore _promemoriaStore = PromemoriaStore();
+
   late DateTime _selectedDay;
 
   final GlobalKey _turniKey = GlobalKey();
@@ -105,20 +108,40 @@ class _CalendarioScreenStepAStabileState
   String? _editingAliceSpecialEventId;
 
   DateTime _aliceEventDate = DateTime.now();
-  final List<Map<String, dynamic>> _mockPromemoria = [];
+  final List<Map<String, dynamic>> _promemoriaUi = [];
 
-  void _addMockPromemoria({required String persona, required String testo}) {
+  void _addMockPromemoria({
+    required String persona,
+    required String testo,
+  }) async {
+    await _promemoriaStore.add(
+      persona: persona,
+      testo: testo,
+      day: _selectedDay,
+    );
+
+    await _promemoriaStore.load();
+
     setState(() {
-      _mockPromemoria.add({'persona': persona, 'testo': testo, 'done': false});
+      _promemoriaUi
+        ..clear()
+        ..addAll(
+          _promemoriaStore.items.map(
+            (p) => {
+              'persona': p.persona,
+              'testo': p.testo,
+              'done': p.done,
+              'day': p.day.toIso8601String(),
+            },
+          ),
+        );
     });
-
-    _savePromemoria(); // 👈 QUESTA RIGA
   }
 
   Future<void> _savePromemoria() async {
     final prefs = await SharedPreferences.getInstance();
 
-    final encoded = jsonEncode(_mockPromemoria);
+    final encoded = jsonEncode(_promemoriaUi);
 
     await prefs.setString('promemoria_giorno', encoded);
   }
@@ -2974,23 +2997,34 @@ class _CalendarioScreenStepAStabileState
     _selectedDay = DateTime(d.year, d.month, d.day);
     _syncWeekWithSelectedDay();
     _loadPromemoria();
+    @override
+    void initState() {
+      super.initState();
+      final d = widget.initialSelectedDay ?? DateTime.now();
+      _selectedDay = DateTime(d.year, d.month, d.day);
+      _syncWeekWithSelectedDay();
+      _loadPromemoria();
+      _promemoriaStore.load(); // 👈 aggiunta
+    }
   }
 
   Future<void> _loadPromemoria() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString('promemoria_giorno');
+    await _promemoriaStore.load();
 
-    if (raw == null || raw.isEmpty) return;
-
-    final decoded = jsonDecode(raw);
-
-    if (decoded is List) {
-      setState(() {
-        _mockPromemoria
-          ..clear()
-          ..addAll(decoded.map((e) => Map<String, dynamic>.from(e)));
-      });
-    }
+    setState(() {
+      _promemoriaUi
+        ..clear()
+        ..addAll(
+          _promemoriaStore.items.map(
+            (p) => {
+              'persona': p.persona,
+              'testo': p.testo,
+              'done': p.done,
+              'day': p.day.toIso8601String(),
+            },
+          ),
+        );
+    });
   }
 
   @override
@@ -5398,7 +5432,27 @@ class _CalendarioScreenStepAStabileState
     }
 
     List<Map<String, dynamic>> itemsFor(String persona) {
-      return _mockPromemoria.where((p) => p['persona'] == persona).toList();
+      final selectedDay = DateTime(
+        _selectedDay.year,
+        _selectedDay.month,
+        _selectedDay.day,
+      );
+
+      return _promemoriaUi.where((p) {
+        if (p['persona'] != persona) return false;
+
+        final rawDay = p['day'];
+        if (rawDay == null) return false;
+
+        final itemDay = DateTime.parse(rawDay as String);
+        final normalizedItemDay = DateTime(
+          itemDay.year,
+          itemDay.month,
+          itemDay.day,
+        );
+
+        return normalizedItemDay == selectedDay;
+      }).toList();
     }
 
     Widget buildPromemoriaRow(
@@ -5424,14 +5478,25 @@ class _CalendarioScreenStepAStabileState
           children: [
             Checkbox(
               value: done,
-              onChanged: (value) {
+              onChanged: (value) async {
+                final newValue = value ?? false;
+
+                // aggiorno UI subito (come ora)
                 setState(() {
-                  p['done'] = value ?? false;
+                  p['done'] = newValue;
                 });
 
                 if (refreshDialog != null) {
                   refreshDialog();
                 }
+
+                // 🔥 aggiorno STORE vero
+                final item = _promemoriaStore.items.firstWhere(
+                  (e) => e.testo == p['testo'] && e.persona == p['persona'],
+                  orElse: () => _promemoriaStore.items.first,
+                );
+
+                await _promemoriaStore.toggleDone(item.id, newValue);
               },
             ),
             Expanded(
@@ -5510,20 +5575,38 @@ class _CalendarioScreenStepAStabileState
                                   child: const Text('Annulla'),
                                 ),
                                 TextButton(
-                                  onPressed: () {
+                                  onPressed: () async {
                                     final testo = controller.text.trim();
                                     if (testo.isEmpty) return;
 
+                                    // aggiorno UI subito
                                     setState(() {
                                       p['persona'] = persona;
                                       p['testo'] = testo;
                                     });
 
-                                    Navigator.pop(context);
-
                                     if (refreshDialog != null) {
                                       refreshDialog();
                                     }
+
+                                    // aggiorno STORE vero
+                                    final item = _promemoriaStore.items
+                                        .firstWhere(
+                                          (e) =>
+                                              e.testo == p['testo'] &&
+                                              e.persona == p['persona'],
+                                          orElse: () =>
+                                              _promemoriaStore.items.first,
+                                        );
+
+                                    await _promemoriaStore.update(
+                                      item.copyWith(
+                                        persona: persona,
+                                        testo: testo,
+                                      ),
+                                    );
+
+                                    Navigator.pop(context);
                                   },
                                   child: const Text('Salva'),
                                 ),
@@ -5537,15 +5620,25 @@ class _CalendarioScreenStepAStabileState
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () {
+                  onPressed: () async {
+                    // rimuovo subito dalla UI (come ora)
                     setState(() {
-                      _mockPromemoria.remove(p);
+                      _promemoriaUi.remove(p);
                     });
 
                     if (refreshDialog != null) {
                       refreshDialog();
                     }
 
+                    // 🔥 rimuovo dallo STORE vero
+                    final item = _promemoriaStore.items.firstWhere(
+                      (e) => e.testo == p['testo'] && e.persona == p['persona'],
+                      orElse: () => _promemoriaStore.items.first,
+                    );
+
+                    await _promemoriaStore.remove(item.id);
+
+                    // chiude popup se vuoto
                     if (insideDialog && itemsFor(p['persona']).isEmpty) {
                       Navigator.pop(context);
                     }
@@ -5708,7 +5801,7 @@ class _CalendarioScreenStepAStabileState
             },
             child: const Text('+ Aggiungi promemoria'),
           ),
-          if (_mockPromemoria.isEmpty)
+          if (_promemoriaUi.isEmpty)
             Text(
               "• Nessun promemoria per oggi",
               style: TextStyle(
