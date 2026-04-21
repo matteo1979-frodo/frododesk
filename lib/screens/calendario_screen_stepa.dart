@@ -44,6 +44,7 @@ import '../utils/status_visual.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../logic/promemoria_store.dart';
+import '../models/promemoria.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -108,7 +109,6 @@ class _CalendarioScreenStepAStabileState
   String? _editingAliceSpecialEventId;
 
   DateTime _aliceEventDate = DateTime.now();
-  final List<Map<String, dynamic>> _promemoriaUi = [];
 
   void _addMockPromemoria({
     required String persona,
@@ -122,28 +122,11 @@ class _CalendarioScreenStepAStabileState
 
     await _promemoriaStore.load();
 
-    setState(() {
-      _promemoriaUi
-        ..clear()
-        ..addAll(
-          _promemoriaStore.items.map(
-            (p) => {
-              'persona': p.persona,
-              'testo': p.testo,
-              'done': p.done,
-              'day': p.day.toIso8601String(),
-            },
-          ),
-        );
-    });
+    setState(() {});
   }
 
   Future<void> _savePromemoria() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    final encoded = jsonEncode(_promemoriaUi);
-
-    await prefs.setString('promemoria_giorno', encoded);
+    // non serve più: il salvataggio è gestito dal PromemoriaStore
   }
 
   Future<void> _scrollTo(GlobalKey key) async {
@@ -3010,21 +2993,7 @@ class _CalendarioScreenStepAStabileState
 
   Future<void> _loadPromemoria() async {
     await _promemoriaStore.load();
-
-    setState(() {
-      _promemoriaUi
-        ..clear()
-        ..addAll(
-          _promemoriaStore.items.map(
-            (p) => {
-              'persona': p.persona,
-              'testo': p.testo,
-              'done': p.done,
-              'day': p.day.toIso8601String(),
-            },
-          ),
-        );
-    });
+    setState(() {});
   }
 
   @override
@@ -5431,36 +5400,28 @@ class _CalendarioScreenStepAStabileState
       }
     }
 
-    List<Map<String, dynamic>> itemsFor(String persona) {
+    List<Promemoria> itemsFor(String persona) {
       final selectedDay = DateTime(
         _selectedDay.year,
         _selectedDay.month,
         _selectedDay.day,
       );
 
-      return _promemoriaUi.where((p) {
-        if (p['persona'] != persona) return false;
+      return _promemoriaStore.items.where((p) {
+        if (p.persona != persona) return false;
 
-        final rawDay = p['day'];
-        if (rawDay == null) return false;
+        final itemDay = DateTime(p.day.year, p.day.month, p.day.day);
 
-        final itemDay = DateTime.parse(rawDay as String);
-        final normalizedItemDay = DateTime(
-          itemDay.year,
-          itemDay.month,
-          itemDay.day,
-        );
-
-        return normalizedItemDay == selectedDay;
+        return itemDay == selectedDay;
       }).toList();
     }
 
     Widget buildPromemoriaRow(
-      Map<String, dynamic> p, {
+      Promemoria p, {
       bool insideDialog = false,
       VoidCallback? refreshDialog,
     }) {
-      final bool done = p['done'] == true;
+      final bool done = p.done;
 
       return Container(
         margin: const EdgeInsets.only(bottom: 6),
@@ -5481,22 +5442,12 @@ class _CalendarioScreenStepAStabileState
               onChanged: (value) async {
                 final newValue = value ?? false;
 
-                // aggiorno UI subito (come ora)
-                setState(() {
-                  p['done'] = newValue;
-                });
+                await _promemoriaStore.toggleDone(p.id, newValue);
+                await _loadPromemoria();
 
                 if (refreshDialog != null) {
                   refreshDialog();
                 }
-
-                // 🔥 aggiorno STORE vero
-                final item = _promemoriaStore.items.firstWhere(
-                  (e) => e.testo == p['testo'] && e.persona == p['persona'],
-                  orElse: () => _promemoriaStore.items.first,
-                );
-
-                await _promemoriaStore.toggleDone(item.id, newValue);
               },
             ),
             Expanded(
@@ -5504,7 +5455,7 @@ class _CalendarioScreenStepAStabileState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "${emoji(p['persona'])} ${p['persona']}",
+                    "${emoji(p.persona)} ${p.persona}",
                     style: TextStyle(
                       fontSize: 11,
                       color: Colors.grey.shade600,
@@ -5512,7 +5463,7 @@ class _CalendarioScreenStepAStabileState
                     ),
                   ),
                   Text(
-                    p['testo'],
+                    p.testo,
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: done ? Colors.green.shade800 : Colors.black,
@@ -5528,12 +5479,12 @@ class _CalendarioScreenStepAStabileState
                 IconButton(
                   icon: const Icon(Icons.edit),
                   onPressed: () {
-                    final controller = TextEditingController(text: p['testo']);
+                    final controller = TextEditingController(text: p.testo);
 
                     showDialog(
                       context: context,
                       builder: (context) {
-                        String persona = p['persona'];
+                        String persona = p.persona;
 
                         return StatefulBuilder(
                           builder: (context, setStateDialog) {
@@ -5579,32 +5530,18 @@ class _CalendarioScreenStepAStabileState
                                     final testo = controller.text.trim();
                                     if (testo.isEmpty) return;
 
-                                    // aggiorno UI subito
-                                    setState(() {
-                                      p['persona'] = persona;
-                                      p['testo'] = testo;
-                                    });
-
-                                    if (refreshDialog != null) {
-                                      refreshDialog();
-                                    }
-
-                                    // aggiorno STORE vero
-                                    final item = _promemoriaStore.items
-                                        .firstWhere(
-                                          (e) =>
-                                              e.testo == p['testo'] &&
-                                              e.persona == p['persona'],
-                                          orElse: () =>
-                                              _promemoriaStore.items.first,
-                                        );
-
                                     await _promemoriaStore.update(
-                                      item.copyWith(
+                                      p.copyWith(
                                         persona: persona,
                                         testo: testo,
                                       ),
                                     );
+
+                                    await _loadPromemoria();
+
+                                    if (refreshDialog != null) {
+                                      refreshDialog();
+                                    }
 
                                     Navigator.pop(context);
                                   },
@@ -5621,25 +5558,14 @@ class _CalendarioScreenStepAStabileState
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red),
                   onPressed: () async {
-                    // rimuovo subito dalla UI (come ora)
-                    setState(() {
-                      _promemoriaUi.remove(p);
-                    });
+                    await _promemoriaStore.remove(p.id);
+                    await _loadPromemoria();
 
                     if (refreshDialog != null) {
                       refreshDialog();
                     }
 
-                    // 🔥 rimuovo dallo STORE vero
-                    final item = _promemoriaStore.items.firstWhere(
-                      (e) => e.testo == p['testo'] && e.persona == p['persona'],
-                      orElse: () => _promemoriaStore.items.first,
-                    );
-
-                    await _promemoriaStore.remove(item.id);
-
-                    // chiude popup se vuoto
-                    if (insideDialog && itemsFor(p['persona']).isEmpty) {
+                    if (insideDialog && itemsFor(p.persona).isEmpty) {
                       Navigator.pop(context);
                     }
                   },
@@ -5801,7 +5727,10 @@ class _CalendarioScreenStepAStabileState
             },
             child: const Text('+ Aggiungi promemoria'),
           ),
-          if (_promemoriaUi.isEmpty)
+          if (itemsFor('Matteo').isEmpty &&
+              itemsFor('Chiara').isEmpty &&
+              itemsFor('Alice').isEmpty &&
+              itemsFor('Famiglia').isEmpty)
             Text(
               "• Nessun promemoria per oggi",
               style: TextStyle(
