@@ -68,7 +68,7 @@ class _CalendarioScreenStepAStabileState
   IpsStore get ipsStore => coreStore.ipsStore;
   SettingsStore get settingsStore => coreStore.settingsStore;
   DaySettingsStore get daySettingsStore => coreStore.daySettingsStore;
-
+PromemoriaStore get _promemoriaStore => coreStore.promemoriaStore;
   WeekIdentity get _activeWeek => coreStore.weekStore.activeWeek;
 
   OverrideStore get overrideStore => coreStore.overrideStore;
@@ -77,7 +77,7 @@ class _CalendarioScreenStepAStabileState
   CoverageEngine get _engine => coreStore.coverageEngine;
   TurnEngine get _turns => coreStore.turnEngine;
 
-  final PromemoriaStore _promemoriaStore = PromemoriaStore();
+  
 
   late DateTime _selectedDay;
 
