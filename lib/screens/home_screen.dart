@@ -14,6 +14,9 @@ import 'copertura_screen.dart';
 import 'dashboard.dart';
 import 'ips_detail_screen.dart';
 import 'salute_screen.dart';
+import '../logic/coverage_logic.dart';
+import '../logic/coverage_engine.dart';
+import '../logic/day_settings_store.dart';
 
 class HomeScreen extends StatefulWidget {
   final IpsStore ipsStore;
@@ -33,6 +36,108 @@ class _HomeScreenState extends State<HomeScreen> {
   CoreStore get coreStore => widget.coreStore;
   SettingsStore get settingsStore => coreStore.settingsStore;
   IpsStore get ipsStore => widget.ipsStore;
+
+  String _formatTime(TimeOfDay time) {
+    final hh = time.hour.toString().padLeft(2, '0');
+    final mm = time.minute.toString().padLeft(2, '0');
+    return "$hh:$mm";
+  }
+
+  List<CoverageGapDetail> _todayCoverageDetails() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    return coreStore.coverageEngine.aliceHomeRiskDetailsForDay(
+      day: today,
+      uscita13:
+          coreStore.daySettingsStore.uscita13ForDay(today) ??
+          settingsStore.isUscita13,
+      sandraMattinaOn:
+          coreStore.daySettingsStore.sandraMattinaForDay(today) ?? false,
+      sandraPranzoOn:
+          coreStore.daySettingsStore.sandraPranzoForDay(today) ?? false,
+      sandraSeraOn: coreStore.daySettingsStore.sandraSeraForDay(today) ?? false,
+      schoolStart: TimeOfDay(
+        hour:
+            (coreStore.schoolStore.schoolDayConfigFor(today)?.entryMinutes ??
+                505) ~/
+            60,
+        minute:
+            (coreStore.schoolStore.schoolDayConfigFor(today)?.entryMinutes ??
+                505) %
+            60,
+      ),
+      overrides: coreStore.overrideStore.getEffectiveForDay(
+        day: today,
+        ferieStore: coreStore.feriePeriodStore,
+      ),
+      ferieStore: coreStore.feriePeriodStore,
+      schoolOutCover: coreStore.daySettingsStore.schoolOutCoverForDay(today),
+      schoolOutStart:
+          coreStore.daySettingsStore.schoolOutStartForDay(today) ??
+          const TimeOfDay(hour: 16, minute: 25),
+      schoolOutEnd:
+          coreStore.daySettingsStore.schoolOutEndForDay(today) ??
+          const TimeOfDay(hour: 16, minute: 45),
+      uscitaAnticipataAt: coreStore.daySettingsStore.uscitaAnticipataTimeForDay(
+        today,
+      ),
+    );
+  }
+
+  String _homeCoverageDecisionText() {
+    final details = _todayCoverageDetails();
+
+    final nowTime = TimeOfDay.now();
+    final nowMinutes = nowTime.hour * 60 + nowTime.minute;
+
+    final activeDetails = details.where((detail) {
+      final startMinutes = detail.start.hour * 60 + detail.start.minute;
+      final endMinutes = detail.end.hour * 60 + detail.end.minute;
+
+      return startMinutes <= nowMinutes && endMinutes > nowMinutes;
+    }).toList();
+
+    if (activeDetails.isNotEmpty) {
+      return "Adesso Alice non è coperta";
+    }
+
+    final futureDetails = details.where((detail) {
+      final startMinutes = detail.start.hour * 60 + detail.start.minute;
+      return startMinutes > nowMinutes;
+    }).toList();
+
+    if (futureDetails.isEmpty) {
+      return "Nessun problema da ora in poi";
+    }
+
+    final first = futureDetails.first;
+    return "Alle ${_formatTime(first.start)} serve copertura per Alice";
+  }
+
+  bool _hasCoverageIssue() {
+    final details = _todayCoverageDetails();
+
+    final nowTime = TimeOfDay.now();
+    final nowMinutes = nowTime.hour * 60 + nowTime.minute;
+
+    return details.any((detail) {
+      final endMinutes = detail.end.hour * 60 + detail.end.minute;
+      return endMinutes > nowMinutes;
+    });
+  }
+
+  String _homeStateTitle(bool hasIssue) {
+    return hasIssue ? "Fermati un attimo" : "Tutto sotto controllo";
+  }
+
+  Color _homeStateColor(bool hasIssue) {
+    return hasIssue ? const Color(0xFFE57373) : const Color(0xFF8BC34A);
+  }
+
+  IconData _homeStateIcon(bool hasIssue) {
+    return hasIssue ? Icons.front_hand_rounded : Icons.thumb_up_alt_rounded;
+  }
 
   String _stateTextFromLevel(snap.IpsLevel level) {
     switch (level) {
@@ -1000,14 +1105,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return ValueListenableBuilder<snap.IpsSnapshot>(
       valueListenable: ipsStore,
       builder: (context, v1, _) {
-        final level = v1.level;
         final registry = ReasonTextRegistry.build();
         final rt = (v1.dominantReasonKey.isEmpty)
             ? null
             : registry.lookup(v1.dominantModule, v1.dominantReasonKey);
 
-        final color = _levelColor(level);
-        final stateText = _stateTextFromLevel(level);
+        final hasIssue = _hasCoverageIssue();
+        final color = _homeStateColor(hasIssue);
+        final stateText = _homeStateTitle(hasIssue);
 
         return _DashboardCard(
           child: Column(
@@ -1023,7 +1128,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white.withOpacity(0.25)),
                     ),
-                    child: Icon(_levelIcon(level), color: color, size: 32),
+                    child: Icon(
+                      _homeStateIcon(hasIssue),
+                      color: color,
+                      size: 32,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -1040,9 +1149,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          rt == null
-                              ? "Copertura stabile • Nei prossimi 30 giorni non risultano buchi di copertura."
-                              : "${rt.title} • ${rt.description}",
+                          _homeCoverageDecisionText(),
                           style: TextStyle(
                             fontSize: 13.5,
                             height: 1.25,
@@ -1050,6 +1157,34 @@ class _HomeScreenState extends State<HomeScreen> {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
+                        if (hasIssue) ...[
+                          const SizedBox(height: 10),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      CoperturaScreen(coreStore: coreStore),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 10,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: const Text(
+                              "Risolvi copertura",
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -1064,14 +1199,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: Icons.calendar_today_rounded,
                     label: "Apri calendario",
                     onTap: _openCalendarToday,
-                  ),
-                  _MiniInfoPill(
-                    icon: Icons.tune_rounded,
-                    title: "Sandra",
-                    value: settingsStore.isSandraDisponibile
-                        ? "presente"
-                        : "assente",
-                    color: const Color(0xFFA5D6A7),
                   ),
                   _MiniInfoPill(
                     icon: Icons.schedule_send_rounded,
@@ -1367,7 +1494,6 @@ class _MetricTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 🔥 ICONA FRODODESK PRO
               Container(
                 width: 48,
                 height: 48,
@@ -1379,13 +1505,11 @@ class _MetricTile extends StatelessWidget {
                     colors: [color.withOpacity(1), color.withOpacity(0.65)],
                   ),
                   boxShadow: [
-                    // glow esterno
                     BoxShadow(
                       color: color.withOpacity(0.65),
                       blurRadius: 22,
                       spreadRadius: 1,
                     ),
-                    // ombra sotto (profondità)
                     BoxShadow(
                       color: Colors.black.withOpacity(0.35),
                       blurRadius: 10,
@@ -1395,7 +1519,6 @@ class _MetricTile extends StatelessWidget {
                 ),
                 child: Stack(
                   children: [
-                    // ✨ luce sopra (effetto reale)
                     Positioned(
                       top: 6,
                       left: 8,
@@ -1417,9 +1540,7 @@ class _MetricTile extends StatelessWidget {
                   ],
                 ),
               ),
-
               const SizedBox(height: 14),
-
               Text(
                 value,
                 style: const TextStyle(
@@ -1428,9 +1549,7 @@ class _MetricTile extends StatelessWidget {
                   color: Colors.white,
                 ),
               ),
-
               const SizedBox(height: 2),
-
               Text(
                 label,
                 style: TextStyle(

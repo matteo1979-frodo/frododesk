@@ -68,7 +68,7 @@ class _CalendarioScreenStepAStabileState
   IpsStore get ipsStore => coreStore.ipsStore;
   SettingsStore get settingsStore => coreStore.settingsStore;
   DaySettingsStore get daySettingsStore => coreStore.daySettingsStore;
-PromemoriaStore get _promemoriaStore => coreStore.promemoriaStore;
+  PromemoriaStore get _promemoriaStore => coreStore.promemoriaStore;
   WeekIdentity get _activeWeek => coreStore.weekStore.activeWeek;
 
   OverrideStore get overrideStore => coreStore.overrideStore;
@@ -76,8 +76,6 @@ PromemoriaStore get _promemoriaStore => coreStore.promemoriaStore;
 
   CoverageEngine get _engine => coreStore.coverageEngine;
   TurnEngine get _turns => coreStore.turnEngine;
-
-  
 
   late DateTime _selectedDay;
 
@@ -2159,7 +2157,18 @@ PromemoriaStore get _promemoriaStore => coreStore.promemoriaStore;
       uscitaAnticipataAt: uscitaAt,
     );
 
+    final realNow = DateTime.now();
+    final selectedIsToday = _onlyDate(d0) == _onlyDate(realNow);
+    final nowMinutes = realNow.hour * 60 + realNow.minute;
+
     final filteredGapDetails = analysis.details.where((d) {
+      if (selectedIsToday) {
+        final endMinutes = d.end.hour * 60 + d.end.minute;
+        if (endMinutes <= nowMinutes) {
+          return false;
+        }
+      }
+
       final label = d.label;
 
       if (schoolInCover != SchoolCoverChoice.none &&
@@ -2866,38 +2875,36 @@ PromemoriaStore get _promemoriaStore => coreStore.promemoriaStore;
     final outStart = _effSchoolOutStart(d0);
     final outEnd = _effSchoolOutEnd(d0);
 
-    final bool hasRisk = _engine.hasAliceHomeRiskForDay(
-      day: d0,
-      uscita13: uscita13Eff,
-      sandraMattinaOn: _effSandraMattina(d0),
-      sandraPranzoOn: _effSandraPranzo(d0),
-      sandraSeraOn: _effSandraSera(d0),
-      schoolStart: _scuolaStart,
-      overrides: ov,
-      ferieStore: coreStore.feriePeriodStore,
-      schoolInCover: _effectiveSchoolInCover(d0),
-      schoolOutCover: _effectiveSchoolOutCover(d0),
-      schoolOutStart: outStart,
-      schoolOutEnd: outEnd,
-      lunchCover: _effectiveLunchCover(d0),
-      uscitaAnticipataAt: uscitaAt,
-    );
-    final List<CoverageGapDetail> details = _engine.aliceHomeRiskDetailsForDay(
-      day: d0,
-      uscita13: uscita13Eff,
-      sandraMattinaOn: _effSandraMattina(d0),
-      sandraPranzoOn: _effSandraPranzo(d0),
-      sandraSeraOn: _effSandraSera(d0),
-      schoolStart: _scuolaStart,
-      overrides: ov,
-      ferieStore: coreStore.feriePeriodStore,
-      schoolInCover: _effectiveSchoolInCover(d0),
-      schoolOutCover: _effectiveSchoolOutCover(d0),
-      schoolOutStart: outStart,
-      schoolOutEnd: outEnd,
-      lunchCover: _effectiveLunchCover(d0),
-      uscitaAnticipataAt: uscitaAt,
-    );
+    final List<CoverageGapDetail> rawDetails = _engine
+        .aliceHomeRiskDetailsForDay(
+          day: d0,
+          uscita13: uscita13Eff,
+          sandraMattinaOn: _effSandraMattina(d0),
+          sandraPranzoOn: _effSandraPranzo(d0),
+          sandraSeraOn: _effSandraSera(d0),
+          schoolStart: _scuolaStart,
+          overrides: ov,
+          ferieStore: coreStore.feriePeriodStore,
+          schoolInCover: _effectiveSchoolInCover(d0),
+          schoolOutCover: _effectiveSchoolOutCover(d0),
+          schoolOutStart: outStart,
+          schoolOutEnd: outEnd,
+          lunchCover: _effectiveLunchCover(d0),
+          uscitaAnticipataAt: uscitaAt,
+        );
+
+    final realNow = DateTime.now();
+    final selectedIsToday = _onlyDate(d0) == _onlyDate(realNow);
+    final nowMinutes = realNow.hour * 60 + realNow.minute;
+
+    final List<CoverageGapDetail> details = rawDetails.where((d) {
+      if (!selectedIsToday) return true;
+
+      final endMinutes = d.end.hour * 60 + d.end.minute;
+      return endMinutes > nowMinutes;
+    }).toList();
+
+    final bool hasRisk = details.isNotEmpty;
 
     final color = hasRisk ? Colors.red : Colors.green;
     final icon = hasRisk ? Icons.home_work_rounded : Icons.home_outlined;
@@ -6357,6 +6364,20 @@ PromemoriaStore get _promemoriaStore => coreStore.promemoriaStore;
 
     final worst = _worstConflictState(conflicts);
 
+    final now = DateTime.now();
+    final selectedIsToday = _onlyDate(_selectedDay) == _onlyDate(now);
+
+    final visibleConflicts = conflicts.where((c) {
+      if (!selectedIsToday) return true;
+
+      final end = c.overlapRange.end;
+      return end.isAfter(now);
+    }).toList();
+
+    if (visibleConflicts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     final isForced = _isForcedConflict(
       personKey: personKey,
       conflicts: conflicts,
@@ -6398,7 +6419,7 @@ PromemoriaStore get _promemoriaStore => coreStore.promemoriaStore;
         _showTurnEventConflictActionsSheet(
           personName: personName,
           personKey: personKey,
-          conflicts: conflicts,
+          conflicts: visibleConflicts,
         );
       },
       child: Container(
@@ -6433,7 +6454,7 @@ PromemoriaStore get _promemoriaStore => coreStore.promemoriaStore;
               ),
             ),
             const SizedBox(height: 10),
-            ...conflicts.map(
+            ...visibleConflicts.map(
               (r) => Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Container(
@@ -6499,6 +6520,24 @@ PromemoriaStore get _promemoriaStore => coreStore.promemoriaStore;
     List<TurnEventConflictResolution> conflicts = const [],
   }) {
     final label = _turnLabel(p.type);
+    final now = DateTime.now();
+    final selectedIsToday = _onlyDate(_selectedDay) == _onlyDate(now);
+
+    final visibleEvents = events.where((e) {
+      if (!selectedIsToday) return true;
+
+      if (e.endTime == null) return true;
+
+      final end = DateTime(
+        _selectedDay.year,
+        _selectedDay.month,
+        _selectedDay.day,
+        e.endTime!.hour,
+        e.endTime!.minute,
+      );
+
+      return end.isAfter(now);
+    }).toList();
     final time = p.isOff
         ? "OFF"
         : "${fmtTimeOfDay(p.start)}–${fmtTimeOfDay(p.end)}";
@@ -6557,17 +6596,17 @@ PromemoriaStore get _promemoriaStore => coreStore.promemoriaStore;
                     ),
                 ],
               ),
-              if (events.isNotEmpty) ...[
+              if (visibleEvents.isNotEmpty) ...[
                 const SizedBox(height: 6),
                 _eventPill(
-                  text: realEventText(events.first),
+                  text: realEventText(visibleEvents.first),
                   onTap: () => showExtraEventsDialog(
                     context: context,
                     personName: name,
-                    events: events,
+                    events: visibleEvents,
                   ),
                 ),
-                if (events.length > 1) ...[
+                if (visibleEvents.length > 1) ...[
                   const SizedBox(height: 4),
                   Padding(
                     padding: const EdgeInsets.only(left: 6),
@@ -6575,13 +6614,13 @@ PromemoriaStore get _promemoriaStore => coreStore.promemoriaStore;
                       onTap: () => showExtraEventsDialog(
                         context: context,
                         personName: name,
-                        events: events,
+                        events: visibleEvents,
                       ),
                       borderRadius: BorderRadius.circular(6),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 2),
                         child: Text(
-                          "+${events.length - 1} altri eventi",
+                          "+${visibleEvents.length - 1} altri eventi",
                           style: TextStyle(
                             color: Colors.blue.shade700,
                             fontWeight: FontWeight.w700,

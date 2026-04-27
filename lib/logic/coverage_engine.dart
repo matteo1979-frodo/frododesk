@@ -706,7 +706,10 @@ class CoverageEngine {
       fallbackGlobal: sandraSeraOn,
     );
 
-    final bool aliceAtHome = isAliceAtHomeDay(d0);
+    final bool aliceAtHome =
+        isAliceAtHomeDay(d0) ||
+        d0.weekday == DateTime.saturday ||
+        d0.weekday == DateTime.sunday;
     final aliceType = getAliceEventTypeForDay(d0);
 
     String _aliceHomeBaseLabel(AliceEventType? aliceType) {
@@ -885,8 +888,8 @@ class CoverageEngine {
     }
 
     if (aliceAtHome && !hasTimedAliceEvent) {
-      final aliceHomeStart = _atTime(d0, sandraCambioMattinaStart);
-      final aliceHomeEnd = _atTime(d0, sandraSeraStart);
+      final aliceHomeStart = DateTime(d0.year, d0.month, d0.day, 7, 30);
+      final aliceHomeEnd = DateTime(d0.year, d0.month, d0.day, 21, 0);
 
       _isFasciaCovered(
         day: d0,
@@ -2440,10 +2443,14 @@ class CoverageEngine {
 
     for (final event in events) {
       if (event.personKey != personKey) continue;
-      if (event.startTime == null || event.endTime == null) continue;
 
-      final start = _atTime(d0, event.startTime!);
-      final end = _atTime(d0, event.endTime!);
+      final start = event.startTime == null
+          ? DateTime(d0.year, d0.month, d0.day, 0, 0)
+          : _atTime(d0, event.startTime!);
+
+      final end = event.endTime == null
+          ? DateTime(d0.year, d0.month, d0.day, 23, 59)
+          : _atTime(d0, event.endTime!);
 
       if (!end.isAfter(start)) continue;
 
