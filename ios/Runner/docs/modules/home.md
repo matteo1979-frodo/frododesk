@@ -90,7 +90,7 @@ Se non risponde a queste 3 domande → la Home non funziona
 
 ---
 
-## 🧠 LOGICA DECISIONALE (NUOVA — UFFICIALE)
+## 🧠 LOGICA DECISIONALE (UFFICIALE)
 
 La Home NON descrive.
 
@@ -107,6 +107,26 @@ La Home deve sempre mostrare UNA frase:
 
 ### ⚠ Caso problema
 "Alle 16:30 Alice non coperta"
+
+---
+
+## 🎨 SEGNALE VISIVO (NUOVO — UFFICIALE)
+
+La Home deve usare un segnale visivo IMMEDIATO:
+
+### ✔ TUTTO OK
+- colore: verde
+- icona: 👍 (pollice su)
+- significato: puoi stare tranquillo
+
+### ⚠ PROBLEMA
+- colore: rosso
+- icona: ✋ (mano aperta)
+- significato: fermati → qui c’è qualcosa da gestire
+
+👉 questo elemento deve essere:
+- più visivo del testo
+- riconoscibile in meno di 1 secondo
 
 ---
 
@@ -128,17 +148,17 @@ CoverageEngine
 
 ---
 
-## ⏱️ LOGICA TEMPO REALE (NUOVA — CRITICA)
+## ⏱️ LOGICA TEMPO REALE (CRITICA)
 
 La Home deve distinguere il TEMPO:
 
 ### PASSATO
 - il problema è finito
-- NON deve più influenzare la decisione
+- NON deve influenzare la decisione
 
 ### PRESENTE
 - il problema è in corso
-- deve essere segnalato come attivo
+- deve essere evidenziato come ATTIVO
 
 ### FUTURO
 - il problema deve ancora accadere
@@ -154,10 +174,8 @@ La Home deve distinguere il TEMPO:
 ### ✔ Se c’è un problema futuro
 "Alle HH:MM serve copertura per Alice"
 
-### ✔ (Step successivo)
-Se problemi già passati:
-- devono essere considerati risolti
-- NON devono comparire come errore attivo
+### ✔ Se problema in corso
+"ORA: Alice non coperta"
 
 ---
 
@@ -167,6 +185,22 @@ Se problemi già passati:
 - non usare descrizioni lunghe
 - non usare linguaggio tecnico
 - non mostrare problemi già finiti
+
+---
+
+## 🚫 REGOLA IMPORTANTE (NUOVA)
+
+La Home NON deve proporre soluzioni generiche.
+
+❌ NO:
+- suggerimenti tipo “attiva Sandra”
+- suggerimenti vaghi
+
+✔ SÌ:
+- mostrare il problema
+- portare nel punto giusto per risolverlo
+
+👉 le soluzioni stanno nei moduli (Calendario / Copertura)
 
 ---
 
@@ -187,7 +221,8 @@ FASE 1 — HOME VIVA
 
 - distinguere PASSATO / PRESENTE / FUTURO
 - mostrare solo problemi rilevanti ORA
-- trasformare il sistema in guida decisionale reale
+- usare icona dinamica 👍 / ✋
+- guidare l’utente al punto giusto
 
 ---
 
@@ -196,4 +231,4 @@ FASE 1 — HOME VIVA
 Questo è il momento in cui FrodoDesk:
 
 👉 passa da sistema tecnico → sistema decisionale reale  
-👉 passa da “mostra dati” → “ti dice cosa fare”
+👉 passa da “mostra dati” → “ti dice cosa guardare prima”

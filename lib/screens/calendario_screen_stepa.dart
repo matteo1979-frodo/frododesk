@@ -5894,13 +5894,15 @@ class _CalendarioScreenStepAStabileState
           day: _selectedDay,
         );
 
-    final matteoEventConflicts = matteoTurnEventConflicts.isNotEmpty
-        ? matteoTurnEventConflicts
-        : matteoBlockingStateConflicts;
+    final matteoEventConflicts = [
+      ...matteoTurnEventConflicts,
+      ...matteoBlockingStateConflicts,
+    ];
 
-    final chiaraEventConflicts = chiaraTurnEventConflicts.isNotEmpty
-        ? chiaraTurnEventConflicts
-        : chiaraBlockingStateConflicts;
+    final chiaraEventConflicts = [
+      ...chiaraTurnEventConflicts,
+      ...chiaraBlockingStateConflicts,
+    ];
 
     final familyEvents = _familyEventsOnDay(_selectedDay);
 

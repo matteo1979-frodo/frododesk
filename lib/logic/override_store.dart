@@ -80,6 +80,21 @@ class OverrideStore extends ChangeNotifier {
     return true;
   }
 
+  bool isEventForcedForDay({
+    required DateTime day,
+    required String personKey,
+    required String eventId,
+  }) {
+    final key = _dayKey(day);
+    final byPerson = _forcedConflictEventIdsByDay[key];
+    if (byPerson == null) return false;
+
+    final savedIds = byPerson[personKey];
+    if (savedIds == null || savedIds.isEmpty) return false;
+
+    return savedIds.contains(eventId);
+  }
+
   void setForcedConflictForDay({
     required DateTime day,
     required String personKey,

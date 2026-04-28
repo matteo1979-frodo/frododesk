@@ -153,6 +153,7 @@ class CoreStore {
     // 3) Motore copertura
     coverageEngine = CoverageEngine(
       turnEngine: turnEngine,
+      overrideStore: overrideStore,
       daySettingsStore: daySettingsStore,
       supportNetworkStore: supportNetworkStore,
       diseasePeriodStore: diseasePeriodStore,

@@ -8,6 +8,7 @@ import '../models/work_shift.dart';
 
 import 'coverage_logic.dart';
 import 'override_apply.dart';
+import 'override_store.dart';
 import 'turn_engine.dart';
 import 'day_settings_store.dart';
 import 'support_network_store.dart';
@@ -36,6 +37,7 @@ import 'school_store.dart';
 
 class CoverageEngine {
   final TurnEngine turnEngine;
+  final OverrideStore? overrideStore;
   final DaySettingsStore daySettingsStore;
   final SupportNetworkStore supportNetworkStore;
   final DiseasePeriodStore diseasePeriodStore;
@@ -71,6 +73,7 @@ class CoverageEngine {
 
   CoverageEngine({
     TurnEngine? turnEngine,
+    OverrideStore? overrideStore,
     DaySettingsStore? daySettingsStore,
     SupportNetworkStore? supportNetworkStore,
     DiseasePeriodStore? diseasePeriodStore,
@@ -88,6 +91,7 @@ class CoverageEngine {
     TimeOfDay? sandraSeraStart,
     TimeOfDay? sandraSeraEnd,
   }) : turnEngine = turnEngine ?? TurnEngine(),
+       overrideStore = overrideStore,
        aliceCompanionStore = aliceCompanionStore!,
        daySettingsStore = daySettingsStore ?? DaySettingsStore(),
        supportNetworkStore = supportNetworkStore ?? SupportNetworkStore(),
@@ -889,7 +893,7 @@ class CoverageEngine {
 
     if (aliceAtHome && !hasTimedAliceEvent) {
       final aliceHomeStart = DateTime(d0.year, d0.month, d0.day, 7, 30);
-      final aliceHomeEnd = DateTime(d0.year, d0.month, d0.day, 21, 0);
+      final aliceHomeEnd = DateTime(d0.year, d0.month, d0.day, 23, 59);
 
       _isFasciaCovered(
         day: d0,
@@ -1204,7 +1208,7 @@ class CoverageEngine {
     }
 
     if (normalSchoolHomeWindowStart != null) {
-      final homeWindowEnd = _atTime(d0, sandraSeraStart);
+      final homeWindowEnd = DateTime(d0.year, d0.month, d0.day, 23, 59);
 
       if (!hasTimedAliceEvent) {
         if (homeWindowEnd.isAfter(normalSchoolHomeWindowStart)) {
@@ -1235,6 +1239,26 @@ class CoverageEngine {
 
     DateTime mattinaGapStart = fMattinaStart;
     DateTime mattinaGapEnd = fMattinaEnd;
+
+    // 🔥 PRIMA dichiari
+    final busyMatteo = _busyShiftsFromRealEventsForPerson(
+      personKey: "matteo",
+      day: d0,
+    );
+
+    // TAGLIO INIZIO
+    for (final b in busyMatteo) {
+      if (b.start.isAfter(mattinaGapStart) && b.start.isBefore(mattinaGapEnd)) {
+        mattinaGapStart = b.start;
+      }
+    }
+
+    // TAGLIO FINE
+    for (final b in busyMatteo) {
+      if (b.start.isBefore(mattinaGapEnd) && b.end.isAfter(mattinaGapStart)) {
+        mattinaGapEnd = b.end;
+      }
+    }
 
     if (effectiveCampStart != null &&
         effectiveCampStart.isBefore(mattinaGapEnd)) {

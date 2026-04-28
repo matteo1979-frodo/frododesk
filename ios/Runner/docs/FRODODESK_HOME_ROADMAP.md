@@ -23,10 +23,10 @@ FASE 1 — HOME VIVA (USARE DATI REALI)
 
 FASE 2 — HOME INTELLIGENTE
 
-[ ] Inserire spiegazioni semplici
-[ ] Collegare IPS → linguaggio umano
+[✔] Inserire spiegazioni semplici (es: "Fermati un attimo")
+[✔] Collegare IPS → linguaggio umano (manina rossa / pollice 👍)
 [ ] Mostrare micro-avvisi (non invasivi)
-[ ] Evidenziare anomalie reali (buchi, sovrapposizioni, carichi)
+[✔] Evidenziare anomalie reali (buchi, sovrapposizioni, carichi)
 [ ] Gestione temporale reale:
       - passato → archiviato
       - presente → problema in corso
@@ -36,7 +36,8 @@ FASE 2 — HOME INTELLIGENTE
 
 FASE 3 — HOME AZIONABILE
 
-[ ] Azioni rapide (es: apri calendario sul problema)
+[ ] Azioni rapide REALI (non solo suggerimenti)
+[ ] Attivazione diretta Sandra dalla Home
 [ ] Accesso diretto ai punti critici
 [ ] Ridurre click per arrivare alle decisioni
 
@@ -62,4 +63,4 @@ La Home:
 
 PROSSIMO STEP
 
-[ ] Rendere la card stato sistema intelligente (gestione tempo reale problemi)
+➡️ Rendere AZIONABILE la gestione Sandra (prima azione reale dalla Home)

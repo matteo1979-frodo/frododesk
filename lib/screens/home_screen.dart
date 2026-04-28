@@ -72,6 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ferieStore: coreStore.feriePeriodStore,
       ),
       ferieStore: coreStore.feriePeriodStore,
+      schoolInCover: coreStore.daySettingsStore.schoolInCoverForDay(today),
       schoolOutCover: coreStore.daySettingsStore.schoolOutCoverForDay(today),
       schoolOutStart:
           coreStore.daySettingsStore.schoolOutStartForDay(today) ??
@@ -79,52 +80,56 @@ class _HomeScreenState extends State<HomeScreen> {
       schoolOutEnd:
           coreStore.daySettingsStore.schoolOutEndForDay(today) ??
           const TimeOfDay(hour: 16, minute: 45),
+      lunchCover: coreStore.daySettingsStore.lunchCoverForDay(today),
       uscitaAnticipataAt: coreStore.daySettingsStore.uscitaAnticipataTimeForDay(
         today,
       ),
     );
   }
 
-  String _homeCoverageDecisionText() {
+  List<CoverageGapDetail> _relevantCoverageDetailsFromNow() {
     final details = _todayCoverageDetails();
 
     final nowTime = TimeOfDay.now();
     final nowMinutes = nowTime.hour * 60 + nowTime.minute;
 
-    final activeDetails = details.where((detail) {
-      final startMinutes = detail.start.hour * 60 + detail.start.minute;
+    final relevant = details.where((detail) {
       final endMinutes = detail.end.hour * 60 + detail.end.minute;
-
-      return startMinutes <= nowMinutes && endMinutes > nowMinutes;
+      return endMinutes > nowMinutes;
     }).toList();
 
-    if (activeDetails.isNotEmpty) {
-      return "Adesso Alice non è coperta";
-    }
+    relevant.sort((a, b) {
+      final aStart = a.start.hour * 60 + a.start.minute;
+      final bStart = b.start.hour * 60 + b.start.minute;
+      return aStart.compareTo(bStart);
+    });
 
-    final futureDetails = details.where((detail) {
-      final startMinutes = detail.start.hour * 60 + detail.start.minute;
-      return startMinutes > nowMinutes;
-    }).toList();
+    return relevant;
+  }
 
-    if (futureDetails.isEmpty) {
+  String _homeCoverageDecisionText() {
+    final details = _relevantCoverageDetailsFromNow();
+
+    if (details.isEmpty) {
       return "Nessun problema da ora in poi";
     }
 
-    final first = futureDetails.first;
+    final nowTime = TimeOfDay.now();
+    final nowMinutes = nowTime.hour * 60 + nowTime.minute;
+
+    final first = details.first;
+    final startMinutes = first.start.hour * 60 + first.start.minute;
+    final endMinutes = first.end.hour * 60 + first.end.minute;
+
+    if (startMinutes <= nowMinutes && endMinutes > nowMinutes) {
+      return "ORA: Alice non coperta";
+    }
+
     return "Alle ${_formatTime(first.start)} serve copertura per Alice";
   }
 
   bool _hasCoverageIssue() {
-    final details = _todayCoverageDetails();
-
-    final nowTime = TimeOfDay.now();
-    final nowMinutes = nowTime.hour * 60 + nowTime.minute;
-
-    return details.any((detail) {
-      final endMinutes = detail.end.hour * 60 + detail.end.minute;
-      return endMinutes > nowMinutes;
-    });
+    return _relevantCoverageDetailsFromNow().isNotEmpty;
   }
 
   String _homeStateTitle(bool hasIssue) {
