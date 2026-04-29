@@ -6,13 +6,9 @@ import '../models/day_override.dart';
 
 import 'coverage_adapter.dart';
 
-/// IPS Store — UNICO punto che notifica la Home.
-/// Manteniamo ValueNotifier per la UI attuale.
-/// Usiamo però SOLO i tipi v1 in models/ips_snapshot.dart (niente duplicazioni).
 class IpsStore extends ValueNotifier<snap.IpsSnapshot> {
   final CoverageAdapter coverage;
 
-  /// Snapshot strutturale v1 certificabile (detaglio IPS).
   snap.IpsSnapshot snapshotV1 = snap.IpsSnapshot.v1(
     score: 0,
     level: snap.IpsLevel.green,
@@ -43,41 +39,134 @@ class IpsStore extends ValueNotifier<snap.IpsSnapshot> {
         ),
       );
 
-  /// Refresh manuale/forzato: ricalcola e NOTIFICA sempre.
   void refresh({DateTime? now}) {
     final DateTime base = now ?? DateTime.now();
     final DateTime startDay = DateTime(base.year, base.month, base.day);
 
     final snap.IpsSnapshot out = _computeV1(startDay: startDay);
 
-    // Home legge value
     value = out;
-
-    // Dettaglio IPS legge snapshotV1
     snapshotV1 = out;
 
-    // Notifica SEMPRE
     notifyListeners();
   }
 
+  String getDecisionMessage() {
+    final s = snapshotV1;
+
+    if (s.level == snap.IpsLevel.green) {
+      return "Nessun problema nei prossimi 30 giorni.";
+    }
+
+    final DateTime now = DateTime.now();
+    final DateTime today = DateTime(now.year, now.month, now.day);
+    final int nowMinutes = now.hour * 60 + now.minute;
+
+    final todayDetails = coverage.realGapDetailsForDay(today);
+
+    // 🔴 Problema in corso
+    for (final detail in todayDetails) {
+      final startMinutes = detail.start.hour * 60 + detail.start.minute;
+      final endMinutes = detail.end.hour * 60 + detail.end.minute;
+
+      if (startMinutes <= nowMinutes && endMinutes > nowMinutes) {
+        return "Problema in corso: serve intervento immediato.";
+      }
+    }
+
+    // 🟡 Problema oggi
+    for (final detail in todayDetails) {
+      final endMinutes = detail.end.hour * 60 + detail.end.minute;
+
+      if (endMinutes > nowMinutes) {
+        final time = _humanGapTime(detail);
+        return "Attenzione: problema oggi alle $time — Copertura Alice.";
+      }
+    }
+
+    // 🔮 FUTURO (QUI FIX COMPLETO)
+    for (int i = 1; i < 30; i++) {
+      final day = today.add(Duration(days: i));
+      final details = coverage.realGapDetailsForDay(day);
+
+      if (details.isNotEmpty) {
+        final time = _humanGapTime(details.first);
+        final giorno = _formatDay(day);
+
+        return "Attenzione: problema $giorno alle $time — Copertura Alice.";
+      }
+    }
+
+    if (s.level == snap.IpsLevel.red) {
+      return "Problema in corso: serve intervento immediato.";
+    }
+
+    return "Attenzione: possibile problema nei prossimi giorni.";
+  }
+
+  /// 🔥 ORARIO UMANO CORRETTO
+  String _humanGapTime(dynamic detail) {
+    final label = detail.label.toString();
+
+    final match = RegExp(r'(\d{2}:\d{2})[–-](\d{2}:\d{2})').firstMatch(label);
+
+    if (match != null) {
+      return match.group(1)!;
+    }
+
+    final start = detail.start;
+    final hh = start.hour.toString().padLeft(2, '0');
+    final mm = start.minute.toString().padLeft(2, '0');
+    return "$hh:$mm";
+  }
+
+  String _formatDay(DateTime d) {
+    const giorni = [
+      'lunedì',
+      'martedì',
+      'mercoledì',
+      'giovedì',
+      'venerdì',
+      'sabato',
+      'domenica',
+    ];
+
+    const mesi = [
+      '',
+      'gennaio',
+      'febbraio',
+      'marzo',
+      'aprile',
+      'maggio',
+      'giugno',
+      'luglio',
+      'agosto',
+      'settembre',
+      'ottobre',
+      'novembre',
+      'dicembre',
+    ];
+
+    final g = giorni[d.weekday - 1];
+    final m = mesi[d.month];
+
+    return "$g ${d.day} $m";
+  }
+
   // ---------------------------------------------------------
-  // CALCOLO (V1)
+  // CALCOLO
   // ---------------------------------------------------------
 
   snap.IpsSnapshot _computeV1({required DateTime startDay}) {
-    // 1) score base da copertura (buchi)
     int score = coverage.riskScore30Days(startDay: startDay);
 
-    // 2) Disagio certificato: malattia a letto crea pressione anche se Sandra copre.
     final _FamilyDiscomfort discomfort = _scanFamilyDiscomfort30Days(startDay);
 
-    // Entrambi allettati
     if (discomfort.bothParentsBedriddenWithin30) {
       final int minScore = discomfort.bothParentsBedriddenWithin7 ? 80 : 60;
       if (score < minScore) score = minScore;
     }
 
-    // Uno solo allettato
     if (discomfort.oneParentBedriddenWithin30) {
       final int minScore = discomfort.oneParentBedriddenWithin7 ? 60 : 40;
       if (score < minScore) score = minScore;
@@ -91,7 +180,6 @@ class IpsStore extends ValueNotifier<snap.IpsSnapshot> {
         ? snap.IpsLevel.yellow
         : snap.IpsLevel.green;
 
-    // reason + reasonKey (chiavi già mappate nel CoreStore)
     String reasonKey;
 
     if (discomfort.bothParentsBedriddenWithin30) {
@@ -178,7 +266,6 @@ class IpsStore extends ValueNotifier<snap.IpsSnapshot> {
 class _FamilyDiscomfort {
   final bool oneParentBedriddenWithin30;
   final bool oneParentBedriddenWithin7;
-
   final bool bothParentsBedriddenWithin30;
   final bool bothParentsBedriddenWithin7;
 

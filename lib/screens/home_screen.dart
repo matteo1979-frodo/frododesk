@@ -37,6 +37,21 @@ class _HomeScreenState extends State<HomeScreen> {
   SettingsStore get settingsStore => coreStore.settingsStore;
   IpsStore get ipsStore => widget.ipsStore;
 
+  String _actionLabelFromModule(snap.IpsModule module) {
+    switch (module) {
+      case snap.IpsModule.coverage:
+        return "Risolvi copertura";
+      case snap.IpsModule.finance:
+        return "Controlla finanze";
+      case snap.IpsModule.health:
+        return "Apri salute";
+      case snap.IpsModule.auto:
+        return "Controlla auto";
+      default:
+        return "Apri dettaglio";
+    }
+  }
+
   String _formatTime(TimeOfDay time) {
     final hh = time.hour.toString().padLeft(2, '0');
     final mm = time.minute.toString().padLeft(2, '0');
@@ -169,11 +184,13 @@ class _HomeScreenState extends State<HomeScreen> {
   IconData _levelIcon(snap.IpsLevel level) {
     switch (level) {
       case snap.IpsLevel.green:
-        return Icons.check_rounded;
+        return Icons.thumb_up_alt_rounded;
+
       case snap.IpsLevel.yellow:
-        return Icons.priority_high_rounded;
+        return Icons.pan_tool_alt_rounded;
+
       case snap.IpsLevel.red:
-        return Icons.warning_amber_rounded;
+        return Icons.pan_tool_alt_rounded;
     }
   }
 
@@ -1109,15 +1126,21 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildSystemStatusCard() {
     return ValueListenableBuilder<snap.IpsSnapshot>(
       valueListenable: ipsStore,
-      builder: (context, v1, _) {
-        final registry = ReasonTextRegistry.build();
-        final rt = (v1.dominantReasonKey.isEmpty)
-            ? null
-            : registry.lookup(v1.dominantModule, v1.dominantReasonKey);
+      builder: (context, ips, _) {
+        final todayEvents = _buildTodayRealEvents();
 
-        final hasIssue = _hasCoverageIssue();
-        final color = _homeStateColor(hasIssue);
-        final stateText = _homeStateTitle(hasIssue);
+        final bool hasIssue = ips.level != snap.IpsLevel.green;
+
+        final color = _levelColor(ips.level);
+        final stateText = _stateTextFromLevel(ips.level);
+
+        final mainSentence = ipsStore.getDecisionMessage();
+
+        final systemDetail = hasIssue
+            ? "Sistema sotto pressione: IPS rileva una criticità nei moduli attivi."
+            : (todayEvents.isEmpty
+                  ? "Nessuna criticità rilevata nei moduli attivi."
+                  : "Nessuna criticità rilevata, con ${todayEvents.length} evento/i in agenda.");
 
         return _DashboardCard(
           child: Column(
@@ -1133,11 +1156,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white.withOpacity(0.25)),
                     ),
-                    child: Icon(
-                      _homeStateIcon(hasIssue),
-                      color: color,
-                      size: 32,
-                    ),
+                    child: Icon(_levelIcon(ips.level), color: color, size: 32),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -1154,24 +1173,53 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          _homeCoverageDecisionText(),
+                          mainSentence,
                           style: TextStyle(
-                            fontSize: 13.5,
+                            fontSize: 14,
+                            height: 1.3,
+                            color: Colors.white.withOpacity(0.92),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          systemDetail,
+                          style: TextStyle(
+                            fontSize: 12.5,
                             height: 1.25,
-                            color: Colors.white.withOpacity(0.88),
-                            fontWeight: FontWeight.w500,
+                            color: Colors.white.withOpacity(0.75),
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         if (hasIssue) ...[
                           const SizedBox(height: 10),
                           ElevatedButton(
                             onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      CoperturaScreen(coreStore: coreStore),
-                                ),
-                              );
+                              switch (ips.dominantModule) {
+                                case snap.IpsModule.coverage:
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          CoperturaScreen(coreStore: coreStore),
+                                    ),
+                                  );
+                                  break;
+
+                                case snap.IpsModule.finance:
+                                  // TODO: futura schermata finanze
+                                  break;
+
+                                case snap.IpsModule.health:
+                                  // TODO: futura schermata salute
+                                  break;
+
+                                case snap.IpsModule.auto:
+                                  // TODO: futura schermata auto
+                                  break;
+
+                                default:
+                                  break;
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white,
@@ -1184,9 +1232,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
-                            child: const Text(
-                              "Risolvi copertura",
-                              style: TextStyle(fontWeight: FontWeight.w600),
+                            child: Text(
+                              _actionLabelFromModule(ips.dominantModule),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
@@ -1205,19 +1255,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: "Apri calendario",
                     onTap: _openCalendarToday,
                   ),
-                  _MiniInfoPill(
-                    icon: Icons.schedule_send_rounded,
-                    title: "Uscita 13",
-                    value: settingsStore.isUscita13 ? "attiva" : "non attiva",
-                    color: const Color(0xFFFFAB91),
-                  ),
                   _MiniActionChip(
-                    icon: Icons.analytics_outlined,
-                    label: "Dettaglio IPS",
+                    icon: Icons.shield_rounded,
+                    label: "Dettaglio copertura",
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => IpsDetailScreen(coreStore: coreStore),
+                          builder: (_) => CoperturaScreen(coreStore: coreStore),
                         ),
                       );
                     },

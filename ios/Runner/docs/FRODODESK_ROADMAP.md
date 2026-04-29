@@ -1,6 +1,6 @@
 FRODODESK — ROADMAP
 
-Ultimo aggiornamento: Aprile 2026 (post fix motore scuola + support network)
+Ultimo aggiornamento: 28 Aprile 2026 (post copertura reale Alice a casa)
 
 ---
 
@@ -15,16 +15,22 @@ un passo alla volta, blocchi stabili prima di passare al successivo.
 
 # FASE ATTUALE
 
-🔥 BLOCCO SCUOLA — INTEGRAZIONE REALE NEL SISTEMA
+🔥 CALENDARIO REALE COMPLETO + COPERTURA REALE
 
 ---
 
 ## SIGNIFICATO DELLA FASE
 
-Il sistema entra in una nuova evoluzione:
+Il sistema ha fatto il passaggio più importante:
 
-👉 da costruzione strutturale della scuola  
-👉 a allineamento completo tra motore, stato Alice, copertura e UI
+👉 da simulazione parziale  
+👉 a simulazione reale della giornata
+
+Ora:
+
+- Alice a casa è gestita correttamente
+- i buchi sono reali
+- la Home legge il motore vero
 
 ---
 
@@ -53,14 +59,12 @@ Stato: COMPLETATO
 
 # BLOCCO C — EVENTI REALI
 
-Stato: COMPLETATO (LOGICA)
+Stato: COMPLETATO
 
 ✔ Eventi reali funzionanti  
 ✔ Conflitti funzionanti  
 ✔ Permessi operativi  
 ✔ Copertura integrata  
-
-👉 Rimane solo rifinitura UI (non prioritaria ora)
 
 ---
 
@@ -74,170 +78,103 @@ Stato: COMPLETATO (USO REALE)
 
 ---
 
-# 🔥 BLOCCO E — SCUOLA
+# BLOCCO E — SCUOLA
 
-## Stato: MOTORE QUASI COMPLETATO / RIFINITURA FINALE IN CORSO
+Stato: COMPLETATO
 
----
-
-## COSA È STATO COMPLETATO
-
-### STEP E1 — STRUTTURA DATI
-✔ SchoolPeriod  
-✔ SchoolWeekConfig  
-✔ SchoolDayConfig
-
-### STEP E2 — STORE
-✔ SchoolStore
-
-### STEP E3 — UI PERIODI
-✔ creazione periodo  
-✔ eliminazione periodo  
-✔ visualizzazione periodo attivo  
-✔ dettaglio periodo
-
-### STEP E4 — UI SETTIMANA
-✔ popup settimana  
-✔ giorni letti dal periodo  
-✔ stato ATTIVO / OFF  
-✔ modifica attivo/off  
-✔ modifica ingresso  
-✔ modifica uscita reale  
-✔ visualizzazione orari accanto ai giorni  
-✔ salvataggio reale per lun–sab
-
-### STEP E5 — MOTORE
-✔ CoverageEngine legge SchoolStore  
-✔ il giorno scuola viene deciso dal periodo attivo  
-✔ il motore legge ingresso / uscita / rientro dal nuovo sistema
-
-### STEP E6 — ALLINEAMENTO UI STATO ALICE
-✔ risolto “Alice fuori • scuola” nei giorni OFF  
-✔ risolto popup incoerente  
-✔ risolto stato Alice non allineato al motore  
-✔ introdotto uso coerente di SchoolStore nella UI  
-✔ eliminata duplicazione `aliceNowLabel`  
-✔ rimosso utilizzo improprio di `schoolNormal` come evento speciale
-
-### STEP E7 — FIX MOTORE SCUOLA REALE
-✔ CoverageEngine ora usa lo SchoolStore reale del CoreStore  
-✔ bug `DEBUG PERIOD -> null` risolto  
-✔ buchi ingresso/uscita tornati a comparire correttamente  
-✔ uscita scuola letta in modo dinamico dal periodo reale  
-✔ rientro automatico (+20 min) funzionante nel motore  
-✔ ingresso scuola verificato e confermato dinamico  
-✔ support network validato sul tempo reale  
-✔ eliminato falso positivo di copertura con fascia non compatibile
+✔ SchoolStore funzionante  
+✔ Periodi scuola funzionanti  
+✔ Settimana modificabile  
+✔ Motore collegato  
+✔ Stato Alice corretto  
+✔ Support network verificato  
+✔ Ingresso/uscita reali funzionanti  
+✔ Rientro automatico funzionante  
 
 ---
 
-## LOGICA COMPLETA ATTUALE
+# 🔥 BLOCCO F — COPERTURA REALE (NUOVO)
 
-Ordine corretto del sistema:
-
-1. Eventi Alice
-2. Eventi Alice temporanei
-3. Periodo scuola attivo
-4. Orario settimanale
-5. Motore copertura
+Stato: COMPLETATO
 
 ---
 
-## OBIETTIVO DEL BLOCCO
+## SIGNIFICATO
 
-👉 trasformare la scuola in:
-
-✔ sistema stabile  
-✔ automatico  
-✔ coerente con la realtà  
-✔ fonte unica di verità
+👉 Alice NON dipende più dalle fasce Sandra  
+👉 Alice è controllata su tutta la giornata  
 
 ---
 
-## PROBLEMA ATTUALE RESIDUO
+## REGOLE DEFINITIVE
 
-⚠️ NON è più un problema generale della scuola  
-⚠️ NON è più un problema di lettura ingresso/uscita standard
-
-Il problema rimasto è:
-
-👉 uscita anticipata non ancora collegata correttamente al motore di copertura
-
-Sintomo attuale:
-- la UI aggiorna correttamente l’orario
-- la decisione scuola copertura si aggiorna
-- ❌ il buco non si chiude
+✔ Alice a casa → serve copertura sempre  
+✔ Nessun adulto → BUCO reale  
+✔ Controllo su 00:00–23:59  
+✔ Eventi reali influenzano la copertura  
+✔ Supporto integrato nel motore  
 
 ---
 
-## STEP OPERATIVI AGGIORNATI
+## RISULTATO
 
-### STEP E1 — STRUTTURA SCUOLA
-✔ COMPLETATO
-
-### STEP E2 — PERIODI SCUOLA
-✔ COMPLETATO
-
-### STEP E3 — SETTIMANA MODIFICABILE
-✔ COMPLETATO
-
-### STEP E4 — MOTORE COLLEGATO A SCHOOLSTORE
-✔ COMPLETATO
-
-### STEP E5 — ALLINEAMENTO UI A STATO ALICE REALE
-✔ COMPLETATO
-
-### STEP E6 — RIFINITURA UI BLOCCO ALICE
-🔄 PARZIALMENTE SUPERATO DALLA PRIORITÀ MOTORE
-
-### STEP E7 — FIX MOTORE SCUOLA REALE
-✔ COMPLETATO
-
-### STEP E8 — USCITA ANTICIPATA NEL MOTORE
-🔥 IN CORSO
-
-Obiettivo:
-- collegare uscita anticipata reale al CoverageEngine
-- chiudere davvero il buco quando la copertura è impostata correttamente
-- verificare coerenza completa UI → decisione → motore
-
----
-
-# PIANO OPERATIVO CONFERMATO
-
-## A — fix uscita anticipata nel motore
-👉 priorità immediata
-
-## B — test reale completo casi scuola
-👉 subito dopo A
-
-## C — rifinitura UI card Alice / Scuola
-👉 dopo stabilizzazione motore
-
-## D — chiusura finale blocco scuola
-👉 dopo test strutturale completo
-
----
-
-# BLOCCO F — CONFLITTI AVANZATI
-
-Stato: FUTURO
+✔ Buchi reali corretti  
+✔ Calendario coerente  
+✔ Home coerente  
+✔ Sistema finalmente affidabile  
 
 ---
 
 # BLOCCO G — SISTEMA IPS
 
-Stato: FUTURO
+🔥 STATO: PROSSIMA FASE
 
 ---
 
-# DIREZIONE FUTURA
+## PROBLEMA ATTUALE
 
-Dopo BLOCCO SCUOLA:
+IPS NON è coerente con il sistema reale.
 
-👉 Azioni consigliate (Livello B)  
-👉 Miglioramento decisionale  
-👉 Evoluzione sistema predittivo  
+👉 oggi:
+- usa logiche parziali
+- non legge davvero i buchi
+- non rappresenta la realtà
+
+---
+
+## OBIETTIVO BLOCCO G
+
+👉 trasformare IPS in:
+
+✔ indicatore reale  
+✔ basato su buchi veri  
+✔ coerente con il calendario  
+✔ utile per decidere  
+
+---
+
+## STEP PREVISTI
+
+### STEP G1 — collegare IPS ai buchi reali
+### STEP G2 — definire livelli (verde/giallo/rosso reali)
+### STEP G3 — spiegazione umana coerente
+### STEP G4 — integrazione Home completa
+
+---
+
+# BLOCCO H — HOME AZIONABILE
+
+Stato: SUCCESSIVO
+
+---
+
+## OBIETTIVO
+
+👉 permettere azioni reali dalla Home
+
+- attivare supporto
+- risolvere buchi
+- intervenire subito
 
 ---
 
@@ -255,21 +192,14 @@ STATISTICHE
 
 ✔ Sistema stabile  
 ✔ Copertura reale funzionante  
-✔ Eventi Alice funzionanti  
-✔ Conflitti gestiti  
-✔ Periodi scuola funzionanti  
-✔ Settimana scuola modificabile funzionante  
-✔ Motore scuola collegato al nuovo sistema  
-✔ Stato Alice corretto  
-✔ Popup Alice corretto  
-✔ Giorni ON/OFF scuola letti correttamente  
-✔ Ingresso scuola letto correttamente dal sistema reale  
-✔ Uscita scuola letta correttamente dal sistema reale  
-✔ Support network verificato su fascia reale  
+✔ Alice a casa corretta  
+✔ Buchi reali su tutta la giornata  
+✔ Eventi reali integrati  
+✔ Scuola completa  
+✔ Support network funzionante  
+✔ Home collegata al motore  
 
-🔥 In corso:
-
-👉 fix uscita anticipata nel motore copertura
+⚠️ IPS NON ancora coerente
 
 ---
 
@@ -279,27 +209,28 @@ NON fare:
 
 ❌ modifiche multiple  
 ❌ salti di fase  
-❌ rattoppi UI senza capire la fonte dati  
-❌ considerare valida una copertura solo perché “attiva”
+❌ rattoppi UI  
+❌ logiche duplicate  
 
 Fare:
 
 ✔ un passo alla volta  
 ✔ fonte di verità unica  
-✔ test immediato  
-✔ motore prima, UI coerente dopo  
-✔ copertura valida solo se compatibile con la fascia reale
+✔ test reale  
+✔ motore prima  
+✔ UI dopo  
 
 ---
 
 # PROSSIMA RIPARTENZA
 
-Ripartiamo da FrodoDesk — BLOCCO SCUOLA
+Ripartiamo da FrodoDesk — BLOCCO G
 
-STEP A:
-👉 fix uscita anticipata nel motore di copertura
+STEP 1:
+👉 collegare IPS ai buchi reali del motore
 
-Poi:
-👉 STEP B — test reale completo scuola  
-👉 STEP C — rifinitura UI card Alice / Scuola  
-👉 STEP D — chiusura finale blocco scuola
+STEP 2:
+👉 definire livelli reali (verde/giallo/rosso)
+
+STEP 3:
+👉 rendere la Home coerente con IPS reale

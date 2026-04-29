@@ -1,6 +1,6 @@
 # FRODODESK — SYSTEM STATE
 
-Ultimo aggiornamento: Aprile 2026 (post fix scuola motore + support network)
+Ultimo aggiornamento: 28 Aprile 2026 (post copertura reale Alice a casa)
 
 ---
 
@@ -32,113 +32,95 @@ Il sistema è costruito con filosofia CNC (Costruzione Non Caotica):
 
 # FASE ATTUALE DEL PROGETTO
 
-👉 Calendario reale — COMPLETO E FUNZIONANTE
+🔥 CALENDARIO REALE COMPLETO + COPERTURA REALE
 
 Il sistema è:
 
 ✔ utilizzabile nella vita reale  
 ✔ testato su casi concreti  
 ✔ stabile nei motori principali  
+✔ coerente tra motore → calendario → Home  
 
 ---
 
-# 🔥 NUOVA FASE ATTIVA
+# 🧠 EVOLUZIONE STRUTTURALE
 
-👉 BLOCCO SCUOLA — INTEGRAZIONE COMPLETA NEL SISTEMA
+Il sistema ha fatto il passaggio chiave:
 
-Obiettivo:
-
-- eliminare completamente gestione manuale giornaliera
-- rendere la scuola una fonte unica di verità
-- collegare scuola → stato Alice → copertura → UI
+❌ prima → simulazione parziale  
+✔ ora → simulazione reale della giornata  
 
 ---
 
-# 🧠 DECISIONE STRUTTURALE (FONDAMENTALE)
+# 🔥 BLOCCO SCUOLA
 
-La scuola NON è più:
-
-❌ modifica giornaliera  
-❌ gestione separata dalla logica  
-
-Diventa:
-
-✔ sistema strutturato a periodi  
-✔ orario settimanale stabile  
-✔ fonte unica per lo stato di Alice  
-✔ integrata nel motore di copertura  
+Stato: COMPLETATO
 
 ---
 
-# STATO REALE BLOCCO SCUOLA
+## RISULTATO
 
 ✔ SchoolStore attivo  
 ✔ Periodi funzionanti  
-✔ Lettura settimanale funzionante  
-✔ Orari letti correttamente dal motore  
+✔ Orari letti correttamente  
+✔ Stato Alice coerente  
+✔ Support network validato  
+✔ UI allineata al motore  
+
+👉 La scuola è ora fonte unica di verità
 
 ---
 
-# 🔧 FIX SCUOLA — APRILE 2026
+# 🔥 BLOCCO COPERTURA REALE (NUOVO)
 
-✔ Orario ingresso letto da SchoolStore  
-✔ Orario uscita letto da SchoolStore  
-✔ Rientro automatico = uscita + 20 min (calcolato, non salvato)  
-
-✔ Buco ingresso calcolato su orario reale  
-✔ Buco uscita calcolato su orario reale  
-
-✔ UI completamente allineata al motore  
+Stato: COMPLETATO
 
 ---
 
-# 🔥 FIX CRITICO — SUPPORT NETWORK
+## REGOLA FONDAMENTALE
 
-Problema precedente:
+Alice è considerata **A CASA** quando NON è:
 
-❌ Il sistema considerava copertura valida anche se NON compatibile con l’orario reale  
-(es: Sandra 07:00–08:25 copriva ingresso 09:05–09:25)
-
-Causa:
-
-❌ uso di fallback orario fisso (08:25)  
-❌ mancato controllo reale della fascia temporale  
-
-Soluzione:
-
-✔ ingresso reale ora letto da SchoolStore anche nel controllo copertura  
-✔ validazione supporto fatta su intervallo reale  
-
-Risultato:
-
-👉 la copertura è valida SOLO se copre davvero la fascia richiesta  
+- a scuola
+- in evento valido
+- fuori casa per attività reale
 
 ---
 
-# 🧠 LOGICA CONSOLIDATA (POST FIX)
+## REGOLA COPERTURA
 
-Fonte unica di verità:
+Se Alice è a casa:
 
-👉 SchoolStore + AliceEventStore
+👉 deve essere SEMPRE coperta da:
 
-La UI NON decide più lo stato  
-👉 lo legge dal motore
+- Matteo
+- Chiara
+- Supporto
+- Sandra (solo se attiva)
+
+Se nessuno copre:
+
+👉 ❌ BUCO REALE
 
 ---
 
-# PRINCIPIO CHIAVE (IMPORTANTISSIMO)
+## CAMBIAMENTO CHIAVE
 
-Separazione obbligatoria:
+✔ controllo esteso su tutta la giornata (00:00–23:59)  
+❌ NON più limitato a fasce Sandra  
+❌ NON più legato solo alla scuola  
 
-### DATO REALE
-- ingresso scuola = dato vero
-- uscita scuola = dato vero
+---
 
-### LOGICA
-- accompagnamento = ingresso - 20 min  
-- rientro = uscita + 20 min  
+## RISULTATO
 
-👉 Il sistema NON deve mai confondere i due
+✔ Buchi reali corretti  
+✔ Eventi reali influenzano la copertura  
+✔ Supporto integrato correttamente  
+✔ Calendario coerente  
+✔ Home coerente  
+
+👉 Sistema finalmente affidabile
 
 ---
 
@@ -146,34 +128,9 @@ Separazione obbligatoria:
 
 ✔ motore stabile  
 ✔ combinazione Matteo + Chiara corretta  
-✔ gestione post-notte corretta  
-✔ gestione eventi temporanei corretta  
-✔ gestione centro estivo funzionante  
-✔ gestione accompagnamento / ritiro funzionante  
-
-✔ support network ora validato correttamente nel tempo  
-
-👉 considerato affidabile sui casi testati  
-
----
-
-# ⚠️ BUG ATTIVO IDENTIFICATO
-
-👉 USCITA ANTICIPATA NON IMPATTA IL MOTORE
-
-Sintomo:
-
-- UI aggiorna correttamente orario uscita anticipata  
-- decisione scuola si aggiorna  
-- ❌ il buco NON si chiude  
-
-Causa probabile:
-
-👉 CoverageEngine NON usa ancora uscita anticipata reale  
-
-Stato:
-
-👉 da correggere nel prossimo step (motore)
+✔ gestione eventi reali corretta  
+✔ gestione supporto corretta  
+✔ gestione Alice a casa corretta  
 
 ---
 
@@ -181,9 +138,8 @@ Stato:
 
 ✔ AliceEventStore attivo  
 ✔ AliceSpecialEventStore attivo  
-✔ eventi temporanei integrati  
-✔ gestione accompagnamento / ritiro  
-✔ eliminati falsi buchi  
+✔ eventi integrati nel motore  
+✔ nessun falso positivo  
 
 ---
 
@@ -212,45 +168,84 @@ Stato:
 - SettingsStore  
 - SummerCampScheduleStore  
 - SummerCampSpecialEventStore  
-- SchoolStore ✅
+- SchoolStore  
 
 ---
 
 # STATO UI
 
 ✔ calendario funzionante  
-✔ struttura a blocchi attiva  
-✔ eventi Alice integrati  
+✔ eventi reali integrati  
 ✔ stato Alice coerente  
+✔ Home collegata al motore reale  
 
-✔ scuola completamente allineata al motore  
+---
+
+# ⚠️ STATO IPS
+
+👉 NON ancora coerente con il sistema reale
+
+Problema:
+
+- non legge i buchi reali
+- usa logiche parziali
+- non rappresenta la realtà
+
+---
+
+# 🎯 PROSSIMA FASE
+
+🔥 BLOCCO IPS REALE
+
+---
+
+## OBIETTIVO
+
+Trasformare IPS in:
+
+✔ indicatore reale  
+✔ basato sui buchi veri  
+✔ coerente con calendario e copertura  
+✔ utile per decidere  
+
+---
+
+## STEP PREVISTI
+
+1. collegare IPS ai buchi reali  
+2. definire livelli reali (verde / giallo / rosso)  
+3. creare spiegazione umana coerente  
+4. allineare completamente la Home  
 
 ---
 
 # DIREZIONE OPERATIVA
 
-## 1️⃣ PRIORITÀ ATTUALE
-👉 fix uscita anticipata nel motore copertura
+NON fare:
 
-## 2️⃣ STEP CONFERMATI
+❌ modifiche multiple  
+❌ salti di fase  
+❌ logiche duplicate  
+❌ UI senza base dati  
 
-A — collegare uscita anticipata al CoverageEngine  
-B — verificare chiusura buchi dinamici  
-C — test completo casi reali  
-D — rifinitura UI finale  
+Fare:
+
+✔ un passo alla volta  
+✔ motore prima  
+✔ UI dopo  
+✔ test reale continuo  
 
 ---
 
-# SIGNIFICATO DELLA FASE
+# SIGNIFICATO ATTUALE
 
-Il sistema evolve da:
+Il sistema ora:
 
-❌ simulazione approssimativa  
-👉 verso  
-✔ simulazione reale basata su tempo e logica coerente  
+👉 NON simula più  
+👉 legge la realtà  
 
 ---
 
 # FRASE DI RIPARTENZA UFFICIALE
 
-Ripartiamo da FrodoDesk — FIX USCITA ANTICIPATA: collegare l’orario reale al motore di copertura e verificare la chiusura corretta dei buchi.
+Ripartiamo da FrodoDesk — BLOCCO IPS: collegare IPS ai buchi reali del motore di copertura.

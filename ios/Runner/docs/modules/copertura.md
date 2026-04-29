@@ -1,6 +1,6 @@
 # FRODODESK — MODULO COPERTURA
 
-Ultimo aggiornamento: 5 Aprile 2026
+Ultimo aggiornamento: 28 Aprile 2026
 
 ---
 
@@ -47,24 +47,41 @@ Esempio:
 
 ---
 
-## 2. ALICE A CASA
+## 2. REGOLA MADRE — ALICE A CASA
 
-Se Alice è a casa:
+👉 Questa è la regola più importante del sistema.
 
-👉 serve almeno un adulto presente
+Alice è considerata **A CASA** quando NON è:
 
-Se nessuno è presente:
-
-👉 BUCO reale
+- a scuola
+- in evento valido (danza, pallavolo, centro estivo, gita, ecc.)
+- fuori casa per attività tracciata
 
 ---
 
-## 3. EVENTI DI ALICE
+## 3. REGOLA COPERTURA
+
+Se Alice è a casa:
+
+👉 deve essere SEMPRE coperta da almeno uno tra:
+
+- Matteo
+- Chiara
+- Sandra (solo se attiva nella fascia)
+- Rete di supporto
+
+Se nessuno copre:
+
+👉 ❌ BUCO REALE (sempre)
+
+---
+
+## 4. EVENTI DI ALICE
 
 Gli eventi influenzano la copertura:
 
-- Alice fuori casa → nessun buco in quella fascia
-- Alice a casa → serve copertura
+- Alice fuori casa → ✔ coperta automaticamente
+- Alice a casa → serve copertura reale
 
 ---
 
@@ -77,10 +94,12 @@ File principale:
 Il motore:
 
 - legge turni
-- legge eventi
+- legge eventi reali
+- legge eventi Alice
 - legge stati (ferie, malattia)
+- legge supporto
 - calcola presenza reale
-- calcola buchi
+- calcola buchi su tutta la giornata
 
 ---
 
@@ -94,24 +113,29 @@ Il motore:
 - FeriePeriodStore
 - SupportNetworkStore
 - DaySettingsStore
+- SchoolStore
 
 ---
 
 # OUTPUT DEL MOTORE
 
 - ✔ Copertura OK
-- ✔ Buchi del giorno
-- ✔ Fasce scoperte
-- ✔ Stato Sandra (serve/non serve)
+- ✔ Buchi del giorno REALI
+- ✔ Fasce scoperte reali
+- ✔ Stato Sandra (informativo, non vincolante)
 
 ---
 
-# LOGICA BUCHI
+# LOGICA BUCHI (AGGIORNATA)
 
 Un buco esiste quando:
 
 👉 Alice è a casa  
 👉 e NON c’è copertura reale
+
+✔ controllo su tutta la giornata (00:00–23:59)  
+❌ NON limitato a fasce Sandra  
+❌ NON limitato a scuola  
 
 ---
 
@@ -127,6 +151,19 @@ Il sistema combina:
 
 ---
 
+# USCITA IMPRESCINDIBILE (REGOLA)
+
+👉 NON elimina il problema  
+👉 NON nasconde il buco  
+
+Significa:
+
+- la persona è fuori comunque
+- il sistema deve calcolare il buco reale
+- il rischio resta visibile
+
+---
+
 # 🆕 STRATO DECISIONALE — AZIONI CONSIGLIATE
 
 ## IDENTITÀ
@@ -136,7 +173,7 @@ Questo strato traduce i buchi in:
 👉 **azioni concrete per l’utente**
 
 NON modifica il motore  
-👉 ma interpreta il risultato
+👉 interpreta il risultato
 
 ---
 
@@ -146,7 +183,7 @@ NON modifica il motore
 
 Ogni gap contiene:
 
-- fascia oraria reale (es. 21:00–22:35)
+- fascia oraria reale (es. 21:00–23:30)
 - descrizione problema
 
 ---
@@ -156,40 +193,18 @@ Ogni gap contiene:
 Per ogni gap:
 
 ### 1. Parsing orario
-Estrazione da label:
-
-21:00–22:35 → start / end
-
----
+21:00–23:30 → start / end
 
 ### 2. Conversione
-Orari → minuti:
+Orari → minuti
 
-- startMin
-- endMin
+### 3. Lettura copertura reale
 
----
+### 4. Valutazione
 
-### 3. Lettura turni reali
-
-- Matteo
-- Chiara
-
----
-
-### 4. Valutazione copertura
-
-#### ✔ Copertura piena
-Una persona copre tutta la fascia
-
-#### ⚠️ Copertura combinata (staffetta)
-Due persone coprono insieme:
-
-- uno copre inizio
-- uno copre fine
-
-#### ❌ Buco reale
-Nessuno copre completamente
+✔ Copertura piena  
+⚠️ Copertura combinata  
+❌ Buco reale  
 
 ---
 
@@ -208,9 +223,7 @@ Per ogni problema:
 
 ## MULTI-PROBLEMA
 
-Sistema attivo:
-
-👉 ogni gap genera un blocco UI
+👉 ogni buco genera un blocco UI
 
 - Problema 1
 - Problema 2
@@ -223,7 +236,7 @@ Sistema attivo:
 - lista problemi
 - numerazione
 - conteggio totale
-- suggerimento sotto ogni problema
+- suggerimento per ogni problema
 
 ---
 
@@ -233,9 +246,10 @@ Sistema attivo:
 
 ---
 
-# GESTIONE EVENTI TEMPORANEI
+# GESTIONE EVENTI
 
-👉 blocchi di indisponibilità
+👉 gli eventi sono blocchi reali di indisponibilità  
+👉 influenzano direttamente la copertura
 
 ---
 
@@ -247,31 +261,27 @@ Sistema attivo:
 
 ---
 
-# USCITA ANTICIPATA — DISTINZIONE FONDAMENTALE
-
-👉 copertura logistica ≠ copertura casa
-
----
-
 # STATO ATTUALE DEL MODULO
 
-✔ motore stabile  
-✔ decisioni attive  
-✔ multi-problema attivo  
-✔ copertura combinata reale  
+✔ motore copertura REALE  
+✔ Alice a casa gestita correttamente  
+✔ buchi reali su tutta la giornata  
+✔ eventi reali integrati  
+✔ supporto integrato  
+✔ Home coerente con motore  
+
+⚠️ IPS NON ancora coerente (parziale)
 
 ---
 
 # PROSSIMO STEP
 
-👉 mostrare anche:
+👉 allineare IPS al motore reale
 
-- descrizione completa del buco sotto ogni problema
-
-(es. “Alice a casa da sola 21:00–22:35”)
+(obiettivo: IPS basato su buchi veri, non su simulazioni)
 
 ---
 
 # FRASE DI RIPARTENZA
 
-Ripartiamo da FrodoDesk — modulo Copertura con sistema decisionale multi-problema attivo. Prossimo passo: mostrare il dettaglio completo del buco sotto ogni problema.
+Ripartiamo da FrodoDesk — Copertura reale completata. Prossimo passo: IPS basato su dati reali.
