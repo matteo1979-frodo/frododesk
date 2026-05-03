@@ -467,7 +467,12 @@ class _HomeScreenState extends State<HomeScreen> {
     final now = DateTime.now();
     final List<_HomeDay> result = [];
 
-    for (int i = 1; i <= 30; i++) {
+    final endOfYear = DateTime(now.year, 12, 31);
+    final daysToScan = endOfYear
+        .difference(DateTime(now.year, now.month, now.day))
+        .inDays;
+
+    for (int i = 1; i <= daysToScan; i++) {
       final day = now.add(Duration(days: i));
       final dayKey = DateTime(day.year, day.month, day.day);
 
