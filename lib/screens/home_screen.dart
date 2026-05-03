@@ -467,7 +467,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final now = DateTime.now();
     final List<_HomeDay> result = [];
 
-    for (int i = 1; i <= 7; i++) {
+    for (int i = 1; i <= 30; i++) {
       final day = now.add(Duration(days: i));
       final dayKey = DateTime(day.year, day.month, day.day);
 
@@ -706,7 +706,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await _showHomeDialog(
       icon: Icons.date_range_rounded,
       color: const Color(0xFF42A5F5),
-      title: "Prossimi 7 giorni",
+      title: "Prossimi 30 giorni",
       subtitle: "Panoramica rapida dei giorni con eventi in arrivo",
       child: _buildNext7DaysDialogContent(next7Days: next7Days),
     );
@@ -1180,7 +1180,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (next7Days.isEmpty) {
       return _buildDialogEmptyState(
         icon: Icons.date_range_rounded,
-        title: "Nessun evento nei prossimi 7 giorni",
+        title: "Nessun evento nei prossimi 30 giorni",
         subtitle: "Per ora la settimana sembra tranquilla",
       );
     }
@@ -1260,7 +1260,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 8),
         ],
         if (next7Days.isNotEmpty) ...[
-          _buildSectionTitle("Prossimi 7 giorni"),
+          _buildSectionTitle("Prossimi 30 giorni"),
           ...next7Days.map((day) {
             return Container(
               width: double.infinity,
@@ -1711,7 +1711,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               _MetricTile(
                 icon: Icons.upcoming_rounded,
-                label: "Nei 7 giorni",
+                label: "Prossimi 30 giorni",
                 value: prossimiGiorniCount.toString(),
                 color: const Color(0xFFEC407A),
                 onTap: onNext7DaysTap,

@@ -530,3 +530,71 @@ supportEnd ≥ gapEnd
 
 👉 Il sistema NON deve mai “pensare che basti”  
 👉 Deve verificare che COPRA davvero  
+---
+
+# 🔴 NUOVA REGOLA STRUTTURALE — HOME V1.1 (3 Maggio 2026)
+
+## PRINCIPIO
+
+La Home deve separare SEMPRE:
+
+👉 stato reale di oggi  
+👉 problemi futuri  
+
+---
+
+## REGOLA
+
+### OGGI
+
+Se oggi è coperto:
+
+✔ icona verde  
+✔ testo: "Nessuna criticità oggi"  
+✔ nessun falso problema  
+
+---
+
+### FUTURO
+
+Se esiste un problema nei giorni successivi:
+
+✔ deve essere mostrato  
+✔ deve essere visibile subito  
+✔ deve essere cliccabile  
+
+Esempio:
+
+"Prossimo problema copertura → sabato 30 maggio 13:00–14:30"
+
+---
+
+## VIETATO
+
+❌ nascondere problemi futuri  
+❌ dire "tutto ok" se esiste un problema dopo  
+❌ creare falso allarme oggi  
+
+---
+
+## REGOLA CRITICA
+
+❌ eliminata definitivamente la logica:
+
+"Nessun problema nei prossimi 30 giorni"
+
+---
+
+## COMPORTAMENTO CORRETTO
+
+✔ oggi = verità immediata  
+✔ futuro = visibile e navigabile  
+✔ click → calendario giorno corretto  
+
+---
+
+## OBIETTIVO
+
+👉 colpo d’occhio reale  
+👉 zero bug cognitivi  
+👉 zero interpretazioni  

@@ -1,6 +1,6 @@
 # FRODODESK — SYSTEM STATE
 
-Ultimo aggiornamento: 1 Maggio 2026 (Home azionabile V1 consolidata + festivi corretti)
+Ultimo aggiornamento: 3 Maggio 2026 (Home azionabile V1.1 — separazione OGGI vs PROBLEMA FUTURO)
 
 ---
 
@@ -32,7 +32,7 @@ Il sistema è costruito con filosofia CNC (Costruzione Non Caotica):
 
 # FASE ATTUALE DEL PROGETTO
 
-🔥 CALENDARIO REALE COMPLETO + COPERTURA REALE + HOME AZIONABILE V1 CONSOLIDATA
+🔥 CALENDARIO REALE COMPLETO + COPERTURA REALE + HOME AZIONABILE V1.1 CONSOLIDATA
 
 Il sistema è:
 
@@ -40,8 +40,9 @@ Il sistema è:
 ✔ testato su casi concreti  
 ✔ stabile nei motori principali  
 ✔ coerente tra motore → calendario → Home  
+✔ capace di distinguere tra stato reale di oggi e problemi futuri  
 ✔ capace di trasformare un buco reale in problema visibile dalla Home  
-✔ capace di spiegare nel popup il perché del problema  
+✔ capace di portare direttamente al giorno del problema  
 ✔ coerente anche nei giorni festivi senza scuola  
 
 ---
@@ -56,7 +57,7 @@ Il sistema ha fatto il passaggio chiave:
 Nuova evoluzione:
 
 ❌ prima → Home solo informativa  
-✔ ora → Home orientata all’azione immediata  
+✔ ora → Home operativa e gerarchica (oggi vs futuro)
 
 ---
 
@@ -130,7 +131,7 @@ Se nessuno copre:
 ✔ Supporto integrato correttamente  
 ✔ Calendario coerente  
 ✔ Home coerente  
-✔ test 1 Maggio validato: giorno festivo, nessuna scuola, genitori fuori per evento 14:00–18:00 → buco rilevato correttamente  
+✔ test 1 Maggio validato  
 
 👉 Sistema finalmente affidabile
 
@@ -152,24 +153,64 @@ La Home ora:
 ✔ mostra il primo buco da gestire  
 ✔ bottone principale: **RISOLVI**  
 ✔ apre un popup con il problema  
-✔ nel popup mostra:
-   - numero problema
-   - fascia oraria
-   - spiegazione del perché
-   - bottone **Vai al problema**
-✔ permette il passaggio verso il calendario  
 
 ---
 
-## DECISIONE STRUTTURALE
+# 🔥 BLOCCO HOME AZIONABILE V1.1 (NUOVO)
 
-La Home NON deve essere solo una dashboard.
+Stato: COMPLETATO E VALIDATO
 
-La Home deve diventare:
+---
 
-👉 centro operativo della giornata  
-👉 motore di priorità  
-👉 punto che dice cosa fare ora  
+## CAMBIAMENTO CHIAVE
+
+La Home ora separa:
+
+👉 STATO REALE DI OGGI  
+👉 PROBLEMA FUTURO  
+
+---
+
+## COMPORTAMENTO
+
+### OGGI
+
+✔ Se tutto è coperto → verde  
+✔ testo: **“Nessuna criticità oggi”**  
+✔ nessun falso allarme  
+
+---
+
+### FUTURO
+
+✔ Il problema viene comunque mostrato  
+✔ visibile subito  
+✔ cliccabile  
+
+Esempio reale:
+
+👉 Alice scoperta sabato 30 maggio 13:00–14:30  
+
+---
+
+## DECISIONE STRUTTURALE IMPORTANTE
+
+❌ eliminata la logica:
+
+"Nessun problema nei prossimi 30 giorni"
+
+✔ sostituita da:
+
+👉 verità reale sempre visibile  
+
+---
+
+## RISULTATO
+
+✔ nessuna confusione  
+✔ nessuna falsa sicurezza  
+✔ navigazione diretta al problema  
+✔ comportamento reale  
 
 ---
 
@@ -179,22 +220,14 @@ Quando c’è un problema principale:
 
 👉 la Home deve mostrare UNA cosa sola da fare
 
-Esempio:
-
-- ORA: Alice non coperta
-- Alle 18:00 serve copertura per Alice
-- Oggi: problema copertura
-
 ---
 
 ## FLUSSO DECISO
 
-1. Home mostra problema principale  
-2. Bottone unico: **RISOLVI**  
-3. Popup spiega il problema  
-4. Bottone unico nel popup: **Vai al problema**  
-5. Apertura calendario nel giorno corretto  
-6. Decisione finale umana  
+1. Home mostra stato reale (oggi)  
+2. Mostra eventuale problema futuro  
+3. Click → calendario  
+4. Decisione umana  
 
 ---
 
@@ -204,27 +237,13 @@ Il sistema:
 
 ✔ spiega il problema  
 ✔ porta nel punto giusto  
-❌ NON propone soluzioni operative automatiche  
-
-Le soluzioni restano umane.
-
-Esempi di soluzioni umane:
-
-- spostare evento
-- prendere permesso
-- chiedere ferie
-- attivare supporto
-- modificare organizzazione familiare
+❌ NON propone soluzioni automatiche  
 
 ---
 
 ## NOTA IMPORTANTE
 
-La prima implementazione è nata sulla copertura, ma il concetto NON deve restare limitato alla copertura.
-
-Questo è il primo prototipo del futuro:
-
-👉 STRATO AZIONI UNIVERSALE
+👉 la Home ora è affidabile per uso reale quotidiano  
 
 ---
 
@@ -234,117 +253,9 @@ Stato: DEFINITO CONCETTUALMENTE, NON ANCORA IMPLEMENTATO
 
 ---
 
-## IDENTITÀ
-
-Lo strato azioni universale dovrà trasformare qualsiasi problema reale in:
-
-👉 problema → spiegazione → vai al punto → decisione umana
-
----
-
-## ESEMPI FUTURI
-
-Il sistema dovrà gestire problemi come:
-
-- Alice non coperta
-- assicurazione auto da pagare
-- assicurazione non pagata
-- bollo in scadenza
-- gomme da cambiare
-- gomme non cambiate da troppo tempo
-- visite o impegni critici
-- problemi economici futuri
-- scadenze familiari importanti
-
----
-
-## STRUTTURA DESIDERATA HOME FUTURA
-
-### BLOCCO SOPRA
-
-Una sola priorità:
-
-👉 “Dimmi cosa devo fare ora”
-
-Esempi:
-
-- ORA: Alice non coperta
-- Oggi: problema urgente da gestire
-- Tutto sotto controllo
-
----
-
-### BLOCCO SOTTO
-
-Quando la situazione immediata è sotto controllo:
-
-👉 mostrare problemi futuri
-
-Esempio:
-
-> Situazione sotto controllo  
-> Occhio: hai 3 problemi nei prossimi 30 giorni
-
-Ogni voce futura dovrà avere:
-
-- titolo problema
-- breve spiegazione
-- bottone “Vai”
-- apertura del punto corretto
-
----
-
-## PRINCIPIO STRUTTURALE
-
-La Home deve distinguere:
-
-- problemi immediati
-- problemi futuri
-- problemi lenti / manutentivi
-
----
-
 # 📚 STORICO / ANALISI ANNUALE
 
 Stato: IDEA EMERSA, NON ANCORA IMPLEMENTATA
-
----
-
-## OBIETTIVO FUTURO
-
-Creare una sezione storica capace di analizzare, a partire dal 1 Gennaio dell’anno corrente:
-
-- eventi già fatti
-- eventi futuri
-- promemoria già completati
-- promemoria ancora aperti
-- carico familiare
-- ricorrenze
-- andamento organizzativo reale
-
----
-
-## PRINCIPIO
-
-Lo storico NON deve essere solo archivio.
-
-Deve diventare:
-
-👉 memoria operativa del sistema  
-👉 lettura della vita reale già passata  
-👉 base per capire carichi, abitudini, problemi ricorrenti  
-
----
-
-## ESEMPI FUTURI
-
-Il sistema potrà dire:
-
-- quanti eventi sono stati gestiti da gennaio
-- quali persone hanno avuto più impegni
-- quanti promemoria sono rimasti aperti
-- quali problemi si ripetono spesso
-- quali periodi dell’anno sono più pesanti
 
 ---
 
@@ -357,8 +268,6 @@ Il sistema potrà dire:
 ✔ gestione Alice a casa corretta  
 ✔ gestione giorni festivi corretta  
 ✔ buchi reali letti dalla Home  
-✔ popup RISOLVI coerente con “Buchi del giorno” del calendario  
-✔ spiegazione del buco visibile anche dalla Home  
 
 ---
 
@@ -367,7 +276,6 @@ Il sistema potrà dire:
 ✔ AliceEventStore attivo  
 ✔ AliceSpecialEventStore attivo  
 ✔ eventi integrati nel motore  
-✔ nessun falso positivo  
 
 ---
 
@@ -406,10 +314,8 @@ Il sistema potrà dire:
 ✔ eventi reali integrati  
 ✔ stato Alice coerente  
 ✔ Home collegata al motore reale  
-✔ Home capace di mostrare azioni rapide da buchi reali  
-✔ popup azioni rapide testato  
-✔ popup coerente con spiegazione “Buchi del giorno” del calendario  
-✔ passaggio Home → popup → calendario verificato  
+✔ Home separa oggi vs futuro  
+✔ navigazione diretta al problema  
 
 ---
 
@@ -417,66 +323,21 @@ Il sistema potrà dire:
 
 👉 NON ancora coerente con il sistema reale
 
-Problema:
-
-- non legge ancora pienamente i buchi reali
-- usa logiche parziali
-- non rappresenta ancora tutta la realtà
-- non è ancora il motore unico delle priorità Home
-
 ---
 
 # 🎯 PROSSIMA FASE
 
-🔥 CONSOLIDAMENTO DOCUMENTI + NUOVA FASE STORICO
-
----
-
-## OBIETTIVO IMMEDIATO
-
-Chiudere correttamente lo stato stabile raggiunto.
-
-Da fare:
-
-1. aggiornare documenti reali
-2. segnare come completato il popup Home RISOLVI
-3. segnare come corretta la gestione festivi + Alice a casa
-4. preparare nuova chat con file coerenti
-
----
-
-## OBIETTIVO SUCCESSIVO
-
-Avviare ragionamento sullo storico:
-
-✔ eventi dal 1 Gennaio  
-✔ eventi futuri  
-✔ promemoria completati e aperti  
-✔ lettura annuale della vita familiare  
-✔ base futura per statistiche e analisi  
+🔥 EVENTI GLOBALI (PASSATI + FUTURI)
 
 ---
 
 # DIREZIONE OPERATIVA
 
-NON fare:
-
-❌ modifiche multiple  
-❌ salti di fase  
-❌ logiche duplicate  
-❌ UI senza base dati  
-❌ soluzioni automatiche decise dal sistema  
-❌ popup pieni di scelte operative premature  
-
-Fare:
-
 ✔ un passo alla volta  
 ✔ motore prima  
 ✔ UI dopo  
 ✔ test reale continuo  
-✔ Home orientata all’azione  
 ✔ decisione sempre umana  
-✔ documenti aggiornati partendo sempre dai file reali forniti dall’utente  
 
 ---
 
@@ -484,14 +345,13 @@ Fare:
 
 Il sistema ora:
 
-👉 NON simula più  
 👉 legge la realtà  
-👉 spiega il problema  
-👉 porta l’utente verso il punto da gestire  
-👉 lascia la decisione finale all’umano  
+👉 distingue oggi da futuro  
+👉 non nasconde problemi  
+👉 guida l’utente  
 
 ---
 
 # FRASE DI RIPARTENZA UFFICIALE
 
-Ripartiamo da FrodoDesk — HOME AZIONABILE V1 consolidata: popup RISOLVI funzionante, festivi corretti, copertura reale coerente. Prossima fase: aggiornamento documenti e avvio ragionamento sullo storico annuale.
+Ripartiamo da FrodoDesk — Home V1.1 stabile (oggi vs problema futuro separati). Prossima fase: progettazione Eventi Globali (passati + futuri).
