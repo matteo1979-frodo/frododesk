@@ -1,7 +1,8 @@
 FRODODESK — RULES
 
-Ultimo aggiornamento: Aprile 2026 (copertura reale temporale fix)
+Ultimo aggiornamento: 1 Maggio 2026 (Home azionabile consolidata + fix festivi + coerenza popup)
 
+---
 
 IDENTITÀ DEL SISTEMA
 
@@ -15,12 +16,14 @@ un semplice gestionale spese
 
 È un sistema che simula la realtà della vita familiare per rendere visibile la pressione prima che diventi problema.
 
+---
 
 PRINCIPIO FONDAMENTALE
 
 Il sistema suggerisce.  
 La decisione resta sempre umana.
 
+---
 
 RUOLI
 
@@ -31,6 +34,7 @@ Responsabile di:
 visione strategica  
 decisione finale  
 
+---
 
 Frodo
 
@@ -40,6 +44,7 @@ architettura sistema
 metodo CNC  
 coerenza tecnica  
 
+---
 
 FILOSOFIA DI SVILUPPO
 
@@ -54,6 +59,7 @@ Ogni blocco deve essere stabile prima di passare al successivo.
 
 Il progetto segue la logica CNC (Costruzione Non Caotica).
 
+---
 
 REGOLA FILE REALI
 
@@ -71,6 +77,7 @@ Obiettivo:
 
 0 rischio.
 
+---
 
 REGOLA OPERATIVA CHAT
 
@@ -82,6 +89,7 @@ Matteo copia e testa nell’app reale.
 
 Mai saltare passaggi.
 
+---
 
 REGOLA “UN PASSO ALLA VOLTA”
 
@@ -95,6 +103,7 @@ non anticipare passi successivi
 
 Se vengono dati più passi insieme si rompe la logica CNC.
 
+---
 
 REGOLA TEST
 
@@ -104,6 +113,7 @@ Comando standard:
 
 flutter run -d edge --web-port 8080
 
+---
 
 REGOLA CHIUSURA CHAT
 
@@ -130,6 +140,7 @@ Matteo invia solo i file richiesti.
 
 Frodo restituisce ogni file completo aggiornato, pronto da copiare nella cartella docs.
 
+---
 
 PROCEDURA UFFICIALE — CHIUSURA CHAT FRODODESK
 
@@ -140,7 +151,6 @@ PROCEDURA UFFICIALE — CHIUSURA CHAT FRODODESK
 Matteo scrive:
 
 Chiudiamo la chat. Quali file docs dobbiamo aggiornare?
-
 
 2️⃣ Frodo analizza la chat e richiede i file
 
@@ -161,7 +171,6 @@ Mandami questi file da aggiornare:
 
 ⚠️ Solo quelli realmente coinvolti
 
-
 3️⃣ Matteo invia i file reali
 
 Regole fondamentali:
@@ -170,7 +179,6 @@ sempre file completo
 uno alla volta  
 mai versioni ricostruite  
 presi dalla cartella /docs  
-
 
 4️⃣ Frodo restituisce i file aggiornati
 
@@ -183,7 +191,6 @@ nome_file
 
 ⚠️ Mai pezzi di file
 
-
 5️⃣ Matteo aggiorna la cartella docs
 
 Copia i file nella cartella:
@@ -194,7 +201,6 @@ Poi scrive:
 
 👉 “Fatto”
 
-
 6️⃣ Salvataggio Git (obbligatorio)
 
 Frodo fornisce i comandi:
@@ -202,7 +208,6 @@ Frodo fornisce i comandi:
 git add .  
 git commit -m "docs update"  
 git push  
-
 
 7️⃣ BACKUP DATI (quando necessario)
 
@@ -225,6 +230,7 @@ Formato:
 👉 JSON esportabile
 
 ⚠️ Non sempre obbligatorio, ma obbligatorio se c’è rischio
+
 8️⃣ Controllo finale
 
 Verificare:
@@ -235,7 +241,6 @@ commit ✔
 push ✔  
 backup (se necessario) ✔  
 
-
 9️⃣ Conferma finale di Frodo
 
 Frodo deve dire:
@@ -244,6 +249,7 @@ Frodo deve dire:
 
 Solo dopo la chat è chiusa.
 
+---
 
 REGOLA OBIETTIVO DOCUMENTAZIONE
 
@@ -253,6 +259,7 @@ cambiare chat senza perdere contesto
 capire subito lo stato  
 ripartire immediatamente  
 
+---
 
 ⚠️ REGOLA FONDAMENTALE DEL SISTEMA
 
@@ -262,6 +269,7 @@ La fonte di verità resta:
 
 Se docs ≠ codice → vale codice
 
+---
 
 REGOLA DECISIONALE — CONFLITTO TURNO ↔ EVENTO
 
@@ -283,6 +291,7 @@ Azioni:
 - cambio turno  
 - spostamento evento  
 
+---
 
 NUOVE REGOLE — MALATTIA
 
@@ -296,6 +305,7 @@ Malattia a letto:
 - non può uscire  
 - non disponibile  
 
+---
 
 REGOLA BLOCCANTE
 
@@ -305,6 +315,7 @@ Se stato = Malattia a letto:
 
 Sistema deve bloccare o avvisare
 
+---
 
 REGOLA INPS
 
@@ -321,6 +332,7 @@ Sistema deve:
 - segnalare conflitti  
 - permettere violazione consapevole  
 
+---
 
 REGOLA “IGNORA RISCHIO”
 
@@ -332,16 +344,19 @@ In caso di violazione INPS:
 
 Permette azione ma segnala rischio
 
+---
 
 EVOLUZIONE FUTURA MOTORE
 
 Il conflitto evento ↔ turno dipenderà dallo stato:
 
 normale → conflitto pieno  
-
 malattia → valutazione diversa  
 
 (non ancora implementato)
+
+---
+
 # 🔴 NUOVA REGOLA STRUTTURALE — NOTTE / POST-NOTTE
 
 (Introdotta 19 Marzo 2026)
@@ -352,14 +367,9 @@ Quando un giorno è marcato come turno NOTTE (`N`):
 
 Ma deve rappresentare SEMPRE tre componenti reali:
 
-1. coda della notte precedente  
-   → 00:00–06:30  
-
-2. indisponibilità post-notte  
-   → 00:00–14:30 (regola obbligatoria)
-
-3. nuova notte la sera  
-   → 21:00–06:30  
+1. coda della notte precedente → 00:00–06:30  
+2. indisponibilità post-notte → 00:00–14:30  
+3. nuova notte la sera → 21:00–06:30  
 
 ---
 
@@ -367,426 +377,156 @@ Ma deve rappresentare SEMPRE tre componenti reali:
 
 👉 Il post-notte è sempre presente se il giorno è `N`
 
-Non dipende da:
-
-- Alice (scuola / vacanza / malattia)
-- Sandra
-- eventi reali
-
 È una **regola fisica della persona**.
 
 ---
 
-## Implicazioni sul sistema
+## Implicazioni
 
-Il motore deve:
-
-- considerare la persona NON disponibile fino alle 14:30
-- generare correttamente i buchi mattina/pranzo
-- NON permettere copertura falsa dopo la notte
-- mantenere coerenza tra tutti gli scenari (Alice scuola / vacanza / malattia)
+- NON disponibile fino alle 14:30  
+- genera buchi reali  
+- niente copertura falsa  
 
 ---
 
-## Obiettivo
+# 🔥 NUOVA REGOLA STRUTTURALE — AZIONI SENZA SOLUZIONI (CONSOLIDATA)
 
-👉 evitare falsi positivi di copertura  
-👉 allineare il sistema alla realtà fisica del recupero post-notte  
+## PRINCIPIO
 
+Il sistema NON deve proporre soluzioni operative.
 
-REGOLA — APERTURA CHAT FRODODESK
+## COMPORTAMENTO CORRETTO
 
-Ogni nuova chat deve iniziare con:
+✔ rileva il problema  
+✔ spiega il problema  
+✔ mostra il perché  
+✔ porta al punto corretto  
 
-1) FRODODESK — RIPRESA SVILUPPO  
-2) SYSTEM_STATE  
-3) RULES  
-4) file su cui si lavora  
-5) file reale  
+## COMPORTAMENTO VIETATO
 
-Poi si parte.
----
-
-# REGOLA CRITICA — CONTINUITÀ DOCUMENTALE (21 Marzo 2026)
-
-## ERRORE DA NON RIPETERE
-
-Durante questa chat è stato commesso un errore grave:
-
-👉 restituzione di un file docs **parziale e ridotto**
-invece del file completo aggiornato.
-
-Esempio reale:
-
-- file originale ~700+ righe
-- file restituito ~200 righe
-
-Questo comportamento è **inaccettabile per FrodoDesk**.
+❌ suggerire azioni  
+❌ decidere al posto dell’utente  
 
 ---
 
-## PRINCIPIO ASSOLUTO
-
-FrodoDesk NON è un progetto normale.
-
-È un sistema che vive di:
-
-👉 memoria completa  
-👉 continuità totale  
-👉 contesto accumulato  
-
----
-
-## REGOLA OPERATIVA OBBLIGATORIA
-
-Quando Frodo aggiorna un file docs deve:
-
-✔ restituire SEMPRE il file completo  
-✔ mantenere TUTTO il contenuto esistente  
-✔ aggiungere solo le nuove parti  
-✔ NON semplificare  
-✔ NON riassumere  
-✔ NON “ripulire” il file  
-✔ NON riorganizzare autonomamente  
-
----
-
-## VIETATO
-
-❌ accorciare il file  
-❌ riscrivere il file “più pulito”  
-❌ perdere dettagli storici  
-❌ eliminare sezioni esistenti  
-❌ reinterpretare il contenuto  
-
----
-
-## MOTIVO
-
-La nuova chat deve poter:
-
-👉 leggere il file come se questa chat non fosse mai stata chiusa  
-
-Se il file viene ridotto:
-
-👉 si perde memoria  
-👉 si perde contesto  
-👉 si rompe il sistema  
-
----
-
-## REGOLA FINALE
-
-👉 I file docs sono memoria viva del sistema  
-👉 NON devono mai essere compressi o semplificati  
-
-Qualsiasi aggiornamento deve essere:
-
-👉 SOLO AGGIUNTA  
-👉 MAI SOSTITUZIONE E RENDERE SEMPRE FILE INTERO
-
-
----
-
-# AGGIORNAMENTO — 24 MARZO 2026
-
-## REGOLA FILE GRANDI / RISPOSTE BLOCCATE
-
-Durante lo sviluppo reale di FrodoDesk è emerso un problema critico:
-
-👉 i file molto lunghi (es. calendario_screen_stepa.dart) possono causare:
-- timeout risposta
-- messaggi troncati
-- errore “tempo di consegna scaduto”
-- perdita continuità operativa
-
----
-
-## NUOVA REGOLA OPERATIVA
-
-Quando si lavora su file molto grandi:
-
-### CASO 1 — MODIFICA PICCOLA
-
-👉 usare micro-step normale
-
-- modifica singola riga
-- sostituzione puntuale
-- fix chirurgico
-
----
-
-### CASO 2 — MODIFICA STRUTTURALE
-
-👉 usare modalità a blocchi
-
-Procedura obbligatoria:
-
-1) Matteo invia file reale completo  
-2) Frodo lavora sull’intero file  
-3) Frodo restituisce file completo diviso in blocchi  
-
-Formato:
-
-BLOCCO 1  
-BLOCCO 2  
-BLOCCO 3  
-
----
-
-## REGOLA DI SICUREZZA
-
-Matteo deve:
-
-- cancellare file originale  
-- incollare blocchi in ordine  
-- salvare  
-- testare subito  
-
----
-
-## REGOLA ANTI-ERRORE CRITICO
-
-È vietato:
-
-❌ tentare di inviare file enorme in un solo blocco se instabile  
-❌ lasciare risposta a metà  
-❌ generare file incompleto  
-
----
-
-## PRINCIPIO OPERATIVO
-
-👉 meglio più blocchi completi che un file troncato  
-
----
-
-## VALIDAZIONE
-
-Questo metodo è stato:
-
-✔ testato in reale  
-✔ necessario per continuità  
-✔ adottato come standard ufficiale FrodoDesk  
-
----
-
-## AGGIUNTA ALLA REGOLA FILE REALI
-
-Quando necessario:
-
-👉 “file completo” = può essere restituito in più blocchi
-
-purché:
-
-- nessuna parte venga persa  
-- ordine corretto mantenuto  
-- contenuto completo garantito  
----
-
-# AGGIORNAMENTO — 24 MARZO 2026 (REGOLA BLOCCHI GRANDI DEFINITIVA)
-
-## Nuova regola definitiva
-
-Da questo momento, quando un file è grande, la restituzione deve seguire una procedura ancora più rigida.
-
-Questa regola vale per:
-
-- file del sistema
-- file docs
-- qualsiasi file lungo restituito da Frodo
-
----
-
-## Limite massimo per blocco
-
-Ogni blocco restituito deve restare entro circa:
-
-👉 **1200 righe massime**
-
-Questo serve per ridurre il rischio di:
-
-- troncamento
-- timeout
-- perdita di porzioni finali
-- risposta instabile
-
----
-
-## Procedura obbligatoria a blocchi
-
-Quando il file è lungo:
-
-1. Frodo invia **BLOCCO 1**
-2. Matteo cancella il file vecchio e incolla **BLOCCO 1**
-3. Matteo scrive: **OK**
-4. Frodo invia **BLOCCO 2**
-5. Matteo incolla **BLOCCO 2**
-6. Matteo scrive: **OK**
-7. si continua così fino all’ultimo blocco
-
-Solo dopo l’ultimo blocco Frodo deve dichiarare chiaramente che il file è completo.
-
----
-
-## Divieto operativo
-
-È vietato:
-
-❌ inviare un file lungo tutto insieme se il rischio di troncamento è alto  
-❌ inviare blocchi troppo lunghi  
-❌ saltare il passaggio di conferma “OK” tra un blocco e il successivo  
-❌ lasciare all’utente il dubbio se il file sia finito o no  
-
----
-
-## Principio di sicurezza
-
-Per FrodoDesk vale questa regola:
-
-👉 meglio più blocchi piccoli, ordinati e sicuri  
-che un file unico incompleto o instabile
-
----
-
-## Regola finale consolidata
-
-Qualsiasi file grosso deve essere:
-
-- completo
-- ordinato
-- diviso in blocchi
-- consegnato con conferma “OK” tra i blocchi
-- senza mai superare circa 1200 righe per blocco
-
-Questa è da considerare regola strutturale ufficiale del metodo FrodoDesk.
-
-
----
-
-## 🔥 REGOLA OPERATIVA — AZIONI REVERSIBILI (25 Marzo 2026)
-
-Nel sistema FrodoDesk, ogni azione operativa proposta all’utente deve essere:
-
-- attivabile
-- disattivabile
-- reversibile
-- trasparente
-
-### Divieto assoluto
-
-Il sistema NON deve mai:
-
-- applicare automaticamente una soluzione definitiva
-- nascondere lo stato reale originale
-- impedire il ritorno al problema iniziale (es. buco)
-
-### Principio fondamentale
-
-👉 Il sistema suggerisce  
-👉 L’utente decide  
-👉 L’utente può sempre tornare indietro  
-
-### Applicazione concreta
-
-Esempio:
-
-“Porta Alice con Matteo / Chiara”
-
-Deve:
-
-- risolvere il buco quando attivo
-- far riapparire il buco quando disattivato  
-
-### Significato strutturale
-
-Le azioni nel sistema NON sono modifiche permanenti.
-
-Sono:
-
-👉 simulazioni operative temporanee  
-
-### Obiettivo
-
-- mantenere sempre visibile la realtà
-- permettere confronto tra soluzioni
-- evitare automatismi che falsano la percezione del sistema
-
-
----
-
-# 🔴 NUOVA REGOLA CRITICA — COPERTURA REALE TEMPORALE (Aprile 2026)
+# 🔴 NUOVA REGOLA CRITICA — COPERTURA FESTIVI (1 MAGGIO 2026)
 
 ## Problema emerso
 
-Il sistema considerava coperta una fascia anche quando il supporto NON copriva realmente l’intervallo necessario.
+Nei giorni festivi:
 
-Esempio reale:
-
-- buco: 09:05–09:25  
-- supporto attivo: 07:00–08:25  
-
-❌ Il sistema segnava “coperto”  
-✔ In realtà il buco restava  
-
----
+👉 Alice risultava a casa  
+👉 ma il sistema poteva NON generare buco  
 
 ## Regola corretta
 
-👉 Una copertura è valida SOLO se copre completamente l’intervallo richiesto  
+👉 Se Alice è a casa (anche festivo):
 
-Condizione obbligatoria:
+SI applica SEMPRE la regola copertura
+
+## Implicazione
+
+✔ festivo ≠ giorno speciale  
+✔ festivo ≠ copertura automatica  
+✔ festivo segue stessa logica reale  
+
+## Principio finale
+
+👉 La copertura NON dipende dalla scuola  
+👉 Dipende SOLO da: presenza reale degli adulti  
+
+---
+
+# 🔴 NUOVA REGOLA — COERENZA HOME ↔ CALENDARIO
+
+## Principio
+
+👉 La Home deve mostrare ESATTAMENTE ciò che il calendario mostra
+
+## Regola
+
+✔ stesso buco  
+✔ stessa fascia  
+✔ stessi motivi  
+
+## Vietato
+
+❌ Home dice OK ma calendario ha buco  
+❌ spiegazioni diverse  
+
+## Obiettivo
+
+👉 una sola verità nel sistema  
+
+---
+
+# 🔴 NUOVA REGOLA — POPUP AZIONI
+
+## Comportamento obbligatorio
+
+Il popup deve mostrare:
+
+✔ problema reale  
+✔ fascia oraria  
+✔ spiegazione reale  
+✔ motivi (Matteo fuori, Chiara fuori, ecc.)  
+
+✔ bottone: "Vai al problema"  
+
+## Vietato
+
+❌ suggerimenti operativi  
+❌ azioni automatiche  
+
+## Obiettivo
+
+👉 rendere il problema chiaro  
+👉 NON risolverlo automaticamente  
+
+---
+
+# 🔴 NUOVA REGOLA — COERENZA SPIEGAZIONE BUCHI
+
+## Principio
+
+La spiegazione deve essere:
+
+✔ identica tra:
+- Home popup  
+- Buchi del giorno (calendario)
+
+## Obiettivo
+
+👉 evitare doppie logiche  
+👉 evitare confusione  
+
+---
+
+# 🔴 REGOLA CRITICA — CONTINUITÀ DOCUMENTALE (21 Marzo 2026)
+
+(file NON deve mai essere ridotto)
+
+✔ sempre completo  
+✔ mai riassunto  
+✔ mai semplificato  
+
+👉 memoria viva del sistema  
+
+---
+
+# 🔴 NUOVA REGOLA CRITICA — COPERTURA REALE TEMPORALE
+
+Una copertura è valida SOLO se copre completamente l’intervallo.
 
 supportStart ≤ gapStart  
 AND  
 supportEnd ≥ gapEnd  
 
----
-
-## Implicazione
-
-NON basta:
-
-- avere supporto attivo nel giorno  
-- avere supporto parziale  
-- avere orari vicini  
-
-Serve:
-
-👉 copertura esatta dell’intervallo  
+👉 niente coperture parziali  
 
 ---
 
-## Regola operativa per il motore
-
-Le funzioni tipo:
-
-_supportNetworkCoversRange(...)
-
-devono verificare SEMPRE:
-
-👉 copertura completa del range  
-
----
-
-## Obiettivo
-
-- eliminare falsi positivi  
-- garantire coerenza reale  
-- rendere il sistema affidabile nelle decisioni  
-
----
-
-## Significato strutturale
-
-Questa regola separa:
-
-❌ presenza simbolica  
-✔ copertura reale operativa  
-
----
-
-## Principio finale
+## PRINCIPIO FINALE
 
 👉 Il sistema NON deve mai “pensare che basti”  
 👉 Deve verificare che COPRA davvero  

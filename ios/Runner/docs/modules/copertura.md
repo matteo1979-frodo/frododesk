@@ -1,6 +1,6 @@
 # FRODODESK — MODULO COPERTURA
 
-Ultimo aggiornamento: 28 Aprile 2026
+Ultimo aggiornamento: 1 Maggio 2026 (fix giorni festivi + coerenza Home)
 
 ---
 
@@ -59,6 +59,60 @@ Alice è considerata **A CASA** quando NON è:
 
 ---
 
+## 🔥 AGGIORNAMENTO — GIORNI FESTIVI
+
+### Problema emerso
+
+Nei giorni festivi (es. 1 maggio):
+
+- Alice risultava correttamente senza scuola  
+- ma NON sempre veniva generato il buco  
+
+---
+
+### Causa
+
+Il sistema considerava Alice a casa solo in questi casi:
+
+- evento Alice  
+- weekend  
+
+👉 mancava il caso:
+
+- giorno senza scuola  
+- NON weekend  
+- NON evento  
+
+---
+
+### Soluzione
+
+Alice è considerata **a casa anche quando**:
+
+- non c’è scuola  
+- non è weekend  
+- non c’è centro estivo attivo  
+
+---
+
+### Regola aggiornata
+
+👉 Se NON c’è scuola → Alice è a casa
+
+E quindi:
+
+👉 si applica SEMPRE la regola copertura
+
+---
+
+### Risultato
+
+✔ Giorni festivi corretti  
+✔ Buco generato correttamente  
+✔ Coerenza completa tra motore e Home  
+
+---
+
 ## 3. REGOLA COPERTURA
 
 Se Alice è a casa:
@@ -73,6 +127,10 @@ Se Alice è a casa:
 Se nessuno copre:
 
 👉 ❌ BUCO REALE (sempre)
+
+✔ Regola valida su tutta la giornata  
+✔ NON limitata a fasce Sandra  
+✔ NON limitata alla scuola  
 
 ---
 
@@ -131,7 +189,7 @@ Il motore:
 Un buco esiste quando:
 
 👉 Alice è a casa  
-👉 e NON c’è copertura reale
+👉 e NON c’è copertura reale  
 
 ✔ controllo su tutta la giornata (00:00–23:59)  
 ❌ NON limitato a fasce Sandra  
@@ -149,6 +207,9 @@ Il sistema combina:
 
 👉 anche su segmenti diversi della stessa fascia
 
+✔ sistema continuo  
+✔ non blocchi rigidi  
+
 ---
 
 # USCITA IMPRESCINDIBILE (REGOLA)
@@ -164,16 +225,32 @@ Significa:
 
 ---
 
-# 🆕 STRATO DECISIONALE — AZIONI CONSIGLIATE
+# 🔥 STRATO DECISIONALE — AZIONI (AGGIORNATO)
 
 ## IDENTITÀ
 
 Questo strato traduce i buchi in:
 
-👉 **azioni concrete per l’utente**
+👉 **problemi azionabili per l’utente**
 
 NON modifica il motore  
-👉 interpreta il risultato
+👉 interpreta il risultato  
+
+---
+
+## ⚠️ CAMBIAMENTO STRUTTURALE (IMPORTANTE)
+
+Versione precedente:
+
+❌ suggeriva azioni operative  
+
+Versione attuale:
+
+✔ spiega il problema  
+✔ porta al punto corretto  
+❌ NON suggerisce soluzioni  
+
+👉 Le soluzioni restano **sempre umane**
 
 ---
 
@@ -181,43 +258,16 @@ NON modifica il motore
 
 👉 `cov.gapDetails`
 
-Ogni gap contiene:
-
-- fascia oraria reale (es. 21:00–23:30)
-- descrizione problema
-
----
-
-## LOGICA
-
-Per ogni gap:
-
-### 1. Parsing orario
-21:00–23:30 → start / end
-
-### 2. Conversione
-Orari → minuti
-
-### 3. Lettura copertura reale
-
-### 4. Valutazione
-
-✔ Copertura piena  
-⚠️ Copertura combinata  
-❌ Buco reale  
-
 ---
 
 ## OUTPUT
 
 Per ogni problema:
 
-- suggerimento automatico
-- classificazione:
-
-✔ Copertura presente  
-⚠️ Copertura combinata  
-❌ Azione necessaria  
+- descrizione chiara
+- fascia oraria
+- spiegazione sintetica
+- azione unica: **vai al problema**
 
 ---
 
@@ -225,39 +275,86 @@ Per ogni problema:
 
 👉 ogni buco genera un blocco UI
 
-- Problema 1
-- Problema 2
-- …
-
 ---
 
 ## UI
 
-- lista problemi
-- numerazione
-- conteggio totale
-- suggerimento per ogni problema
+- lista problemi  
+- numerazione  
+- fascia oraria  
+- spiegazione  
+
+👉 per ogni problema:
+
+✔ bottone: **Vai al problema**  
+❌ nessuna soluzione proposta  
+
+---
+
+# 🔁 FLUSSO OPERATIVO DEFINITIVO
+
+1. Home rileva buco reale  
+2. mostra problema principale  
+3. bottone: **RISOLVI**  
+4. apertura popup  
+5. popup spiega il problema  
+6. bottone: **Vai al problema**  
+7. apertura calendario nel giorno corretto  
+8. decisione presa dall’utente  
+
+---
+
+# 🎯 PRINCIPIO DECISIONALE
+
+Il sistema:
+
+✔ rende visibile la realtà  
+✔ spiega il problema  
+✔ porta nel punto corretto  
+
+👉 NON deve:
+
+❌ scegliere al posto dell’utente  
+❌ proporre soluzioni automatiche  
+❌ semplificare decisioni complesse  
+
+---
+
+# 🧠 SIGNIFICATO STRUTTURALE
+
+👉 Il modulo copertura è un **generatore di problemi reali**
+
+---
+
+# 🔥 EVOLUZIONE FUTURA
+
+Estensione a:
+
+- finanze  
+- auto  
+- salute  
+- scadenze  
+- manutenzioni  
 
 ---
 
 # GESTIONE NOTTE / POST-NOTTE
 
-👉 riposo fino alle 14:30
+✔ riposo fino alle 14:30  
+✔ già integrato  
 
 ---
 
 # GESTIONE EVENTI
 
-👉 gli eventi sono blocchi reali di indisponibilità  
-👉 influenzano direttamente la copertura
+✔ eventi = indisponibilità reale  
+✔ integrati nel motore  
 
 ---
 
 # GESTIONE CENTRO ESTIVO
 
-- prima → casa
-- durante → fuori
-- dopo → casa
+✔ dinamico (prima/durante/dopo)  
 
 ---
 
@@ -265,23 +362,25 @@ Per ogni problema:
 
 ✔ motore copertura REALE  
 ✔ Alice a casa gestita correttamente  
+✔ giorni festivi corretti  
 ✔ buchi reali su tutta la giornata  
 ✔ eventi reali integrati  
 ✔ supporto integrato  
 ✔ Home coerente con motore  
+✔ popup RISOLVI coerente  
+✔ spiegazione buchi unificata  
 
-⚠️ IPS NON ancora coerente (parziale)
+⚠️ naming UI da uniformare  
+⚠️ rifinitura UX popup  
 
 ---
 
 # PROSSIMO STEP
 
-👉 allineare IPS al motore reale
-
-(obiettivo: IPS basato su buchi veri, non su simulazioni)
+👉 rifinitura UI + coerenza naming
 
 ---
 
 # FRASE DI RIPARTENZA
 
-Ripartiamo da FrodoDesk — Copertura reale completata. Prossimo passo: IPS basato su dati reali.
+Ripartiamo da FrodoDesk — Copertura stabile, giorni festivi corretti, Home coerente con motore. Prossimo passo: rifinitura UX e naming popup.

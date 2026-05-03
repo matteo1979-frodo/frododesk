@@ -710,10 +710,13 @@ class CoverageEngine {
       fallbackGlobal: sandraSeraOn,
     );
 
+    final bool isWeekend =
+        d0.weekday == DateTime.saturday || d0.weekday == DateTime.sunday;
+
     final bool aliceAtHome =
         isAliceAtHomeDay(d0) ||
-        d0.weekday == DateTime.saturday ||
-        d0.weekday == DateTime.sunday;
+        isWeekend ||
+        (!schoolStore.hasSchoolOn(d0) && !isAliceSummerCampOperationalDay(d0));
     final aliceType = getAliceEventTypeForDay(d0);
 
     String _aliceHomeBaseLabel(AliceEventType? aliceType) {
@@ -745,8 +748,6 @@ class CoverageEngine {
     final bool hasTimedAliceEvent =
         firstAliceEvent != null && lastAliceEvent != null;
 
-    final bool isWeekend =
-        d0.weekday == DateTime.saturday || d0.weekday == DateTime.sunday;
     final bool aliceSchoolNormal = isAliceSchoolNormalDay(d0) && !isWeekend;
 
     final bool aliceSummerCamp =
@@ -2100,7 +2101,12 @@ class CoverageEngine {
     required TurnPerson person,
     required DateTime day,
   }) {
-    final plan = turnEngine.turnPlanForPersonDay(person: person, day: day);
+    final previousDay = day.subtract(const Duration(days: 1));
+    final plan = turnEngine.turnPlanForPersonDay(
+      person: person,
+      day: previousDay,
+    );
+
     return plan.type == TurnType.notte;
   }
 

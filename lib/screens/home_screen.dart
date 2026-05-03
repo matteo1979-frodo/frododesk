@@ -40,7 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _actionLabelFromModule(snap.IpsModule module) {
     switch (module) {
       case snap.IpsModule.coverage:
-        return "Risolvi copertura";
+        return "RISOLVI";
       case snap.IpsModule.finance:
         return "Controlla finanze";
       case snap.IpsModule.health:
@@ -102,32 +102,103 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  List<CoverageGapDetail> _relevantCoverageDetailsFromNow() {
-    final details = _todayCoverageDetails();
+  _HomeCoverageIssue? _relevantCoverageIssueFromNow() {
+    return _todayCoverageIssueFromNow() ?? _futureCoverageIssueFromTomorrow();
+  }
+
+  _HomeCoverageIssue? _todayCoverageIssueFromNow() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
 
     final nowTime = TimeOfDay.now();
     final nowMinutes = nowTime.hour * 60 + nowTime.minute;
 
-    final relevant = details.where((detail) {
+    final details = _todayCoverageDetails().where((detail) {
       final endMinutes = detail.end.hour * 60 + detail.end.minute;
       return endMinutes > nowMinutes;
     }).toList();
 
-    relevant.sort((a, b) {
+    if (details.isEmpty) return null;
+
+    details.sort((a, b) {
       final aStart = a.start.hour * 60 + a.start.minute;
       final bStart = b.start.hour * 60 + b.start.minute;
       return aStart.compareTo(bStart);
     });
 
-    return relevant;
+    return _HomeCoverageIssue(day: today, details: details);
+  }
+
+  _HomeCoverageIssue? _futureCoverageIssueFromTomorrow() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    for (int i = 1; i <= 30; i++) {
+      final day = today.add(Duration(days: i));
+
+      final details = coreStore.coverageEngine.aliceHomeRiskDetailsForDay(
+        day: day,
+        uscita13:
+            coreStore.daySettingsStore.uscita13ForDay(day) ??
+            settingsStore.isUscita13,
+        sandraMattinaOn:
+            coreStore.daySettingsStore.sandraMattinaForDay(day) ?? false,
+        sandraPranzoOn:
+            coreStore.daySettingsStore.sandraPranzoForDay(day) ?? false,
+        sandraSeraOn: coreStore.daySettingsStore.sandraSeraForDay(day) ?? false,
+        schoolStart: TimeOfDay(
+          hour:
+              (coreStore.schoolStore.schoolDayConfigFor(day)?.entryMinutes ??
+                  505) ~/
+              60,
+          minute:
+              (coreStore.schoolStore.schoolDayConfigFor(day)?.entryMinutes ??
+                  505) %
+              60,
+        ),
+        overrides: coreStore.overrideStore.getEffectiveForDay(
+          day: day,
+          ferieStore: coreStore.feriePeriodStore,
+        ),
+        ferieStore: coreStore.feriePeriodStore,
+        schoolInCover: coreStore.daySettingsStore.schoolInCoverForDay(day),
+        schoolOutCover: coreStore.daySettingsStore.schoolOutCoverForDay(day),
+        schoolOutStart:
+            coreStore.daySettingsStore.schoolOutStartForDay(day) ??
+            const TimeOfDay(hour: 16, minute: 25),
+        schoolOutEnd:
+            coreStore.daySettingsStore.schoolOutEndForDay(day) ??
+            const TimeOfDay(hour: 16, minute: 45),
+        lunchCover: coreStore.daySettingsStore.lunchCoverForDay(day),
+        uscitaAnticipataAt: coreStore.daySettingsStore
+            .uscitaAnticipataTimeForDay(day),
+      );
+
+      if (details.isNotEmpty) {
+        details.sort((a, b) {
+          final aStart = a.start.hour * 60 + a.start.minute;
+          final bStart = b.start.hour * 60 + b.start.minute;
+          return aStart.compareTo(bStart);
+        });
+
+        return _HomeCoverageIssue(day: day, details: details);
+      }
+    }
+
+    return null;
   }
 
   String _homeCoverageDecisionText() {
-    final details = _relevantCoverageDetailsFromNow();
+    final issue = _relevantCoverageIssueFromNow();
 
-    if (details.isEmpty) {
+    if (issue == null) {
       return "Nessun problema da ora in poi";
     }
+
+    final details = issue.details;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
 
     final nowTime = TimeOfDay.now();
     final nowMinutes = nowTime.hour * 60 + nowTime.minute;
@@ -136,15 +207,52 @@ class _HomeScreenState extends State<HomeScreen> {
     final startMinutes = first.start.hour * 60 + first.start.minute;
     final endMinutes = first.end.hour * 60 + first.end.minute;
 
-    if (startMinutes <= nowMinutes && endMinutes > nowMinutes) {
+    final isToday =
+        issue.day.year == today.year &&
+        issue.day.month == today.month &&
+        issue.day.day == today.day;
+
+    if (isToday && startMinutes <= nowMinutes && endMinutes > nowMinutes) {
       return "ORA: Alice non coperta";
     }
 
-    return "Alle ${_formatTime(first.start)} serve copertura per Alice";
+    if (isToday) {
+      return "Alle ${_formatTime(first.start)} serve copertura per Alice";
+    }
+
+    final weekdays = [
+      "lunedì",
+      "martedì",
+      "mercoledì",
+      "giovedì",
+      "venerdì",
+      "sabato",
+      "domenica",
+    ];
+
+    final months = [
+      "gennaio",
+      "febbraio",
+      "marzo",
+      "aprile",
+      "maggio",
+      "giugno",
+      "luglio",
+      "agosto",
+      "settembre",
+      "ottobre",
+      "novembre",
+      "dicembre",
+    ];
+
+    final dayLabel =
+        "${weekdays[issue.day.weekday - 1]} ${issue.day.day} ${months[issue.day.month - 1]}";
+
+    return "$dayLabel alle ${_formatTime(first.start)} serve copertura per Alice";
   }
 
   bool _hasCoverageIssue() {
-    return _relevantCoverageDetailsFromNow().isNotEmpty;
+    return _relevantCoverageIssueFromNow() != null;
   }
 
   String _homeStateTitle(bool hasIssue) {
@@ -253,6 +361,38 @@ class _HomeScreenState extends State<HomeScreen> {
 
     ipsStore.refresh();
     if (mounted) setState(() {});
+  }
+
+  Future<void> _openCalendarForDay(DateTime day) async {
+    final cleanDay = DateTime(day.year, day.month, day.day);
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CalendarioScreenStepAStabile(
+          coreStore: coreStore,
+          initialSelectedDay: cleanDay,
+        ),
+      ),
+    );
+
+    ipsStore.refresh();
+    if (mounted) setState(() {});
+  }
+
+  DateTime _firstCoverageProblemDay() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    for (int i = 0; i < 30; i++) {
+      final day = today.add(Duration(days: i));
+      final details = ipsStore.coverage.realGapDetailsForDay(day);
+
+      if (details.isNotEmpty) {
+        return day;
+      }
+    }
+
+    return today;
   }
 
   List<Promemoria> _buildTodayPromemoria() {
@@ -599,6 +739,211 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: _openCalendarToday,
               icon: const Icon(Icons.calendar_month_rounded),
               label: const Text("Vai al calendario"),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openTodayCoverageActions() async {
+    final issue = _relevantCoverageIssueFromNow();
+    final details = issue?.details ?? [];
+
+    await _showHomeDialog(
+      icon: Icons.front_hand_rounded,
+      color: const Color(0xFFE57373),
+      title: "Problema copertura",
+      subtitle: details.isEmpty
+          ? "Nessun buco attivo o futuro da ora in poi"
+          : "${details.length} problema/i oggi da capire",
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (details.isEmpty)
+            _buildDialogEmptyState(
+              icon: Icons.verified_rounded,
+              title: "Tutto coperto",
+              subtitle: "Da ora in poi non risultano buchi per Alice.",
+            )
+          else
+            ...details.asMap().entries.map((entry) {
+              final index = entry.key + 1;
+              final gap = entry.value;
+
+              final whyText = gap.lines.isNotEmpty
+                  ? gap.lines.join("\n")
+                  : "Perché: il motore non trova nessun adulto o supporto che copra completamente questo intervallo.";
+
+              return Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.72),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withOpacity(0.42)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Problema $index oggi",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      "${_formatTime(gap.start)}–${_formatTime(gap.end)}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Alice risulta scoperta in questa fascia.",
+                      style: TextStyle(
+                        color: Colors.black.withOpacity(0.72),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      whyText,
+                      style: TextStyle(
+                        color: Colors.black.withOpacity(0.62),
+                        fontWeight: FontWeight.w600,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: _openCalendarToday,
+                      icon: const Icon(Icons.calendar_month_rounded),
+                      label: const Text("Vai al problema"),
+                    ),
+                  ],
+                ),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCoverageQuickActionsBox(List<CoverageGapDetail> todayDetails) {
+    final futureIssue = _futureCoverageIssueFromTomorrow();
+
+    if (todayDetails.isEmpty && futureIssue == null) {
+      return const SizedBox.shrink();
+    }
+
+    if (todayDetails.isEmpty && futureIssue != null) {
+      final first = futureIssue.details.first;
+
+      final weekdays = [
+        "lunedì",
+        "martedì",
+        "mercoledì",
+        "giovedì",
+        "venerdì",
+        "sabato",
+        "domenica",
+      ];
+
+      final months = [
+        "gennaio",
+        "febbraio",
+        "marzo",
+        "aprile",
+        "maggio",
+        "giugno",
+        "luglio",
+        "agosto",
+        "settembre",
+        "ottobre",
+        "novembre",
+        "dicembre",
+      ];
+
+      final dayLabel =
+          "${weekdays[futureIssue.day.weekday - 1]} ${futureIssue.day.day} ${months[futureIssue.day.month - 1]}";
+
+      return Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(top: 14),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withOpacity(0.25)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                "Prossimo problema copertura: Alice scoperta $dayLabel ${_formatTime(first.start)}–${_formatTime(first.end)}",
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.85),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => _openCalendarForDay(futureIssue.day),
+              child: const Text("VAI"),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final first = todayDetails.first;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 14),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE57373).withOpacity(0.16),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE57373).withOpacity(0.45)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Problema copertura",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 15,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            todayDetails.length == 1
+                ? "1 buco oggi: ${_formatTime(first.start)}–${_formatTime(first.end)}"
+                : "${todayDetails.length} buchi oggi. Primo: ${_formatTime(first.start)}–${_formatTime(first.end)}",
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.88),
+              fontWeight: FontWeight.w600,
+              height: 1.25,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: _openTodayCoverageActions,
+            icon: const Icon(Icons.bolt_rounded),
+            label: const Text("RISOLVI"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
             ),
           ),
         ],
@@ -1129,18 +1474,41 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, ips, _) {
         final todayEvents = _buildTodayRealEvents();
 
-        final bool hasIssue = ips.level != snap.IpsLevel.green;
+        final todayIssue = _todayCoverageIssueFromNow();
+        final todayDetails = todayIssue?.details ?? [];
 
-        final color = _levelColor(ips.level);
-        final stateText = _stateTextFromLevel(ips.level);
+        final bool hasTodayCoverageIssue = todayIssue != null;
+        final bool hasIpsIssue = ips.level != snap.IpsLevel.green;
+        final bool hasIssue = hasTodayCoverageIssue || hasIpsIssue;
 
-        final mainSentence = ipsStore.getDecisionMessage();
+        final color = hasTodayCoverageIssue
+            ? const Color(0xFFE57373)
+            : _levelColor(ips.level);
 
-        final systemDetail = hasIssue
-            ? "Sistema sotto pressione: IPS rileva una criticità nei moduli attivi."
-            : (todayEvents.isEmpty
-                  ? "Nessuna criticità rilevata nei moduli attivi."
-                  : "Nessuna criticità rilevata, con ${todayEvents.length} evento/i in agenda.");
+        final stateText = hasTodayCoverageIssue
+            ? "✋ Problema oggi"
+            : "${ips.level == snap.IpsLevel.green
+                  ? "😌"
+                  : ips.level == snap.IpsLevel.yellow
+                  ? "😐"
+                  : "😨"} ${_stateTextFromLevel(ips.level)}";
+
+        final mainSentence = hasTodayCoverageIssue
+            ? "Oggi: Alice non coperta"
+            : ipsStore.getDecisionMessage();
+
+        String systemDetail;
+
+        if (hasTodayCoverageIssue) {
+          final first = todayDetails.first;
+          systemDetail =
+              "Copertura: Alice scoperta oggi ${_formatTime(first.start)}–${_formatTime(first.end)}";
+        } else if (hasIpsIssue) {
+          systemDetail =
+              "Sistema sotto pressione: IPS rileva una criticità nei moduli attivi.";
+        } else {
+          systemDetail = "Nessuna criticità oggi";
+        }
 
         return _DashboardCard(
           child: Column(
@@ -1156,7 +1524,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white.withOpacity(0.25)),
                     ),
-                    child: Icon(_levelIcon(ips.level), color: color, size: 32),
+                    child: Center(
+                      child: Text(
+                        hasTodayCoverageIssue
+                            ? "✋"
+                            : ips.level == snap.IpsLevel.green
+                            ? "😌"
+                            : ips.level == snap.IpsLevel.yellow
+                            ? "😐"
+                            : "😨",
+                        style: const TextStyle(fontSize: 30),
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -1191,30 +1570,33 @@ class _HomeScreenState extends State<HomeScreen> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        if (hasIssue) ...[
+                        _buildCoverageQuickActionsBox(todayDetails),
+                        if (hasIssue && !hasTodayCoverageIssue) ...[
                           const SizedBox(height: 10),
                           ElevatedButton(
                             onPressed: () {
                               switch (ips.dominantModule) {
                                 case snap.IpsModule.coverage:
+                                  final targetDay = _firstCoverageProblemDay();
+
                                   Navigator.of(context).push(
                                     MaterialPageRoute(
                                       builder: (_) =>
-                                          CoperturaScreen(coreStore: coreStore),
+                                          CalendarioScreenStepAStabile(
+                                            coreStore: coreStore,
+                                            initialSelectedDay: targetDay,
+                                          ),
                                     ),
                                   );
                                   break;
 
                                 case snap.IpsModule.finance:
-                                  // TODO: futura schermata finanze
                                   break;
 
                                 case snap.IpsModule.health:
-                                  // TODO: futura schermata salute
                                   break;
 
                                 case snap.IpsModule.auto:
-                                  // TODO: futura schermata auto
                                   break;
 
                                 default:
@@ -1937,6 +2319,13 @@ class _HomeDay {
   final List<_HomeEvent> events;
 
   const _HomeDay({required this.dayLabel, required this.events});
+}
+
+class _HomeCoverageIssue {
+  final DateTime day;
+  final List<CoverageGapDetail> details;
+
+  const _HomeCoverageIssue({required this.day, required this.details});
 }
 
 class _ShireBackground extends StatelessWidget {
