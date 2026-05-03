@@ -706,8 +706,8 @@ class _HomeScreenState extends State<HomeScreen> {
     await _showHomeDialog(
       icon: Icons.date_range_rounded,
       color: const Color(0xFF42A5F5),
-      title: "Prossimi 30 giorni",
-      subtitle: "Panoramica rapida dei giorni con eventi in arrivo",
+      title: "Eventi globali",
+      subtitle: "Panoramica eventi futuri (vista 30 giorni)",
       child: _buildNext7DaysDialogContent(next7Days: next7Days),
     );
   }
@@ -1711,7 +1711,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               _MetricTile(
                 icon: Icons.upcoming_rounded,
-                label: "Prossimi 30 giorni",
+                label: "Eventi globali",
                 value: prossimiGiorniCount.toString(),
                 color: const Color(0xFFEC407A),
                 onTap: onNext7DaysTap,
