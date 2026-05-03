@@ -476,7 +476,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
       final mappedEvents = events.map((e) {
         String time = "Tutto il giorno";
-
         if (e.startTime != null && e.endTime != null) {
           final sh = e.startTime!.hour.toString().padLeft(2, '0');
           final sm = e.startTime!.minute.toString().padLeft(2, '0');
@@ -1495,7 +1494,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         final mainSentence = hasTodayCoverageIssue
             ? "Oggi: Alice non coperta"
-            : ipsStore.getDecisionMessage();
+            : "Nessuna criticità oggi";
 
         String systemDetail;
 
@@ -1554,22 +1553,29 @@ class _HomeScreenState extends State<HomeScreen> {
                         Text(
                           mainSentence,
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 16,
                             height: 1.3,
-                            color: Colors.white.withOpacity(0.92),
-                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF8BC34A), // verde FrodoDesk
+                            fontWeight: FontWeight.w800,
+                            shadows: [
+                              Shadow(
+                                color: const Color(0xFF8BC34A).withOpacity(0.6),
+                                blurRadius: 12,
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Text(
-                          systemDetail,
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            height: 1.25,
-                            color: Colors.white.withOpacity(0.75),
-                            fontWeight: FontWeight.w600,
+                        if (hasTodayCoverageIssue || hasIpsIssue)
+                          Text(
+                            systemDetail,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              height: 1.25,
+                              color: Colors.white.withOpacity(0.75),
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                        ),
                         _buildCoverageQuickActionsBox(todayDetails),
                         if (hasIssue && !hasTodayCoverageIssue) ...[
                           const SizedBox(height: 10),
