@@ -183,6 +183,15 @@ class RealEventStore {
     _save();
   }
 
+  void updateEventNotes({required String id, required String notes}) {
+    final index = _allEvents.indexWhere((e) => e.id == id);
+    if (index == -1) return;
+
+    _allEvents[index] = _allEvents[index].copyWith(notes: notes);
+    _rebuildIndex();
+    _save();
+  }
+
   void removeEvent(String id) {
     _allEvents.removeWhere((e) => e.id == id);
     _rebuildIndex();

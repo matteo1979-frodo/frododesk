@@ -451,11 +451,12 @@ class _HomeScreenState extends State<HomeScreen> {
           : e.personKey!;
 
       return _HomeEvent(
+        id: e.id,
         time: time,
         title: e.title,
         category: category,
         ipsImpact: true,
-        notes: null,
+        notes: e.notes,
       );
     }).toList();
 
@@ -498,11 +499,12 @@ class _HomeScreenState extends State<HomeScreen> {
             : e.personKey!;
 
         return _HomeEvent(
+          id: e.id,
           time: time,
           title: e.title,
           category: category,
           ipsImpact: true,
-          notes: null,
+          notes: e.notes,
         );
       }).toList();
 
@@ -886,11 +888,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
         events.add(
           _HomeEvent(
+            id: e.id,
             time: "${day.day}/${day.month} • $time",
             title: e.title,
             category: e.personKey ?? "Evento",
             ipsImpact: true,
-            notes: null,
+            notes: e.notes,
           ),
         );
       }
@@ -1258,37 +1261,138 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showEventDetailPopup(_HomeEvent event) async {
+    final parts = event.time.split("•");
+    final datePart = parts.first.trim();
+    final timePart = parts.length > 1 ? parts[1].trim() : "";
+
+    final dateParts = datePart.split("/");
+    final dayNumber = int.tryParse(dateParts[0]) ?? 1;
+    final monthNumber = int.tryParse(dateParts[1]) ?? 1;
+    final year = DateTime.now().year;
+
+    final weekdays = [
+      "Lunedì",
+      "Martedì",
+      "Mercoledì",
+      "Giovedì",
+      "Venerdì",
+      "Sabato",
+      "Domenica",
+    ];
+
+    final months = [
+      "Gennaio",
+      "Febbraio",
+      "Marzo",
+      "Aprile",
+      "Maggio",
+      "Giugno",
+      "Luglio",
+      "Agosto",
+      "Settembre",
+      "Ottobre",
+      "Novembre",
+      "Dicembre",
+    ];
+
+    final date = DateTime(year, monthNumber, dayNumber);
+    final readableDate =
+        "${weekdays[date.weekday - 1]} $dayNumber ${months[monthNumber - 1]}";
+
+    final controller = TextEditingController(text: event.notes ?? "");
+
     await _showHomeDialog(
-      icon: Icons.event_note_rounded,
+      icon: Icons.auto_stories_rounded,
       color: const Color(0xFF3F51B5),
       title: event.title,
-      subtitle: "${event.time} • ${event.category}",
+      subtitle: readableDate,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Note evento",
-            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
-          ),
-          const SizedBox(height: 8),
+          // --- ORARIO + PERSONA ---
           Container(
             width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 14),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.70),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.white.withOpacity(0.40)),
             ),
-            child: Text(
-              event.notes == null || event.notes!.trim().isEmpty
-                  ? "Nessuna nota inserita per questo evento."
-                  : event.notes!,
-              style: TextStyle(
-                color: Colors.black.withOpacity(0.68),
-                fontWeight: FontWeight.w600,
-                height: 1.25,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (timePart.isNotEmpty) ...[
+                  Row(
+                    children: [
+                      const Icon(Icons.schedule_rounded, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        timePart,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                Row(
+                  children: [
+                    const Icon(Icons.person_rounded, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      event.category,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // --- MEMORIA ---
+          const Text(
+            "Memoria evento",
+            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17),
+          ),
+          const SizedBox(height: 8),
+
+          TextField(
+            controller: controller,
+            maxLines: 6,
+            decoration: InputDecoration(
+              hintText:
+                  "Scrivi cosa è successo, dettagli, appunti importanti...",
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.75),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
               ),
             ),
+          ),
+
+          const SizedBox(height: 12),
+
+          ElevatedButton.icon(
+            onPressed: () {
+              // 🔥 QUI SALVI DAVVERO
+              coreStore.realEventStore.updateEventNotes(
+                id: event.id,
+                notes: controller.text,
+              );
+
+              Navigator.of(context).pop();
+
+              // refresh UI
+              setState(() {});
+            },
+            icon: const Icon(Icons.save),
+            label: const Text("Salva memoria"),
           ),
         ],
       ),
@@ -2661,6 +2765,7 @@ class _DashboardModuleCardState extends State<_DashboardModuleCard>
 }
 
 class _HomeEvent {
+  final String id;
   final String time;
   final String title;
   final String category;
@@ -2668,6 +2773,7 @@ class _HomeEvent {
   final String? notes;
 
   const _HomeEvent({
+    required this.id,
     required this.time,
     required this.title,
     required this.category,
