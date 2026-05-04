@@ -752,6 +752,21 @@ class _HomeScreenState extends State<HomeScreen> {
       "Dicembre",
     ];
 
+    final monthIndexMap = {
+      "Gennaio": 1,
+      "Febbraio": 2,
+      "Marzo": 3,
+      "Aprile": 4,
+      "Maggio": 5,
+      "Giugno": 6,
+      "Luglio": 7,
+      "Agosto": 8,
+      "Settembre": 9,
+      "Ottobre": 10,
+      "Novembre": 11,
+      "Dicembre": 12,
+    };
+
     await _showHomeDialog(
       icon: Icons.calendar_month_rounded,
       color: const Color(0xFF43A047),
@@ -761,26 +776,61 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ...months.map((m) {
+            final monthIndex = monthIndexMap[m]!;
+
+            int eventCount = 0;
+
+            final end = DateTime(year, monthIndex + 1, 0);
+
+            for (int i = 0; i < end.day; i++) {
+              final day = DateTime(year, monthIndex, i + 1);
+              eventCount += coreStore.realEventStore.eventsForDay(day).length;
+            }
+
+            final hasEvents = eventCount > 0;
+
             return InkWell(
-              onTap: () {
-                _showMonthEventsPopup(year: year, monthName: m);
-              },
+              onTap: hasEvents
+                  ? () {
+                      _showMonthEventsPopup(year: year, monthName: m);
+                    }
+                  : null,
               borderRadius: BorderRadius.circular(16),
               child: Container(
                 width: double.infinity,
                 margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.70),
+                  color: hasEvents
+                      ? Colors.white.withOpacity(0.70)
+                      : Colors.white.withOpacity(0.35),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: Colors.white.withOpacity(0.40)),
                 ),
-                child: Text(
-                  m,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                  ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        m,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                          color: hasEvents
+                              ? Colors.black
+                              : Colors.black.withOpacity(0.4),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      "$eventCount eventi",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: hasEvents
+                            ? Colors.black.withOpacity(0.7)
+                            : Colors.black.withOpacity(0.3),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             );
@@ -857,7 +907,10 @@ class _HomeScreenState extends State<HomeScreen> {
               title: "Nessun evento",
               subtitle: "Non ci sono eventi in questo mese",
             )
-          : Column(children: [...events.map(_buildCompactEventTile)]),
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: _buildEventsGroupedByDay(events),
+            ),
     );
   }
 
@@ -1196,6 +1249,69 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
+  }
+
+  List<Widget> _buildEventsGroupedByDay(List<_HomeEvent> events) {
+    final Map<String, List<_HomeEvent>> grouped = {};
+
+    for (final e in events) {
+      final parts = e.time.split("•");
+      final dayPart = parts.first.trim(); // es: "12/5"
+
+      grouped.putIfAbsent(dayPart, () => []).add(e);
+    }
+
+    final weekdays = [
+      "Lunedì",
+      "Martedì",
+      "Mercoledì",
+      "Giovedì",
+      "Venerdì",
+      "Sabato",
+      "Domenica",
+    ];
+
+    final months = [
+      "Gennaio",
+      "Febbraio",
+      "Marzo",
+      "Aprile",
+      "Maggio",
+      "Giugno",
+      "Luglio",
+      "Agosto",
+      "Settembre",
+      "Ottobre",
+      "Novembre",
+      "Dicembre",
+    ];
+
+    final List<Widget> widgets = [];
+
+    for (final entry in grouped.entries) {
+      final dateParts = entry.key.split("/");
+      final dayNumber = int.tryParse(dateParts[0]) ?? 1;
+      final monthNumber = int.tryParse(dateParts[1]) ?? 1;
+      final year = DateTime.now().year;
+
+      final date = DateTime(year, monthNumber, dayNumber);
+      final readableDay =
+          "${weekdays[date.weekday - 1]} $dayNumber ${months[monthNumber - 1]}";
+
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 12, bottom: 6),
+          child: Text(
+            readableDay,
+            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+          ),
+        ),
+      );
+
+      widgets.addAll(entry.value.map(_buildCompactEventTile));
+    }
+
+    return widgets;
   }
 
   Widget _buildOggiDialogContent({
