@@ -1206,44 +1206,88 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildCompactEventTile(_HomeEvent e) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.72),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.42)),
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 82,
-            child: Text(
-              e.time,
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 12.5,
+    return InkWell(
+      onTap: () {
+        _showEventDetailPopup(e);
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.72),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withOpacity(0.42)),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 82,
+              child: Text(
+                e.time,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12.5,
+                ),
               ),
             ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  e.title,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  e.category,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.black.withOpacity(0.55),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    e.title,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 2),
+                  Text(
+                    e.category,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.black.withOpacity(0.55),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showEventDetailPopup(_HomeEvent event) async {
+    await _showHomeDialog(
+      icon: Icons.event_note_rounded,
+      color: const Color(0xFF3F51B5),
+      title: event.title,
+      subtitle: "${event.time} • ${event.category}",
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Note evento",
+            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.70),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withOpacity(0.40)),
+            ),
+            child: Text(
+              event.notes == null || event.notes!.trim().isEmpty
+                  ? "Nessuna nota inserita per questo evento."
+                  : event.notes!,
+              style: TextStyle(
+                color: Colors.black.withOpacity(0.68),
+                fontWeight: FontWeight.w600,
+                height: 1.25,
+              ),
             ),
           ),
         ],
