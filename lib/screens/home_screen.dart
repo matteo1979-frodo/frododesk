@@ -522,6 +522,25 @@ class _HomeScreenState extends State<HomeScreen> {
       result.add(_HomeDay(dayLabel: label, events: mappedEvents));
     }
 
+    final Map<String, List<_HomeDay>> groupedByMonth = {};
+
+    for (final day in result) {
+      final parts = day.dayLabel.split(" ");
+      final datePart = parts.length > 1 ? parts[1] : "";
+
+      final month = datePart.split("/").length > 1
+          ? datePart.split("/")[1]
+          : "";
+
+      groupedByMonth.putIfAbsent(month, () => []).add(day);
+    }
+
+    final List<_HomeMonth> months = groupedByMonth.entries.map((entry) {
+      return _HomeMonth(monthLabel: entry.key, days: entry.value);
+    }).toList();
+
+    // ⚠️ per ora NON cambiamo il tipo della funzione
+    // quindi continuiamo a restituire result
     return result;
   }
 
@@ -1185,10 +1204,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (next7Days.isEmpty) {
       return _buildDialogEmptyState(
         icon: Icons.date_range_rounded,
-        title: "Nessun evento nei prossimi 30 giorni",
-        subtitle: "Per ora la settimana sembra tranquilla",
+        title: "Nessun evento futuro",
+        subtitle: "Per ora non risultano eventi da qui a fine anno",
       );
     }
+
+    String lastMonth = "";
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1202,29 +1223,77 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 18),
         ...next7Days.map((day) {
-          return Container(
-            width: double.infinity,
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.70),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withOpacity(0.40)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  day.dayLabel,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14.5,
+          final parts = day.dayLabel.split(" ");
+          final datePart = parts.length > 1 ? parts[1] : "";
+          final month = datePart.split("/").length > 1
+              ? datePart.split("/")[1]
+              : "";
+
+          final showMonth = month != lastMonth;
+          lastMonth = month;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (showMonth)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 8, top: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    ({
+                          "1": "Gennaio",
+                          "2": "Febbraio",
+                          "3": "Marzo",
+                          "4": "Aprile",
+                          "5": "Maggio",
+                          "6": "Giugno",
+                          "7": "Luglio",
+                          "8": "Agosto",
+                          "9": "Settembre",
+                          "10": "Ottobre",
+                          "11": "Novembre",
+                          "12": "Dicembre",
+                        }[month] ??
+                        "Mese"),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 10),
-                ...day.events.map(_buildCompactEventTile),
-              ],
-            ),
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.70),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withOpacity(0.40)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      day.dayLabel,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14.5,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ...day.events.map(_buildCompactEventTile),
+                  ],
+                ),
+              ),
+            ],
           );
         }),
         const SizedBox(height: 10),
@@ -2330,6 +2399,13 @@ class _HomeDay {
   final List<_HomeEvent> events;
 
   const _HomeDay({required this.dayLabel, required this.events});
+}
+
+class _HomeMonth {
+  final String monthLabel;
+  final List<_HomeDay> days;
+
+  const _HomeMonth({required this.monthLabel, required this.days});
 }
 
 class _HomeCoverageIssue {
