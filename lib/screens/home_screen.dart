@@ -773,71 +773,116 @@ class _HomeScreenState extends State<HomeScreen> {
       icon: Icons.calendar_month_rounded,
       color: const Color(0xFF43A047),
       title: "$year",
-      subtitle: "Seleziona un mese",
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ...months.map((m) {
-            final monthIndex = monthIndexMap[m]!;
+      subtitle: "Scegli un mese",
+      child: GridView.count(
+        crossAxisCount: 4,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
+        childAspectRatio: 1.25,
+        children: months.map((m) {
+          final monthIndex = monthIndexMap[m]!;
 
-            int eventCount = 0;
+          int eventCount = 0;
+          final end = DateTime(year, monthIndex + 1, 0);
 
-            final end = DateTime(year, monthIndex + 1, 0);
+          for (int i = 0; i < end.day; i++) {
+            final day = DateTime(year, monthIndex, i + 1);
+            eventCount += coreStore.realEventStore.eventsForDay(day).length;
+          }
 
-            for (int i = 0; i < end.day; i++) {
-              final day = DateTime(year, monthIndex, i + 1);
-              eventCount += coreStore.realEventStore.eventsForDay(day).length;
-            }
+          final hasEvents = eventCount > 0;
 
-            final hasEvents = eventCount > 0;
-
-            return InkWell(
-              onTap: hasEvents
-                  ? () {
-                      _showMonthEventsPopup(year: year, monthName: m);
-                    }
-                  : null,
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
+          return InkWell(
+            onTap: hasEvents
+                ? () {
+                    _showMonthEventsPopup(year: year, monthName: m);
+                  }
+                : null,
+            borderRadius: BorderRadius.circular(22),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: hasEvents
+                      ? [
+                          const Color(0xFF43A047).withOpacity(0.28),
+                          const Color(0xFF8BC34A).withOpacity(0.12),
+                        ]
+                      : [
+                          Colors.white.withOpacity(0.28),
+                          Colors.white.withOpacity(0.12),
+                        ],
+                ),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
                   color: hasEvents
-                      ? Colors.white.withOpacity(0.70)
-                      : Colors.white.withOpacity(0.35),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withOpacity(0.40)),
+                      ? const Color(0xFF43A047).withOpacity(0.42)
+                      : Colors.white.withOpacity(0.28),
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        m,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                          color: hasEvents
-                              ? Colors.black
-                              : Colors.black.withOpacity(0.4),
-                        ),
-                      ),
+                boxShadow: [
+                  if (hasEvents)
+                    BoxShadow(
+                      color: const Color(0xFF43A047).withOpacity(0.18),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
                     ),
-                    Text(
-                      "$eventCount eventi",
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: hasEvents
-                            ? Colors.black.withOpacity(0.7)
-                            : Colors.black.withOpacity(0.3),
-                      ),
-                    ),
-                  ],
-                ),
+                ],
               ),
-            );
-          }),
-        ],
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    hasEvents
+                        ? Icons.event_available_rounded
+                        : Icons.calendar_month_outlined,
+                    size: 22,
+                    color: hasEvents
+                        ? const Color(0xFF2E7D32)
+                        : Colors.black.withOpacity(0.25),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    m,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13.5,
+                      color: hasEvents
+                          ? Colors.black.withOpacity(0.86)
+                          : Colors.black.withOpacity(0.35),
+                    ),
+                  ),
+                  if (hasEvents)
+                    Container(
+                      margin: const EdgeInsets.only(top: 4),
+                      width: 24,
+                      height: 2,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF43A047),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  const SizedBox(height: 5),
+                  Text(
+                    eventCount == 1 ? "1 evento" : "$eventCount eventi",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                      color: hasEvents
+                          ? Colors.black.withOpacity(0.62)
+                          : Colors.black.withOpacity(0.28),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -1309,20 +1354,28 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- ORARIO + PERSONA ---
           Container(
             width: double.infinity,
-            margin: const EdgeInsets.only(bottom: 14),
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.70),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withOpacity(0.40)),
+              color: const Color(0xFF3F51B5).withOpacity(0.10),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: const Color(0xFF3F51B5).withOpacity(0.22),
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (timePart.isNotEmpty) ...[
+                Text(
+                  readableDate,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (timePart.isNotEmpty)
                   Row(
                     children: [
                       const Icon(Icons.schedule_rounded, size: 18),
@@ -1336,8 +1389,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                ],
+                if (timePart.isNotEmpty) const SizedBox(height: 8),
                 Row(
                   children: [
                     const Icon(Icons.person_rounded, size: 18),
@@ -1346,7 +1398,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       event.category,
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: Colors.black.withOpacity(0.7),
+                        color: Colors.black.withOpacity(0.70),
                       ),
                     ),
                   ],
@@ -1355,44 +1407,69 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // --- MEMORIA ---
-          const Text(
-            "Memoria evento",
-            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17),
+          const SizedBox(height: 18),
+
+          Row(
+            children: [
+              const Icon(Icons.menu_book_rounded, size: 20),
+              const SizedBox(width: 8),
+              const Text(
+                "Memoria evento",
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
+
+          const SizedBox(height: 10),
 
           TextField(
             controller: controller,
-            maxLines: 6,
+            maxLines: 7,
             decoration: InputDecoration(
               hintText:
                   "Scrivi cosa è successo, dettagli, appunti importanti...",
               filled: true,
-              fillColor: Colors.white.withOpacity(0.75),
+              fillColor: Colors.white.withOpacity(0.82),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(18),
+                borderSide: BorderSide(color: Colors.black.withOpacity(0.10)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(18),
+                borderSide: const BorderSide(
+                  color: Color(0xFF3F51B5),
+                  width: 2,
+                ),
               ),
             ),
           ),
 
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
-          ElevatedButton.icon(
-            onPressed: () {
-              // 🔥 QUI SALVI DAVVERO
-              coreStore.realEventStore.updateEventNotes(
-                id: event.id,
-                notes: controller.text,
-              );
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                coreStore.realEventStore.updateEventNotes(
+                  id: event.id,
+                  notes: controller.text,
+                );
 
-              Navigator.of(context).pop();
-
-              // refresh UI
-              setState(() {});
-            },
-            icon: const Icon(Icons.save),
-            label: const Text("Salva memoria"),
+                Navigator.of(context).pop();
+                setState(() {});
+              },
+              icon: const Icon(Icons.save_rounded),
+              label: const Text("Salva memoria"),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
           ),
         ],
       ),
