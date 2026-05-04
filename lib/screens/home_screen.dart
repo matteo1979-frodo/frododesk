@@ -731,8 +731,133 @@ class _HomeScreenState extends State<HomeScreen> {
       icon: Icons.date_range_rounded,
       color: const Color(0xFF42A5F5),
       title: "Eventi globali",
-      subtitle: "Panoramica eventi futuri (vista 30 giorni)",
+      subtitle: "Eventi futuri fino a fine anno",
       child: _buildNext7DaysDialogContent(next7Days: next7Days),
+    );
+  }
+
+  Future<void> _showYearMonthsPopup({required int year}) async {
+    final months = [
+      "Gennaio",
+      "Febbraio",
+      "Marzo",
+      "Aprile",
+      "Maggio",
+      "Giugno",
+      "Luglio",
+      "Agosto",
+      "Settembre",
+      "Ottobre",
+      "Novembre",
+      "Dicembre",
+    ];
+
+    await _showHomeDialog(
+      icon: Icons.calendar_month_rounded,
+      color: const Color(0xFF43A047),
+      title: "$year",
+      subtitle: "Seleziona un mese",
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ...months.map((m) {
+            return InkWell(
+              onTap: () {
+                _showMonthEventsPopup(year: year, monthName: m);
+              },
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.70),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withOpacity(0.40)),
+                ),
+                child: Text(
+                  m,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showMonthEventsPopup({
+    required int year,
+    required String monthName,
+  }) async {
+    final monthIndex = {
+      "Gennaio": 1,
+      "Febbraio": 2,
+      "Marzo": 3,
+      "Aprile": 4,
+      "Maggio": 5,
+      "Giugno": 6,
+      "Luglio": 7,
+      "Agosto": 8,
+      "Settembre": 9,
+      "Ottobre": 10,
+      "Novembre": 11,
+      "Dicembre": 12,
+    }[monthName]!;
+
+    final List<_HomeEvent> events = [];
+
+    final start = DateTime(year, monthIndex, 1);
+    final end = DateTime(year, monthIndex + 1, 0);
+
+    for (int i = 0; i < end.day; i++) {
+      final day = DateTime(year, monthIndex, i + 1);
+
+      final dayEvents = coreStore.realEventStore.eventsForDay(day);
+
+      for (final e in dayEvents) {
+        String time = "Tutto il giorno";
+
+        if (e.startTime != null && e.endTime != null) {
+          final sh = e.startTime!.hour.toString().padLeft(2, '0');
+          final sm = e.startTime!.minute.toString().padLeft(2, '0');
+          final eh = e.endTime!.hour.toString().padLeft(2, '0');
+          final em = e.endTime!.minute.toString().padLeft(2, '0');
+          time = "$sh:$sm-$eh:$em";
+        } else if (e.startTime != null) {
+          final sh = e.startTime!.hour.toString().padLeft(2, '0');
+          final sm = e.startTime!.minute.toString().padLeft(2, '0');
+          time = "$sh:$sm";
+        }
+
+        events.add(
+          _HomeEvent(
+            time: "${day.day}/${day.month} • $time",
+            title: e.title,
+            category: e.personKey ?? "Evento",
+            ipsImpact: true,
+            notes: null,
+          ),
+        );
+      }
+    }
+
+    await _showHomeDialog(
+      icon: Icons.event_note_rounded,
+      color: const Color(0xFF43A047),
+      title: "$monthName $year",
+      subtitle: "${events.length} evento/i nel mese",
+      child: events.isEmpty
+          ? _buildDialogEmptyState(
+              icon: Icons.event_note_rounded,
+              title: "Nessun evento",
+              subtitle: "Non ci sono eventi in questo mese",
+            )
+          : Column(children: [...events.map(_buildCompactEventTile)]),
     );
   }
 
@@ -1201,110 +1326,107 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildNext7DaysDialogContent({required List<_HomeDay> next7Days}) {
-    if (next7Days.isEmpty) {
-      return _buildDialogEmptyState(
-        icon: Icons.date_range_rounded,
-        title: "Nessun evento futuro",
-        subtitle: "Per ora non risultano eventi da qui a fine anno",
-      );
-    }
-
-    String lastMonth = "";
+    final currentYear = DateTime.now().year;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "${next7Days.length} giorno/i con eventi",
+          "Centro eventi del sistema",
           style: TextStyle(
             color: Colors.black.withOpacity(0.55),
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 18),
-        ...next7Days.map((day) {
-          final parts = day.dayLabel.split(" ");
-          final datePart = parts.length > 1 ? parts[1] : "";
-          final month = datePart.split("/").length > 1
-              ? datePart.split("/")[1]
-              : "";
-
-          final showMonth = month != lastMonth;
-          lastMonth = month;
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (showMonth)
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 8, top: 14),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.06),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    ({
-                          "1": "Gennaio",
-                          "2": "Febbraio",
-                          "3": "Marzo",
-                          "4": "Aprile",
-                          "5": "Maggio",
-                          "6": "Giugno",
-                          "7": "Luglio",
-                          "8": "Agosto",
-                          "9": "Settembre",
-                          "10": "Ottobre",
-                          "11": "Novembre",
-                          "12": "Dicembre",
-                        }[month] ??
-                        "Mese"),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.70),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withOpacity(0.40)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      day.dayLabel,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 14.5,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    ...day.events.map(_buildCompactEventTile),
-                  ],
-                ),
-              ),
-            ],
-          );
-        }),
+        const SizedBox(height: 16),
+        _buildGlobalEventEntryCard(
+          icon: Icons.history_rounded,
+          title: "Eventi passati",
+          subtitle: "Archivio degli anni precedenti",
+          color: const Color(0xFF8D6E63),
+          onTap: () {},
+        ),
         const SizedBox(height: 10),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: OutlinedButton(
-            onPressed: _openCalendarToday,
-            child: const Text("Vedi calendario"),
-          ),
+        _buildGlobalEventEntryCard(
+          icon: Icons.calendar_month_rounded,
+          title: "$currentYear",
+          subtitle: "Eventi dell’anno corrente",
+          color: const Color(0xFF43A047),
+          onTap: () {
+            _showYearMonthsPopup(year: currentYear);
+          },
+        ),
+        const SizedBox(height: 10),
+        _buildGlobalEventEntryCard(
+          icon: Icons.auto_awesome_motion_rounded,
+          title: "Eventi futuri",
+          subtitle: "Anni successivi al $currentYear",
+          color: const Color(0xFF5E35B1),
+          onTap: () {},
         ),
       ],
+    );
+  }
+
+  Widget _buildGlobalEventEntryCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: color.withOpacity(0.28)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.18),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: color),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 17,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.black.withOpacity(0.58),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.black.withOpacity(0.45),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
