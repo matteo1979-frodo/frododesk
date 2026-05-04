@@ -1,153 +1,161 @@
-# FRODODESK — PROCEDURA UFFICIALE CHIUSURA CHAT
+# 🏠 MODULO HOME — FRODODESK
+
+## 🎯 STATO ATTUALE
+
+HOME DASHBOARD V1 COMPLETA + EVENTI GLOBALI V1 + MEMORIA EVENTO ATTIVA
 
 ---
 
-## 🎯 OBIETTIVO
+## 🧠 IDENTITÀ
 
-Questa procedura serve per:
+La Home NON è più una lista.
 
-- salvare lo stato reale del lavoro
-- aggiornare SOLO ciò che è cambiato
-- evitare file troppo grandi
-- preparare automaticamente la prossima chat
+È:
 
----
-
-# 🧠 PRINCIPIO FONDAMENTALE
-
-👉 l’utente NON deve decidere cosa mandare nella prossima chat  
-👉 è la chiusura che prepara tutto
+- cruscotto reale della giornata
+- punto di ingresso al sistema
+- sintesi visiva dello stato familiare
+- punto di accesso alla memoria eventi
 
 ---
 
-# 🔄 ATTIVAZIONE CHIUSURA
+## 🔧 STRUTTURA
 
-Quando la chat sta per chiudersi scrivere:
+### 1. Stato sistema (IPS + Copertura reale)
+- livello sistema (verde/giallo/rosso)
+- frase decisionale della giornata (PRIORITARIA)
+- spiegazione sintetica
+- accesso dettaglio
+- azioni rapide
 
-Chiudiamo la chat FrodoDesk
-
----
-
-# 🔧 COSA DEVE FARE FRODO (OBBLIGATORIO)
-
-Frodo deve eseguire QUESTO ORDINE PRECISO:
-
----
-
-## 1️⃣ ANALISI CHAT
-
-- analizza tutto il lavoro fatto
-- identifica il modulo coinvolto
-- identifica i file codice toccati
-- identifica eventuali modifiche instabili o rollback effettuati
-- identificare lo stato stabile raggiunto (cosa è diventato definitivo)
+👉 La frase decisionale è l’elemento più importante della Home
 
 ---
 
-## 2️⃣ FILE DA AGGIORNARE
-
-Frodo deve indicare SOLO i file realmente modificati
-
-Esempio:
-
-File da aggiornare:
-
-docs/modules/eventi_alice.md
-
-⚠️ NON tutti i file  
-⚠️ NON SYSTEM_STATE se non serve  
-⚠️ NON includere file riportati indietro (rollback)
+### 2. Panoramica oggi
+- numero promemoria
+- numero eventi
+- persone coinvolte
+- giorni con eventi futuri
 
 ---
 
-## 3️⃣ CONTENUTO AGGIORNATO
-
-Per ogni file:
-
-👉 fornire il file COMPLETO pronto da copiare
-
-NON modifiche parziali  
-NON spiegazioni spezzate
+### 3. Oggi
+- promemoria raggruppati per persona
+- eventi del giorno sintetizzati
+- accesso calendario
 
 ---
 
-## 4️⃣ BLOCCO NUOVA CHAT (OBBLIGATORIO)
-
-Frodo deve SEMPRE generare questo blocco:
-
-FRODODESK — APERTURA
-
-Ti invio:
-
-docs/FRODODESK_SYSTEM_STATE.md  
-docs/FRODODESK_RULES.md  
-docs/modules/[modulo corretto]
-
-File codice reale:
-
-[file reale]
-
-Obiettivo:  
-[un solo micro-step chiaro e chiuso]
-
-⚠️ questo blocco deve essere:
-- già corretto
-- già completo
-- pronto da copiare
+### 4. Prossimi 7 giorni
+- eventi reali futuri
+- visione compatta
 
 ---
 
-## 5️⃣ ELENCO FILE DA INVIARE
+### 5. Eventi Globali (NUOVO)
 
-Frodo deve anche scrivere chiaramente:
+Sistema di navigazione eventi nel tempo:
 
-File da inviare nella nuova chat:
-
-SYSTEM_STATE  
-RULES  
-modulo specifico  
-file codice reale
+✔ anno  
+✔ mesi (griglia 4x3)  
+✔ eventi del mese  
+✔ dettaglio evento  
 
 ---
 
-# 📦 ORDINE OPERATIVO UTENTE
+## 🔥 EVENTI GLOBALI — DETTAGLIO
 
-L’utente deve fare ESATTAMENTE questo:
+### Mesi
 
-1. copiare file aggiornati nei docs  
-2. aprire nuova chat  
-3. copiare il blocco generato  
-4. inviare i file indicati  
-
----
-
-# 🚫 COSA NON FARE
-
-- non aggiornare tutti i moduli  
-- non riscrivere SYSTEM_STATE ogni volta  
-- non inventare file da mandare  
-- non lasciare decisioni all’utente  
+- visualizzati in griglia (non lista)
+- conteggio eventi per mese
+- mesi senza eventi disattivati
+- UI coerente FrodoDesk
 
 ---
 
-# 🧱 REGOLA D’ORO
+### Eventi mese
 
-👉 la chiusura prepara la prossima apertura  
-
----
-
-# 🎯 RISULTATO
-
-- zero confusione  
-- zero errori  
-- continuità perfetta  
-- nessuna chat bloccata  
+- raggruppati per giorno
+- formato leggibile (giorno + data)
 
 ---
 
-# 🚀 SIGNIFICATO
+### Scheda evento
 
-Da questo momento:
+Mostra:
 
-👉 FrodoDesk diventa un sistema guidato  
-👉 non dipende più dalla memoria dell’utente
+✔ titolo  
+✔ giorno leggibile  
+✔ orario  
+✔ persona coinvolta  
+
+---
+
+## 🧠 MEMORIA EVENTO (NUOVO)
+
+Ogni evento può avere:
+
+✔ note  
+✔ memoria reale  
+✔ storico personale  
+
+---
+
+### Comportamento
+
+✔ scrittura note  
+✔ salvataggio nello store  
+✔ persistenza dopo riavvio  
+
+---
+
+### Significato
+
+👉 gli eventi non sono più temporanei  
+👉 diventano memoria della vita reale  
+
+---
+
+## ⚠️ LIMITI ATTUALI
+
+Eventi Globali leggono solo:
+
+✔ RealEventStore  
+
+NON leggono ancora:
+
+❌ AliceEventStore  
+❌ AliceSpecialEventStore  
+
+---
+
+## 🎯 PROSSIMA EVOLUZIONE
+
+👉 unificazione eventi:
+
+- eventi reali
+- eventi Alice
+
+in un unico sistema globale
+
+---
+
+## 🧠 SIGNIFICATO STRUTTURALE
+
+La Home ora:
+
+👉 non mostra solo lo stato  
+👉 permette di navigare nel tempo  
+👉 conserva memoria reale  
+
+---
+
+## 📌 PRINCIPIO
+
+La Home è:
+
+👉 ingresso al sistema  
+👉 punto decisionale  
+👉 accesso alla memoria

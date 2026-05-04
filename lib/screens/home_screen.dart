@@ -429,9 +429,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final day = DateTime.now();
     final selectedDay = DateTime(day.year, day.month, day.day);
 
+    final List<_HomeEvent> items = [];
+
     final realEvents = coreStore.realEventStore.eventsForDay(selectedDay);
 
-    final items = realEvents.map((e) {
+    for (final e in realEvents) {
       String time = "Tutto il giorno";
 
       if (e.startTime != null && e.endTime != null) {
@@ -450,15 +452,40 @@ class _HomeScreenState extends State<HomeScreen> {
           ? "Evento"
           : e.personKey!;
 
-      return _HomeEvent(
-        id: e.id,
-        time: time,
-        title: e.title,
-        category: category,
-        ipsImpact: true,
-        notes: e.notes,
+      items.add(
+        _HomeEvent(
+          id: e.id,
+          time: time,
+          title: e.title,
+          category: category,
+          ipsImpact: true,
+          notes: e.notes,
+        ),
       );
-    }).toList();
+    }
+
+    final aliceEvents = coreStore.aliceSpecialEventStore
+        .eventsForDay(selectedDay)
+        .where((event) => event.enabled)
+        .toList();
+
+    for (final e in aliceEvents) {
+      final sh = e.start.hour.toString().padLeft(2, '0');
+      final sm = e.start.minute.toString().padLeft(2, '0');
+      final eh = e.end.hour.toString().padLeft(2, '0');
+      final em = e.end.minute.toString().padLeft(2, '0');
+
+      items.add(
+        _HomeEvent(
+          id: e.id,
+          time: "$sh:$sm-$eh:$em",
+          title: e.label,
+          category: "Alice",
+          ipsImpact: true,
+          notes: e.note,
+        ),
+      );
+    }
 
     items.sort((a, b) => a.time.compareTo(b.time));
     return items;
@@ -477,11 +504,13 @@ class _HomeScreenState extends State<HomeScreen> {
       final day = now.add(Duration(days: i));
       final dayKey = DateTime(day.year, day.month, day.day);
 
-      final events = coreStore.realEventStore.eventsForDay(dayKey);
-      if (events.isEmpty) continue;
+      final List<_HomeEvent> mappedEvents = [];
 
-      final mappedEvents = events.map((e) {
+      final realEvents = coreStore.realEventStore.eventsForDay(dayKey);
+
+      for (final e in realEvents) {
         String time = "Tutto il giorno";
+
         if (e.startTime != null && e.endTime != null) {
           final sh = e.startTime!.hour.toString().padLeft(2, '0');
           final sm = e.startTime!.minute.toString().padLeft(2, '0');
@@ -498,15 +527,42 @@ class _HomeScreenState extends State<HomeScreen> {
             ? "Evento"
             : e.personKey!;
 
-        return _HomeEvent(
-          id: e.id,
-          time: time,
-          title: e.title,
-          category: category,
-          ipsImpact: true,
-          notes: e.notes,
+        mappedEvents.add(
+          _HomeEvent(
+            id: e.id,
+            time: time,
+            title: e.title,
+            category: category,
+            ipsImpact: true,
+            notes: e.notes,
+          ),
         );
-      }).toList();
+      }
+
+      final aliceEvents = coreStore.aliceSpecialEventStore
+          .eventsForDay(dayKey)
+          .where((event) => event.enabled)
+          .toList();
+
+      for (final e in aliceEvents) {
+        final sh = e.start.hour.toString().padLeft(2, '0');
+        final sm = e.start.minute.toString().padLeft(2, '0');
+        final eh = e.end.hour.toString().padLeft(2, '0');
+        final em = e.end.minute.toString().padLeft(2, '0');
+
+        mappedEvents.add(
+          _HomeEvent(
+            id: e.id,
+            time: "$sh:$sm-$eh:$em",
+            title: e.label,
+            category: "Alice",
+            ipsImpact: true,
+            notes: e.note,
+          ),
+        );
+      }
+
+      if (mappedEvents.isEmpty) continue;
 
       mappedEvents.sort((a, b) => a.time.compareTo(b.time));
 
@@ -524,25 +580,6 @@ class _HomeScreenState extends State<HomeScreen> {
       result.add(_HomeDay(dayLabel: label, events: mappedEvents));
     }
 
-    final Map<String, List<_HomeDay>> groupedByMonth = {};
-
-    for (final day in result) {
-      final parts = day.dayLabel.split(" ");
-      final datePart = parts.length > 1 ? parts[1] : "";
-
-      final month = datePart.split("/").length > 1
-          ? datePart.split("/")[1]
-          : "";
-
-      groupedByMonth.putIfAbsent(month, () => []).add(day);
-    }
-
-    final List<_HomeMonth> months = groupedByMonth.entries.map((entry) {
-      return _HomeMonth(monthLabel: entry.key, days: entry.value);
-    }).toList();
-
-    // ⚠️ per ora NON cambiamo il tipo della funzione
-    // quindi continuiamo a restituire result
     return result;
   }
 
@@ -908,15 +945,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final List<_HomeEvent> events = [];
 
-    final start = DateTime(year, monthIndex, 1);
     final end = DateTime(year, monthIndex + 1, 0);
 
     for (int i = 0; i < end.day; i++) {
       final day = DateTime(year, monthIndex, i + 1);
 
-      final dayEvents = coreStore.realEventStore.eventsForDay(day);
+      final realEvents = coreStore.realEventStore.eventsForDay(day);
 
-      for (final e in dayEvents) {
+      for (final e in realEvents) {
         String time = "Tutto il giorno";
 
         if (e.startTime != null && e.endTime != null) {
@@ -939,6 +975,29 @@ class _HomeScreenState extends State<HomeScreen> {
             category: e.personKey ?? "Evento",
             ipsImpact: true,
             notes: e.notes,
+          ),
+        );
+      }
+
+      final aliceEvents = coreStore.aliceSpecialEventStore
+          .eventsForDay(day)
+          .where((event) => event.enabled)
+          .toList();
+
+      for (final e in aliceEvents) {
+        final sh = e.start.hour.toString().padLeft(2, '0');
+        final sm = e.start.minute.toString().padLeft(2, '0');
+        final eh = e.end.hour.toString().padLeft(2, '0');
+        final em = e.end.minute.toString().padLeft(2, '0');
+
+        events.add(
+          _HomeEvent(
+            id: e.id,
+            time: "${day.day}/${day.month} • $sh:$sm-$eh:$em",
+            title: e.label,
+            category: "Alice",
+            ipsImpact: true,
+            notes: e.note,
           ),
         );
       }
@@ -1453,13 +1512,51 @@ class _HomeScreenState extends State<HomeScreen> {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () {
-                coreStore.realEventStore.updateEventNotes(
-                  id: event.id,
-                  notes: controller.text,
-                );
+                if (event.category == "Alice") {
+                  final parts = event.time.split("•");
+                  final datePart = parts.first.trim();
 
-                Navigator.of(context).pop();
-                setState(() {});
+                  final dateParts = datePart.split("/");
+                  final day = int.parse(dateParts[0]);
+                  final month = int.parse(dateParts[1]);
+                  final year = DateTime.now().year;
+
+                  final date = DateTime(year, month, day);
+
+                  final list = coreStore.aliceSpecialEventStore.eventsForDay(
+                    date,
+                  );
+
+                  final updated = list.map((e) {
+                    if (e.id == event.id) {
+                      return e.copyWith(note: controller.text);
+                    }
+                    return e;
+                  }).toList();
+
+                  coreStore.aliceSpecialEventStore.replaceEventsForDay(
+                    date,
+                    updated,
+                  );
+                } else {
+                  coreStore.realEventStore.updateEventNotes(
+                    id: event.id,
+                    notes: controller.text,
+                  );
+                }
+
+                Navigator.of(context).pop(); // chiude dettaglio evento
+
+                Future.delayed(const Duration(milliseconds: 150), () {
+                  Navigator.of(context).pop(); // chiude popup mese
+
+                  Future.delayed(const Duration(milliseconds: 150), () {
+                    _showMonthEventsPopup(
+                      year: DateTime.now().year,
+                      monthName: _getMonthName(DateTime.now().month),
+                    );
+                  });
+                });
               },
               icon: const Icon(Icons.save_rounded),
               label: const Text("Salva memoria"),
@@ -3186,4 +3283,22 @@ class _ShirePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+String _getMonthName(int month) {
+  const months = [
+    "Gennaio",
+    "Febbraio",
+    "Marzo",
+    "Aprile",
+    "Maggio",
+    "Giugno",
+    "Luglio",
+    "Agosto",
+    "Settembre",
+    "Ottobre",
+    "Novembre",
+    "Dicembre",
+  ];
+  return months[month - 1];
 }

@@ -1,6 +1,6 @@
 # FRODODESK — SYSTEM STATE
 
-Ultimo aggiornamento: 3 Maggio 2026 (Home azionabile V1.1 — separazione OGGI vs PROBLEMA FUTURO)
+Ultimo aggiornamento: 4 Maggio 2026 (Eventi Globali V1 + Memoria Evento Persistente)
 
 ---
 
@@ -32,7 +32,7 @@ Il sistema è costruito con filosofia CNC (Costruzione Non Caotica):
 
 # FASE ATTUALE DEL PROGETTO
 
-🔥 CALENDARIO REALE COMPLETO + COPERTURA REALE + HOME AZIONABILE V1.1 CONSOLIDATA
+🔥 CALENDARIO REALE COMPLETO + COPERTURA REALE + HOME AZIONABILE V1.1 CONSOLIDATA + EVENTI GLOBALI V1
 
 Il sistema è:
 
@@ -44,6 +44,8 @@ Il sistema è:
 ✔ capace di trasformare un buco reale in problema visibile dalla Home  
 ✔ capace di portare direttamente al giorno del problema  
 ✔ coerente anche nei giorni festivi senza scuola  
+✔ capace di navigare eventi nel tempo (anno → mesi → eventi)  
+✔ capace di salvare memoria reale sugli eventi  
 
 ---
 
@@ -58,6 +60,11 @@ Nuova evoluzione:
 
 ❌ prima → Home solo informativa  
 ✔ ora → Home operativa e gerarchica (oggi vs futuro)
+
+🔥 NUOVO PASSAGGIO:
+
+❌ prima → eventi = dati temporanei  
+✔ ora → eventi = memoria persistente  
 
 ---
 
@@ -247,6 +254,81 @@ Il sistema:
 
 ---
 
+# 🔥 BLOCCO EVENTI GLOBALI (NUOVO)
+
+Stato: IMPLEMENTATO (V1)
+
+---
+
+## STRUTTURA
+
+✔ Navigazione:
+
+- Anno
+- Mesi (griglia 4x3)
+- Eventi del mese
+- Scheda evento
+
+---
+
+## RISULTATO
+
+✔ eventi organizzati per anno  
+✔ mesi visualizzati come cruscotto  
+✔ conteggio eventi per mese  
+✔ accesso diretto ai mesi con eventi  
+✔ UI non più lista ma struttura visiva  
+
+---
+
+## LIMITAZIONE ATTUALE
+
+👉 legge solo:
+
+✔ RealEventStore  
+
+❌ NON ancora inclusi:
+
+- AliceEventStore  
+- AliceSpecialEventStore  
+
+👉 integrazione prevista nella prossima fase
+
+---
+
+# 🔥 BLOCCO MEMORIA EVENTO (NUOVO)
+
+Stato: COMPLETATO E VALIDATO
+
+---
+
+## FUNZIONALITÀ
+
+✔ apertura evento  
+✔ campo note modificabile  
+✔ salvataggio reale nello store  
+✔ persistenza dopo riavvio app  
+
+---
+
+## RISULTATO
+
+✔ ogni evento può diventare memoria  
+✔ dati non più temporanei  
+✔ base per storico reale  
+
+---
+
+## SIGNIFICATO
+
+👉 primo passo verso:
+
+- diario eventi  
+- storico familiare  
+- analisi futura  
+
+---
+
 # 🔥 STRATO AZIONI UNIVERSALE (FUTURO)
 
 Stato: DEFINITO CONCETTUALMENTE, NON ANCORA IMPLEMENTATO
@@ -276,6 +358,7 @@ Stato: IDEA EMERSA, NON ANCORA IMPLEMENTATA
 ✔ AliceEventStore attivo  
 ✔ AliceSpecialEventStore attivo  
 ✔ eventi integrati nel motore  
+❌ NON ancora integrati negli Eventi Globali  
 
 ---
 
@@ -316,6 +399,9 @@ Stato: IDEA EMERSA, NON ANCORA IMPLEMENTATA
 ✔ Home collegata al motore reale  
 ✔ Home separa oggi vs futuro  
 ✔ navigazione diretta al problema  
+✔ Eventi Globali navigabili  
+✔ mesi in griglia FrodoDesk  
+✔ scheda evento con memoria  
 
 ---
 
@@ -327,7 +413,7 @@ Stato: IDEA EMERSA, NON ANCORA IMPLEMENTATA
 
 # 🎯 PROSSIMA FASE
 
-🔥 EVENTI GLOBALI (PASSATI + FUTURI)
+🔥 INTEGRAZIONE EVENTI ALICE → EVENTI GLOBALI
 
 ---
 
@@ -349,9 +435,10 @@ Il sistema ora:
 👉 distingue oggi da futuro  
 👉 non nasconde problemi  
 👉 guida l’utente  
+👉 inizia a costruire memoria reale  
 
 ---
 
 # FRASE DI RIPARTENZA UFFICIALE
 
-Ripartiamo da FrodoDesk — Home V1.1 stabile (oggi vs problema futuro separati). Prossima fase: progettazione Eventi Globali (passati + futuri).
+Ripartiamo da FrodoDesk — Eventi Globali V1 + Memoria Evento attiva. Prossima fase: integrazione Eventi Alice negli Eventi Globali.

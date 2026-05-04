@@ -1,6 +1,6 @@
 FRODODESK — RULES
 
-Ultimo aggiornamento: 1 Maggio 2026 (Home azionabile consolidata + fix festivi + coerenza popup)
+Ultimo aggiornamento: 4 Maggio 2026 (Eventi Globali V1 + Memoria Evento Persistente)
 
 ---
 
@@ -598,3 +598,56 @@ Esempio:
 👉 colpo d’occhio reale  
 👉 zero bug cognitivi  
 👉 zero interpretazioni  
+---
+
+# 🔴 NUOVA REGOLA STRUTTURALE — EVENTI GLOBALI (4 MAGGIO 2026)
+
+## PRINCIPIO
+
+Gli eventi devono essere navigabili nel tempo.
+
+## STRUTTURA
+
+✔ anno  
+✔ mesi  
+✔ eventi  
+✔ dettaglio evento  
+
+## OBIETTIVO
+
+👉 trasformare il calendario in sistema esplorabile  
+👉 permettere visione globale del tempo  
+
+## STATO ATTUALE
+
+✔ RealEventStore integrato  
+❌ Eventi Alice NON ancora inclusi  
+
+## REGOLA FUTURA
+
+👉 tutti gli eventi devono confluire in un unico sistema globale  
+
+---
+
+# 🔴 NUOVA REGOLA CRITICA — MEMORIA EVENTI (4 MAGGIO 2026)
+
+## PRINCIPIO
+
+Gli eventi NON sono più solo dati temporanei.
+
+👉 diventano memoria reale persistente
+
+## REGOLA
+
+✔ ogni evento deve poter salvare note  
+✔ le note devono essere persistenti dopo riavvio  
+✔ store e UI devono essere coerenti  
+
+## VIETATO
+
+❌ perdita memoria  
+❌ dati temporanei non salvati  
+
+## SIGNIFICATO
+
+👉 FrodoDesk inizia a costruire storico reale della vita  
