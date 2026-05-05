@@ -890,6 +890,159 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  int _eventCountForYear(int year) {
+    int count = 0;
+
+    for (final event in coreStore.realEventStore.allEvents) {
+      final startYear = event.startDate.year;
+      final endYear = event.endDate.year;
+
+      if (startYear <= year && endYear >= year) {
+        count++;
+      }
+    }
+
+    for (final day in coreStore.aliceSpecialEventStore.allDates()) {
+      if (day.year != year) continue;
+
+      count += coreStore.aliceSpecialEventStore
+          .eventsForDay(day)
+          .where((event) => event.enabled)
+          .length;
+    }
+
+    return count;
+  }
+
+  Future<void> _showFutureYearsPopup() async {
+    final currentYear = DateTime.now().year;
+    final years = List.generate(10, (index) => currentYear + index + 1);
+
+    await _showHomeDialog(
+      icon: Icons.auto_awesome_motion_rounded,
+      color: const Color(0xFF5E35B1),
+      title: "Eventi futuri",
+      subtitle: "Anni successivi al $currentYear",
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: years.map((year) {
+          final count = _eventCountForYear(year);
+          final hasEvents = count > 0;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _buildGlobalEventEntryCard(
+              icon: Icons.calendar_month_rounded,
+              title: "$year ($count)",
+              subtitle: hasEvents
+                  ? "Apri gli eventi del $year"
+                  : "Nessun evento inserito",
+              color: hasEvents ? const Color(0xFF5E35B1) : Colors.grey,
+              onTap: hasEvents
+                  ? () {
+                      _showYearEventsPopup(year: year);
+                    }
+                  : () {},
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Future<void> _showPastYearsPopup() async {
+    final currentYear = DateTime.now().year;
+    final years = List.generate(10, (index) => currentYear - index - 1);
+
+    await _showHomeDialog(
+      icon: Icons.history_rounded,
+      color: const Color(0xFF8D6E63),
+      title: "Eventi passati",
+      subtitle: "Archivio degli anni precedenti",
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: years.map((year) {
+          final count = _eventCountForYear(year);
+          final hasEvents = count > 0;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _buildGlobalEventEntryCard(
+              icon: Icons.history_rounded,
+              title: "$year ($count)",
+              subtitle: hasEvents
+                  ? "Apri gli eventi del $year"
+                  : "Nessun evento archiviato",
+              color: hasEvents ? const Color(0xFF8D6E63) : Colors.grey,
+              onTap: hasEvents
+                  ? () {
+                      _showYearEventsPopup(year: year);
+                    }
+                  : () {},
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Future<void> _showYearEventsPopup({required int year}) async {
+    await _showHomeDialog(
+      icon: Icons.event_note_rounded,
+      color: const Color(0xFF5E35B1),
+      title: "$year",
+      subtitle: "Eventi dell’anno",
+      child: StatefulBuilder(
+        builder: (context, dialogSetState) {
+          final List<_HomeEvent> events = [];
+
+          final start = DateTime(year, 1, 1);
+          final end = DateTime(year, 12, 31);
+
+          DateTime cursor = start;
+
+          while (!cursor.isAfter(end)) {
+            final dayEvents = _getAllEventsForDay(cursor);
+
+            for (final e in dayEvents) {
+              events.add(
+                _HomeEvent(
+                  id: e.id,
+                  time:
+                      "${cursor.day}/${cursor.month}/${cursor.year} • ${e.time}",
+                  title: e.title,
+                  category: e.category,
+                  source: e.source,
+                  participants: e.participants,
+                  ipsImpact: e.ipsImpact,
+                  notes: e.notes,
+                ),
+              );
+            }
+
+            cursor = cursor.add(const Duration(days: 1));
+          }
+
+          return events.isEmpty
+              ? _buildDialogEmptyState(
+                  icon: Icons.event_note_rounded,
+                  title: "Nessun evento",
+                  subtitle: "Non ci sono eventi in questo anno",
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _buildEventsGroupedByDay(
+                    events,
+                    onSaved: () {
+                      dialogSetState(() {});
+                    },
+                  ),
+                );
+        },
+      ),
+    );
+  }
+
   Future<void> _showMonthEventsPopup({
     required int year,
     required String monthName,
@@ -1724,7 +1877,7 @@ class _HomeScreenState extends State<HomeScreen> {
           title: "Eventi passati",
           subtitle: "Archivio degli anni precedenti",
           color: const Color(0xFF8D6E63),
-          onTap: () {},
+          onTap: _showPastYearsPopup,
         ),
         const SizedBox(height: 10),
         _buildGlobalEventEntryCard(
@@ -1742,7 +1895,7 @@ class _HomeScreenState extends State<HomeScreen> {
           title: "Eventi futuri",
           subtitle: "Anni successivi al $currentYear",
           color: const Color(0xFF5E35B1),
-          onTap: () {},
+          onTap: _showFutureYearsPopup,
         ),
       ],
     );
