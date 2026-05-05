@@ -1,14 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum RealEventType {
-  generic,
-  visit,
-  trip,
-  appointment,
-  personal,
-  school,
-  work,
-}
+enum RealEventType { generic, visit, trip, appointment, personal, school, work }
 
 @immutable
 class RealEvent {
@@ -34,8 +26,13 @@ class RealEvent {
   /// Luogo opzionale
   final String? location;
 
-  /// Persona coinvolta (chiave tecnica: matteo / chiara / alice / sandra...)
+  /// Persona coinvolta legacy.
+  /// Mantenerla per compatibilità con il codice esistente.
   final String? personKey;
+
+  /// Persone coinvolte nell'evento.
+  /// Nuova struttura per eventi multi-partecipante.
+  final List<String> participantKeys;
 
   /// Note opzionali
   final String? notes;
@@ -50,6 +47,7 @@ class RealEvent {
     this.type = RealEventType.generic,
     this.location,
     this.personKey,
+    this.participantKeys = const [],
     this.notes,
   });
 
@@ -57,11 +55,27 @@ class RealEvent {
   /// dove prima esisteva solo "day", usiamo startDate.
   DateTime get day => startDate;
 
-  bool get isMultiDay =>
-      !_isSameDate(startDate, endDate);
+  bool get isMultiDay => !_isSameDate(startDate, endDate);
 
-  bool get hasTimeRange =>
-      startTime != null && endTime != null;
+  bool get hasTimeRange => startTime != null && endTime != null;
+
+  /// Persone effettive dell'evento.
+  /// Se participantKeys è vuoto, usa personKey come fallback legacy.
+  List<String> get effectiveParticipantKeys {
+    if (participantKeys.isNotEmpty) {
+      return List.unmodifiable(participantKeys);
+    }
+
+    if (personKey != null && personKey!.trim().isNotEmpty) {
+      return List.unmodifiable([personKey!.trim()]);
+    }
+
+    return const [];
+  }
+
+  bool involvesPerson(String key) {
+    return effectiveParticipantKeys.contains(key);
+  }
 
   RealEvent copyWith({
     String? id,
@@ -73,6 +87,7 @@ class RealEvent {
     RealEventType? type,
     String? location,
     String? personKey,
+    List<String>? participantKeys,
     String? notes,
   }) {
     return RealEvent(
@@ -85,6 +100,7 @@ class RealEvent {
       type: type ?? this.type,
       location: location ?? this.location,
       personKey: personKey ?? this.personKey,
+      participantKeys: participantKeys ?? this.participantKeys,
       notes: notes ?? this.notes,
     );
   }

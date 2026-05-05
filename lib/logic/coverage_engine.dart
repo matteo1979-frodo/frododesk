@@ -2472,7 +2472,7 @@ class CoverageEngine {
     final busy = <WorkShift>[];
 
     for (final event in events) {
-      if (event.personKey != personKey) continue;
+      if (!event.involvesPerson(personKey)) continue;
 
       final start = event.startTime == null
           ? DateTime(d0.year, d0.month, d0.day, 0, 0)
@@ -2500,7 +2500,7 @@ class CoverageEngine {
     final events = realEventStore.eventsForDay(d0);
 
     for (final event in events) {
-      if (event.personKey != personKey) continue;
+      if (!event.involvesPerson(personKey)) continue;
       if (event.startTime == null || event.endTime == null) continue;
 
       final eventStart = _atTime(d0, event.startTime!);

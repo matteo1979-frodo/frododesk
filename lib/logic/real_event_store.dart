@@ -81,9 +81,16 @@ class RealEventStore {
         final location = map['location'] is String
             ? map['location'] as String
             : null;
+
         final personKey = map['personKey'] is String
             ? map['personKey'] as String
             : null;
+
+        final rawParticipantKeys = map['participantKeys'];
+        final participantKeys = rawParticipantKeys is List
+            ? rawParticipantKeys.whereType<String>().toList()
+            : <String>[];
+
         final notes = map['notes'] is String ? map['notes'] as String : null;
 
         final safeType =
@@ -101,6 +108,7 @@ class RealEventStore {
           type: safeType,
           location: location,
           personKey: personKey,
+          participantKeys: participantKeys,
           notes: notes,
         );
 
@@ -127,7 +135,7 @@ class RealEventStore {
   }) {
     final events = eventsForDay(
       day,
-    ).where((e) => e.personKey == personKey).toList();
+    ).where((e) => e.involvesPerson(personKey)).toList();
 
     events.sort(_compareEventsByStart);
     return List.unmodifiable(events);
@@ -299,6 +307,7 @@ class RealEventStore {
             'typeIndex': event.type.index,
             'location': event.location,
             'personKey': event.personKey,
+            'participantKeys': event.participantKeys,
             'notes': event.notes,
           },
         )

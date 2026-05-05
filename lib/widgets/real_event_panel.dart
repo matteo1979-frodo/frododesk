@@ -56,6 +56,72 @@ class _RealEventPanelState extends State<RealEventPanel> {
     }
   }
 
+  String _participantsLabel(List<String> keys) {
+    if (keys.isEmpty) return "Nessuna persona";
+    return keys.map(_personLabel).join(", ");
+  }
+
+  Future<List<String>?> _pickParticipants({
+    required BuildContext context,
+    required List<String> initial,
+  }) async {
+    final selected = Set<String>.from(initial);
+
+    return showDialog<List<String>>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setLocalState) {
+            Widget personTile(String key, String label) {
+              return CheckboxListTile(
+                value: selected.contains(key),
+                title: Text(label),
+                controlAffinity: ListTileControlAffinity.leading,
+                onChanged: (value) {
+                  setLocalState(() {
+                    if (value == true) {
+                      selected.add(key);
+                    } else {
+                      selected.remove(key);
+                    }
+                  });
+                },
+              );
+            }
+
+            return AlertDialog(
+              title: const Text("Persone coinvolte"),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    personTile('matteo', 'Matteo'),
+                    personTile('chiara', 'Chiara'),
+                    personTile('alice', 'Alice'),
+                    personTile('sandra', 'Sandra'),
+                    personTile('family', 'Famiglia / Generale'),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(null),
+                  child: const Text("Annulla"),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(selected.toList());
+                  },
+                  child: const Text("Conferma"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _addSimpleEvent(BuildContext context) async {
     final titleCtrl = TextEditingController();
     final notesCtrl = TextEditingController();
@@ -65,7 +131,7 @@ class _RealEventPanelState extends State<RealEventPanel> {
       builder: (context) {
         TimeOfDay? start;
         TimeOfDay? end;
-        String? personKey;
+        List<String> participantKeys = [];
         DateTime startDate = _onlyDate(selectedDay);
         DateTime endDate = _onlyDate(selectedDay);
         bool allDay = true;
@@ -87,41 +153,42 @@ class _RealEventPanelState extends State<RealEventPanel> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    DropdownButtonFormField<String?>(
-                      value: personKey,
-                      isExpanded: true,
-                      decoration: const InputDecoration(
-                        labelText: "Persona coinvolta",
-                      ),
-                      items: const [
-                        DropdownMenuItem<String?>(
-                          value: null,
-                          child: Text("Nessuna persona"),
-                        ),
-                        DropdownMenuItem<String?>(
-                          value: 'matteo',
-                          child: Text("Matteo"),
-                        ),
-                        DropdownMenuItem<String?>(
-                          value: 'chiara',
-                          child: Text("Chiara"),
-                        ),
-                        DropdownMenuItem<String?>(
-                          value: 'alice',
-                          child: Text("Alice"),
-                        ),
-                        DropdownMenuItem<String?>(
-                          value: 'sandra',
-                          child: Text("Sandra"),
-                        ),
-                        DropdownMenuItem<String?>(
-                          value: 'family',
-                          child: Text("Famiglia / Generale"),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        setLocalState(() => personKey = value);
+                    InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () async {
+                        final picked = await _pickParticipants(
+                          context: context,
+                          initial: participantKeys,
+                        );
+
+                        if (picked == null) return;
+
+                        setLocalState(() {
+                          participantKeys = picked;
+                        });
                       },
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: "Persone coinvolte",
+                          border: OutlineInputBorder(),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _participantsLabel(participantKeys),
+                                style: TextStyle(
+                                  color: participantKeys.isEmpty
+                                      ? Colors.black.withOpacity(0.55)
+                                      : Colors.black.withOpacity(0.86),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const Icon(Icons.chevron_right_rounded),
+                          ],
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     SwitchListTile(
@@ -273,7 +340,7 @@ class _RealEventPanelState extends State<RealEventPanel> {
                     Navigator.of(context).pop(
                       _EventDraft(
                         title: title,
-                        personKey: personKey,
+                        participantKeys: participantKeys,
                         startDate: startDate,
                         endDate: endDate,
                         startTime: allDay ? null : start,
@@ -292,9 +359,6 @@ class _RealEventPanelState extends State<RealEventPanel> {
       },
     );
 
-    // titleCtrl.dispose();
-    // notesCtrl.dispose();
-
     if (result == null) return;
 
     final event = RealEvent(
@@ -304,7 +368,10 @@ class _RealEventPanelState extends State<RealEventPanel> {
       title: result.title,
       startTime: result.startTime,
       endTime: result.endTime,
-      personKey: result.personKey,
+      personKey: result.participantKeys.isEmpty
+          ? null
+          : result.participantKeys.first,
+      participantKeys: result.participantKeys,
       notes: result.notes.isEmpty ? null : result.notes,
     );
 
@@ -523,21 +590,9 @@ class _RealEventTile extends StatelessWidget {
     return DateFormat('dd/MM/yyyy').format(d);
   }
 
-  String _personLabel(String? personKey) {
-    switch (personKey) {
-      case 'matteo':
-        return 'Matteo';
-      case 'chiara':
-        return 'Chiara';
-      case 'alice':
-        return 'Alice';
-      case 'sandra':
-        return 'Sandra';
-      case 'family':
-        return 'Famiglia / Generale';
-      default:
-        return 'Nessuna persona';
-    }
+  String _participantsLabel(List<String> keys) {
+    if (keys.isEmpty) return "Nessuna persona";
+    return keys.join(", ");
   }
 
   bool _isNowActive(RealEvent event) {
@@ -555,13 +610,11 @@ class _RealEventTile extends StatelessWidget {
       event.endDate.day,
     );
 
-    // Evento su più giorni (tutto il giorno)
     if (event.startTime == null || event.endTime == null) {
       return !now.isBefore(startDate) &&
           !now.isAfter(endDate.add(const Duration(days: 1)));
     }
 
-    // Evento con orario nello stesso giorno
     final eventStart = DateTime(
       event.startDate.year,
       event.startDate.month,
@@ -585,8 +638,6 @@ class _RealEventTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasTimes = event.startTime != null || event.endTime != null;
     final hasNotes = (event.notes ?? '').trim().isNotEmpty;
-    final hasPerson =
-        event.personKey != null && event.personKey!.trim().isNotEmpty;
 
     final isMultiDay = event.startDate != event.endDate;
 
@@ -604,41 +655,35 @@ class _RealEventTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (_isNowActive(event)) ...[
-                      Container(
-                        margin: const EdgeInsets.only(bottom: 4),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Text(
-                          "🔴 IN CORSO",
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.red,
-                          ),
-                        ),
-                      ),
-                    ],
-                    Text(
-                      event.title,
-                      style: const TextStyle(fontWeight: FontWeight.w800),
+                if (_isNowActive(event))
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
                     ),
-                  ],
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      "🔴 IN CORSO",
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ),
+                Text(
+                  event.title,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
-                if (hasPerson)
+                if (event.participantKeys.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(
-                      "Persona: ${_personLabel(event.personKey)}",
+                      "Persone: ${_participantsLabel(event.participantKeys)}",
                       style: TextStyle(color: Colors.black.withOpacity(0.68)),
                     ),
                   ),
@@ -655,9 +700,7 @@ class _RealEventTile extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 2),
                   child: Text(
                     hasTimes
-                        ? "${event.startTime != null ? _fmt(event.startTime!) : "--:--"}"
-                              " – "
-                              "${event.endTime != null ? _fmt(event.endTime!) : "--:--"}"
+                        ? "${event.startTime != null ? _fmt(event.startTime!) : "--:--"} – ${event.endTime != null ? _fmt(event.endTime!) : "--:--"}"
                         : "Tutto il giorno",
                     style: TextStyle(color: Colors.black.withOpacity(0.65)),
                   ),
@@ -686,7 +729,7 @@ class _RealEventTile extends StatelessWidget {
 
 class _EventDraft {
   final String title;
-  final String? personKey;
+  final List<String> participantKeys;
   final DateTime startDate;
   final DateTime endDate;
   final TimeOfDay? startTime;
@@ -696,7 +739,7 @@ class _EventDraft {
 
   const _EventDraft({
     required this.title,
-    required this.personKey,
+    required this.participantKeys,
     required this.startDate,
     required this.endDate,
     required this.startTime,

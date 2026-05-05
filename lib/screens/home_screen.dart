@@ -463,7 +463,22 @@ class _HomeScreenState extends State<HomeScreen> {
           title: e.title,
           category: category,
           source: "real",
-          participants: [category],
+          participants: e.effectiveParticipantKeys.map((key) {
+            switch (key) {
+              case "matteo":
+                return "Matteo";
+              case "chiara":
+                return "Chiara";
+              case "alice":
+                return "Alice";
+              case "sandra":
+                return "Sandra";
+              case "family":
+                return "Famiglia";
+              default:
+                return key;
+            }
+          }).toList(),
           ipsImpact: true,
           notes: e.notes,
         ),
@@ -1273,7 +1288,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    e.category,
+                    e.participants.join(", "),
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.black.withOpacity(0.55),
