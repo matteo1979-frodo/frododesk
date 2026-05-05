@@ -429,9 +429,13 @@ class _HomeScreenState extends State<HomeScreen> {
     final day = DateTime.now();
     final selectedDay = DateTime(day.year, day.month, day.day);
 
+    return _getAllEventsForDay(selectedDay);
+  }
+
+  List<_HomeEvent> _getAllEventsForDay(DateTime day) {
     final List<_HomeEvent> items = [];
 
-    final realEvents = coreStore.realEventStore.eventsForDay(selectedDay);
+    final realEvents = coreStore.realEventStore.eventsForDay(day);
 
     for (final e in realEvents) {
       String time = "Tutto il giorno";
@@ -458,6 +462,8 @@ class _HomeScreenState extends State<HomeScreen> {
           time: time,
           title: e.title,
           category: category,
+          source: "real",
+          participants: [category],
           ipsImpact: true,
           notes: e.notes,
         ),
@@ -465,7 +471,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final aliceEvents = coreStore.aliceSpecialEventStore
-        .eventsForDay(selectedDay)
+        .eventsForDay(day)
         .where((event) => event.enabled)
         .toList();
 
@@ -481,6 +487,8 @@ class _HomeScreenState extends State<HomeScreen> {
           time: "$sh:$sm-$eh:$em",
           title: e.label,
           category: "Alice",
+          source: "alice",
+          participants: const ["Alice"],
           ipsImpact: true,
           notes: e.note,
         ),
@@ -488,6 +496,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     items.sort((a, b) => a.time.compareTo(b.time));
+
     return items;
   }
 
@@ -504,67 +513,9 @@ class _HomeScreenState extends State<HomeScreen> {
       final day = now.add(Duration(days: i));
       final dayKey = DateTime(day.year, day.month, day.day);
 
-      final List<_HomeEvent> mappedEvents = [];
-
-      final realEvents = coreStore.realEventStore.eventsForDay(dayKey);
-
-      for (final e in realEvents) {
-        String time = "Tutto il giorno";
-
-        if (e.startTime != null && e.endTime != null) {
-          final sh = e.startTime!.hour.toString().padLeft(2, '0');
-          final sm = e.startTime!.minute.toString().padLeft(2, '0');
-          final eh = e.endTime!.hour.toString().padLeft(2, '0');
-          final em = e.endTime!.minute.toString().padLeft(2, '0');
-          time = "$sh:$sm-$eh:$em";
-        } else if (e.startTime != null) {
-          final sh = e.startTime!.hour.toString().padLeft(2, '0');
-          final sm = e.startTime!.minute.toString().padLeft(2, '0');
-          time = "$sh:$sm";
-        }
-
-        final category = (e.personKey == null || e.personKey!.trim().isEmpty)
-            ? "Evento"
-            : e.personKey!;
-
-        mappedEvents.add(
-          _HomeEvent(
-            id: e.id,
-            time: time,
-            title: e.title,
-            category: category,
-            ipsImpact: true,
-            notes: e.notes,
-          ),
-        );
-      }
-
-      final aliceEvents = coreStore.aliceSpecialEventStore
-          .eventsForDay(dayKey)
-          .where((event) => event.enabled)
-          .toList();
-
-      for (final e in aliceEvents) {
-        final sh = e.start.hour.toString().padLeft(2, '0');
-        final sm = e.start.minute.toString().padLeft(2, '0');
-        final eh = e.end.hour.toString().padLeft(2, '0');
-        final em = e.end.minute.toString().padLeft(2, '0');
-
-        mappedEvents.add(
-          _HomeEvent(
-            id: e.id,
-            time: "$sh:$sm-$eh:$em",
-            title: e.label,
-            category: "Alice",
-            ipsImpact: true,
-            notes: e.note,
-          ),
-        );
-      }
+      final mappedEvents = _getAllEventsForDay(dayKey);
 
       if (mappedEvents.isEmpty) continue;
-
-      mappedEvents.sort((a, b) => a.time.compareTo(b.time));
 
       final weekday = [
         "Lun",
@@ -956,55 +907,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
           for (int i = 0; i < end.day; i++) {
             final day = DateTime(year, monthIndex, i + 1);
+            final dayEvents = _getAllEventsForDay(day);
 
-            final realEvents = coreStore.realEventStore.eventsForDay(day);
-
-            for (final e in realEvents) {
-              String time = "Tutto il giorno";
-
-              if (e.startTime != null && e.endTime != null) {
-                final sh = e.startTime!.hour.toString().padLeft(2, '0');
-                final sm = e.startTime!.minute.toString().padLeft(2, '0');
-                final eh = e.endTime!.hour.toString().padLeft(2, '0');
-                final em = e.endTime!.minute.toString().padLeft(2, '0');
-                time = "$sh:$sm-$eh:$em";
-              } else if (e.startTime != null) {
-                final sh = e.startTime!.hour.toString().padLeft(2, '0');
-                final sm = e.startTime!.minute.toString().padLeft(2, '0');
-                time = "$sh:$sm";
-              }
-
+            for (final e in dayEvents) {
               events.add(
                 _HomeEvent(
                   id: e.id,
-                  time: "${day.day}/${day.month} • $time",
+                  time: "${day.day}/${day.month} • ${e.time}",
                   title: e.title,
-                  category: e.personKey ?? "Evento",
-                  ipsImpact: true,
+                  category: e.category,
+                  source: e.source,
+                  participants: e.participants,
+                  ipsImpact: e.ipsImpact,
                   notes: e.notes,
-                ),
-              );
-            }
-
-            final aliceEvents = coreStore.aliceSpecialEventStore
-                .eventsForDay(day)
-                .where((event) => event.enabled)
-                .toList();
-
-            for (final e in aliceEvents) {
-              final sh = e.start.hour.toString().padLeft(2, '0');
-              final sm = e.start.minute.toString().padLeft(2, '0');
-              final eh = e.end.hour.toString().padLeft(2, '0');
-              final em = e.end.minute.toString().padLeft(2, '0');
-
-              events.add(
-                _HomeEvent(
-                  id: e.id,
-                  time: "${day.day}/${day.month} • $sh:$sm-$eh:$em",
-                  title: e.label,
-                  category: "Alice",
-                  ipsImpact: true,
-                  notes: e.note,
                 ),
               );
             }
@@ -1463,10 +1378,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (timePart.isNotEmpty) const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.person_rounded, size: 18),
+                    const Icon(Icons.group_rounded, size: 18),
                     const SizedBox(width: 8),
                     Text(
-                      event.category,
+                      event.participants.join(", "),
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         color: Colors.black.withOpacity(0.70),
@@ -1524,7 +1439,7 @@ class _HomeScreenState extends State<HomeScreen> {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () {
-                if (event.category == "Alice") {
+                if (event.source == "alice") {
                   final parts = event.time.split("•");
                   final datePart = parts.first.trim();
 
@@ -2955,6 +2870,8 @@ class _HomeEvent {
   final String time;
   final String title;
   final String category;
+  final String source;
+  final List<String> participants;
   final bool ipsImpact;
   final String? notes;
 
@@ -2963,6 +2880,8 @@ class _HomeEvent {
     required this.time,
     required this.title,
     required this.category,
+    required this.source,
+    required this.participants,
     required this.ipsImpact,
     this.notes,
   });
