@@ -651,3 +651,154 @@ Gli eventi NON sono più solo dati temporanei.
 ## SIGNIFICATO
 
 👉 FrodoDesk inizia a costruire storico reale della vita  
+
+---
+
+# 🔴 NUOVA REGOLA STRUTTURALE — ARCHITETTURA MODULARE HOME (5 Maggio 2026)
+
+## PRINCIPIO
+
+La Home NON deve contenere logiche complesse.
+
+👉 Deve orchestrare, NON eseguire.
+
+---
+
+## REGOLA
+
+✔ Home legge dati dai moduli  
+✔ Home mostra stato e decisione  
+✔ Home indirizza l’utente  
+
+❌ Home NON deve:
+- contenere logiche pesanti
+- calcolare statistiche complesse
+- gestire grafici
+- duplicare logiche dei moduli
+
+---
+
+## STRUTTURA CORRETTA
+
+- Home → orchestratore  
+- Moduli → logica reale  
+
+Esempio:
+
+✔ Statistiche → modulo dedicato  
+✔ Copertura → CoverageEngine  
+✔ Eventi → Store + Engine  
+
+---
+
+## OBIETTIVO
+
+👉 mantenere il sistema stabile  
+👉 evitare file enormi  
+👉 permettere evoluzione senza rompere la struttura  
+
+---
+
+# 🔴 NUOVA REGOLA — EVENTI COME MEMORIA (5 Maggio 2026)
+
+## PRINCIPIO
+
+Gli eventi NON sono più temporanei.
+
+👉 diventano memoria reale persistente
+
+---
+
+## REGOLA
+
+✔ ogni evento deve poter salvare note  
+✔ le note devono essere persistenti  
+✔ la modifica deve aggiornare lo store reale  
+
+---
+
+## VIETATO
+
+❌ eventi senza persistenza  
+❌ perdita dati dopo riavvio  
+❌ memoria solo visiva  
+
+---
+
+## SIGNIFICATO
+
+👉 FrodoDesk diventa storico reale della vita  
+
+---
+
+# 🔴 NUOVA REGOLA — NAVIGAZIONE TEMPORALE EVENTI (5 Maggio 2026)
+
+## PRINCIPIO
+
+Gli eventi devono essere navigabili nel tempo.
+
+---
+
+## STRUTTURA OBBLIGATORIA
+
+✔ anno  
+✔ mesi  
+✔ eventi  
+✔ dettaglio  
+
+---
+
+## REGOLA TEMPORALE
+
+✔ anno corrente = presente  
+✔ anni precedenti = passato  
+✔ anni successivi = futuro  
+
+---
+
+## OBIETTIVO
+
+👉 permettere visione completa della vita nel tempo  
+👉 costruire base per storico e analisi  
+
+---
+
+# 🔴 NUOVA REGOLA — MODULO STATISTICHE (5 Maggio 2026)
+
+## PRINCIPIO
+
+Le statistiche NON appartengono alla Home.
+
+---
+
+## REGOLA
+
+✔ devono vivere in un modulo separato  
+✔ devono essere basate su dati reali  
+✔ devono essere visualizzate con grafici  
+
+---
+
+## OBIETTIVO
+
+👉 lettura immediata dei dati  
+👉 supporto decisionale visivo  
+
+---
+
+## DIREZIONE FUTURA
+
+Le statistiche includeranno:
+
+- copertura  
+- supporto  
+- eventi  
+- finanze  
+- salute  
+- attività familiari  
+
+---
+
+## PRINCIPIO CHIAVE
+
+👉 i grafici sono uno strumento decisionale, non estetico

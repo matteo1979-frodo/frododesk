@@ -234,3 +234,128 @@ STEP 2:
 
 STEP 3:
 👉 rendere la Home coerente con IPS reale
+
+---
+
+# 🔄 AGGIORNAMENTO 5 Maggio 2026
+
+---
+
+# 🔥 BLOCCO EVENTI GLOBALI
+
+Stato: IMPLEMENTATO (V1)
+
+---
+
+## RISULTATO
+
+✔ navigazione eventi nel tempo funzionante  
+✔ struttura anno → mesi → eventi → dettaglio  
+✔ mesi in griglia con conteggio eventi  
+✔ accesso diretto agli eventi del mese  
+
+✔ introduzione memoria evento persistente  
+✔ supporto eventi multi-persona  
+
+---
+
+## LIMITI ATTUALI
+
+❌ Eventi Alice NON ancora inclusi negli Eventi Globali  
+
+---
+
+## PROSSIMO STEP
+
+👉 integrazione completa:
+
+- RealEventStore  
+- AliceEventStore  
+- AliceSpecialEventStore  
+
+---
+
+# 🔥 BLOCCO HOME — EVOLUZIONE
+
+Stato: CONSOLIDATO (V1.1)
+
+---
+
+## RISULTATO
+
+✔ separazione OGGI vs FUTURO funzionante  
+✔ Home decisionale stabile  
+✔ collegamento diretto al calendario  
+
+---
+
+## NUOVO STEP
+
+👉 trasformare:
+
+"Prossimi 7 giorni"
+
+in
+
+"Prossimi 30 giorni"
+
+---
+
+# 🔥 BLOCCO STATISTICHE (NUOVO)
+
+Stato: AVVIATO (STRUTTURA)
+
+---
+
+## DECISIONE
+
+✔ modulo separato  
+✔ NON sviluppato dentro Home  
+
+---
+
+## OBIETTIVO
+
+👉 creare sistema di analisi reale della vita familiare  
+
+---
+
+## CONTENUTI FUTURI
+
+- ore supporto (Sandra / rete)  
+- eventi gestiti  
+- copertura  
+- carico familiare  
+- finanze  
+- salute  
+
+---
+
+## STRUMENTO PRINCIPALE
+
+👉 grafici (lettura immediata)
+
+---
+
+# 🔥 DIREZIONE AGGIORNATA
+
+Il sistema ora evolve su 3 linee:
+
+1️⃣ Eventi Globali completi  
+2️⃣ Statistiche reali  
+3️⃣ IPS coerente  
+
+---
+
+# 🔥 PROSSIMA RIPARTENZA AGGIORNATA
+
+Ripartiamo da FrodoDesk — Eventi Globali V1 + Memoria evento + avvio modulo Statistiche
+
+STEP 1:
+👉 integrazione Eventi Alice negli Eventi Globali  
+
+STEP 2:
+👉 trasformazione "Prossimi 7 giorni" → "30 giorni"  
+
+STEP 3:
+👉 base modulo Statistiche (dati reali)

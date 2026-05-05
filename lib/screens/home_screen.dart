@@ -17,6 +17,7 @@ import 'salute_screen.dart';
 import '../logic/coverage_logic.dart';
 import '../logic/coverage_engine.dart';
 import '../logic/day_settings_store.dart';
+import 'statistiche_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final IpsStore ipsStore;
@@ -2566,6 +2567,23 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => CoperturaScreen(coreStore: coreStore),
+                      ),
+                    );
+                  },
+                ),
+
+                _DashboardModuleCard(
+                  icon: Icons.bar_chart_rounded,
+                  title: "Statistiche",
+                  subtitle: "Analizza andamento e storico",
+                  badge: "Insight",
+                  badgeColor: const Color(0xFFB08D57),
+                  startColor: const Color(0xFFFF8F00),
+                  endColor: const Color(0xFFFFCA28),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => StatisticheScreen(coreStore: coreStore),
                       ),
                     );
                   },

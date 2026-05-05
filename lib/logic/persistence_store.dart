@@ -38,6 +38,16 @@ class PersistenceStore {
     return prefs.getInt('$_prefix$key');
   }
 
+  static Future<void> saveDouble(String key, double value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('$_prefix$key', value);
+  }
+
+  static Future<double?> loadDouble(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble('$_prefix$key');
+  }
+
   static Future<void> saveStringList(String key, List<String> value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('$_prefix$key', value);

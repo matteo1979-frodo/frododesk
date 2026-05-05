@@ -375,3 +375,122 @@ D — rifinitura UI
 # FRASE DI RIPARTENZA UFFICIALE
 
 Ripartiamo da FrodoDesk — FIX USCITA ANTICIPATA: collegare l’orario reale al motore di copertura e verificare la chiusura corretta dei buchi.
+
+---
+
+# 🔄 AGGIORNAMENTO 5 Maggio 2026
+
+## HOME + EVENTI GLOBALI + MEMORIA EVENTI
+
+---
+
+## 🔥 NUOVO PASSAGGIO STRUTTURALE
+
+Il sistema ha fatto un salto importante:
+
+❌ prima → eventi come dati temporanei  
+✔ ora → eventi come memoria reale persistente  
+
+---
+
+## 🧠 EVENTI GLOBALI
+
+Introdotto sistema di navigazione nel tempo:
+
+✔ anno  
+✔ mesi (griglia visiva)  
+✔ eventi del mese  
+✔ dettaglio evento  
+
+---
+
+## SIGNIFICATO
+
+👉 il sistema non mostra più solo “oggi”  
+👉 permette di navigare nella vita nel tempo  
+
+---
+
+## 🧠 MEMORIA EVENTI
+
+Ogni evento ora può contenere:
+
+✔ note  
+✔ dettagli reali  
+✔ memoria personale  
+
+✔ salvataggio persistente  
+✔ disponibile dopo riavvio  
+
+---
+
+## SIGNIFICATO
+
+👉 nasce lo storico reale della famiglia  
+👉 base futura per analisi e statistiche  
+
+---
+
+## 🧠 EVENTI MULTI-PERSONA
+
+Introdotto supporto:
+
+✔ più persone per evento  
+✔ integrazione con copertura  
+✔ lettura corretta nel motore  
+
+---
+
+## RISULTATO
+
+✔ eventi più realistici  
+✔ copertura più precisa  
+✔ maggiore coerenza sistema  
+
+---
+
+## 🧱 ARCHITETTURA DECISA
+
+Decisione importante:
+
+👉 le funzionalità complesse NON devono stare nella Home  
+
+✔ Home = vista  
+✔ moduli = logica  
+
+---
+
+## 🔥 NASCITA MODULO STATISTICHE
+
+Decisione ufficiale:
+
+✔ creare modulo dedicato  
+✔ NON sviluppare dentro Home  
+
+---
+
+## SIGNIFICATO
+
+👉 FrodoDesk non è più solo simulazione  
+👉 diventa sistema di analisi della vita reale  
+
+---
+
+## DIREZIONE FUTURA
+
+Il sistema evolverà verso:
+
+- storico eventi  
+- analisi comportamento familiare  
+- lettura visiva tramite grafici  
+- supporto decisionale avanzato  
+
+---
+
+## STATO
+
+✔ stabile  
+✔ testato su app reale  
+✔ memoria eventi funzionante  
+✔ Eventi Globali funzionanti  
+✔ struttura pronta per evoluzione

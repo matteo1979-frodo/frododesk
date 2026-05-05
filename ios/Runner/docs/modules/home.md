@@ -305,3 +305,118 @@ Questo è il momento in cui FrodoDesk:
 👉 passa da sistema tecnico → sistema decisionale reale  
 👉 passa da “mostra dati” → “ti dice cosa guardare prima”  
 👉 distingue il presente dal futuro senza creare ansia inutile  
+
+---
+
+## 🔄 AGGIORNAMENTO 5 Maggio 2026
+
+### EVENTI GLOBALI + MEMORIA EVENTO + STRUTTURA MODULI
+
+---
+
+## 🔥 EVENTI GLOBALI — INTEGRAZIONE
+
+✔ aggiunta sezione "Eventi globali" nella Home  
+✔ accesso da Panoramica oggi  
+✔ apertura popup dedicato  
+
+✔ struttura:
+
+- Eventi passati (base creata)  
+- Eventi anno corrente (funzionante)  
+- Eventi futuri (base creata)  
+
+---
+
+## 🧠 NAVIGAZIONE EVENTI
+
+✔ anno → mesi → eventi → dettaglio  
+✔ mesi in griglia visiva (non lista)  
+✔ conteggio eventi per mese  
+✔ mesi senza eventi disattivati  
+
+---
+
+## 🧠 SCHEDA EVENTO (NUOVO)
+
+✔ apertura evento da Home  
+✔ visualizzazione:
+
+- data leggibile  
+- orario  
+- partecipanti  
+
+✔ campo memoria evento  
+
+---
+
+## 🧠 MEMORIA EVENTO
+
+✔ scrittura note evento  
+✔ modifica note  
+✔ salvataggio persistente  
+
+✔ verifica reale completata (resta dopo riavvio)
+
+---
+
+## 🧠 EVENTI MULTI-PERSONA
+
+✔ ogni evento può avere più partecipanti  
+✔ visualizzazione nomi in Home  
+✔ coerenza con motore copertura  
+
+---
+
+## 🧱 DECISIONE STRUTTURALE — HOME
+
+👉 confermata regola:
+
+Home NON deve contenere logiche complesse  
+
+✔ mostra dati  
+✔ guida decisione  
+✔ collega ai moduli  
+
+❌ NON deve:
+- calcolare logiche pesanti  
+- contenere grafici  
+- duplicare motore  
+
+---
+
+## 🔥 NUOVO MODULO — STATISTICHE
+
+✔ aggiunta card “Statistiche” nei moduli  
+
+✔ decisione ufficiale:
+
+- modulo separato  
+- NON sviluppato dentro Home  
+
+---
+
+## SIGNIFICATO
+
+👉 la Home resta pulita  
+👉 il sistema cresce a blocchi  
+
+---
+
+## DIREZIONE
+
+Le statistiche saranno:
+
+- basate su dati reali  
+- visualizzate con grafici  
+- utili per decisioni  
+
+---
+
+## STATO
+
+✔ Eventi Globali funzionanti  
+✔ Memoria evento attiva  
+✔ multi-persona attiva  
+✔ Home stabile  
+✔ struttura pronta per evoluzione moduli

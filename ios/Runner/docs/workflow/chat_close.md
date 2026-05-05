@@ -1,161 +1,168 @@
-# 🏠 MODULO HOME — FRODODESK
-
-## 🎯 STATO ATTUALE
-
-HOME DASHBOARD V1 COMPLETA + EVENTI GLOBALI V1 + MEMORIA EVENTO ATTIVA
+# 🧱 FRODODESK — PROCEDURA UFFICIALE CHIUSURA CHAT v2.0 (BLINDATA)
 
 ---
 
-## 🧠 IDENTITÀ
+## 🎯 OBIETTIVO
 
-La Home NON è più una lista.
+Questa procedura serve per:
 
-È:
-
-- cruscotto reale della giornata
-- punto di ingresso al sistema
-- sintesi visiva dello stato familiare
-- punto di accesso alla memoria eventi
-
----
-
-## 🔧 STRUTTURA
-
-### 1. Stato sistema (IPS + Copertura reale)
-- livello sistema (verde/giallo/rosso)
-- frase decisionale della giornata (PRIORITARIA)
-- spiegazione sintetica
-- accesso dettaglio
-- azioni rapide
-
-👉 La frase decisionale è l’elemento più importante della Home
+- salvare lo stato reale del lavoro
+- aggiornare SOLO ciò che è cambiato
+- evitare perdita di informazioni
+- evitare accorciamenti o semplificazioni
+- preparare la prossima chat in modo sicuro
 
 ---
 
-### 2. Panoramica oggi
-- numero promemoria
-- numero eventi
-- persone coinvolte
-- giorni con eventi futuri
+# 🧠 PRINCIPIO FONDAMENTALE
+
+👉 Frodo NON deve mai ricostruire documenti a memoria
+
+👉 Frodo deve SEMPRE lavorare su file reali inviati da Matteo
+
+👉 I documenti devono SOLO crescere, mai ridursi
 
 ---
 
-### 3. Oggi
-- promemoria raggruppati per persona
-- eventi del giorno sintetizzati
-- accesso calendario
+# 🔴 REGOLA CRITICA
+
+❌ VIETATO:
+
+- riscrivere documenti da zero
+- riassumere contenuti esistenti
+- accorciare file
+- modificare parti già esistenti
+
+✔ CONSENTITO:
+
+- aggiungere SOLO nuove sezioni
+- aggiornare SOLO ciò che è stato fatto nella chat
 
 ---
 
-### 4. Prossimi 7 giorni
-- eventi reali futuri
-- visione compatta
+# 🔄 ATTIVAZIONE CHIUSURA
+
+Quando la chat sta per chiudersi scrivere:
+
+👉 **Chiudiamo la chat FrodoDesk**
 
 ---
 
-### 5. Eventi Globali (NUOVO)
+# 📂 ORDINE OBBLIGATORIO FILE
 
-Sistema di navigazione eventi nel tempo:
+Matteo deve inviare i file UNO ALLA VOLTA in questo ordine:
 
-✔ anno  
-✔ mesi (griglia 4x3)  
-✔ eventi del mese  
-✔ dettaglio evento  
-
----
-
-## 🔥 EVENTI GLOBALI — DETTAGLIO
-
-### Mesi
-
-- visualizzati in griglia (non lista)
-- conteggio eventi per mese
-- mesi senza eventi disattivati
-- UI coerente FrodoDesk
+1️⃣ SYSTEM_STATE  
+2️⃣ RULES  
+3️⃣ PROJECT_MEMORY  
+4️⃣ MODULE (es: HOME, CALENDARIO…)  
+5️⃣ ROADMAP (se coinvolta)
 
 ---
 
-### Eventi mese
+# 🚫 REGOLA ASSOLUTA
 
-- raggruppati per giorno
-- formato leggibile (giorno + data)
-
----
-
-### Scheda evento
-
-Mostra:
-
-✔ titolo  
-✔ giorno leggibile  
-✔ orario  
-✔ persona coinvolta  
+👉 SENZA FILE → NON SI AGGIORNA NIENTE
 
 ---
 
-## 🧠 MEMORIA EVENTO (NUOVO)
+# 🔁 FLUSSO OPERATIVO
 
-Ogni evento può avere:
+## 1️⃣ Invio file
 
-✔ note  
-✔ memoria reale  
-✔ storico personale  
+Matteo invia il primo file
 
 ---
 
-### Comportamento
+## 2️⃣ Risposta Frodo
 
-✔ scrittura note  
-✔ salvataggio nello store  
-✔ persistenza dopo riavvio  
+Frodo deve SOLO:
 
----
+- leggere il file
+- NON modificarlo
+- NON analizzare la chat
+- NON proporre cambiamenti
 
-### Significato
+👉 Risposta obbligatoria:
 
-👉 gli eventi non sono più temporanei  
-👉 diventano memoria della vita reale  
-
----
-
-## ⚠️ LIMITI ATTUALI
-
-Eventi Globali leggono solo:
-
-✔ RealEventStore  
-
-NON leggono ancora:
-
-❌ AliceEventStore  
-❌ AliceSpecialEventStore  
+"Ricevuto, mandami il prossimo"
 
 ---
 
-## 🎯 PROSSIMA EVOLUZIONE
+## 3️⃣ Ripetizione
 
-👉 unificazione eventi:
-
-- eventi reali
-- eventi Alice
-
-in un unico sistema globale
+Si ripete fino a quando TUTTI i file sono stati inviati
 
 ---
 
-## 🧠 SIGNIFICATO STRUTTURALE
+## 4️⃣ Analisi (SOLO DOPO TUTTI I FILE)
 
-La Home ora:
+Frodo:
 
-👉 non mostra solo lo stato  
-👉 permette di navigare nel tempo  
-👉 conserva memoria reale  
+- analizza la chat
+- identifica cosa è cambiato
+- identifica i moduli coinvolti
 
 ---
 
-## 📌 PRINCIPIO
+# 🧩 REGOLA DI AGGIORNAMENTO DOCUMENTI
 
-La Home è:
+Per ogni file:
 
-👉 ingresso al sistema  
-👉 punto decisionale  
-👉 accesso alla memoria
+❌ NON modificare contenuto esistente  
+❌ NON accorciare  
+❌ NON semplificare  
+
+✔ AGGIUNGERE SOLO una nuova sezione in fondo
+
+---
+
+## 📌 FORMATO OBBLIGATORIO
+
+```md
+## 🔄 AGGIORNAMENTO [DATA]
+
+### [TITOLO BLOCCO]
+
+✔ cosa è stato fatto  
+✔ cosa è stato aggiunto  
+✔ cosa è stato deciso  
+
+### STATO
+
+✔ stabile / testato / completato
+---
+
+# 📦 OUTPUT FINALE OBBLIGATORIO
+
+Frodo deve restituire:
+
+✔ tutti i file aggiornati  
+✔ COMPLETI (non parziali)  
+✔ senza omissioni  
+✔ senza troncamenti  
+
+👉 Se un file è lungo:
+
+- deve essere diviso in blocchi (BLOCCO 1, BLOCCO 2…)
+- Matteo conferma "OK" tra un blocco e l’altro
+
+---
+
+# 🔒 CONTROLLO FINALE
+
+Prima di inviare i file, Frodo deve verificare:
+
+✔ nessuna riga eliminata  
+✔ nessuna sezione modificata  
+✔ solo aggiunte in fondo  
+✔ coerenza con la chat  
+
+---
+
+# 🧠 FILOSOFIA
+
+👉 FrodoDesk NON si riscrive  
+👉 FrodoDesk si costruisce nel tempo  
+
+---

@@ -442,3 +442,95 @@ Il sistema ora:
 # FRASE DI RIPARTENZA UFFICIALE
 
 Ripartiamo da FrodoDesk — Eventi Globali V1 + Memoria Evento attiva. Prossima fase: integrazione Eventi Alice negli Eventi Globali.
+---
+
+## 🔄 AGGIORNAMENTO 5 Maggio 2026
+
+### HOME + EVENTI GLOBALI + MEMORIA EVENTO
+
+✔ introdotta struttura completa Eventi Globali  
+✔ navigazione anno → mesi → eventi funzionante  
+✔ mesi visualizzati in griglia con conteggio eventi  
+✔ accesso ai mesi solo se contengono eventi  
+
+✔ aggiunta scheda dettaglio evento  
+✔ introdotto campo memoria evento (note)  
+✔ salvataggio persistente verificato  
+✔ memoria evento stabile dopo riavvio  
+
+✔ supporto eventi multi-persona  
+✔ introduzione participants negli eventi  
+✔ integrazione corretta nel CoverageEngine  
+
+✔ Home aggiornata per leggere eventi reali + eventi Alice  
+✔ migliorata coerenza tra eventi e copertura  
+
+---
+
+### EVENTI GLOBALI — EVOLUZIONE
+
+✔ introdotta distinzione temporale:
+
+- Eventi passati  
+- Eventi anno corrente  
+- Eventi futuri  
+
+✔ definita regola:
+
+- anno corrente = presente  
+- anni precedenti = passato  
+- anni successivi = futuro  
+
+✔ introdotta base UI per anni futuri  
+
+⚠️ stato attuale:
+
+- anni visibili ma non ancora apribili se vuoti  
+- sistema pronto per espansione  
+
+---
+
+### ARCHITETTURA MODULARE
+
+✔ decisione strutturale:
+
+👉 Home NON deve contenere logiche complesse  
+
+✔ definito principio:
+
+- Home = orchestratore  
+- moduli = logica reale  
+
+✔ preparazione per:
+
+- modulo Statistiche  
+- moduli grafici  
+- espansione futura sistema  
+
+---
+
+### NUOVO BLOCCO — STATISTICHE
+
+✔ introdotto concetto modulo Statistiche  
+
+✔ decisione:
+
+- modulo separato  
+- NON dentro Home  
+- base per grafici  
+
+✔ direzione:
+
+👉 grafici = lettura immediata della realtà  
+👉 elemento chiave del sistema futuro  
+
+---
+
+### STATO
+
+✔ stabile  
+✔ testato su app reale  
+✔ memoria eventi funzionante  
+✔ Eventi Globali funzionanti  
+✔ Home coerente con sistema  
+✔ struttura pronta per espansione
