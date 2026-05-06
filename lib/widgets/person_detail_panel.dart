@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../logic/alice_event_store.dart';
 import '../logic/core_store.dart';
 import '../logic/ferie_period_store.dart';
 import '../logic/turn_engine.dart';
@@ -34,7 +35,6 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
     final today = DateTime(now.year, now.month, now.day);
 
     final navigator = Navigator.of(context);
-
     navigator.pop();
 
     await navigator.push(
@@ -140,7 +140,7 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
     final cleanToday = DateTime(today.year, today.month, today.day);
 
     if (widget.personName == "Alice") {
-      return _infoBox("Stato di oggi: scuola/eventi/copertura da collegare");
+      return _infoBox("Stato di oggi: ${_aliceDayLabel(cleanToday)}");
     }
 
     final feriePerson = _feriePersonForCurrentPerson();
@@ -162,6 +162,46 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
     );
 
     return _infoBox("Turno di oggi: ${_turnLabel(plan.type)}");
+  }
+
+  String _aliceDayLabel(DateTime date) {
+    if (_isAliceSick(date)) return "Malattia";
+
+    final alicePeriod = widget.coreStore.aliceEventStore.getEventForDay(date);
+
+    if (alicePeriod != null) {
+      switch (alicePeriod.type) {
+        case AliceEventType.sickness:
+          return "Malattia";
+        case AliceEventType.summerCamp:
+          return "Centro estivo";
+        case AliceEventType.vacation:
+          return "Vacanza";
+        case AliceEventType.schoolClosure:
+          return "Scuola chiusa";
+        case AliceEventType.schoolNormal:
+          return "Scuola normale";
+      }
+    }
+
+    final hasAliceEvent = widget.coreStore.aliceSpecialEventStore
+        .eventsForDay(date)
+        .where((event) => event.enabled)
+        .isNotEmpty;
+
+    if (hasAliceEvent) return "Evento / attività";
+
+    final uscitaAnticipata = widget.coreStore.daySettingsStore
+        .uscitaAnticipataTimeForDay(date);
+
+    if (uscitaAnticipata != null) return "Uscita anticipata";
+
+    final schoolConfig = widget.coreStore.schoolStore.schoolDayConfigFor(date);
+    if (schoolConfig != null && schoolConfig.enabled) {
+      return "Scuola normale";
+    }
+
+    return "Scuola chiusa";
   }
 
   Widget _monthHeader() {
@@ -301,9 +341,7 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
         crossAxisSpacing: 10,
       ),
       itemBuilder: (context, index) {
-        if (index < leadingEmptyCells) {
-          return const SizedBox.shrink();
-        }
+        if (index < leadingEmptyCells) return const SizedBox.shrink();
 
         final dayNumber = index - leadingEmptyCells + 1;
         final date = DateTime(visibleMonth.year, visibleMonth.month, dayNumber);
@@ -408,7 +446,45 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
 
   Color? _dotColorForDay(DateTime date) {
     if (widget.personName == "Alice") {
-      return null;
+      if (_isAliceSick(date)) return Colors.red;
+
+      final alicePeriod = widget.coreStore.aliceEventStore.getEventForDay(date);
+
+      if (alicePeriod != null) {
+        switch (alicePeriod.type) {
+          case AliceEventType.sickness:
+            return Colors.red;
+          case AliceEventType.summerCamp:
+            return Colors.green;
+          case AliceEventType.vacation:
+            return Colors.purple;
+          case AliceEventType.schoolClosure:
+            return Colors.grey;
+          case AliceEventType.schoolNormal:
+            return Colors.blue;
+        }
+      }
+
+      final hasAliceEvent = widget.coreStore.aliceSpecialEventStore
+          .eventsForDay(date)
+          .where((event) => event.enabled)
+          .isNotEmpty;
+
+      if (hasAliceEvent) return Colors.green;
+
+      final uscitaAnticipata = widget.coreStore.daySettingsStore
+          .uscitaAnticipataTimeForDay(date);
+
+      if (uscitaAnticipata != null) return Colors.orange;
+
+      final schoolConfig = widget.coreStore.schoolStore.schoolDayConfigFor(
+        date,
+      );
+      if (schoolConfig != null && schoolConfig.enabled) {
+        return Colors.blue;
+      }
+
+      return Colors.grey;
     }
 
     final personId = widget.personName.toLowerCase();
@@ -427,9 +503,7 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
           !day.isAfter(end);
     });
 
-    if (isSick) {
-      return Colors.red;
-    }
+    if (isSick) return Colors.red;
 
     final feriePerson = _feriePersonForCurrentPerson();
 
@@ -459,15 +533,27 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
     }
   }
 
+  bool _isAliceSick(DateTime date) {
+    if (widget.coreStore.aliceEventStore.isSicknessDay(date)) {
+      return true;
+    }
+
+    return widget.coreStore.diseasePeriodStore.all.any((p) {
+      final day = DateTime(date.year, date.month, date.day);
+      final start = DateTime(
+        p.startDate.year,
+        p.startDate.month,
+        p.startDate.day,
+      );
+      final end = DateTime(p.endDate.year, p.endDate.month, p.endDate.day);
+
+      return p.personId == "alice" && !day.isBefore(start) && !day.isAfter(end);
+    });
+  }
+
   FeriePerson? _feriePersonForCurrentPerson() {
-    if (widget.personName == "Matteo") {
-      return FeriePerson.matteo;
-    }
-
-    if (widget.personName == "Chiara") {
-      return FeriePerson.chiara;
-    }
-
+    if (widget.personName == "Matteo") return FeriePerson.matteo;
+    if (widget.personName == "Chiara") return FeriePerson.chiara;
     return null;
   }
 
@@ -517,6 +603,8 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
   }
 
   Widget _legend() {
+    final isAlice = widget.personName == "Alice";
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -528,14 +616,26 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
       child: Wrap(
         spacing: 12,
         runSpacing: 10,
-        children: const [
-          _LegendItem(color: Colors.yellow, label: "Mattina"),
-          _LegendItem(color: Colors.orange, label: "Pomeriggio"),
-          _LegendItem(color: Colors.blue, label: "Notte"),
-          _LegendItem(color: Colors.grey, label: "Riposo"),
-          _LegendItem(color: Colors.green, label: "Ferie"),
-          _LegendItem(color: Colors.red, label: "Malattia"),
-        ],
+        children: isAlice
+            ? const [
+                _LegendItem(color: Colors.blue, label: "Scuola"),
+                _LegendItem(
+                  color: Colors.green,
+                  label: "Evento / centro estivo",
+                ),
+                _LegendItem(color: Colors.orange, label: "Uscita anticipata"),
+                _LegendItem(color: Colors.purple, label: "Vacanza"),
+                _LegendItem(color: Colors.grey, label: "Scuola chiusa"),
+                _LegendItem(color: Colors.red, label: "Malattia"),
+              ]
+            : const [
+                _LegendItem(color: Colors.yellow, label: "Mattina"),
+                _LegendItem(color: Colors.orange, label: "Pomeriggio"),
+                _LegendItem(color: Colors.blue, label: "Notte"),
+                _LegendItem(color: Colors.grey, label: "Riposo"),
+                _LegendItem(color: Colors.green, label: "Ferie"),
+                _LegendItem(color: Colors.red, label: "Malattia"),
+              ],
       ),
     );
   }
