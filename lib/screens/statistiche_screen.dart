@@ -18,6 +18,72 @@ class _StatisticheScreenState extends State<StatisticheScreen> {
 
   _StatsPeriod selectedPeriod = _StatsPeriod.last30;
 
+  Future<void> _openSupportoFamiliare() async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: 24,
+          ),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 760),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF12251D).withOpacity(0.96),
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: Colors.white.withOpacity(0.22)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.35),
+                  blurRadius: 30,
+                  offset: const Offset(0, 14),
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          "Supporto familiare",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _SandraHoursCard(
+                    coreStore: coreStore,
+                    period: selectedPeriod,
+                    onChanged: () => setState(() {}),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -64,10 +130,62 @@ class _StatisticheScreenState extends State<StatisticheScreen> {
                   },
                 ),
                 const SizedBox(height: 18),
-                _SandraHoursCard(
-                  coreStore: coreStore,
-                  period: selectedPeriod,
-                  onChanged: () => setState(() {}),
+                const Text(
+                  "Panoramica statistiche",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    int crossAxisCount = 2;
+
+                    if (constraints.maxWidth >= 1000) {
+                      crossAxisCount = 4;
+                    } else if (constraints.maxWidth >= 720) {
+                      crossAxisCount = 3;
+                    }
+
+                    return GridView.count(
+                      crossAxisCount: crossAxisCount,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: 14,
+                      crossAxisSpacing: 14,
+                      childAspectRatio: constraints.maxWidth >= 720 ? 1.15 : 1,
+                      children: [
+                        _SupportFamilyStatCard(
+                          coreStore: coreStore,
+                          period: selectedPeriod,
+                          onTap: _openSupportoFamiliare,
+                        ),
+                        const _StatsHubCard(
+                          icon: Icons.shield_rounded,
+                          title: "Copertura",
+                          value: "Presto",
+                          subtitle: "Buchi e pressione",
+                          color: Color(0xFF42A5F5),
+                        ),
+                        const _StatsHubCard(
+                          icon: Icons.event_note_rounded,
+                          title: "Eventi",
+                          value: "Presto",
+                          subtitle: "Storico famiglia",
+                          color: Color(0xFFEC407A),
+                        ),
+                        const _StatsHubCard(
+                          icon: Icons.euro_rounded,
+                          title: "Costi",
+                          value: "Presto",
+                          subtitle: "Spese e impatto",
+                          color: Color(0xFFFFCA28),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ],
             ),
@@ -158,12 +276,213 @@ class _PeriodChip extends StatelessWidget {
       selected: selected,
       onSelected: (_) => onTap(),
       selectedColor: const Color(0xFFFFCA28),
-      backgroundColor: Colors.white.withOpacity(0.16),
-      labelStyle: TextStyle(
-        color: selected ? Colors.black : Colors.white,
+      backgroundColor: Colors.white.withOpacity(0.86),
+      labelStyle: const TextStyle(
+        color: Colors.black,
         fontWeight: FontWeight.w800,
       ),
       side: BorderSide(color: Colors.white.withOpacity(0.28)),
+    );
+  }
+}
+
+class _SupportFamilyStatCard extends StatelessWidget {
+  final CoreStore coreStore;
+  final _StatsPeriod period;
+  final VoidCallback onTap;
+
+  const _SupportFamilyStatCard({
+    required this.coreStore,
+    required this.period,
+    required this.onTap,
+  });
+
+  DateTime _cleanDay(DateTime day) => DateTime(day.year, day.month, day.day);
+
+  DateTime _startDayForPeriod(DateTime today) {
+    switch (period) {
+      case _StatsPeriod.last7:
+        return today.subtract(const Duration(days: 6));
+      case _StatsPeriod.last30:
+        return today.subtract(const Duration(days: 29));
+      case _StatsPeriod.currentMonth:
+        return DateTime(today.year, today.month, 1);
+    }
+  }
+
+  int _daysCount(DateTime startDay, DateTime today) {
+    return today.difference(startDay).inDays + 1;
+  }
+
+  int _sandraFixedMinutesForDay(DateTime day) {
+    final mattina =
+        coreStore.daySettingsStore.sandraMattinaForDay(day) ?? false;
+    final pranzo = coreStore.daySettingsStore.sandraPranzoForDay(day) ?? false;
+    final sera = coreStore.daySettingsStore.sandraSeraForDay(day) ?? false;
+
+    int total = 0;
+
+    if (mattina) total += 95;
+    if (pranzo) total += 90;
+    if (sera) total += 95;
+
+    return total;
+  }
+
+  int _supportMinutesForSandraDay(DateTime day) {
+    int total = 0;
+
+    final enabledIds = coreStore.daySettingsStore.supportPeopleEnabledIdsForDay(
+      day,
+    );
+
+    if (enabledIds.isEmpty) return 0;
+
+    for (final person in coreStore.supportNetworkStore.people) {
+      final isSandra = person.name.trim().toLowerCase() == "sandra";
+      final enabledThatDay = enabledIds.contains(person.id);
+
+      if (!isSandra || !person.enabled || !enabledThatDay) continue;
+
+      final startMinutes = person.start.hour * 60 + person.start.minute;
+      final endMinutes = person.end.hour * 60 + person.end.minute;
+      final duration = endMinutes - startMinutes;
+
+      if (duration > 0) total += duration;
+    }
+
+    return total;
+  }
+
+  String _formatMinutes(int minutes) {
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    return "${h}h ${m.toString().padLeft(2, '0')}m";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final today = _cleanDay(DateTime.now());
+    final startDay = _startDayForPeriod(today);
+    final daysCount = _daysCount(startDay, today);
+
+    int fixedMinutes = 0;
+    int supportMinutes = 0;
+
+    for (int i = 0; i < daysCount; i++) {
+      final day = startDay.add(Duration(days: i));
+      fixedMinutes += _sandraFixedMinutesForDay(day);
+      supportMinutes += _supportMinutesForSandraDay(day);
+    }
+
+    final totalMinutes = fixedMinutes + supportMinutes;
+    final totalCost = (totalMinutes / 60) * coreStore.settingsStore.sandraRate;
+
+    return _StatsHubCard(
+      icon: Icons.support_agent_rounded,
+      title: "Supporto familiare",
+      value: _formatMinutes(totalMinutes),
+      subtitle: "Sandra • €${totalCost.toStringAsFixed(2)}",
+      color: const Color(0xFFFFCA28),
+      onTap: onTap,
+    );
+  }
+}
+
+class _StatsHubCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String value;
+  final String subtitle;
+  final Color color;
+  final VoidCallback? onTap;
+
+  const _StatsHubCard({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    required this.color,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final card = Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.20),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.22)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.18),
+            blurRadius: 22,
+            offset: const Offset(0, 9),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.25),
+            blurRadius: 14,
+            offset: const Offset(0, 7),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.24),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.45),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: Colors.white, size: 25),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 25,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.82),
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (onTap == null) return card;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(24),
+      onTap: onTap,
+      child: card,
     );
   }
 }
@@ -205,6 +524,25 @@ class _SandraHoursCard extends StatelessWidget {
 
   int _daysCount(DateTime startDay, DateTime today) {
     return today.difference(startDay).inDays + 1;
+  }
+
+  String _monthName(int month) {
+    const months = [
+      "Gennaio",
+      "Febbraio",
+      "Marzo",
+      "Aprile",
+      "Maggio",
+      "Giugno",
+      "Luglio",
+      "Agosto",
+      "Settembre",
+      "Ottobre",
+      "Novembre",
+      "Dicembre",
+    ];
+
+    return months[month - 1];
   }
 
   int _sandraFixedMinutesForDay(DateTime day) {
@@ -254,12 +592,9 @@ class _SandraHoursCard extends StatelessWidget {
 
       final startMinutes = person.start.hour * 60 + person.start.minute;
       final endMinutes = person.end.hour * 60 + person.end.minute;
-
       final duration = endMinutes - startMinutes;
 
-      if (duration > 0) {
-        total += duration;
-      }
+      if (duration > 0) total += duration;
     }
 
     return total;
@@ -280,10 +615,37 @@ class _SandraHoursCard extends StatelessWidget {
     }).length;
   }
 
+  int _totalSandraMinutesForDay(DateTime day) {
+    return _sandraFixedMinutesForDay(day) + _supportMinutesForSandraDay(day);
+  }
+
+  List<_SandraDailyPoint> _dailyPoints(DateTime startDay, int daysCount) {
+    final points = <_SandraDailyPoint>[];
+
+    for (int i = 0; i < daysCount; i++) {
+      final day = startDay.add(Duration(days: i));
+      points.add(
+        _SandraDailyPoint(day: day, minutes: _totalSandraMinutesForDay(day)),
+      );
+    }
+
+    return points;
+  }
+
+  int _totalMinutesForRange(DateTime startDay, int daysCount) {
+    int total = 0;
+
+    for (int i = 0; i < daysCount; i++) {
+      final day = startDay.add(Duration(days: i));
+      total += _totalSandraMinutesForDay(day);
+    }
+
+    return total;
+  }
+
   String _formatMinutes(int minutes) {
     final h = minutes ~/ 60;
     final m = minutes % 60;
-
     return "${h}h ${m.toString().padLeft(2, '0')}m";
   }
 
@@ -297,6 +659,50 @@ class _SandraHoursCard extends StatelessWidget {
 
   String _supportLabel(int count) {
     return count == 1 ? "1 intervento" : "$count interventi";
+  }
+
+  String _summaryText(int totalMinutes) {
+    if (totalMinutes == 0) {
+      return "Sandra non è stata utilizzata in questo periodo";
+    }
+
+    final hours = totalMinutes ~/ 60;
+
+    if (hours <= 3) {
+      return "Utilizzo leggero di Sandra";
+    } else if (hours <= 8) {
+      return "Sandra usata in modo regolare";
+    } else {
+      return "Sandra molto presente in questo periodo";
+    }
+  }
+
+  String _trendText(int currentMinutes, int previousMinutes) {
+    final diff = currentMinutes - previousMinutes;
+
+    if (diff == 0) {
+      return "Stabile rispetto al mese precedente";
+    }
+
+    final diffLabel = _formatMinutes(diff.abs());
+
+    if (diff > 0) {
+      return "In aumento di $diffLabel rispetto al mese precedente";
+    }
+
+    return "In calo di $diffLabel rispetto al mese precedente";
+  }
+
+  Color _trendColor(int currentMinutes, int previousMinutes) {
+    if (currentMinutes > previousMinutes) {
+      return const Color(0xFFFFCA28);
+    }
+
+    if (currentMinutes < previousMinutes) {
+      return const Color(0xFF8BC34A);
+    }
+
+    return Colors.white70;
   }
 
   Future<void> _editSandraHourlyRate(BuildContext context) async {
@@ -347,6 +753,279 @@ class _SandraHoursCard extends StatelessWidget {
     onChanged();
   }
 
+  Future<void> _showTrendPopup({
+    required BuildContext context,
+    required DateTime initialMonth,
+  }) async {
+    DateTime visibleMonth = DateTime(initialMonth.year, initialMonth.month);
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, dialogSetState) {
+            final monthStart = DateTime(visibleMonth.year, visibleMonth.month);
+            final monthEnd = DateTime(
+              visibleMonth.year,
+              visibleMonth.month + 1,
+              0,
+            );
+            final daysCount = monthEnd.day;
+
+            final previousMonthStart = DateTime(
+              visibleMonth.year,
+              visibleMonth.month - 1,
+            );
+            final previousMonthEnd = DateTime(
+              visibleMonth.year,
+              visibleMonth.month,
+              0,
+            );
+            final previousDaysCount = previousMonthEnd.day;
+
+            final currentMinutes = _totalMinutesForRange(monthStart, daysCount);
+            final previousMinutes = _totalMinutesForRange(
+              previousMonthStart,
+              previousDaysCount,
+            );
+
+            final currentCost =
+                (currentMinutes / 60) * coreStore.settingsStore.sandraRate;
+            final previousCost =
+                (previousMinutes / 60) * coreStore.settingsStore.sandraRate;
+
+            final points = _dailyPoints(monthStart, daysCount);
+            final activeDays = points.where((p) => p.minutes > 0).length;
+            final trendText = _trendText(currentMinutes, previousMinutes);
+            final trendColor = _trendColor(currentMinutes, previousMinutes);
+
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 18,
+                vertical: 24,
+              ),
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 720),
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E3328).withOpacity(0.96),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: Colors.white.withOpacity(0.22)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.35),
+                      blurRadius: 26,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFCA28).withOpacity(0.18),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(
+                              Icons.show_chart_rounded,
+                              color: Color(0xFFFFCA28),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              "Andamento Sandra",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            icon: const Icon(
+                              Icons.close_rounded,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          IconButton(
+                            tooltip: "Mese precedente",
+                            onPressed: () {
+                              dialogSetState(() {
+                                visibleMonth = DateTime(
+                                  visibleMonth.year,
+                                  visibleMonth.month - 1,
+                                );
+                              });
+                            },
+                            icon: const Icon(
+                              Icons.chevron_left_rounded,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              "${_monthName(visibleMonth.month)} ${visibleMonth.year}",
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: "Mese successivo",
+                            onPressed: () {
+                              dialogSetState(() {
+                                visibleMonth = DateTime(
+                                  visibleMonth.year,
+                                  visibleMonth.month + 1,
+                                );
+                              });
+                            },
+                            icon: const Icon(
+                              Icons.chevron_right_rounded,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.12),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              trendText,
+                              style: TextStyle(
+                                color: trendColor,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _TrendValueBox(
+                                    title: "Mese attuale",
+                                    value: _formatMinutes(currentMinutes),
+                                    subtitle:
+                                        "€${currentCost.toStringAsFixed(2)} stimati",
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _TrendValueBox(
+                                    title: "Mese precedente",
+                                    value: _formatMinutes(previousMinutes),
+                                    subtitle:
+                                        "€${previousCost.toStringAsFixed(2)} stimati",
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        width: double.infinity,
+                        height: 220,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.10),
+                          ),
+                        ),
+                        child: CustomPaint(
+                          painter: _SandraLineChartPainter(points: points),
+                          child: const SizedBox.expand(),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final itemWidth = constraints.maxWidth >= 520
+                              ? (constraints.maxWidth - 20) / 3
+                              : constraints.maxWidth;
+
+                          return Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: [
+                              SizedBox(
+                                width: itemWidth,
+                                child: _MonthSummaryBox(
+                                  title: "Totale mese",
+                                  value: _formatMinutes(currentMinutes),
+                                ),
+                              ),
+                              SizedBox(
+                                width: itemWidth,
+                                child: _MonthSummaryBox(
+                                  title: "Costo mese",
+                                  value: "€${currentCost.toStringAsFixed(2)}",
+                                ),
+                              ),
+                              SizedBox(
+                                width: itemWidth,
+                                child: _MonthSummaryBox(
+                                  title: "Giorni con Sandra",
+                                  value: activeDays == 1
+                                      ? "1 giorno"
+                                      : "$activeDays giorni",
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        "Ogni punto rappresenta le ore Sandra totali del giorno.",
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.62),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final today = _cleanDay(DateTime.now());
@@ -370,9 +1049,7 @@ class _SandraHoursCard extends StatelessWidget {
       fixedMinutes += dayMinutes;
       activeSlots += daySlots;
 
-      if (daySlots > 0) {
-        activeDays++;
-      }
+      if (daySlots > 0) activeDays++;
 
       final daySupportMinutes = _supportMinutesForSandraDay(day);
       final daySupportSlots = _supportSlotsForSandraDay(day);
@@ -380,9 +1057,7 @@ class _SandraHoursCard extends StatelessWidget {
       supportMinutes += daySupportMinutes;
       supportSlots += daySupportSlots;
 
-      if (daySupportSlots > 0) {
-        supportDays++;
-      }
+      if (daySupportSlots > 0) supportDays++;
     }
 
     final totalMinutes = fixedMinutes + supportMinutes;
@@ -397,26 +1072,27 @@ class _SandraHoursCard extends StatelessWidget {
         "${_formatMinutes(supportMinutes)} • ${_dayLabel(supportDays)} • ${_supportLabel(supportSlots)}";
 
     final totalLabel = _formatMinutes(totalMinutes);
+    final summary = _summaryText(totalMinutes);
     final costMainLabel = "€${totalCost.toStringAsFixed(2)}";
     final hourlyRateLabel = "${hourlyRate.toStringAsFixed(2)} €/h";
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF1E3328).withOpacity(0.92),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(26),
         border: Border.all(color: Colors.white.withOpacity(0.24)),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF8BC34A).withOpacity(0.16),
-            blurRadius: 28,
-            offset: const Offset(0, 10),
+            blurRadius: 24,
+            offset: const Offset(0, 9),
           ),
           BoxShadow(
             color: Colors.black.withOpacity(0.28),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            blurRadius: 18,
+            offset: const Offset(0, 7),
           ),
         ],
       ),
@@ -426,11 +1102,11 @@ class _SandraHoursCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFCA28).withOpacity(0.18),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(13),
                   border: Border.all(
                     color: const Color(0xFFFFCA28).withOpacity(0.28),
                   ),
@@ -438,15 +1114,16 @@ class _SandraHoursCard extends StatelessWidget {
                 child: const Icon(
                   Icons.support_agent_rounded,
                   color: Color(0xFFFFCA28),
+                  size: 22,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 11),
               const Expanded(
                 child: Text(
                   "Sandra",
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 24,
+                    fontSize: 23,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -458,34 +1135,43 @@ class _SandraHoursCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(
             "Periodo: ${_periodLabel(startDay, today)} (${startDay.day}/${startDay.month} - ${today.day}/${today.month})",
             style: const TextStyle(
               color: Colors.white70,
-              fontSize: 14,
+              fontSize: 13.5,
               fontWeight: FontWeight.w600,
-              height: 1.3,
+              height: 1.25,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
+          Text(
+            summary,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 5),
           Text(
             totalLabel,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 38,
+              fontSize: 32,
               fontWeight: FontWeight.w900,
               letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Row(
             children: [
               Text(
                 "$costMainLabel stimati",
                 style: const TextStyle(
                   color: Color(0xFFFFCA28),
-                  fontSize: 18,
+                  fontSize: 17,
                   fontWeight: FontWeight.w900,
                 ),
               ),
@@ -494,18 +1180,36 @@ class _SandraHoursCard extends StatelessWidget {
                 "($hourlyRateLabel)",
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.62),
-                  fontSize: 13,
+                  fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 18),
-          Divider(color: Colors.white.withOpacity(0.16)),
           const SizedBox(height: 12),
-          _SandraDetailBox(label: "Fasce standard", value: fixedLabel),
+          Divider(color: Colors.white.withOpacity(0.16)),
           const SizedBox(height: 10),
+          _SandraDetailBox(label: "Fasce standard", value: fixedLabel),
+          const SizedBox(height: 8),
           _SandraDetailBox(label: "Supporto extra", value: supportLabel),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => _showTrendPopup(
+              context: context,
+              initialMonth: DateTime(today.year, today.month),
+            ),
+            icon: const Icon(Icons.show_chart_rounded),
+            label: const Text("Vedi andamento"),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white,
+              side: BorderSide(color: Colors.white.withOpacity(0.28)),
+              backgroundColor: Colors.white.withOpacity(0.08),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -522,10 +1226,10 @@ class _SandraDetailBox extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(17),
         border: Border.all(color: Colors.white.withOpacity(0.14)),
       ),
       child: Row(
@@ -550,5 +1254,237 @@ class _SandraDetailBox extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _TrendValueBox extends StatelessWidget {
+  final String title;
+  final String value;
+  final String subtitle;
+
+  const _TrendValueBox({
+    required this.title,
+    required this.value,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withOpacity(0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.62),
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              color: Color(0xFFFFCA28),
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MonthSummaryBox extends StatelessWidget {
+  final String title;
+  final String value;
+
+  const _MonthSummaryBox({required this.title, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 74),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.075),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withOpacity(0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.62),
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SandraDailyPoint {
+  final DateTime day;
+  final int minutes;
+
+  const _SandraDailyPoint({required this.day, required this.minutes});
+}
+
+class _SandraLineChartPainter extends CustomPainter {
+  final List<_SandraDailyPoint> points;
+
+  const _SandraLineChartPainter({required this.points});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final gridPaint = Paint()
+      ..color = Colors.white.withOpacity(0.14)
+      ..strokeWidth = 1;
+
+    final axisTextStyle = TextStyle(
+      color: Colors.white.withOpacity(0.62),
+      fontSize: 10,
+      fontWeight: FontWeight.w700,
+    );
+
+    final chartLeft = 32.0;
+    final chartRight = size.width - 10.0;
+    final chartTop = 10.0;
+    final chartBottom = size.height - 28.0;
+
+    final chartWidth = chartRight - chartLeft;
+    final chartHeight = chartBottom - chartTop;
+
+    final maxMinutes = points.isEmpty
+        ? 60
+        : points.map((p) => p.minutes).fold<int>(0, (a, b) => a > b ? a : b);
+
+    final safeMax = maxMinutes <= 0 ? 60 : maxMinutes;
+    final maxHours = (safeMax / 60).ceil().clamp(1, 24);
+
+    for (int i = 0; i <= 4; i++) {
+      final y = chartTop + chartHeight * (i / 4);
+      canvas.drawLine(Offset(chartLeft, y), Offset(chartRight, y), gridPaint);
+
+      final labelHours = ((maxHours * (4 - i) / 4) * 10).round() / 10;
+      final painter = TextPainter(
+        text: TextSpan(text: "${labelHours}h", style: axisTextStyle),
+        textDirection: TextDirection.ltr,
+      )..layout();
+
+      painter.paint(canvas, Offset(4, y - 7));
+    }
+
+    if (points.isEmpty) return;
+
+    if (points.length == 1) {
+      final x = chartLeft + chartWidth / 2;
+      final y =
+          chartBottom - ((points.first.minutes / 60) / maxHours) * chartHeight;
+
+      final dotPaint = Paint()..color = const Color(0xFFFFCA28);
+      canvas.drawCircle(Offset(x, y), 4, dotPaint);
+      return;
+    }
+
+    final linePaint = Paint()
+      ..color = const Color(0xFFFFCA28)
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    final dotPaint = Paint()..color = const Color(0xFFFFCA28);
+
+    final path = Path();
+
+    for (int i = 0; i < points.length; i++) {
+      final x = chartLeft + chartWidth * (i / (points.length - 1));
+      final hours = points[i].minutes / 60;
+      final y = chartBottom - (hours / maxHours) * chartHeight;
+
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+
+    canvas.drawPath(path, linePaint);
+
+    for (int i = 0; i < points.length; i++) {
+      final x = chartLeft + chartWidth * (i / (points.length - 1));
+      final hours = points[i].minutes / 60;
+      final y = chartBottom - (hours / maxHours) * chartHeight;
+
+      canvas.drawCircle(Offset(x, y), 3.2, dotPaint);
+    }
+
+    final first = points.first.day;
+    final last = points.last.day;
+
+    _paintBottomLabel(
+      canvas,
+      "${first.day}/${first.month}",
+      chartLeft,
+      chartBottom + 8,
+    );
+    _paintBottomLabel(
+      canvas,
+      "${last.day}/${last.month}",
+      chartRight - 28,
+      chartBottom + 8,
+    );
+  }
+
+  void _paintBottomLabel(Canvas canvas, String text, double x, double y) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          color: Colors.white.withOpacity(0.60),
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    painter.paint(canvas, Offset(x, y));
+  }
+
+  @override
+  bool shouldRepaint(covariant _SandraLineChartPainter oldDelegate) {
+    return oldDelegate.points != points;
   }
 }
