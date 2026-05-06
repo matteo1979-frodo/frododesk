@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../logic/core_store.dart';
 import '../logic/ferie_period_store.dart';
 import '../logic/turn_engine.dart';
-import '../models/disease_period.dart';
+import '../screens/calendario_screen_stepa.dart';
 
 class PersonDetailPanel extends StatefulWidget {
   final String personName;
@@ -25,57 +25,108 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
   @override
   void initState() {
     super.initState();
-
     final now = DateTime.now();
     visibleMonth = DateTime(now.year, now.month, 1);
+  }
+
+  Future<void> _openCalendarToday() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final navigator = Navigator.of(context);
+
+    navigator.pop();
+
+    await navigator.push(
+      MaterialPageRoute(
+        builder: (_) => CalendarioScreenStepAStabile(
+          coreStore: widget.coreStore,
+          initialSelectedDay: today,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: Colors.transparent,
       child: Container(
-        width: 680,
-        constraints: const BoxConstraints(maxHeight: 760),
+        width: 720,
+        constraints: const BoxConstraints(maxHeight: 790),
         padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7F4EC),
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.22),
+              blurRadius: 28,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
         child: SingleChildScrollView(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                widget.personName,
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.personName,
+                          style: const TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          "Vista personale della giornata e del mese",
+                          style: TextStyle(
+                            color: Colors.black.withOpacity(0.55),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Tooltip(
+                    message: "Apri calendario",
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: _openCalendarToday,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.75),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.black.withOpacity(0.08),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.calendar_month_rounded,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 6),
-              Text(
-                "Vista personale della giornata e del mese",
-                style: TextStyle(
-                  color: Colors.black.withOpacity(0.55),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-
               const SizedBox(height: 20),
-
               _todayBox(),
-
               const SizedBox(height: 18),
-
               _monthHeader(),
-
-              const SizedBox(height: 12),
-
+              const SizedBox(height: 14),
               _weekDaysHeader(),
-
               const SizedBox(height: 8),
-
               _miniCalendar(),
-
-              const SizedBox(height: 16),
-
+              const SizedBox(height: 18),
               _legend(),
             ],
           ),
@@ -114,41 +165,86 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
   }
 
   Widget _monthHeader() {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            _monthTitle(visibleMonth),
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1F3A1B), Color(0xFF6C8A3E)],
+        ),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1F3A1B).withOpacity(0.25),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              _monthTitle(visibleMonth),
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          _monthArrow(
+            icon: Icons.chevron_left_rounded,
+            tooltip: "Mese precedente",
+            onTap: () {
+              setState(() {
+                visibleMonth = DateTime(
+                  visibleMonth.year,
+                  visibleMonth.month - 1,
+                  1,
+                );
+              });
+            },
+          ),
+          const SizedBox(width: 8),
+          _monthArrow(
+            icon: Icons.chevron_right_rounded,
+            tooltip: "Mese successivo",
+            onTap: () {
+              setState(() {
+                visibleMonth = DateTime(
+                  visibleMonth.year,
+                  visibleMonth.month + 1,
+                  1,
+                );
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _monthArrow({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.16),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white.withOpacity(0.22)),
+          ),
+          child: Icon(icon, color: Colors.white, size: 26),
         ),
-        IconButton(
-          tooltip: "Mese precedente",
-          onPressed: () {
-            setState(() {
-              visibleMonth = DateTime(
-                visibleMonth.year,
-                visibleMonth.month - 1,
-                1,
-              );
-            });
-          },
-          icon: const Icon(Icons.chevron_left_rounded),
-        ),
-        IconButton(
-          tooltip: "Mese successivo",
-          onPressed: () {
-            setState(() {
-              visibleMonth = DateTime(
-                visibleMonth.year,
-                visibleMonth.month + 1,
-                1,
-              );
-            });
-          },
-          icon: const Icon(Icons.chevron_right_rounded),
-        ),
-      ],
+      ),
     );
   }
 
@@ -163,15 +259,20 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
         crossAxisCount: 7,
         mainAxisSpacing: 8,
         crossAxisSpacing: 8,
-        childAspectRatio: 1.6,
+        childAspectRatio: 1.8,
       ),
       itemBuilder: (context, index) {
+        final isSunday = index == 6;
+
         return Center(
           child: Text(
             days[index],
             style: TextStyle(
               fontWeight: FontWeight.w900,
-              color: Colors.black.withOpacity(0.55),
+              fontSize: 14,
+              color: isSunday
+                  ? const Color(0xFFC62828)
+                  : Colors.black.withOpacity(0.62),
             ),
           ),
         );
@@ -196,8 +297,8 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
       itemCount: totalCells,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 7,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
       ),
       itemBuilder: (context, index) {
         if (index < leadingEmptyCells) {
@@ -206,7 +307,6 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
 
         final dayNumber = index - leadingEmptyCells + 1;
         final date = DateTime(visibleMonth.year, visibleMonth.month, dayNumber);
-
         final dotColor = _dotColorForDay(date);
 
         final today = DateTime.now();
@@ -215,41 +315,86 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
             date.month == today.month &&
             date.day == today.day;
 
+        final isSunday = date.weekday == DateTime.sunday;
+        final isSaturday = date.weekday == DateTime.saturday;
+
         return Container(
           decoration: BoxDecoration(
-            color: isToday
-                ? Colors.black.withOpacity(0.08)
-                : Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isToday
+                  ? [const Color(0xFFFFF8E1), const Color(0xFFFFECB3)]
+                  : [Colors.white.withOpacity(0.96), const Color(0xFFEFE9DA)],
+            ),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isToday
-                  ? Colors.black.withOpacity(0.45)
-                  : Colors.black.withOpacity(0.08),
+                  ? const Color(0xFFB08D57)
+                  : isSunday
+                  ? const Color(0xFFC62828).withOpacity(0.22)
+                  : Colors.black.withOpacity(0.07),
               width: isToday ? 2 : 1,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isToday ? 0.16 : 0.08),
+                blurRadius: isToday ? 16 : 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
           ),
           child: Stack(
             children: [
-              Center(
+              Positioned(
+                left: 8,
+                top: 7,
                 child: Text(
                   "$dayNumber",
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
-                    color: isToday
-                        ? Colors.black
-                        : Colors.black.withOpacity(0.78),
+                    fontSize: 15,
+                    color: isSunday
+                        ? const Color(0xFFC62828)
+                        : isSaturday
+                        ? Colors.black.withOpacity(0.68)
+                        : Colors.black.withOpacity(0.86),
                   ),
                 ),
               ),
               if (dotColor != null)
                 Positioned(
-                  right: 6,
-                  top: 6,
+                  right: 7,
+                  bottom: 7,
                   child: Container(
-                    width: 10,
-                    height: 10,
+                    width: 13,
+                    height: 13,
                     decoration: BoxDecoration(
                       color: dotColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.92),
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: dotColor.withOpacity(0.45),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              if (isToday)
+                Positioned(
+                  right: 7,
+                  top: 7,
+                  child: Container(
+                    width: 7,
+                    height: 7,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF1F3A1B),
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -265,6 +410,7 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
     if (widget.personName == "Alice") {
       return null;
     }
+
     final personId = widget.personName.toLowerCase();
 
     final isSick = widget.coreStore.diseasePeriodStore.all.any((p) {
@@ -284,6 +430,7 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
     if (isSick) {
       return Colors.red;
     }
+
     final feriePerson = _feriePersonForCurrentPerson();
 
     if (feriePerson != null &&
@@ -361,25 +508,35 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade200,
+        color: const Color(0xFFEFE9DA),
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFB08D57).withOpacity(0.24)),
       ),
-      child: Text(text, style: const TextStyle(fontWeight: FontWeight.w800)),
+      child: Text(text, style: const TextStyle(fontWeight: FontWeight.w900)),
     );
   }
 
   Widget _legend() {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: const [
-        _LegendItem(color: Colors.yellow, label: "Mattina"),
-        _LegendItem(color: Colors.orange, label: "Pomeriggio"),
-        _LegendItem(color: Colors.blue, label: "Notte"),
-        _LegendItem(color: Colors.grey, label: "Riposo"),
-        _LegendItem(color: Colors.green, label: "Ferie"),
-        _LegendItem(color: Colors.red, label: "Malattia"),
-      ],
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.62),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.black.withOpacity(0.06)),
+      ),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 10,
+        children: const [
+          _LegendItem(color: Colors.yellow, label: "Mattina"),
+          _LegendItem(color: Colors.orange, label: "Pomeriggio"),
+          _LegendItem(color: Colors.blue, label: "Notte"),
+          _LegendItem(color: Colors.grey, label: "Riposo"),
+          _LegendItem(color: Colors.green, label: "Ferie"),
+          _LegendItem(color: Colors.red, label: "Malattia"),
+        ],
+      ),
     );
   }
 }
@@ -397,7 +554,7 @@ class _LegendItem extends StatelessWidget {
       children: [
         CircleAvatar(radius: 6, backgroundColor: color),
         const SizedBox(width: 6),
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
       ],
     );
   }
