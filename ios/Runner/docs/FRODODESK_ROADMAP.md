@@ -359,3 +359,139 @@ STEP 2:
 
 STEP 3:
 👉 base modulo Statistiche (dati reali)
+
+---
+
+# 🔄 AGGIORNAMENTO 6 Maggio 2026
+
+# 🔥 BLOCCO STATISTICHE — CONSOLIDAMENTO REALE
+
+Stato: CONSOLIDATO (BASE STRUTTURALE COMPLETA)
+
+---
+
+## 🧠 NUOVA FILOSOFIA DEFINITA
+
+Decisione ufficiale:
+
+👉 le statistiche NON devono inventare dati  
+
+✔ devono leggere SOLO moduli reali vivi  
+✔ devono essere memoria storica del sistema  
+✔ devono rappresentare evoluzione reale della famiglia  
+
+---
+
+## ⏳ NUOVA STRUTTURA TEMPORALE
+
+❌ eliminati:
+- ultimi 7 giorni
+- ultimi 30 giorni
+
+✔ introdotti:
+- Giorno
+- Settimana
+- Mese
+- Anno
+
+---
+
+## SIGNIFICATO
+
+FrodoDesk deve leggere il tempo in modo umano e reale.
+
+NON:
+- dashboard tecnica
+- analytics generica
+
+MA:
+- oggi
+- questa settimana
+- questo mese
+- quest’anno
+
+---
+
+## 📈 SUPPORTO FAMILIARE — EVOLUZIONE STATISTICHE
+
+Implementato:
+
+✔ popup andamento adattivo  
+✔ confronto periodo precedente  
+✔ navigazione temporale reale  
+✔ grafico adattivo multi-periodo  
+
+---
+
+## MODALITÀ ATTIVE
+
+✔ Giorno  
+✔ Settimana  
+✔ Mese  
+✔ Anno  
+
+---
+
+## COMPORTAMENTO GRAFICI
+
+✔ confronto reale tra periodi  
+✔ anno ↔ anno precedente  
+✔ mese ↔ mese precedente  
+✔ settimana ↔ settimana precedente  
+✔ giorno ↔ giorno precedente  
+
+✔ scala grafico stabilizzata anche con anni futuri vuoti  
+
+---
+
+## 🧱 DIREZIONE STRUTTURALE
+
+Decisione importante:
+
+👉 ogni modulo futuro dovrà avere la propria lettura statistica reale
+
+Esempi:
+
+- Costi
+- IPS
+- Copertura
+- Eventi
+- Salute
+
+---
+
+## 🔮 NUOVA DIREZIONE OPERATIVA
+
+Ordine ufficiale aggiornato:
+
+1️⃣ Calendario reale completo  
+2️⃣ Rifiniture intelligenti UX/realtà  
+3️⃣ Modulo Costi / Finanze  
+4️⃣ Espansione Statistiche come lettura naturale dei moduli vivi  
+
+---
+
+## 🔥 BLOCCO IPS
+
+⚠️ NON più priorità immediata
+
+Decisione:
+
+👉 prima completare:
+- calendario reale
+- eventi Alice
+- copertura reale completa
+- costi/famiglia
+
+Solo dopo:
+✔ riallineamento IPS completo al sistema reale
+
+---
+
+## STATO
+
+✔ stabile  
+✔ compilazione verificata  
+✔ popup adattivo funzionante  
+✔ struttura statistiche consolidata  
+✔ base pronta per espansione multi-modulo

@@ -534,3 +534,125 @@ Ripartiamo da FrodoDesk — Eventi Globali V1 + Memoria Evento attiva. Prossima 
 ✔ Eventi Globali funzionanti  
 ✔ Home coerente con sistema  
 ✔ struttura pronta per espansione
+
+---
+
+## 🔄 AGGIORNAMENTO 6 Maggio 2026
+
+### MODULO STATISTICHE — NASCITA STRUTTURALE UFFICIALE
+
+✔ creato ufficialmente il modulo Statistiche come modulo indipendente del sistema  
+
+✔ introdotta filosofia strutturale:
+
+👉 le statistiche NON devono inventare dati  
+👉 devono leggere SOLO moduli reali vivi  
+
+✔ definita nuova identità del modulo:
+
+- memoria storica del sistema
+- lettura evolutiva della famiglia
+- supporto decisionale
+- confronto temporale reale
+
+---
+
+### NUOVA STRUTTURA TEMPORALE UFFICIALE
+
+❌ eliminati concetti:
+
+- ultimi 7 giorni
+- ultimi 30 giorni
+
+✔ sostituiti da:
+
+- Giorno
+- Settimana
+- Mese
+- Anno
+
+👉 decisione importante:
+
+FrodoDesk deve leggere il tempo come lo leggono le persone reali e NON come dashboard tecniche.
+
+---
+
+### SUPPORTO FAMILIARE — STATISTICHE SANDRA
+
+✔ introdotto popup andamento completo  
+
+✔ confronto reale tra periodi:
+
+- giorno ↔ giorno precedente
+- settimana ↔ settimana precedente
+- mese ↔ mese precedente
+- anno ↔ anno precedente
+
+✔ introdotta navigazione temporale reale  
+
+✔ modalità Anno completamente separata dalla modalità Mese  
+
+✔ confronto grafico anno ↔ anno precedente funzionante  
+
+✔ grafico adattivo:
+
+- giornaliero
+- settimanale
+- mensile
+- annuale
+
+✔ scala grafico corretta anche con anni futuri vuoti  
+
+✔ introdotte statistiche adattive:
+
+- media giorno
+- media mese
+- picco periodo
+- periodo più intenso
+
+✔ introdotta UI statistica coerente con il periodo selezionato
+
+---
+
+### ARCHITETTURA STATISTICHE
+
+✔ definito principio:
+
+👉 ogni modulo futuro dovrà poter avere la propria card statistiche
+
+Esempi:
+
+- Costi
+- IPS
+- Salute
+- Copertura
+- Eventi
+
+✔ decisione strutturale:
+
+le statistiche NON devono avere logiche autonome  
+
+👉 leggono solamente i moduli reali del sistema
+
+---
+
+### DIREZIONE FUTURA DECISA
+
+Nuovo ordine operativo ufficiale:
+
+1. Calendario reale completo  
+2. Rifiniture intelligenti UX/realtà  
+3. Modulo Costi / Finanze  
+4. Espansione modulo Statistiche come lettura naturale dei moduli vivi  
+
+---
+
+### STATO
+
+✔ stabile  
+✔ compilazione verificata  
+✔ popup adattivo funzionante  
+✔ confronto storico funzionante  
+✔ navigazione anni funzionante  
+✔ struttura statistica consolidata  
+✔ base pronta per espansione multi-modulo

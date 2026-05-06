@@ -18,6 +18,7 @@ import '../logic/coverage_logic.dart';
 import '../logic/coverage_engine.dart';
 import '../logic/day_settings_store.dart';
 import 'statistiche_screen.dart';
+import '../widgets/home_people_panel.dart';
 
 class HomeScreen extends StatefulWidget {
   final IpsStore ipsStore;
@@ -2436,8 +2437,14 @@ class _HomeScreenState extends State<HomeScreen> {
               _MetricTile(
                 icon: Icons.groups_2_rounded,
                 label: "Persone",
-                value: personeCount.toString(),
+                value: "3",
                 color: const Color(0xFF26A69A),
+                onTap: () {
+                  showDialog<void>(
+                    context: context,
+                    builder: (_) => HomePeoplePanel(coreStore: coreStore),
+                  );
+                },
               ),
               _MetricTile(
                 icon: Icons.upcoming_rounded,
