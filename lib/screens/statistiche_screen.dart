@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../logic/core_store.dart';
 
-enum _StatsPeriod { last7, last30, currentMonth }
+enum _StatsPeriod { currentDay, currentWeek, currentMonth, currentYear }
 
 class StatisticheScreen extends StatefulWidget {
   final CoreStore coreStore;
@@ -16,7 +16,7 @@ class StatisticheScreen extends StatefulWidget {
 class _StatisticheScreenState extends State<StatisticheScreen> {
   CoreStore get coreStore => widget.coreStore;
 
-  _StatsPeriod selectedPeriod = _StatsPeriod.last30;
+  _StatsPeriod selectedPeriod = _StatsPeriod.currentMonth;
 
   Future<void> _openSupportoFamiliare() async {
     await showDialog<void>(
@@ -239,19 +239,24 @@ class _PeriodSelector extends StatelessWidget {
       runSpacing: 10,
       children: [
         _PeriodChip(
-          label: "7 giorni",
-          selected: selected == _StatsPeriod.last7,
-          onTap: () => onChanged(_StatsPeriod.last7),
+          label: "Giorno",
+          selected: selected == _StatsPeriod.currentDay,
+          onTap: () => onChanged(_StatsPeriod.currentDay),
         ),
         _PeriodChip(
-          label: "30 giorni",
-          selected: selected == _StatsPeriod.last30,
-          onTap: () => onChanged(_StatsPeriod.last30),
+          label: "Settimana",
+          selected: selected == _StatsPeriod.currentWeek,
+          onTap: () => onChanged(_StatsPeriod.currentWeek),
         ),
         _PeriodChip(
-          label: "Mese corrente",
+          label: "Mese",
           selected: selected == _StatsPeriod.currentMonth,
           onTap: () => onChanged(_StatsPeriod.currentMonth),
+        ),
+        _PeriodChip(
+          label: "Anno",
+          selected: selected == _StatsPeriod.currentYear,
+          onTap: () => onChanged(_StatsPeriod.currentYear),
         ),
       ],
     );
@@ -299,19 +304,28 @@ class _SupportFamilyStatCard extends StatelessWidget {
 
   DateTime _cleanDay(DateTime day) => DateTime(day.year, day.month, day.day);
 
-  DateTime _startDayForPeriod(DateTime today) {
-    switch (period) {
-      case _StatsPeriod.last7:
-        return today.subtract(const Duration(days: 6));
-      case _StatsPeriod.last30:
-        return today.subtract(const Duration(days: 29));
-      case _StatsPeriod.currentMonth:
-        return DateTime(today.year, today.month, 1);
-    }
-  }
+  _StatsRange _rangeFor(DateTime reference) {
+    final day = _cleanDay(reference);
 
-  int _daysCount(DateTime startDay, DateTime today) {
-    return today.difference(startDay).inDays + 1;
+    switch (period) {
+      case _StatsPeriod.currentDay:
+        return _StatsRange(start: day, end: day);
+
+      case _StatsPeriod.currentWeek:
+        final start = day.subtract(Duration(days: day.weekday - 1));
+        final end = start.add(const Duration(days: 6));
+        return _StatsRange(start: start, end: end);
+
+      case _StatsPeriod.currentMonth:
+        final start = DateTime(day.year, day.month, 1);
+        final end = DateTime(day.year, day.month + 1, 0);
+        return _StatsRange(start: start, end: end);
+
+      case _StatsPeriod.currentYear:
+        final start = DateTime(day.year, 1, 1);
+        final end = DateTime(day.year, 12, 31);
+        return _StatsRange(start: start, end: end);
+    }
   }
 
   int _sandraFixedMinutesForDay(DateTime day) {
@@ -354,6 +368,18 @@ class _SupportFamilyStatCard extends StatelessWidget {
     return total;
   }
 
+  int _totalMinutesForRange(DateTime startDay, int daysCount) {
+    int total = 0;
+
+    for (int i = 0; i < daysCount; i++) {
+      final day = startDay.add(Duration(days: i));
+      total += _sandraFixedMinutesForDay(day);
+      total += _supportMinutesForSandraDay(day);
+    }
+
+    return total;
+  }
+
   String _formatMinutes(int minutes) {
     final h = minutes ~/ 60;
     final m = minutes % 60;
@@ -362,20 +388,10 @@ class _SupportFamilyStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final today = _cleanDay(DateTime.now());
-    final startDay = _startDayForPeriod(today);
-    final daysCount = _daysCount(startDay, today);
+    final range = _rangeFor(DateTime.now());
+    final daysCount = range.daysCount;
 
-    int fixedMinutes = 0;
-    int supportMinutes = 0;
-
-    for (int i = 0; i < daysCount; i++) {
-      final day = startDay.add(Duration(days: i));
-      fixedMinutes += _sandraFixedMinutesForDay(day);
-      supportMinutes += _supportMinutesForSandraDay(day);
-    }
-
-    final totalMinutes = fixedMinutes + supportMinutes;
+    final totalMinutes = _totalMinutesForRange(range.start, daysCount);
     final totalCost = (totalMinutes / 60) * coreStore.settingsStore.sandraRate;
 
     return _StatsHubCard(
@@ -500,30 +516,239 @@ class _SandraHoursCard extends StatelessWidget {
 
   DateTime _cleanDay(DateTime day) => DateTime(day.year, day.month, day.day);
 
-  DateTime _startDayForPeriod(DateTime today) {
+  _StatsRange _rangeFor(DateTime reference) {
+    final day = _cleanDay(reference);
+
     switch (period) {
-      case _StatsPeriod.last7:
-        return today.subtract(const Duration(days: 6));
-      case _StatsPeriod.last30:
-        return today.subtract(const Duration(days: 29));
+      case _StatsPeriod.currentDay:
+        return _StatsRange(start: day, end: day);
+
+      case _StatsPeriod.currentWeek:
+        final start = day.subtract(Duration(days: day.weekday - 1));
+        final end = start.add(const Duration(days: 6));
+        return _StatsRange(start: start, end: end);
+
       case _StatsPeriod.currentMonth:
-        return DateTime(today.year, today.month, 1);
+        final start = DateTime(day.year, day.month, 1);
+        final end = DateTime(day.year, day.month + 1, 0);
+        return _StatsRange(start: start, end: end);
+
+      case _StatsPeriod.currentYear:
+        final start = DateTime(day.year, 1, 1);
+        final end = DateTime(day.year, 12, 31);
+        return _StatsRange(start: start, end: end);
     }
   }
 
-  String _periodLabel(DateTime startDay, DateTime today) {
+  _StatsRange _previousRangeFor(_StatsRange range) {
     switch (period) {
-      case _StatsPeriod.last7:
-        return "ultimi 7 giorni";
-      case _StatsPeriod.last30:
-        return "ultimi 30 giorni";
+      case _StatsPeriod.currentDay:
+        final day = range.start.subtract(const Duration(days: 1));
+        return _StatsRange(start: day, end: day);
+
+      case _StatsPeriod.currentWeek:
+        final start = range.start.subtract(const Duration(days: 7));
+        final end = start.add(const Duration(days: 6));
+        return _StatsRange(start: start, end: end);
+
       case _StatsPeriod.currentMonth:
-        return "mese corrente";
+        final start = DateTime(range.start.year, range.start.month - 1, 1);
+        final end = DateTime(range.start.year, range.start.month, 0);
+        return _StatsRange(start: start, end: end);
+
+      case _StatsPeriod.currentYear:
+        final start = DateTime(range.start.year - 1, 1, 1);
+        final end = DateTime(range.start.year - 1, 12, 31);
+        return _StatsRange(start: start, end: end);
     }
   }
 
-  int _daysCount(DateTime startDay, DateTime today) {
-    return today.difference(startDay).inDays + 1;
+  String _periodLabel(_StatsRange range) {
+    switch (period) {
+      case _StatsPeriod.currentDay:
+        return "giorno (${range.start.day}/${range.start.month})";
+
+      case _StatsPeriod.currentWeek:
+        return "settimana (${range.start.day}/${range.start.month} - ${range.end.day}/${range.end.month})";
+
+      case _StatsPeriod.currentMonth:
+        return "mese (${range.start.day}/${range.start.month} - ${range.end.day}/${range.end.month})";
+
+      case _StatsPeriod.currentYear:
+        return "anno ${range.start.year}";
+    }
+  }
+
+  String _periodTitle(DateTime reference) {
+    switch (period) {
+      case _StatsPeriod.currentDay:
+        return "${reference.day}/${reference.month}/${reference.year}";
+
+      case _StatsPeriod.currentWeek:
+        final range = _rangeFor(reference);
+        return "${range.start.day}/${range.start.month} - ${range.end.day}/${range.end.month}";
+
+      case _StatsPeriod.currentMonth:
+        return "${_monthName(reference.month)} ${reference.year}";
+
+      case _StatsPeriod.currentYear:
+        return "${reference.year}";
+    }
+  }
+
+  DateTime _moveReference(DateTime reference, int direction) {
+    switch (period) {
+      case _StatsPeriod.currentDay:
+        return reference.add(Duration(days: direction));
+
+      case _StatsPeriod.currentWeek:
+        return reference.add(Duration(days: 7 * direction));
+
+      case _StatsPeriod.currentMonth:
+        return DateTime(reference.year, reference.month + direction, 1);
+
+      case _StatsPeriod.currentYear:
+        return DateTime(reference.year + direction, reference.month, 1);
+    }
+  }
+
+  String _currentLabel() {
+    switch (period) {
+      case _StatsPeriod.currentDay:
+        return "Giorno attuale";
+      case _StatsPeriod.currentWeek:
+        return "Settimana attuale";
+      case _StatsPeriod.currentMonth:
+        return "Mese attuale";
+      case _StatsPeriod.currentYear:
+        return "Anno attuale";
+    }
+  }
+
+  String _previousLabel() {
+    switch (period) {
+      case _StatsPeriod.currentDay:
+        return "Giorno precedente";
+      case _StatsPeriod.currentWeek:
+        return "Settimana precedente";
+      case _StatsPeriod.currentMonth:
+        return "Mese precedente";
+      case _StatsPeriod.currentYear:
+        return "Anno precedente";
+    }
+  }
+
+  String _trendText(int currentMinutes, int previousMinutes) {
+    final diff = currentMinutes - previousMinutes;
+
+    if (diff == 0) {
+      return "Stabile rispetto al periodo precedente";
+    }
+
+    final diffLabel = _formatMinutes(diff.abs());
+
+    if (diff > 0) {
+      return "In aumento di $diffLabel rispetto al periodo precedente";
+    }
+
+    return "In calo di $diffLabel rispetto al periodo precedente";
+  }
+
+  String _primaryMiniTitle() {
+    switch (period) {
+      case _StatsPeriod.currentDay:
+        return "Totale giorno";
+      case _StatsPeriod.currentWeek:
+        return "Media giorno";
+      case _StatsPeriod.currentMonth:
+        return "Media giorno";
+      case _StatsPeriod.currentYear:
+        return "Media mese";
+    }
+  }
+
+  String _maxMiniTitle() {
+    switch (period) {
+      case _StatsPeriod.currentDay:
+        return "Giorno";
+      case _StatsPeriod.currentWeek:
+      case _StatsPeriod.currentMonth:
+        return "Giorno più intenso";
+      case _StatsPeriod.currentYear:
+        return "Mese più intenso";
+    }
+  }
+
+  String _peakMiniTitle() {
+    switch (period) {
+      case _StatsPeriod.currentDay:
+        return "Ore giorno";
+      case _StatsPeriod.currentWeek:
+      case _StatsPeriod.currentMonth:
+        return "Picco ore";
+      case _StatsPeriod.currentYear:
+        return "Picco mese";
+    }
+  }
+
+  String _summaryTotalTitle() {
+    switch (period) {
+      case _StatsPeriod.currentDay:
+        return "Totale giorno";
+      case _StatsPeriod.currentWeek:
+        return "Totale settimana";
+      case _StatsPeriod.currentMonth:
+        return "Totale mese";
+      case _StatsPeriod.currentYear:
+        return "Totale anno";
+    }
+  }
+
+  String _summaryCostTitle() {
+    switch (period) {
+      case _StatsPeriod.currentDay:
+        return "Costo giorno";
+      case _StatsPeriod.currentWeek:
+        return "Costo settimana";
+      case _StatsPeriod.currentMonth:
+        return "Costo mese";
+      case _StatsPeriod.currentYear:
+        return "Costo anno";
+    }
+  }
+
+  String _summaryActiveTitle() {
+    switch (period) {
+      case _StatsPeriod.currentDay:
+        return "Presenza Sandra";
+      case _StatsPeriod.currentWeek:
+      case _StatsPeriod.currentMonth:
+      case _StatsPeriod.currentYear:
+        return "Giorni con Sandra";
+    }
+  }
+
+  String _chartCaption() {
+    switch (period) {
+      case _StatsPeriod.currentDay:
+        return "Il punto rappresenta le ore Sandra totali del giorno.";
+      case _StatsPeriod.currentWeek:
+      case _StatsPeriod.currentMonth:
+        return "Ogni punto rappresenta le ore Sandra totali del giorno.";
+      case _StatsPeriod.currentYear:
+        return "Ogni punto rappresenta le ore Sandra totali del mese.";
+    }
+  }
+
+  String _pointLabel(_SandraDailyPoint point) {
+    switch (period) {
+      case _StatsPeriod.currentDay:
+      case _StatsPeriod.currentWeek:
+      case _StatsPeriod.currentMonth:
+        return "${point.day.day}/${point.day.month}";
+      case _StatsPeriod.currentYear:
+        return _monthName(point.day.month).substring(0, 3);
+    }
   }
 
   String _monthName(int month) {
@@ -543,6 +768,18 @@ class _SandraHoursCard extends StatelessWidget {
     ];
 
     return months[month - 1];
+  }
+
+  Color _trendColor(int currentMinutes, int previousMinutes) {
+    if (currentMinutes > previousMinutes) {
+      return const Color(0xFFFFCA28);
+    }
+
+    if (currentMinutes < previousMinutes) {
+      return const Color(0xFF8BC34A);
+    }
+
+    return Colors.white70;
   }
 
   int _sandraFixedMinutesForDay(DateTime day) {
@@ -632,12 +869,49 @@ class _SandraHoursCard extends StatelessWidget {
     return points;
   }
 
+  List<_SandraDailyPoint> _monthlyPoints(int year) {
+    final points = <_SandraDailyPoint>[];
+
+    for (int month = 1; month <= 12; month++) {
+      final monthStart = DateTime(year, month);
+      final monthEnd = DateTime(year, month + 1, 0);
+      final daysCount = monthEnd.day;
+
+      final minutes = _totalMinutesForRange(monthStart, daysCount);
+
+      points.add(_SandraDailyPoint(day: monthStart, minutes: minutes));
+    }
+
+    return points;
+  }
+
+  List<_SandraDailyPoint> _pointsForRange(_StatsRange range) {
+    if (period == _StatsPeriod.currentYear) {
+      return _monthlyPoints(range.start.year);
+    }
+
+    return _dailyPoints(range.start, range.daysCount);
+  }
+
   int _totalMinutesForRange(DateTime startDay, int daysCount) {
     int total = 0;
 
     for (int i = 0; i < daysCount; i++) {
       final day = startDay.add(Duration(days: i));
       total += _totalSandraMinutesForDay(day);
+    }
+
+    return total;
+  }
+
+  int _activeDaysForRange(DateTime startDay, int daysCount) {
+    int total = 0;
+
+    for (int i = 0; i < daysCount; i++) {
+      final day = startDay.add(Duration(days: i));
+      if (_totalSandraMinutesForDay(day) > 0) {
+        total++;
+      }
     }
 
     return total;
@@ -675,34 +949,6 @@ class _SandraHoursCard extends StatelessWidget {
     } else {
       return "Sandra molto presente in questo periodo";
     }
-  }
-
-  String _trendText(int currentMinutes, int previousMinutes) {
-    final diff = currentMinutes - previousMinutes;
-
-    if (diff == 0) {
-      return "Stabile rispetto al mese precedente";
-    }
-
-    final diffLabel = _formatMinutes(diff.abs());
-
-    if (diff > 0) {
-      return "In aumento di $diffLabel rispetto al mese precedente";
-    }
-
-    return "In calo di $diffLabel rispetto al mese precedente";
-  }
-
-  Color _trendColor(int currentMinutes, int previousMinutes) {
-    if (currentMinutes > previousMinutes) {
-      return const Color(0xFFFFCA28);
-    }
-
-    if (currentMinutes < previousMinutes) {
-      return const Color(0xFF8BC34A);
-    }
-
-    return Colors.white70;
   }
 
   Future<void> _editSandraHourlyRate(BuildContext context) async {
@@ -755,38 +1001,26 @@ class _SandraHoursCard extends StatelessWidget {
 
   Future<void> _showTrendPopup({
     required BuildContext context,
-    required DateTime initialMonth,
+    required DateTime initialDate,
   }) async {
-    DateTime visibleMonth = DateTime(initialMonth.year, initialMonth.month);
+    DateTime visibleDate = _cleanDay(initialDate);
 
     await showDialog<void>(
       context: context,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, dialogSetState) {
-            final monthStart = DateTime(visibleMonth.year, visibleMonth.month);
-            final monthEnd = DateTime(
-              visibleMonth.year,
-              visibleMonth.month + 1,
-              0,
-            );
-            final daysCount = monthEnd.day;
+            final currentRange = _rangeFor(visibleDate);
+            final previousRange = _previousRangeFor(currentRange);
 
-            final previousMonthStart = DateTime(
-              visibleMonth.year,
-              visibleMonth.month - 1,
+            final currentMinutes = _totalMinutesForRange(
+              currentRange.start,
+              currentRange.daysCount,
             );
-            final previousMonthEnd = DateTime(
-              visibleMonth.year,
-              visibleMonth.month,
-              0,
-            );
-            final previousDaysCount = previousMonthEnd.day;
 
-            final currentMinutes = _totalMinutesForRange(monthStart, daysCount);
             final previousMinutes = _totalMinutesForRange(
-              previousMonthStart,
-              previousDaysCount,
+              previousRange.start,
+              previousRange.daysCount,
             );
 
             final currentCost =
@@ -794,10 +1028,28 @@ class _SandraHoursCard extends StatelessWidget {
             final previousCost =
                 (previousMinutes / 60) * coreStore.settingsStore.sandraRate;
 
-            final points = _dailyPoints(monthStart, daysCount);
-            final activeDays = points.where((p) => p.minutes > 0).length;
+            final points = _pointsForRange(currentRange);
+            final previousPoints = _pointsForRange(previousRange);
+
+            final activeDays = _activeDaysForRange(
+              currentRange.start,
+              currentRange.daysCount,
+            );
+
             final trendText = _trendText(currentMinutes, previousMinutes);
             final trendColor = _trendColor(currentMinutes, previousMinutes);
+
+            final averageMinutes = period == _StatsPeriod.currentYear
+                ? (currentMinutes / 12).round()
+                : period == _StatsPeriod.currentDay
+                ? currentMinutes
+                : currentRange.daysCount == 0
+                ? 0
+                : (currentMinutes / currentRange.daysCount).round();
+
+            final maxPoint = points.isEmpty
+                ? null
+                : points.reduce((a, b) => a.minutes >= b.minutes ? a : b);
 
             return Dialog(
               backgroundColor: Colors.transparent,
@@ -862,13 +1114,10 @@ class _SandraHoursCard extends StatelessWidget {
                       Row(
                         children: [
                           IconButton(
-                            tooltip: "Mese precedente",
+                            tooltip: "Periodo precedente",
                             onPressed: () {
                               dialogSetState(() {
-                                visibleMonth = DateTime(
-                                  visibleMonth.year,
-                                  visibleMonth.month - 1,
-                                );
+                                visibleDate = _moveReference(visibleDate, -1);
                               });
                             },
                             icon: const Icon(
@@ -878,7 +1127,7 @@ class _SandraHoursCard extends StatelessWidget {
                           ),
                           Expanded(
                             child: Text(
-                              "${_monthName(visibleMonth.month)} ${visibleMonth.year}",
+                              _periodTitle(visibleDate),
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 color: Colors.white,
@@ -888,13 +1137,10 @@ class _SandraHoursCard extends StatelessWidget {
                             ),
                           ),
                           IconButton(
-                            tooltip: "Mese successivo",
+                            tooltip: "Periodo successivo",
                             onPressed: () {
                               dialogSetState(() {
-                                visibleMonth = DateTime(
-                                  visibleMonth.year,
-                                  visibleMonth.month + 1,
-                                );
+                                visibleDate = _moveReference(visibleDate, 1);
                               });
                             },
                             icon: const Icon(
@@ -931,7 +1177,7 @@ class _SandraHoursCard extends StatelessWidget {
                               children: [
                                 Expanded(
                                   child: _TrendValueBox(
-                                    title: "Mese attuale",
+                                    title: _currentLabel(),
                                     value: _formatMinutes(currentMinutes),
                                     subtitle:
                                         "€${currentCost.toStringAsFixed(2)} stimati",
@@ -940,7 +1186,7 @@ class _SandraHoursCard extends StatelessWidget {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: _TrendValueBox(
-                                    title: "Mese precedente",
+                                    title: _previousLabel(),
                                     value: _formatMinutes(previousMinutes),
                                     subtitle:
                                         "€${previousCost.toStringAsFixed(2)} stimati",
@@ -950,6 +1196,29 @@ class _SandraHoursCard extends StatelessWidget {
                             ),
                           ],
                         ),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          _TrendMiniStat(
+                            title: _primaryMiniTitle(),
+                            value: _formatMinutes(averageMinutes),
+                          ),
+                          _TrendMiniStat(
+                            title: _maxMiniTitle(),
+                            value: maxPoint == null
+                                ? "-"
+                                : _pointLabel(maxPoint),
+                          ),
+                          _TrendMiniStat(
+                            title: _peakMiniTitle(),
+                            value: maxPoint == null
+                                ? "-"
+                                : _formatMinutes(maxPoint.minutes),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       Container(
@@ -964,7 +1233,10 @@ class _SandraHoursCard extends StatelessWidget {
                           ),
                         ),
                         child: CustomPaint(
-                          painter: _SandraLineChartPainter(points: points),
+                          painter: _SandraLineChartPainter(
+                            points: points,
+                            previousPoints: previousPoints,
+                          ),
                           child: const SizedBox.expand(),
                         ),
                       ),
@@ -982,22 +1254,26 @@ class _SandraHoursCard extends StatelessWidget {
                               SizedBox(
                                 width: itemWidth,
                                 child: _MonthSummaryBox(
-                                  title: "Totale mese",
+                                  title: _summaryTotalTitle(),
                                   value: _formatMinutes(currentMinutes),
                                 ),
                               ),
                               SizedBox(
                                 width: itemWidth,
                                 child: _MonthSummaryBox(
-                                  title: "Costo mese",
+                                  title: _summaryCostTitle(),
                                   value: "€${currentCost.toStringAsFixed(2)}",
                                 ),
                               ),
                               SizedBox(
                                 width: itemWidth,
                                 child: _MonthSummaryBox(
-                                  title: "Giorni con Sandra",
-                                  value: activeDays == 1
+                                  title: _summaryActiveTitle(),
+                                  value: period == _StatsPeriod.currentDay
+                                      ? (activeDays > 0
+                                            ? "Presente"
+                                            : "Assente")
+                                      : activeDays == 1
                                       ? "1 giorno"
                                       : "$activeDays giorni",
                                 ),
@@ -1006,13 +1282,29 @@ class _SandraHoursCard extends StatelessWidget {
                           );
                         },
                       ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 14,
+                        runSpacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          _ChartLegendItem(
+                            color: const Color(0xFFFFCA28),
+                            label: _currentLabel(),
+                          ),
+                          _ChartLegendItem(
+                            color: Colors.white54,
+                            label: _previousLabel(),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 10),
                       Text(
-                        "Ogni punto rappresenta le ore Sandra totali del giorno.",
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.62),
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
+                        _chartCaption(),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -1028,9 +1320,8 @@ class _SandraHoursCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final today = _cleanDay(DateTime.now());
-    final startDay = _startDayForPeriod(today);
-    final daysCount = _daysCount(startDay, today);
+    final range = _rangeFor(DateTime.now());
+    final daysCount = range.daysCount;
 
     int fixedMinutes = 0;
     int activeDays = 0;
@@ -1041,7 +1332,7 @@ class _SandraHoursCard extends StatelessWidget {
     int supportSlots = 0;
 
     for (int i = 0; i < daysCount; i++) {
-      final day = startDay.add(Duration(days: i));
+      final day = range.start.add(Duration(days: i));
 
       final dayMinutes = _sandraFixedMinutesForDay(day);
       final daySlots = _sandraFixedSlotsForDay(day);
@@ -1137,7 +1428,7 @@ class _SandraHoursCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            "Periodo: ${_periodLabel(startDay, today)} (${startDay.day}/${startDay.month} - ${today.day}/${today.month})",
+            "Periodo: ${_periodLabel(range)}",
             style: const TextStyle(
               color: Colors.white70,
               fontSize: 13.5,
@@ -1194,10 +1485,8 @@ class _SandraHoursCard extends StatelessWidget {
           _SandraDetailBox(label: "Supporto extra", value: supportLabel),
           const SizedBox(height: 12),
           OutlinedButton.icon(
-            onPressed: () => _showTrendPopup(
-              context: context,
-              initialMonth: DateTime(today.year, today.month),
-            ),
+            onPressed: () =>
+                _showTrendPopup(context: context, initialDate: DateTime.now()),
             icon: const Icon(Icons.show_chart_rounded),
             label: const Text("Vedi andamento"),
             style: OutlinedButton.styleFrom(
@@ -1214,6 +1503,15 @@ class _SandraHoursCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _StatsRange {
+  final DateTime start;
+  final DateTime end;
+
+  const _StatsRange({required this.start, required this.end});
+
+  int get daysCount => end.difference(start).inDays + 1;
 }
 
 class _SandraDetailBox extends StatelessWidget {
@@ -1312,6 +1610,81 @@ class _TrendValueBox extends StatelessWidget {
   }
 }
 
+class _TrendMiniStat extends StatelessWidget {
+  final String title;
+  final String value;
+
+  const _TrendMiniStat({required this.title, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 110),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.62),
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChartLegendItem extends StatelessWidget {
+  final Color color;
+  final String label;
+
+  const _ChartLegendItem({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 16,
+          height: 4,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.74),
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _MonthSummaryBox extends StatelessWidget {
   final String title;
   final String value;
@@ -1363,8 +1736,12 @@ class _SandraDailyPoint {
 
 class _SandraLineChartPainter extends CustomPainter {
   final List<_SandraDailyPoint> points;
+  final List<_SandraDailyPoint> previousPoints;
 
-  const _SandraLineChartPainter({required this.points});
+  const _SandraLineChartPainter({
+    required this.points,
+    required this.previousPoints,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1378,7 +1755,7 @@ class _SandraLineChartPainter extends CustomPainter {
       fontWeight: FontWeight.w700,
     );
 
-    final chartLeft = 32.0;
+    final chartLeft = 34.0;
     final chartRight = size.width - 10.0;
     final chartTop = 10.0;
     final chartBottom = size.height - 28.0;
@@ -1386,12 +1763,14 @@ class _SandraLineChartPainter extends CustomPainter {
     final chartWidth = chartRight - chartLeft;
     final chartHeight = chartBottom - chartTop;
 
-    final maxMinutes = points.isEmpty
+    final allPoints = [...points, ...previousPoints];
+
+    final maxMinutes = allPoints.isEmpty
         ? 60
-        : points.map((p) => p.minutes).fold<int>(0, (a, b) => a > b ? a : b);
+        : allPoints.map((p) => p.minutes).fold<int>(0, (a, b) => a > b ? a : b);
 
     final safeMax = maxMinutes <= 0 ? 60 : maxMinutes;
-    final maxHours = (safeMax / 60).ceil().clamp(1, 24);
+    final maxHours = (safeMax / 60).ceil().clamp(1, 999).toInt();
 
     for (int i = 0; i <= 4; i++) {
       final y = chartTop + chartHeight * (i / 4);
@@ -1408,23 +1787,54 @@ class _SandraLineChartPainter extends CustomPainter {
 
     if (points.isEmpty) return;
 
-    if (points.length == 1) {
-      final x = chartLeft + chartWidth / 2;
-      final y =
-          chartBottom - ((points.first.minutes / 60) / maxHours) * chartHeight;
-
-      final dotPaint = Paint()..color = const Color(0xFFFFCA28);
-      canvas.drawCircle(Offset(x, y), 4, dotPaint);
-      return;
-    }
-
     final linePaint = Paint()
       ..color = const Color(0xFFFFCA28)
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 
+    final previousLinePaint = Paint()
+      ..color = Colors.white.withOpacity(0.28)
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
     final dotPaint = Paint()..color = const Color(0xFFFFCA28);
+
+    if (previousPoints.length > 1) {
+      final previousPath = Path();
+
+      for (int i = 0; i < previousPoints.length; i++) {
+        final x = chartLeft + chartWidth * (i / (previousPoints.length - 1));
+        final hours = previousPoints[i].minutes / 60;
+        final y = chartBottom - (hours / maxHours) * chartHeight;
+
+        if (i == 0) {
+          previousPath.moveTo(x, y);
+        } else {
+          previousPath.lineTo(x, y);
+        }
+      }
+
+      canvas.drawPath(previousPath, previousLinePaint);
+    }
+
+    if (points.length == 1) {
+      final x = chartLeft + chartWidth / 2;
+      final y =
+          chartBottom - ((points.first.minutes / 60) / maxHours) * chartHeight;
+
+      canvas.drawCircle(Offset(x, y), 4, dotPaint);
+
+      _paintBottomLabel(
+        canvas,
+        "${points.first.day.day}/${points.first.day.month}",
+        x - 12,
+        chartBottom + 8,
+      );
+
+      return;
+    }
 
     final path = Path();
 
@@ -1450,6 +1860,24 @@ class _SandraLineChartPainter extends CustomPainter {
       canvas.drawCircle(Offset(x, y), 3.2, dotPaint);
     }
 
+    final isYearMode =
+        points.length == 12 && points.every((p) => p.day.day == 1);
+
+    if (isYearMode) {
+      for (int i = 0; i < points.length; i++) {
+        final x = chartLeft + chartWidth * (i / (points.length - 1));
+
+        _paintBottomLabel(
+          canvas,
+          _monthShort(points[i].day.month),
+          x - 10,
+          chartBottom + 8,
+        );
+      }
+
+      return;
+    }
+
     final first = points.first.day;
     final last = points.last.day;
 
@@ -1459,6 +1887,7 @@ class _SandraLineChartPainter extends CustomPainter {
       chartLeft,
       chartBottom + 8,
     );
+
     _paintBottomLabel(
       canvas,
       "${last.day}/${last.month}",
@@ -1483,8 +1912,28 @@ class _SandraLineChartPainter extends CustomPainter {
     painter.paint(canvas, Offset(x, y));
   }
 
+  String _monthShort(int month) {
+    const names = [
+      "Gen",
+      "Feb",
+      "Mar",
+      "Apr",
+      "Mag",
+      "Giu",
+      "Lug",
+      "Ago",
+      "Set",
+      "Ott",
+      "Nov",
+      "Dic",
+    ];
+
+    return names[month - 1];
+  }
+
   @override
   bool shouldRepaint(covariant _SandraLineChartPainter oldDelegate) {
-    return oldDelegate.points != points;
+    return oldDelegate.points != points ||
+        oldDelegate.previousPoints != previousPoints;
   }
 }
