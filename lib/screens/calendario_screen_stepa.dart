@@ -7635,7 +7635,9 @@ class _CalendarioScreenStepAStabileState
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: e.behavior.isLogistic
+                                              color:
+                                                  _aliceEventEngine
+                                                      .requiresLogistics(e)
                                                   ? Colors.orange.withOpacity(
                                                       0.10,
                                                     )
@@ -7646,12 +7648,15 @@ class _CalendarioScreenStepAStabileState
                                                   BorderRadius.circular(6),
                                             ),
                                             child: Text(
-                                              e.behavior.isLogistic
+                                              _aliceEventEngine
+                                                      .requiresLogistics(e)
                                                   ? "Accomp. + Ritiro"
                                                   : "Evento passivo",
                                               style: TextStyle(
                                                 fontSize: 10,
-                                                color: e.behavior.isLogistic
+                                                color:
+                                                    _aliceEventEngine
+                                                        .requiresLogistics(e)
                                                     ? Colors.orange
                                                     : Colors.green,
                                                 fontWeight: FontWeight.w700,
@@ -7691,6 +7696,7 @@ class _CalendarioScreenStepAStabileState
                             ),
                             if (isExpanded) ...[
                               const SizedBox(height: 6),
+
                               Text(
                                 "Categoria: ${_aliceSpecialCategoryLabel(e.category)}",
                                 style: TextStyle(
@@ -7698,7 +7704,9 @@ class _CalendarioScreenStepAStabileState
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
+
                               const SizedBox(height: 4),
+
                               Text(
                                 "Comportamento: ${aliceEventBehaviorLabel(e.behavior)}",
                                 style: TextStyle(
@@ -7706,7 +7714,33 @@ class _CalendarioScreenStepAStabileState
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
+
                               const SizedBox(height: 4),
+
+                              Text(
+                                _aliceEventEngine.operationalDescription(e),
+                                style: TextStyle(
+                                  color: Colors.blueGrey.shade700,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+
+                              const SizedBox(height: 4),
+
+                              Text(
+                                _aliceEventEngine.realTimeMeaning(e),
+                                style: TextStyle(
+                                  color:
+                                      _aliceEventEngine.isAliceOutDuringEvent(e)
+                                      ? Colors.orange
+                                      : Colors.green,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                              ),
+
+                              const SizedBox(height: 4),
+
                               Text(
                                 "Orario: ${fmtTimeOfDay(e.start)}–${fmtTimeOfDay(e.end)}",
                                 style: const TextStyle(
