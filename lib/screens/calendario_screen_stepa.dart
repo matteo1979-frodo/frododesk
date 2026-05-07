@@ -45,6 +45,9 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../logic/promemoria_store.dart';
 import '../models/promemoria.dart';
+import '../logic/alice_events/alice_event_behavior_text.dart';
+import '../logic/alice_events/alice_event_behavior.dart';
+import '../logic/alice_events/alice_event_engine.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -95,6 +98,8 @@ class _CalendarioScreenStepAStabileState
 
   final Set<String> _expandedAliceEventIds = <String>{};
 
+  final AliceEventEngine _aliceEventEngine = const AliceEventEngine();
+
   final TextEditingController _aliceEventNameController =
       TextEditingController();
   final TextEditingController _aliceEventNoteController =
@@ -104,6 +109,8 @@ class _CalendarioScreenStepAStabileState
   TimeOfDay _aliceEventEnd = const TimeOfDay(hour: 20, minute: 0);
   AliceSpecialEventCategory _aliceEventCategory =
       AliceSpecialEventCategory.activity;
+
+  AliceEventBehavior _aliceEventBehavior = AliceEventBehavior.logistic;
   String? _editingAliceSpecialEventId;
 
   DateTime _aliceEventDate = DateTime.now();
@@ -6933,9 +6940,15 @@ class _CalendarioScreenStepAStabileState
     _aliceEventNoteController.clear();
     _aliceEventStart = const TimeOfDay(hour: 18, minute: 0);
     _aliceEventEnd = const TimeOfDay(hour: 20, minute: 0);
+
     _aliceEventCategory = AliceSpecialEventCategory.activity;
+
+    _aliceEventBehavior = AliceEventBehavior.logistic;
+
     _editingAliceSpecialEventId = null;
+
     _aliceEventDate = _selectedDay;
+
     if (closeEditor) {
       _showAliceEventEditor = false;
     }
@@ -6952,13 +6965,21 @@ class _CalendarioScreenStepAStabileState
   void _startEditAliceSpecialEvent(AliceSpecialEvent event) {
     setState(() {
       _editingAliceSpecialEventId = event.id;
+
       _aliceEventNameController.text = event.label;
       _aliceEventNoteController.text = event.note;
+
       _aliceEventStart = event.start;
       _aliceEventEnd = event.end;
+
       _aliceEventCategory = event.category;
-      _aliceEventDate = event.date; // 👈 IMPORTANTE
+
+      _aliceEventBehavior = event.behavior;
+
+      _aliceEventDate = event.date;
+
       _showAliceEventEditor = true;
+
       _expandedAliceEventIds.add(event.id);
     });
   }
@@ -7073,6 +7094,7 @@ class _CalendarioScreenStepAStabileState
           'evt_${DateTime.now().millisecondsSinceEpoch}',
       label: label,
       category: _aliceEventCategory,
+      behavior: _aliceEventBehavior,
       date: day,
       start: _aliceEventStart,
       end: _aliceEventEnd,
@@ -7613,17 +7635,25 @@ class _CalendarioScreenStepAStabileState
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: Colors.blueGrey
-                                                  .withOpacity(0.08),
+                                              color: e.behavior.isLogistic
+                                                  ? Colors.orange.withOpacity(
+                                                      0.10,
+                                                    )
+                                                  : Colors.green.withOpacity(
+                                                      0.10,
+                                                    ),
                                               borderRadius:
                                                   BorderRadius.circular(6),
                                             ),
                                             child: Text(
-                                              "Accomp. + Ritiro",
+                                              e.behavior.isLogistic
+                                                  ? "Accomp. + Ritiro"
+                                                  : "Evento passivo",
                                               style: TextStyle(
                                                 fontSize: 10,
-                                                color: Colors.blueGrey
-                                                    .withOpacity(0.9),
+                                                color: e.behavior.isLogistic
+                                                    ? Colors.orange
+                                                    : Colors.green,
                                                 fontWeight: FontWeight.w700,
                                               ),
                                             ),
@@ -7663,6 +7693,14 @@ class _CalendarioScreenStepAStabileState
                               const SizedBox(height: 6),
                               Text(
                                 "Categoria: ${_aliceSpecialCategoryLabel(e.category)}",
+                                style: TextStyle(
+                                  color: Colors.black.withOpacity(0.72),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "Comportamento: ${aliceEventBehaviorLabel(e.behavior)}",
                                 style: TextStyle(
                                   color: Colors.black.withOpacity(0.72),
                                   fontWeight: FontWeight.w700,
@@ -8007,8 +8045,35 @@ class _CalendarioScreenStepAStabileState
                     }).toList(),
                     onChanged: (v) {
                       if (v == null) return;
+
                       setState(() {
                         _aliceEventCategory = v;
+
+                        _aliceEventBehavior = _aliceEventEngine
+                            .defaultBehaviorForCategory(v);
+                      });
+                    },
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  DropdownButtonFormField<AliceEventBehavior>(
+                    value: _aliceEventBehavior,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: "Comportamento reale",
+                      border: OutlineInputBorder(),
+                    ),
+                    items: AliceEventBehavior.values.map((b) {
+                      return DropdownMenuItem(
+                        value: b,
+                        child: Text(aliceEventBehaviorLabel(b)),
+                      );
+                    }).toList(),
+                    onChanged: (v) {
+                      if (v == null) return;
+                      setState(() {
+                        _aliceEventBehavior = v;
                       });
                     },
                   ),
