@@ -656,3 +656,159 @@ Nuovo ordine operativo ufficiale:
 ✔ navigazione anni funzionante  
 ✔ struttura statistica consolidata  
 ✔ base pronta per espansione multi-modulo
+
+---
+
+## 🔄 AGGIORNAMENTO 7 Maggio 2026
+
+### PERSON DETAIL PANEL — MINI CALENDARI PERSONALI VIVI
+
+---
+
+## 🔥 NUOVA EVOLUZIONE STRUTTURALE
+
+Il sistema ha introdotto una nuova lettura della Home:
+
+❌ prima → popup informative statiche  
+✔ ora → radar personali vivi collegati al sistema reale  
+
+---
+
+## 👤 PERSON DETAIL PANEL
+
+Ogni persona ora possiede:
+
+✔ mini calendario mensile reale  
+✔ stato giornata  
+✔ navigazione mese  
+✔ accesso diretto ai giorni reali  
+
+---
+
+## 🧱 NAVIGAZIONE DIRETTA CALENDARIO
+
+Implementato:
+
+✔ tap sul giorno  
+✔ apertura automatica Calendario reale  
+✔ posizionamento diretto sul giorno selezionato  
+
+👉 Home e Calendario ora risultano collegati in modo bidirezionale reale.
+
+---
+
+## 👨 MATTEO / 👩 CHIARA
+
+Mini calendario collegato a:
+
+✔ TurnEngine  
+✔ ferie  
+✔ malattia  
+
+Con:
+
+✔ colori reali  
+✔ icone reali  
+✔ lettura immediata del mese  
+
+---
+
+## 👧 ALICE — NUOVA LETTURA MULTI-LAYER
+
+La scheda Alice ora legge contemporaneamente:
+
+✔ SchoolStore  
+✔ AliceEventStore  
+✔ AliceSpecialEventStore  
+✔ DiseasePeriodStore  
+
+---
+
+## 🔥 DISTINZIONE STRUTTURALE CONSOLIDATA
+
+Decisione ufficiale:
+
+❌ weekend ≠ vacanza  
+❌ scuola chiusa ≠ vacanza  
+
+Il sistema distingue ora:
+
+✔ vacanza reale  
+✔ scuola chiusa  
+✔ weekend  
+✔ centro estivo  
+✔ attività/eventi Alice  
+
+---
+
+## 🎨 STATI VISIVI ALICE
+
+Implementati:
+
+- scuola
+- vacanza
+- scuola chiusa
+- centro estivo
+- evento attività
+- uscita anticipata
+- malattia
+
+con:
+
+✔ colori dedicati  
+✔ icone dedicate  
+✔ lettura immediata visiva  
+
+---
+
+## 🧠 NUOVO PASSAGGIO EVOLUTIVO
+
+La Home evolve da:
+
+❌ dashboard dati
+
+👉
+
+✔ sistema navigabile persona per persona
+
+---
+
+## 🔥 DIREZIONE OPERATIVA NUOVA
+
+Prossimo step ufficiale deciso:
+
+👉 conflitti intelligenti reali
+
+Il sistema dovrà:
+
+✔ rilevare incompatibilità reali  
+✔ evidenziare conflitti operativi  
+✔ spiegare problemi decisionali reali  
+
+Esempi:
+
+- evento dentro turno
+- eventi Alice incompatibili
+- copertura impossibile
+- conflitti lavoro ↔ vita reale
+
+---
+
+## PRINCIPIO
+
+FrodoDesk NON deve nascondere i conflitti.
+
+👉 Deve renderli leggibili e comprensibili.
+
+La decisione resta sempre umana.
+
+---
+
+## STATO
+
+✔ stabile  
+✔ compilazione verificata  
+✔ test reale completato  
+✔ mini calendari vivi funzionanti  
+✔ navigazione giorno → calendario funzionante  
+✔ struttura pronta per conflitti intelligenti

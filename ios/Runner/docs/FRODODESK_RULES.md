@@ -802,3 +802,109 @@ Le statistiche includeranno:
 ## PRINCIPIO CHIAVE
 
 👉 i grafici sono uno strumento decisionale, non estetico
+
+---
+
+# 🔴 NUOVA REGOLA STRUTTURALE — PERSON DETAIL PANEL VIVO (6 Maggio 2026)
+
+## PRINCIPIO
+
+Le schede persona NON devono essere popup statici.
+
+👉 Devono diventare radar vivi della persona.
+
+---
+
+## COMPORTAMENTO OBBLIGATORIO
+
+Ogni PersonDetailPanel deve:
+
+✔ mostrare il mese reale  
+✔ mostrare stato reale persona  
+✔ mostrare eventi/stati nel tempo  
+✔ permettere navigazione diretta al calendario reale  
+
+---
+
+## MINI CALENDARIO
+
+Il mini calendario persona deve essere:
+
+✔ cliccabile  
+✔ coerente col motore reale  
+✔ collegato al giorno reale del calendario  
+
+---
+
+## REGOLA NAVIGAZIONE
+
+Click su un giorno:
+
+👉 apre direttamente CalendarioScreenStepAStabile sul giorno corretto
+
+---
+
+## REGOLA VISIVA
+
+Il mini calendario NON deve mostrare solo colori.
+
+Deve usare:
+
+✔ pallini stato  
+✔ icone contestuali  
+✔ significato immediato  
+
+Esempi:
+
+- ferie
+- malattia
+- notte
+- centro estivo
+- vacanza
+- scuola chiusa
+- evento reale
+
+---
+
+## PRINCIPIO UX
+
+La UI deve permettere lettura immediata della vita reale.
+
+NON:
+
+❌ popup vuoti  
+❌ schermate decorative  
+
+MA:
+
+✔ navigazione reale  
+✔ lettura rapida  
+✔ accesso immediato al problema/giorno
+
+---
+
+## DIREZIONE FUTURA
+
+Il PersonDetailPanel diventa:
+
+👉 radar personale operativo del sistema
+
+e sarà base futura per:
+
+- conflitti
+- storico persona
+- statistiche persona
+- timeline reale
+- pressione personale
+- memoria eventi
+
+---
+
+## STATO
+
+✔ implementato  
+✔ compilazione verificata  
+✔ testato su app reale  
+✔ navigazione giorno funzionante  
+✔ icone contestuali funzionanti  
+✔ integrazione AliceEventStore funzionante

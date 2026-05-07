@@ -420,3 +420,153 @@ Le statistiche saranno:
 ✔ multi-persona attiva  
 ✔ Home stabile  
 ✔ struttura pronta per evoluzione moduli
+
+---
+
+## 🔄 AGGIORNAMENTO 7 Maggio 2026
+
+### PERSON DETAIL PANEL — MINI CALENDARI PERSONALI VIVI
+
+✔ introdotta evoluzione strutturale delle schede persona nella Home  
+✔ ogni persona ora possiede una vista personale mensile reale  
+✔ calendario mini interattivo collegato al Calendario principale  
+
+---
+
+## 🧠 PERSON DETAIL PANEL
+
+La scheda persona NON è più una semplice popup informativa.
+
+È diventata:
+
+- mini radar personale
+- vista rapida del mese
+- accesso diretto ai giorni reali
+- sintesi visuale stato persona
+
+---
+
+## 🔥 FUNZIONI IMPLEMENTATE
+
+✔ apertura calendario sul giorno selezionato  
+✔ tap sui giorni del mini calendario  
+✔ collegamento diretto al Calendario reale  
+✔ apertura automatica sul giorno corretto  
+
+✔ navigazione mesi avanti/indietro  
+✔ stato "oggi" evidenziato  
+✔ legenda dinamica separata per Alice/adulti  
+
+---
+
+## 👨 MATTEO / 👩 CHIARA
+
+Mini calendario collegato a:
+
+✔ turni reali  
+✔ ferie  
+✔ malattia  
+
+### Colori
+
+- giallo → mattina
+- arancione → pomeriggio
+- blu → notte
+- verde → ferie
+- rosso → malattia
+- grigio → riposo
+
+### Icone
+
+✔ mattina  
+✔ pomeriggio  
+✔ notte  
+✔ ferie  
+✔ malattia  
+✔ riposo
+
+---
+
+## 👧 ALICE — EVOLUZIONE STRUTTURALE
+
+La scheda Alice ora legge:
+
+✔ SchoolStore  
+✔ AliceEventStore  
+✔ AliceSpecialEventStore  
+✔ DiseasePeriodStore  
+
+---
+
+## 🔥 STATI ALICE IMPLEMENTATI
+
+✔ scuola normale  
+✔ vacanza  
+✔ scuola chiusa  
+✔ centro estivo  
+✔ evento / attività  
+✔ uscita anticipata  
+✔ malattia  
+
+---
+
+## 🎨 COLORI ALICE
+
+- blu → scuola
+- verde → centro estivo
+- teal → evento / attività
+- arancione → uscita anticipata
+- viola → vacanza
+- grigio → scuola chiusa
+- rosso → malattia
+
+---
+
+## 🧠 ICONE ALICE
+
+✔ scuola  
+✔ spiaggia/vacanza  
+✔ centro estivo  
+✔ malattia  
+✔ evento sportivo/attività  
+✔ uscita anticipata  
+✔ scuola chiusa  
+
+---
+
+## 🔥 DECISIONE STRUTTURALE IMPORTANTE
+
+Weekend e giorni senza scuola normale NON sono automaticamente "vacanza".
+
+Distinzione ufficiale:
+
+✔ vacanza reale  
+✔ scuola chiusa  
+✔ weekend  
+✔ eventi Alice  
+✔ centro estivo  
+
+restano concetti separati nel sistema.
+
+---
+
+## 🧱 SIGNIFICATO ARCHITETTURALE
+
+La Home evolve da:
+
+"dashboard con dati"
+
+a:
+
+"sistema vivo navigabile persona per persona"
+
+---
+
+## 🚀 STATO
+
+✔ stabile  
+✔ compilazione verificata  
+✔ test reale completato  
+✔ navigazione funzionante  
+✔ persistenza funzionante  
+✔ UI coerente validata

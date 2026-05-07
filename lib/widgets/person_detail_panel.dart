@@ -30,9 +30,8 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
     visibleMonth = DateTime(now.year, now.month, 1);
   }
 
-  Future<void> _openCalendarToday() async {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+  Future<void> _openCalendarForDay(DateTime day) async {
+    final cleanDay = DateTime(day.year, day.month, day.day);
 
     final navigator = Navigator.of(context);
     navigator.pop();
@@ -41,10 +40,15 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
       MaterialPageRoute(
         builder: (_) => CalendarioScreenStepAStabile(
           coreStore: widget.coreStore,
-          initialSelectedDay: today,
+          initialSelectedDay: cleanDay,
         ),
       ),
     );
+  }
+
+  Future<void> _openCalendarToday() async {
+    final now = DateTime.now();
+    await _openCalendarForDay(DateTime(now.year, now.month, now.day));
   }
 
   @override
@@ -140,7 +144,12 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
     final cleanToday = DateTime(today.year, today.month, today.day);
 
     if (widget.personName == "Alice") {
-      return _infoBox("Stato di oggi: ${_aliceDayLabel(cleanToday)}");
+      final color = _dotColorForDay(cleanToday) ?? Colors.grey;
+      return _infoBox(
+        "Stato di oggi: ${_aliceDayLabel(cleanToday)}",
+        color: color,
+        icon: _iconForDay(cleanToday),
+      );
     }
 
     final feriePerson = _feriePersonForCurrentPerson();
@@ -149,7 +158,11 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
           feriePerson,
           cleanToday,
         )) {
-      return _infoBox("Stato di oggi: Ferie");
+      return _infoBox(
+        "Stato di oggi: Ferie",
+        color: Colors.green,
+        icon: Icons.beach_access_rounded,
+      );
     }
 
     final person = widget.personName == "Matteo"
@@ -161,47 +174,11 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
       day: cleanToday,
     );
 
-    return _infoBox("Turno di oggi: ${_turnLabel(plan.type)}");
-  }
-
-  String _aliceDayLabel(DateTime date) {
-    if (_isAliceSick(date)) return "Malattia";
-
-    final alicePeriod = widget.coreStore.aliceEventStore.getEventForDay(date);
-
-    if (alicePeriod != null) {
-      switch (alicePeriod.type) {
-        case AliceEventType.sickness:
-          return "Malattia";
-        case AliceEventType.summerCamp:
-          return "Centro estivo";
-        case AliceEventType.vacation:
-          return "Vacanza";
-        case AliceEventType.schoolClosure:
-          return "Scuola chiusa";
-        case AliceEventType.schoolNormal:
-          return "Scuola normale";
-      }
-    }
-
-    final hasAliceEvent = widget.coreStore.aliceSpecialEventStore
-        .eventsForDay(date)
-        .where((event) => event.enabled)
-        .isNotEmpty;
-
-    if (hasAliceEvent) return "Evento / attività";
-
-    final uscitaAnticipata = widget.coreStore.daySettingsStore
-        .uscitaAnticipataTimeForDay(date);
-
-    if (uscitaAnticipata != null) return "Uscita anticipata";
-
-    final schoolConfig = widget.coreStore.schoolStore.schoolDayConfigFor(date);
-    if (schoolConfig != null && schoolConfig.enabled) {
-      return "Scuola normale";
-    }
-
-    return "Scuola chiusa";
+    return _infoBox(
+      "Turno di oggi: ${_turnLabel(plan.type)}",
+      color: _dotColorForDay(cleanToday) ?? const Color(0xFFB08D57),
+      icon: _iconForDay(cleanToday),
+    );
   }
 
   Widget _monthHeader() {
@@ -346,6 +323,7 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
         final dayNumber = index - leadingEmptyCells + 1;
         final date = DateTime(visibleMonth.year, visibleMonth.month, dayNumber);
         final dotColor = _dotColorForDay(date);
+        final icon = _iconForDay(date);
 
         final today = DateTime.now();
         final isToday =
@@ -356,92 +334,196 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
         final isSunday = date.weekday == DateTime.sunday;
         final isSaturday = date.weekday == DateTime.saturday;
 
-        return Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isToday
-                  ? [const Color(0xFFFFF8E1), const Color(0xFFFFECB3)]
-                  : [Colors.white.withOpacity(0.96), const Color(0xFFEFE9DA)],
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isToday
-                  ? const Color(0xFFB08D57)
-                  : isSunday
-                  ? const Color(0xFFC62828).withOpacity(0.22)
-                  : Colors.black.withOpacity(0.07),
-              width: isToday ? 2 : 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(isToday ? 0.16 : 0.08),
-                blurRadius: isToday ? 16 : 10,
-                offset: const Offset(0, 5),
+        return InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _openCalendarForDay(date),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isToday
+                    ? [const Color(0xFFFFF8E1), const Color(0xFFFFECB3)]
+                    : [Colors.white.withOpacity(0.96), const Color(0xFFEFE9DA)],
               ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                left: 8,
-                top: 7,
-                child: Text(
-                  "$dayNumber",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 15,
-                    color: isSunday
-                        ? const Color(0xFFC62828)
-                        : isSaturday
-                        ? Colors.black.withOpacity(0.68)
-                        : Colors.black.withOpacity(0.86),
-                  ),
-                ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isToday
+                    ? const Color(0xFFB08D57)
+                    : isSunday
+                    ? const Color(0xFFC62828).withOpacity(0.22)
+                    : Colors.black.withOpacity(0.07),
+                width: isToday ? 2 : 1,
               ),
-              if (dotColor != null)
-                Positioned(
-                  right: 7,
-                  bottom: 7,
-                  child: Container(
-                    width: 13,
-                    height: 13,
-                    decoration: BoxDecoration(
-                      color: dotColor,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.92),
-                        width: 2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: dotColor.withOpacity(0.45),
-                          blurRadius: 8,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                  ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isToday ? 0.16 : 0.08),
+                  blurRadius: isToday ? 16 : 10,
+                  offset: const Offset(0, 5),
                 ),
-              if (isToday)
+              ],
+            ),
+            child: Stack(
+              children: [
                 Positioned(
-                  right: 7,
+                  left: 8,
                   top: 7,
-                  child: Container(
-                    width: 7,
-                    height: 7,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF1F3A1B),
-                      shape: BoxShape.circle,
+                  child: Text(
+                    "$dayNumber",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15,
+                      color: isSunday
+                          ? const Color(0xFFC62828)
+                          : isSaturday
+                          ? Colors.black.withOpacity(0.68)
+                          : Colors.black.withOpacity(0.86),
                     ),
                   ),
                 ),
-            ],
+                if (icon != null)
+                  Positioned(
+                    left: 8,
+                    bottom: 7,
+                    child: Icon(
+                      icon,
+                      size: 15,
+                      color: Colors.black.withOpacity(0.48),
+                    ),
+                  ),
+                if (dotColor != null)
+                  Positioned(
+                    right: 7,
+                    bottom: 7,
+                    child: Container(
+                      width: 13,
+                      height: 13,
+                      decoration: BoxDecoration(
+                        color: dotColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.92),
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: dotColor.withOpacity(0.45),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (isToday)
+                  Positioned(
+                    right: 7,
+                    top: 7,
+                    child: Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF1F3A1B),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         );
       },
     );
+  }
+
+  IconData? _iconForDay(DateTime date) {
+    if (widget.personName == "Alice") {
+      if (_isAliceSick(date)) return Icons.sick_rounded;
+
+      final alicePeriod = widget.coreStore.aliceEventStore.getEventForDay(date);
+
+      if (alicePeriod != null) {
+        switch (alicePeriod.type) {
+          case AliceEventType.sickness:
+            return Icons.sick_rounded;
+          case AliceEventType.summerCamp:
+            return Icons.park_rounded;
+          case AliceEventType.vacation:
+            return Icons.beach_access_rounded;
+          case AliceEventType.schoolClosure:
+            return Icons.lock_rounded;
+          case AliceEventType.schoolNormal:
+            return Icons.school_rounded;
+        }
+      }
+
+      final hasAliceEvent = widget.coreStore.aliceSpecialEventStore
+          .eventsForDay(date)
+          .where((event) => event.enabled)
+          .isNotEmpty;
+
+      if (hasAliceEvent) return Icons.sports_basketball_rounded;
+
+      final uscitaAnticipata = widget.coreStore.daySettingsStore
+          .uscitaAnticipataTimeForDay(date);
+
+      if (uscitaAnticipata != null) return Icons.schedule_rounded;
+
+      final schoolConfig = widget.coreStore.schoolStore.schoolDayConfigFor(
+        date,
+      );
+
+      if (schoolConfig != null && schoolConfig.enabled) {
+        return Icons.school_rounded;
+      }
+
+      return Icons.lock_rounded;
+    }
+
+    final personId = widget.personName.toLowerCase();
+
+    final isSick = widget.coreStore.diseasePeriodStore.all.any((p) {
+      final day = DateTime(date.year, date.month, date.day);
+      final start = DateTime(
+        p.startDate.year,
+        p.startDate.month,
+        p.startDate.day,
+      );
+      final end = DateTime(p.endDate.year, p.endDate.month, p.endDate.day);
+
+      return p.personId == personId &&
+          !day.isBefore(start) &&
+          !day.isAfter(end);
+    });
+
+    if (isSick) return Icons.sick_rounded;
+
+    final feriePerson = _feriePersonForCurrentPerson();
+
+    if (feriePerson != null &&
+        widget.coreStore.feriePeriodStore.isOnHoliday(feriePerson, date)) {
+      return Icons.beach_access_rounded;
+    }
+
+    final person = widget.personName == "Matteo"
+        ? TurnPerson.matteo
+        : TurnPerson.chiara;
+
+    final plan = widget.coreStore.turnEngine.turnPlanForPersonDay(
+      person: person,
+      day: date,
+    );
+
+    switch (plan.type) {
+      case TurnType.mattina:
+        return Icons.wb_sunny_rounded;
+      case TurnType.pomeriggio:
+        return Icons.wb_twilight_rounded;
+      case TurnType.notte:
+        return Icons.nights_stay_rounded;
+      case TurnType.off:
+        return Icons.home_rounded;
+    }
   }
 
   Color? _dotColorForDay(DateTime date) {
@@ -470,7 +552,7 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
           .where((event) => event.enabled)
           .isNotEmpty;
 
-      if (hasAliceEvent) return Colors.green;
+      if (hasAliceEvent) return Colors.teal;
 
       final uscitaAnticipata = widget.coreStore.daySettingsStore
           .uscitaAnticipataTimeForDay(date);
@@ -533,6 +615,46 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
     }
   }
 
+  String _aliceDayLabel(DateTime date) {
+    if (_isAliceSick(date)) return "Malattia";
+
+    final alicePeriod = widget.coreStore.aliceEventStore.getEventForDay(date);
+
+    if (alicePeriod != null) {
+      switch (alicePeriod.type) {
+        case AliceEventType.sickness:
+          return "Malattia";
+        case AliceEventType.summerCamp:
+          return "Centro estivo";
+        case AliceEventType.vacation:
+          return "Vacanza";
+        case AliceEventType.schoolClosure:
+          return "Scuola chiusa";
+        case AliceEventType.schoolNormal:
+          return "Scuola normale";
+      }
+    }
+
+    final hasAliceEvent = widget.coreStore.aliceSpecialEventStore
+        .eventsForDay(date)
+        .where((event) => event.enabled)
+        .isNotEmpty;
+
+    if (hasAliceEvent) return "Evento / attività";
+
+    final uscitaAnticipata = widget.coreStore.daySettingsStore
+        .uscitaAnticipataTimeForDay(date);
+
+    if (uscitaAnticipata != null) return "Uscita anticipata";
+
+    final schoolConfig = widget.coreStore.schoolStore.schoolDayConfigFor(date);
+    if (schoolConfig != null && schoolConfig.enabled) {
+      return "Scuola normale";
+    }
+
+    return "Scuola chiusa";
+  }
+
   bool _isAliceSick(DateTime date) {
     if (widget.coreStore.aliceEventStore.isSicknessDay(date)) {
       return true;
@@ -589,16 +711,49 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
     return "${months[date.month - 1]} ${date.year}";
   }
 
-  Widget _infoBox(String text) {
+  Widget _infoBox(String text, {Color? color, IconData? icon}) {
+    final baseColor = color ?? const Color(0xFFB08D57);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFE9DA),
+        color: baseColor.withOpacity(0.12),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFB08D57).withOpacity(0.24)),
+        border: Border.all(color: baseColor.withOpacity(0.32)),
+        boxShadow: [
+          BoxShadow(
+            color: baseColor.withOpacity(0.10),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
-      child: Text(text, style: const TextStyle(fontWeight: FontWeight.w900)),
+      child: Row(
+        children: [
+          if (icon != null) ...[
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: baseColor.withOpacity(0.18),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: baseColor, size: 21),
+            ),
+            const SizedBox(width: 12),
+          ],
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                color: Colors.black.withOpacity(0.82),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -619,10 +774,8 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
         children: isAlice
             ? const [
                 _LegendItem(color: Colors.blue, label: "Scuola"),
-                _LegendItem(
-                  color: Colors.green,
-                  label: "Evento / centro estivo",
-                ),
+                _LegendItem(color: Colors.green, label: "Centro estivo"),
+                _LegendItem(color: Colors.teal, label: "Evento / attività"),
                 _LegendItem(color: Colors.orange, label: "Uscita anticipata"),
                 _LegendItem(color: Colors.purple, label: "Vacanza"),
                 _LegendItem(color: Colors.grey, label: "Scuola chiusa"),
