@@ -45,6 +45,14 @@ class AliceEventEngine {
         event.behavior.isFutureAutonomous;
   }
 
+  bool requiresAdultSupervision(AliceSpecialEvent event) {
+    return event.behavior.isPassive || event.behavior.isLogistic;
+  }
+
+  bool canGenerateCoverageProblem(AliceSpecialEvent event) {
+    return requiresAdultSupervision(event) || requiresLogistics(event);
+  }
+
   bool isPassive(AliceSpecialEvent event) {
     return event.behavior.isPassive;
   }

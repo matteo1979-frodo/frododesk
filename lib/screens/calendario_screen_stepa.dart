@@ -3593,7 +3593,7 @@ class _CalendarioScreenStepAStabileState
 
       final isActiveNow = now.isAfter(eventStart) && now.isBefore(eventEnd);
 
-      if (isActiveNow) {
+      if (isActiveNow && _aliceEventEngine.isAliceOutDuringEvent(event)) {
         aliceIsOutNow = true;
         break;
       }
@@ -4080,7 +4080,7 @@ class _CalendarioScreenStepAStabileState
 
       final isActiveNow = now.isAfter(eventStart) && now.isBefore(eventEnd);
 
-      if (isActiveNow) {
+      if (isActiveNow && _aliceEventEngine.isAliceOutDuringEvent(event)) {
         aliceIsOutNow = true;
         break;
       }
@@ -7734,6 +7734,23 @@ class _CalendarioScreenStepAStabileState
                                       _aliceEventEngine.isAliceOutDuringEvent(e)
                                       ? Colors.orange
                                       : Colors.green,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                              ),
+
+                              const SizedBox(height: 4),
+
+                              Text(
+                                _aliceEventEngine.requiresAdultSupervision(e)
+                                    ? "Serve supervisione adulta."
+                                    : "Non richiede supervisione adulta.",
+                                style: TextStyle(
+                                  color:
+                                      _aliceEventEngine
+                                          .requiresAdultSupervision(e)
+                                      ? Colors.deepOrange
+                                      : Colors.teal,
                                   fontWeight: FontWeight.w700,
                                   fontSize: 12,
                                 ),
