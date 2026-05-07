@@ -111,6 +111,9 @@ class _CalendarioScreenStepAStabileState
       AliceSpecialEventCategory.activity;
 
   AliceEventBehavior _aliceEventBehavior = AliceEventBehavior.logistic;
+
+  String? _aliceEventAccompanyingAdultKey;
+
   String? _editingAliceSpecialEventId;
 
   DateTime _aliceEventDate = DateTime.now();
@@ -6937,13 +6940,18 @@ class _CalendarioScreenStepAStabileState
 
   void _resetAliceSpecialEventEditor({bool closeEditor = true}) {
     _aliceEventNameController.clear();
+
     _aliceEventNoteController.clear();
+
     _aliceEventStart = const TimeOfDay(hour: 18, minute: 0);
+
     _aliceEventEnd = const TimeOfDay(hour: 20, minute: 0);
 
     _aliceEventCategory = AliceSpecialEventCategory.activity;
 
     _aliceEventBehavior = AliceEventBehavior.logistic;
+
+    _aliceEventAccompanyingAdultKey = null;
 
     _editingAliceSpecialEventId = null;
 
@@ -6975,6 +6983,8 @@ class _CalendarioScreenStepAStabileState
       _aliceEventCategory = event.category;
 
       _aliceEventBehavior = event.behavior;
+
+      _aliceEventAccompanyingAdultKey = event.accompanyingAdultKey;
 
       _aliceEventDate = event.date;
 
@@ -7092,13 +7102,23 @@ class _CalendarioScreenStepAStabileState
       id:
           _editingAliceSpecialEventId ??
           'evt_${DateTime.now().millisecondsSinceEpoch}',
+
       label: label,
+
       category: _aliceEventCategory,
+
       behavior: _aliceEventBehavior,
+
+      accompanyingAdultKey: _aliceEventAccompanyingAdultKey,
+
       date: day,
+
       start: _aliceEventStart,
+
       end: _aliceEventEnd,
+
       note: _aliceEventNoteController.text.trim(),
+
       enabled: true,
     );
 
@@ -7715,6 +7735,25 @@ class _CalendarioScreenStepAStabileState
                                 ),
                               ),
 
+                              if (e.accompanyingAdultKey != null) ...[
+                                const SizedBox(height: 4),
+
+                                Text(
+                                  "Con: ${e.accompanyingAdultKey == 'matteo'
+                                      ? 'Matteo'
+                                      : e.accompanyingAdultKey == 'chiara'
+                                      ? 'Chiara'
+                                      : e.accompanyingAdultKey == 'sandra'
+                                      ? 'Sandra'
+                                      : 'Supporto'}",
+                                  style: TextStyle(
+                                    color: Colors.purple.shade700,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+
                               const SizedBox(height: 4),
 
                               Text(
@@ -7751,6 +7790,23 @@ class _CalendarioScreenStepAStabileState
                                           .requiresAdultSupervision(e)
                                       ? Colors.deepOrange
                                       : Colors.teal,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                              ),
+
+                              const SizedBox(height: 4),
+
+                              Text(
+                                _aliceEventEngine.canGenerateCoverageProblem(e)
+                                    ? "Può influenzare la copertura familiare."
+                                    : "Nessun impatto previsto sulla copertura.",
+                                style: TextStyle(
+                                  color:
+                                      _aliceEventEngine
+                                          .canGenerateCoverageProblem(e)
+                                      ? Colors.redAccent
+                                      : Colors.green,
                                   fontWeight: FontWeight.w700,
                                   fontSize: 12,
                                 ),
@@ -8128,6 +8184,42 @@ class _CalendarioScreenStepAStabileState
                       });
                     },
                   ),
+                  if (_aliceEventBehavior ==
+                      AliceEventBehavior.accompanied) ...[
+                    const SizedBox(height: 12),
+
+                    DropdownButtonFormField<String>(
+                      value: _aliceEventAccompanyingAdultKey,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: "Adulto associato",
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'matteo',
+                          child: Text("Matteo"),
+                        ),
+                        DropdownMenuItem(
+                          value: 'chiara',
+                          child: Text("Chiara"),
+                        ),
+                        DropdownMenuItem(
+                          value: 'sandra',
+                          child: Text("Sandra"),
+                        ),
+                        DropdownMenuItem(
+                          value: 'supporto',
+                          child: Text("Supporto"),
+                        ),
+                      ],
+                      onChanged: (v) {
+                        setState(() {
+                          _aliceEventAccompanyingAdultKey = v;
+                        });
+                      },
+                    ),
+                  ],
                   const SizedBox(height: 10),
                   Row(
                     children: [
