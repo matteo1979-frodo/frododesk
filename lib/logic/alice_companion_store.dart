@@ -7,12 +7,14 @@ class AliceCompanionEntry {
   final TimeOfDay start;
   final TimeOfDay end;
   final AliceCompanionPerson person;
+  final String? sourceEventId;
 
   const AliceCompanionEntry({
     required this.day,
     required this.start,
     required this.end,
     required this.person,
+    this.sourceEventId,
   });
 
   String get dayKey =>
@@ -41,6 +43,11 @@ class AliceCompanionStore {
   void addEntry(AliceCompanionEntry entry) {
     final key = _dayKey(entry.day);
     final list = _items.putIfAbsent(key, () => <AliceCompanionEntry>[]);
+
+    if (entry.sourceEventId != null) {
+      list.removeWhere((e) => e.sourceEventId == entry.sourceEventId);
+    }
+
     list.add(entry);
   }
 
@@ -63,11 +70,26 @@ class AliceCompanionStore {
     }
   }
 
+  void removeEntriesForSourceEvent(String eventId) {
+    final emptyKeys = <String>[];
+
+    for (final entry in _items.entries) {
+      entry.value.removeWhere((e) => e.sourceEventId == eventId);
+
+      if (entry.value.isEmpty) {
+        emptyKeys.add(entry.key);
+      }
+    }
+
+    for (final key in emptyKeys) {
+      _items.remove(key);
+    }
+  }
+
   void clearDay(DateTime day) {
     _items.remove(_dayKey(day));
   }
 
-  // ✅ FUNZIONE CORRETTA (PORTA ALICE CON TE)
   bool isAliceAccompanied({
     required DateTime day,
     required DateTime start,
@@ -94,9 +116,7 @@ class AliceCompanionStore {
         entry.end.minute,
       );
 
-      final covers =
-          !entryStart.isAfter(start) &&
-          !entryEnd.isBefore(end);
+      final covers = !entryStart.isAfter(start) && !entryEnd.isBefore(end);
 
       if (covers) {
         return true;

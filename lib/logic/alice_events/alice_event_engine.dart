@@ -1,6 +1,7 @@
 // lib/logic/alice_events/alice_event_engine.dart
 
 import '../../models/alice_special_event.dart';
+import '../alice_companion_store.dart';
 import 'alice_event_behavior.dart';
 
 class AliceEventEngine {
@@ -24,6 +25,19 @@ class AliceEventEngine {
 
       case AliceSpecialEventCategory.other:
         return AliceEventBehavior.passive;
+    }
+  }
+
+  AliceCompanionPerson? companionPersonForEvent(AliceSpecialEvent event) {
+    if (!event.behavior.isAccompanied) return null;
+
+    switch (event.accompanyingAdultKey) {
+      case 'matteo':
+        return AliceCompanionPerson.matteo;
+      case 'chiara':
+        return AliceCompanionPerson.chiara;
+      default:
+        return null;
     }
   }
 

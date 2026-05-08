@@ -2812,60 +2812,71 @@ class _CalendarioScreenStepAStabileState
                   ),
                 const SizedBox(height: 6),
 
-                ElevatedButton(
-                  onPressed: () {
-                    final gap = visibleGapDetails[i];
+                if (!coreStore.aliceCompanionStore
+                    .entriesForDay(_selectedDay)
+                    .any(
+                      (e) =>
+                          e.sourceEventId != null &&
+                          e.start.hour == visibleGapDetails[i].start.hour &&
+                          e.start.minute == visibleGapDetails[i].start.minute &&
+                          e.end.hour == visibleGapDetails[i].end.hour &&
+                          e.end.minute == visibleGapDetails[i].end.minute,
+                    ))
+                  ElevatedButton(
+                    onPressed: () {
+                      final gap = visibleGapDetails[i];
 
-                    final nowDay = _selectedDay;
+                      final nowDay = _selectedDay;
 
-                    // parsing orari dalla label (es: 16:00–17:25)
-                    final match = RegExp(
-                      r'(\d{2}:\d{2})–(\d{2}:\d{2})',
-                    ).firstMatch(gap.label);
-                    if (match == null) return;
+                      final match = RegExp(
+                        r'(\d{2}:\d{2})–(\d{2}:\d{2})',
+                      ).firstMatch(gap.label);
+                      if (match == null) return;
 
-                    final times = [match.group(1)!, match.group(2)!];
+                      final times = [match.group(1)!, match.group(2)!];
 
-                    TimeOfDay parse(String t) {
-                      final p = t.split(":");
-                      return TimeOfDay(
-                        hour: int.parse(p[0]),
-                        minute: int.parse(p[1]),
-                      );
-                    }
-
-                    final start = parse(times[0]);
-                    final end = parse(times[1]);
-
-                    final entry = AliceCompanionEntry(
-                      day: nowDay,
-                      start: start,
-                      end: end,
-                      person: _whoCanBringAliceForGap(start: start, end: end),
-                    );
-
-                    final existing = coreStore.aliceCompanionStore
-                        .entriesForDay(nowDay)
-                        .any(
-                          (e) =>
-                              e.start.hour == start.hour &&
-                              e.start.minute == start.minute &&
-                              e.end.hour == end.hour &&
-                              e.end.minute == end.minute,
+                      TimeOfDay parse(String t) {
+                        final p = t.split(":");
+                        return TimeOfDay(
+                          hour: int.parse(p[0]),
+                          minute: int.parse(p[1]),
                         );
+                      }
 
-                    if (existing) {
-                      coreStore.aliceCompanionStore.removeEntry(entry);
-                    } else {
-                      coreStore.aliceCompanionStore.addEntry(entry);
-                    }
+                      final start = parse(times[0]);
+                      final end = parse(times[1]);
 
-                    setState(() {
-                      // trigger rebuild
-                    });
-                  },
-                  child: Text(_companionActionTextForGap(visibleGapDetails[i])),
-                ),
+                      final entry = AliceCompanionEntry(
+                        day: nowDay,
+                        start: start,
+                        end: end,
+                        person: _whoCanBringAliceForGap(start: start, end: end),
+                      );
+
+                      final existing = coreStore.aliceCompanionStore
+                          .entriesForDay(nowDay)
+                          .any(
+                            (e) =>
+                                e.start.hour == start.hour &&
+                                e.start.minute == start.minute &&
+                                e.end.hour == end.hour &&
+                                e.end.minute == end.minute,
+                          );
+
+                      if (existing) {
+                        coreStore.aliceCompanionStore.removeEntry(entry);
+                      } else {
+                        coreStore.aliceCompanionStore.addEntry(entry);
+                      }
+
+                      setState(() {
+                        // trigger rebuild
+                      });
+                    },
+                    child: Text(
+                      _companionActionTextForGap(visibleGapDetails[i]),
+                    ),
+                  ),
 
                 const SizedBox(height: 6),
                 if (i != cov.gapDetails.length - 1) const SizedBox(height: 10),
@@ -7096,6 +7107,16 @@ class _CalendarioScreenStepAStabileState
 
     final day = _onlyDate(_aliceEventDate);
     final store = coreStore.aliceSpecialEventStore;
+    if (_editingAliceSpecialEventId != null) {
+      for (final d in coreStore.aliceSpecialEventStore.allDates()) {
+        final dayEvents = [...store.eventsForDay(d)];
+
+        dayEvents.removeWhere((e) => e.id == _editingAliceSpecialEventId);
+
+        store.replaceEventsForDay(d, dayEvents);
+      }
+    }
+
     final events = [...store.eventsForDay(day)];
 
     final newEvent = AliceSpecialEvent(
@@ -7122,19 +7143,6 @@ class _CalendarioScreenStepAStabileState
       enabled: true,
     );
 
-    if (_editingAliceSpecialEventId != null) {
-      for (final d in coreStore.aliceSpecialEventStore.allDates()) {
-        final dayEvents = [...store.eventsForDay(d)];
-        final oldIndex = dayEvents.indexWhere(
-          (e) => e.id == _editingAliceSpecialEventId,
-        );
-        if (oldIndex != -1) {
-          dayEvents.removeAt(oldIndex);
-          store.replaceEventsForDay(d, dayEvents);
-        }
-      }
-    }
-
     events.add(newEvent);
 
     events.sort((a, b) {
@@ -7145,6 +7153,22 @@ class _CalendarioScreenStepAStabileState
 
     store.replaceEventsForDay(day, events);
 
+    coreStore.aliceCompanionStore.removeEntriesForSourceEvent(newEvent.id);
+
+    final companionPerson = _aliceEventEngine.companionPersonForEvent(newEvent);
+
+    if (companionPerson != null) {
+      coreStore.aliceCompanionStore.addEntry(
+        AliceCompanionEntry(
+          day: day,
+          start: newEvent.start,
+          end: newEvent.end,
+          person: companionPerson,
+          sourceEventId: newEvent.id,
+        ),
+      );
+    }
+
     setState(() {
       _resetAliceSpecialEventEditor(closeEditor: true);
     });
@@ -7154,6 +7178,8 @@ class _CalendarioScreenStepAStabileState
 
   void _removeAliceSpecialEvent(AliceSpecialEvent event) {
     coreStore.aliceSpecialEventStore.removeEvent(_selectedDay, event.id);
+
+    coreStore.aliceCompanionStore.removeEntriesForSourceEvent(event.id);
 
     setState(() {
       if (_editingAliceSpecialEventId == event.id) {
