@@ -812,3 +812,130 @@ La decisione resta sempre umana.
 ✔ mini calendari vivi funzionanti  
 ✔ navigazione giorno → calendario funzionante  
 ✔ struttura pronta per conflitti intelligenti
+
+## 🔄 AGGIORNAMENTO 8 Maggio 2026
+
+### EVENTI ALICE — COMPORTAMENTI REALI + EVENTI ACCOMPAGNATI
+
+✔ introdotto sistema comportamenti reali Eventi Alice
+
+Nuovi comportamenti supportati:
+
+- passive
+- logistic
+- accompanied
+- futureAutonomous
+
+---
+
+### SIGNIFICATO STRUTTURALE
+
+Gli Eventi Alice non rappresentano più semplici eventi calendario.
+
+👉 rappresentano comportamento reale della presenza di Alice nel sistema.
+
+---
+
+### EVENTI PASSIVI
+
+Esempi:
+
+- compiti
+- studio
+- gioco
+- attività in casa
+
+Comportamento:
+
+✔ Alice occupata
+✔ resta nello stesso luogo
+✔ richiede supervisione adulta
+✔ NON richiede logistica
+
+---
+
+### EVENTI LOGISTICI
+
+Esempi:
+
+- sport
+- musica
+- dentista
+- visite
+
+Comportamento:
+
+✔ Alice fuori casa
+✔ richiede accompagnamento
+✔ richiede ritiro
+✔ può generare conflitti reali
+
+---
+
+### EVENTI ACCOMPAGNATI
+
+Nuova capacità strutturale introdotta:
+
+✔ Alice può seguire un adulto reale
+
+Esempi:
+
+- Alice con Matteo
+- Alice con Chiara
+
+---
+
+### COLLEGAMENTO REALE COPERTURA
+
+Implementato:
+
+Evento accompagnato
+→ AliceCompanionStore
+→ copertura reale
+
+---
+
+### SINCRONIZZAZIONE CICLO EVENTO
+
+Implementato:
+
+✔ creazione evento → crea companion coverage
+✔ modifica orario → aggiorna coverage
+✔ modifica adulto → aggiorna coverage
+✔ eliminazione evento → cleanup coverage
+
+---
+
+### DISTINZIONE STRUTTURALE
+
+Il sistema distingue ora:
+
+✔ companion manuale
+✔ companion generata da evento
+
+Le companion generate da evento:
+
+❌ NON possono essere rimosse dal bottone manuale
+
+---
+
+### RISULTATO
+
+✔ riduzione falsi buchi
+✔ relazione reale Alice ↔ adulto
+✔ comportamento più realistico
+✔ base pronta per:
+- accompagnamento reale
+- ritiro reale
+- conflitti logistici
+- Alice al seguito intelligente
+
+---
+
+### STATO
+
+✔ stabile
+✔ compilazione verificata
+✔ test reale completato
+✔ sincronizzazione eventi funzionante
+✔ cleanup lifecycle funzionante

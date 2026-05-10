@@ -113,6 +113,8 @@ class _CalendarioScreenStepAStabileState
   AliceEventBehavior _aliceEventBehavior = AliceEventBehavior.logistic;
 
   String? _aliceEventAccompanyingAdultKey;
+  String? _aliceEventDropOffAdultKey;
+  String? _aliceEventPickUpAdultKey;
 
   String? _editingAliceSpecialEventId;
 
@@ -2623,6 +2625,64 @@ class _CalendarioScreenStepAStabileState
       label: "Pranzo",
     );
 
+    final logisticAliceEvents = coreStore.aliceSpecialEventStore
+        .eventsForDay(_selectedDay)
+        .where((e) => e.behavior == AliceEventBehavior.logistic)
+        .toList();
+
+    String adultLabel(String? key) {
+      switch (key) {
+        case 'matteo':
+          return 'Matteo';
+        case 'chiara':
+          return 'Chiara';
+        case 'sandra':
+          return 'Sandra';
+        case 'supporto':
+          return 'Supporto';
+        default:
+          return 'Non assegnato';
+      }
+    }
+
+    final hasIncompleteLogistics = logisticAliceEvents.any(
+      (e) =>
+          !_aliceEventEngine.hasDropOffAssigned(e) ||
+          !_aliceEventEngine.hasPickUpAssigned(e),
+    );
+
+    final hasLogisticConflict = logisticAliceEvents.any((e) {
+      final usesMatteo = _aliceEventEngine.usesMatteo(e);
+      final usesChiara = _aliceEventEngine.usesChiara(e);
+
+      final start = DateTime(
+        _selectedDay.year,
+        _selectedDay.month,
+        _selectedDay.day,
+        e.start.hour,
+        e.start.minute,
+      );
+
+      final end = DateTime(
+        _selectedDay.year,
+        _selectedDay.month,
+        _selectedDay.day,
+        e.end.hour,
+        e.end.minute,
+      );
+
+      final matteoBusy = usesMatteo && _engine.isMatteoBusyBetween(start, end);
+      final chiaraBusy = usesChiara && _engine.isChiaraBusyBetween(start, end);
+
+      return matteoBusy || chiaraBusy;
+    });
+    final effectiveState =
+        hasLogisticConflict || state == DayGapVisualState.realGap
+        ? DayGapVisualState.realGap
+        : hasIncompleteLogistics
+        ? DayGapVisualState.coveredNeed
+        : state;
+
     final visibleGapDetails = cov.gapDetails.isNotEmpty
         ? cov.gapDetails
         : coreStore.aliceCompanionStore.entriesForDay(_selectedDay).map((e) {
@@ -2638,6 +2698,30 @@ class _CalendarioScreenStepAStabileState
               end: TimeOfDay(hour: e.end.hour, minute: e.end.minute),
             );
           }).toList();
+
+    final effectiveColor = effectiveState == DayGapVisualState.realGap
+        ? Colors.red
+        : effectiveState == DayGapVisualState.coveredNeed
+        ? Colors.orange
+        : color;
+
+    final effectiveIcon = effectiveState == DayGapVisualState.realGap
+        ? Icons.error
+        : effectiveState == DayGapVisualState.coveredNeed
+        ? Icons.warning_amber_rounded
+        : icon;
+
+    final effectiveHeadline = hasLogisticConflict
+        ? "❗ Conflitto logistico Alice"
+        : hasIncompleteLogistics
+        ? "⚠ Logistica Alice incompleta"
+        : headline;
+
+    final effectiveSubline = hasLogisticConflict
+        ? "Un evento Alice ha accompagnamento o ritiro assegnato a una persona non disponibile."
+        : hasIncompleteLogistics
+        ? "Un evento Alice richiede accompagnamento o ritiro, ma manca ancora una persona assegnata."
+        : subline;
 
     return GestureDetector(
       onTap: () {
@@ -2664,9 +2748,9 @@ class _CalendarioScreenStepAStabileState
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.10),
+          color: effectiveColor.withOpacity(0.10),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.35)),
+          border: Border.all(color: effectiveColor.withOpacity(0.35)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2679,19 +2763,19 @@ class _CalendarioScreenStepAStabileState
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(icon, color: color, size: 20),
+                Icon(effectiveIcon, color: effectiveColor, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        headline,
+                        effectiveHeadline,
                         style: const TextStyle(fontWeight: FontWeight.w900),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        subline,
+                        effectiveSubline,
                         style: TextStyle(
                           color: Colors.black.withOpacity(0.68),
                           fontWeight: FontWeight.w600,
@@ -2791,10 +2875,224 @@ class _CalendarioScreenStepAStabileState
                 ),
             ],
             if (state == DayGapVisualState.realGap ||
+                logisticAliceEvents.isNotEmpty ||
                 coreStore.aliceCompanionStore
                     .entriesForDay(_selectedDay)
                     .isNotEmpty) ...[
               const SizedBox(height: 10),
+
+              if (logisticAliceEvents.isNotEmpty) ...[
+                const SizedBox(height: 8),
+
+                const Text(
+                  "Logistica eventi Alice",
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
+
+                const SizedBox(height: 6),
+
+                ...logisticAliceEvents.map((e) {
+                  final sameAdult = _aliceEventEngine
+                      .hasSameAdultForDropOffAndPickUp(e);
+
+                  final missingDropOff = !_aliceEventEngine.hasDropOffAssigned(
+                    e,
+                  );
+                  final missingPickUp = !_aliceEventEngine.hasPickUpAssigned(e);
+
+                  final usesMatteo = _aliceEventEngine.usesMatteo(e);
+                  final usesChiara = _aliceEventEngine.usesChiara(e);
+
+                  final matteoBusy =
+                      usesMatteo &&
+                      _engine.isMatteoBusyBetween(
+                        DateTime(
+                          _selectedDay.year,
+                          _selectedDay.month,
+                          _selectedDay.day,
+                          e.start.hour,
+                          e.start.minute,
+                        ),
+                        DateTime(
+                          _selectedDay.year,
+                          _selectedDay.month,
+                          _selectedDay.day,
+                          e.end.hour,
+                          e.end.minute,
+                        ),
+                      );
+
+                  final chiaraBusy =
+                      usesChiara &&
+                      _engine.isChiaraBusyBetween(
+                        DateTime(
+                          _selectedDay.year,
+                          _selectedDay.month,
+                          _selectedDay.day,
+                          e.start.hour,
+                          e.start.minute,
+                        ),
+                        DateTime(
+                          _selectedDay.year,
+                          _selectedDay.month,
+                          _selectedDay.day,
+                          e.end.hour,
+                          e.end.minute,
+                        ),
+                      );
+
+                  final canSuggestSupport =
+                      (matteoBusy || chiaraBusy) &&
+                      coreStore.supportNetworkStore.people.any(
+                        (p) => p.enabled,
+                      );
+
+                  final singleAdultManagesEvent = _aliceEventEngine
+                      .isManagedBySingleAdult(e);
+
+                  final splitLogistics = _aliceEventEngine.hasSplitLogistics(e);
+
+                  final dropOffConflict =
+                      (e.dropOffAdultKey == 'matteo' && matteoBusy) ||
+                      (e.dropOffAdultKey == 'chiara' && chiaraBusy);
+
+                  final pickUpConflict =
+                      (e.pickUpAdultKey == 'matteo' && matteoBusy) ||
+                      (e.pickUpAdultKey == 'chiara' && chiaraBusy);
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "${e.label} "
+                          "(${fmtTimeOfDay(e.start)}–${fmtTimeOfDay(e.end)}) • "
+                          "Accompagna: ${adultLabel(e.dropOffAdultKey)} • "
+                          "Ritiro: ${adultLabel(e.pickUpAdultKey)}",
+                          style: TextStyle(
+                            color: Colors.blueGrey.shade700,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+
+                        if (sameAdult)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              "Stessa persona gestisce accompagnamento e ritiro",
+                              style: TextStyle(
+                                color: Colors.orange.shade700,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        if (missingDropOff || missingPickUp)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              missingDropOff && missingPickUp
+                                  ? "Logistica incompleta: manca accompagnamento e ritiro"
+                                  : missingDropOff
+                                  ? "Logistica incompleta: manca chi accompagna"
+                                  : "Logistica incompleta: manca chi ritira",
+                              style: TextStyle(
+                                color: Colors.red.shade700,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        if (usesMatteo || usesChiara)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              usesMatteo && usesChiara
+                                  ? "Coinvolti: Matteo e Chiara"
+                                  : usesMatteo
+                                  ? "Coinvolto: Matteo"
+                                  : "Coinvolta: Chiara",
+                              style: TextStyle(
+                                color: Colors.blue.shade700,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        if (matteoBusy || chiaraBusy)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              matteoBusy && chiaraBusy
+                                  ? "Possibile conflitto logistico: Matteo e Chiara potrebbero non riuscire a gestire accompagnamento o ritiro"
+                                  : matteoBusy
+                                  ? "Possibile conflitto logistico: Matteo potrebbe non riuscire a gestire accompagnamento o ritiro"
+                                  : "Possibile conflitto logistico: Chiara potrebbe non riuscire a gestire accompagnamento o ritiro",
+                              style: TextStyle(
+                                color: Colors.red.shade700,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        if (dropOffConflict || pickUpConflict)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              dropOffConflict && pickUpConflict
+                                  ? "Conflitto su accompagnamento e ritiro"
+                                  : dropOffConflict
+                                  ? "Conflitto su accompagnamento"
+                                  : "Conflitto su ritiro",
+                              style: TextStyle(
+                                color: Colors.red.shade900,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        if (canSuggestSupport)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              "Suggerimento: verifica supporto disponibile per accompagnamento o ritiro",
+                              style: TextStyle(
+                                color: Colors.orange.shade700,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        if (singleAdultManagesEvent)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              "Nota: un solo adulto gestisce tutta la logistica dell’evento",
+                              style: TextStyle(
+                                color: Colors.purple.shade700,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        if (splitLogistics)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              "Logistica divisa: accompagnamento e ritiro sono gestiti da persone diverse",
+                              style: TextStyle(
+                                color: Colors.teal.shade700,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
 
               for (int i = 0; i < visibleGapDetails.length; i++) ...[
                 Text(
@@ -3008,15 +3306,6 @@ class _CalendarioScreenStepAStabileState
     _selectedDay = DateTime(d.year, d.month, d.day);
     _syncWeekWithSelectedDay();
     _loadPromemoria();
-    @override
-    void initState() {
-      super.initState();
-      final d = widget.initialSelectedDay ?? DateTime.now();
-      _selectedDay = DateTime(d.year, d.month, d.day);
-      _syncWeekWithSelectedDay();
-      _loadPromemoria();
-      _promemoriaStore.load(); // 👈 aggiunta
-    }
   }
 
   Future<void> _loadPromemoria() async {
@@ -6963,6 +7252,8 @@ class _CalendarioScreenStepAStabileState
     _aliceEventBehavior = AliceEventBehavior.logistic;
 
     _aliceEventAccompanyingAdultKey = null;
+    _aliceEventDropOffAdultKey = null;
+    _aliceEventPickUpAdultKey = null;
 
     _editingAliceSpecialEventId = null;
 
@@ -6996,6 +7287,8 @@ class _CalendarioScreenStepAStabileState
       _aliceEventBehavior = event.behavior;
 
       _aliceEventAccompanyingAdultKey = event.accompanyingAdultKey;
+      _aliceEventDropOffAdultKey = event.dropOffAdultKey;
+      _aliceEventPickUpAdultKey = event.pickUpAdultKey;
 
       _aliceEventDate = event.date;
 
@@ -7131,6 +7424,10 @@ class _CalendarioScreenStepAStabileState
       behavior: _aliceEventBehavior,
 
       accompanyingAdultKey: _aliceEventAccompanyingAdultKey,
+
+      dropOffAdultKey: _aliceEventDropOffAdultKey,
+
+      pickUpAdultKey: _aliceEventPickUpAdultKey,
 
       date: day,
 
@@ -7780,6 +8077,44 @@ class _CalendarioScreenStepAStabileState
                                 ),
                               ],
 
+                              if (e.dropOffAdultKey != null) ...[
+                                const SizedBox(height: 4),
+
+                                Text(
+                                  "Accompagna: ${e.dropOffAdultKey == 'matteo'
+                                      ? 'Matteo'
+                                      : e.dropOffAdultKey == 'chiara'
+                                      ? 'Chiara'
+                                      : e.dropOffAdultKey == 'sandra'
+                                      ? 'Sandra'
+                                      : 'Supporto'}",
+                                  style: TextStyle(
+                                    color: Colors.blue.shade700,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+
+                              if (e.pickUpAdultKey != null) ...[
+                                const SizedBox(height: 4),
+
+                                Text(
+                                  "Ritiro: ${e.pickUpAdultKey == 'matteo'
+                                      ? 'Matteo'
+                                      : e.pickUpAdultKey == 'chiara'
+                                      ? 'Chiara'
+                                      : e.pickUpAdultKey == 'sandra'
+                                      ? 'Sandra'
+                                      : 'Supporto'}",
+                                  style: TextStyle(
+                                    color: Colors.green.shade700,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+
                               const SizedBox(height: 4),
 
                               Text(
@@ -8242,6 +8577,76 @@ class _CalendarioScreenStepAStabileState
                       onChanged: (v) {
                         setState(() {
                           _aliceEventAccompanyingAdultKey = v;
+                        });
+                      },
+                    ),
+                  ],
+
+                  if (_aliceEventBehavior == AliceEventBehavior.logistic) ...[
+                    const SizedBox(height: 12),
+
+                    DropdownButtonFormField<String>(
+                      value: _aliceEventDropOffAdultKey,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: "Chi accompagna Alice",
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'matteo',
+                          child: Text("Matteo"),
+                        ),
+                        DropdownMenuItem(
+                          value: 'chiara',
+                          child: Text("Chiara"),
+                        ),
+                        DropdownMenuItem(
+                          value: 'sandra',
+                          child: Text("Sandra"),
+                        ),
+                        DropdownMenuItem(
+                          value: 'supporto',
+                          child: Text("Supporto"),
+                        ),
+                      ],
+                      onChanged: (v) {
+                        setState(() {
+                          _aliceEventDropOffAdultKey = v;
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    DropdownButtonFormField<String>(
+                      value: _aliceEventPickUpAdultKey,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: "Chi ritira Alice",
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'matteo',
+                          child: Text("Matteo"),
+                        ),
+                        DropdownMenuItem(
+                          value: 'chiara',
+                          child: Text("Chiara"),
+                        ),
+                        DropdownMenuItem(
+                          value: 'sandra',
+                          child: Text("Sandra"),
+                        ),
+                        DropdownMenuItem(
+                          value: 'supporto',
+                          child: Text("Supporto"),
+                        ),
+                      ],
+                      onChanged: (v) {
+                        setState(() {
+                          _aliceEventPickUpAdultKey = v;
                         });
                       },
                     ),

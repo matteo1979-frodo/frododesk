@@ -797,3 +797,132 @@ La decisione resta sempre umana.
 ✔ mini calendari vivi funzionanti  
 ✔ navigazione giorno → calendario funzionante  
 ✔ struttura pronta per conflitti intelligenti
+
+# 🔄 AGGIORNAMENTO 8 Maggio 2026
+
+## 🧠 EVENTI ALICE — EVOLUZIONE COMPORTAMENTALE REALE
+
+Il sistema ha introdotto una nuova evoluzione strutturale:
+
+❌ prima → eventi Alice come semplici elementi calendario
+
+👉
+
+✔ ora → eventi Alice come comportamento reale della presenza di Alice
+
+---
+
+## 🔥 COMPORTAMENTI INTRODOTTI
+
+Nuovi tipi strutturali:
+
+✔ passive  
+✔ logistic  
+✔ accompanied  
+✔ futureAutonomous
+
+---
+
+## 🧱 EVENTI PASSIVI
+
+Rappresentano:
+
+- compiti
+- studio
+- gioco
+- attività in casa
+
+Comportamento:
+
+✔ Alice occupata
+✔ resta nello stesso luogo
+✔ richiede supervisione adulta
+
+---
+
+## 🚗 EVENTI LOGISTICI
+
+Rappresentano:
+
+- sport
+- visite
+- attività esterne
+- musica
+
+Comportamento:
+
+✔ Alice fuori casa
+✔ accompagnamento necessario
+✔ ritiro necessario
+✔ possibile conflitto reale
+
+---
+
+## 👨 EVENTI ACCOMPAGNATI
+
+Nuovo passaggio fondamentale:
+
+✔ Alice può seguire un adulto reale
+
+Esempi:
+
+- Alice con Matteo
+- Alice con Chiara
+
+---
+
+## 🔗 COLLEGAMENTO COPERTURA
+
+Implementato collegamento reale:
+
+Evento accompagnato
+→ AliceCompanionStore
+→ copertura reale
+
+---
+
+## 🔄 SINCRONIZZAZIONE LIFECYCLE
+
+Il sistema sincronizza automaticamente:
+
+✔ creazione
+✔ modifica
+✔ cambio orario
+✔ cambio adulto
+✔ eliminazione
+
+---
+
+## 🧠 NUOVA DISTINZIONE STRUTTURALE
+
+Il sistema distingue ora:
+
+✔ companion manuali
+✔ companion generate automaticamente da evento
+
+---
+
+## 🔥 SIGNIFICATO EVOLUTIVO
+
+Questo è il primo vero sistema relazionale:
+
+Alice ↔ adulto ↔ copertura
+
+all’interno del motore reale FrodoDesk.
+
+---
+
+## 🚀 DIREZIONE FUTURA DECISA
+
+Prossimo step ufficiale:
+
+👉 EVENTI LOGISTICI → accompagnamento e ritiro reali
+
+Obiettivi:
+
+✔ chi accompagna
+✔ chi ritira
+✔ disponibilità reale adulto
+✔ conflitti logistici
+✔ supporto necessario
+✔ Alice al seguito come soluzione reale

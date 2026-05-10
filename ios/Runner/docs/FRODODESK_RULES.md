@@ -908,3 +908,114 @@ e sarà base futura per:
 ✔ navigazione giorno funzionante  
 ✔ icone contestuali funzionanti  
 ✔ integrazione AliceEventStore funzionante
+
+# 🔴 NUOVA REGOLA STRUTTURALE — EVENTI ALICE COMPORTAMENTALI (8 Maggio 2026)
+
+## PRINCIPIO
+
+Gli Eventi Alice NON sono più semplici eventi calendario.
+
+👉 rappresentano comportamento reale della presenza di Alice.
+
+---
+
+## COMPORTAMENTI UFFICIALI
+
+Il sistema supporta:
+
+✔ passive  
+✔ logistic  
+✔ accompanied  
+✔ futureAutonomous
+
+---
+
+## EVENTO PASSIVO
+
+Evento in cui Alice:
+
+✔ resta nello stesso luogo  
+✔ è occupata  
+✔ richiede supervisione adulta  
+
+❌ NON richiede accompagnamento
+
+---
+
+## EVENTO LOGISTICO
+
+Evento in cui Alice:
+
+✔ è fuori casa  
+✔ richiede accompagnamento  
+✔ richiede ritiro  
+✔ può generare conflitti reali  
+
+---
+
+## EVENTO ACCOMPAGNATO
+
+Evento in cui:
+
+✔ Alice segue un adulto reale  
+
+Esempi:
+
+- Matteo
+- Chiara
+
+---
+
+## REGOLA STRUTTURALE
+
+Evento accompagnato:
+
+Evento Alice
+→ genera automaticamente companion coverage
+
+---
+
+## REGOLA CICLO EVENTO
+
+Il lifecycle evento deve restare coerente.
+
+Quindi:
+
+✔ creazione evento → crea companion
+✔ modifica evento → aggiorna companion
+✔ eliminazione evento → elimina companion
+
+---
+
+## REGOLA CRITICA
+
+Le companion generate automaticamente da evento:
+
+❌ NON devono essere modificabili dai controlli manuali
+
+Per modificarle:
+
+👉 si modifica l’evento sorgente
+
+---
+
+## PRINCIPIO ARCHITETTURALE
+
+La relazione:
+
+Alice ↔ adulto
+
+deve vivere nel motore reale e NON nella sola UI.
+
+---
+
+## DIREZIONE FUTURA
+
+Gli eventi logistici evolveranno verso:
+
+✔ accompagnamento reale
+✔ ritiro reale
+✔ disponibilità reale adulto
+✔ conflitti logistici
+✔ supporto reale
+✔ Alice al seguito intelligente

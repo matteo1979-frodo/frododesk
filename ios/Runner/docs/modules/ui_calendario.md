@@ -257,3 +257,99 @@ Ordine corretto:
 # FRASE DI RIPARTENZA
 
 Ripartiamo da FrodoDesk — UI calendario stabile a 3 blocchi con card Alice/Scuola centrale e editor base Eventi Alice già funzionante. Prossimo passo UI: rifinire il blocco Eventi Alice dopo il collegamento al motore di copertura.
+
+# 🔄 AGGIORNAMENTO 8 Maggio 2026
+
+## 👧 EVENTI ALICE — COMPORTAMENTI REALI UI
+
+La UI Eventi Alice si è evoluta da:
+
+❌ semplice lista eventi
+
+👉
+
+✔ rappresentazione comportamento reale di Alice
+
+---
+
+## 🔥 NUOVI COMPORTAMENTI VISIBILI
+
+La UI mostra ora:
+
+✔ comportamento evento
+✔ significato reale
+✔ impatto copertura
+✔ supervisione adulta
+✔ stato fuori casa
+
+---
+
+## 🧱 EVENTI ACCOMPAGNATI
+
+Nuova funzionalità UI:
+
+✔ selezione adulto accompagnatore
+
+Supportati:
+
+- Matteo
+- Chiara
+
+---
+
+## 🔗 COLLEGAMENTO VISIVO COPERTURA
+
+Evento accompagnato:
+
+✔ genera automaticamente:
+"Alice con Matteo"
+oppure
+"Alice con Chiara"
+
+nel blocco Buchi / Decisioni.
+
+---
+
+## 🔥 DISTINZIONE UI IMPORTANTE
+
+Le companion generate automaticamente da evento:
+
+❌ NON mostrano più il bottone manuale "Togli Alice"
+
+Per modificarle:
+
+👉 si modifica direttamente l’evento Alice sorgente
+
+---
+
+## 🧠 SIGNIFICATO STRUTTURALE
+
+La UI non mostra più solo eventi.
+
+👉 mostra relazioni reali tra:
+- Alice
+- adulto
+- copertura
+
+---
+
+## 🚀 DIREZIONE UI FUTURA
+
+Prossimo step ufficiale:
+
+👉 eventi logistici con:
+- accompagnamento reale
+- ritiro reale
+- conflitti logistici
+- disponibilità adulto
+- supporto necessario
+
+---
+
+## STATO
+
+✔ stabile
+✔ compilazione verificata
+✔ test reale completato
+✔ sync UI ↔ companion funzionante
+✔ lifecycle coerente

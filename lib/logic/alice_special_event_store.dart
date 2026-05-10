@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 
+import '../logic/alice_events/alice_event_behavior.dart';
 import '../models/alice_special_event.dart';
 import 'persistence_store.dart';
 
@@ -43,6 +44,10 @@ class AliceSpecialEventStore {
           final id = map['id'];
           final label = map['label'];
           final categoryName = map['category'];
+          final behaviorName = map['behavior'];
+          final accompanyingAdultKey = map['accompanyingAdultKey'];
+          final dropOffAdultKey = map['dropOffAdultKey'];
+          final pickUpAdultKey = map['pickUpAdultKey'];
           final year = map['year'];
           final month = map['month'];
           final day = map['day'];
@@ -77,11 +82,29 @@ class AliceSpecialEventStore {
           }
           if (category == null) continue;
 
+          AliceEventBehavior behavior = AliceEventBehavior.logistic;
+          if (behaviorName is String) {
+            for (final value in AliceEventBehavior.values) {
+              if (value.name == behaviorName) {
+                behavior = value;
+                break;
+              }
+            }
+          }
+
           parsedEvents.add(
             AliceSpecialEvent(
               id: id,
               label: label,
               category: category,
+              behavior: behavior,
+              accompanyingAdultKey: accompanyingAdultKey is String
+                  ? accompanyingAdultKey
+                  : null,
+              dropOffAdultKey: dropOffAdultKey is String
+                  ? dropOffAdultKey
+                  : null,
+              pickUpAdultKey: pickUpAdultKey is String ? pickUpAdultKey : null,
               date: DateTime(year, month, day),
               start: TimeOfDay(hour: startHour, minute: startMinute),
               end: TimeOfDay(hour: endHour, minute: endMinute),
@@ -170,6 +193,7 @@ class AliceSpecialEventStore {
         id: 'test_${day.millisecondsSinceEpoch}',
         label: 'Evento test Alice',
         category: AliceSpecialEventCategory.activity,
+        behavior: AliceEventBehavior.logistic,
         date: DateTime(day.year, day.month, day.day),
         start: const TimeOfDay(hour: 18, minute: 0),
         end: const TimeOfDay(hour: 20, minute: 0),
@@ -189,6 +213,10 @@ class AliceSpecialEventStore {
                 'id': event.id,
                 'label': event.label,
                 'category': event.category.name,
+                'behavior': event.behavior.name,
+                'accompanyingAdultKey': event.accompanyingAdultKey,
+                'dropOffAdultKey': event.dropOffAdultKey,
+                'pickUpAdultKey': event.pickUpAdultKey,
                 'year': event.date.year,
                 'month': event.date.month,
                 'day': event.date.day,

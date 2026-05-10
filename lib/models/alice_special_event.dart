@@ -19,6 +19,16 @@ class AliceSpecialEvent {
   /// - supporto
   final String? accompanyingAdultKey;
 
+  /// Adulto che accompagna Alice all'evento logistico.
+  ///
+  /// Usato per eventi con behavior = logistic.
+  final String? dropOffAdultKey;
+
+  /// Adulto che ritira Alice dall'evento logistico.
+  ///
+  /// Usato per eventi con behavior = logistic.
+  final String? pickUpAdultKey;
+
   final DateTime date;
   final TimeOfDay start;
   final TimeOfDay end;
@@ -31,6 +41,8 @@ class AliceSpecialEvent {
     required this.category,
     this.behavior = AliceEventBehavior.logistic,
     this.accompanyingAdultKey,
+    this.dropOffAdultKey,
+    this.pickUpAdultKey,
     required this.date,
     required this.start,
     required this.end,
@@ -44,6 +56,8 @@ class AliceSpecialEvent {
     AliceSpecialEventCategory? category,
     AliceEventBehavior? behavior,
     String? accompanyingAdultKey,
+    String? dropOffAdultKey,
+    String? pickUpAdultKey,
     DateTime? date,
     TimeOfDay? start,
     TimeOfDay? end,
@@ -56,6 +70,8 @@ class AliceSpecialEvent {
       category: category ?? this.category,
       behavior: behavior ?? this.behavior,
       accompanyingAdultKey: accompanyingAdultKey ?? this.accompanyingAdultKey,
+      dropOffAdultKey: dropOffAdultKey ?? this.dropOffAdultKey,
+      pickUpAdultKey: pickUpAdultKey ?? this.pickUpAdultKey,
       date: date ?? this.date,
       start: start ?? this.start,
       end: end ?? this.end,
