@@ -6,6 +6,7 @@ import 'real_event_store.dart';
 import 'school_store.dart';
 import 'summer_camp_schedule_store.dart';
 import 'summer_camp_special_event_store.dart';
+import '../models/alice_presence_state.dart';
 
 class AlicePresenceEngine {
   final AliceEventStore aliceEventStore;
@@ -41,6 +42,30 @@ class AlicePresenceEngine {
     return aliceEventStore.isAliceAtHomeDay(d0) ||
         isWeekend ||
         (!schoolStore.hasSchoolOn(d0) && !isAliceSummerCampOperationalDay(d0));
+  }
+
+  AlicePresenceState stateForRange({
+    required DateTime day,
+    required DateTime start,
+    required DateTime end,
+  }) {
+    if (isAliceInsideRealEvent(day: day, start: start, end: end)) {
+      return AlicePresenceState.realEvent;
+    }
+
+    if (isAliceInsideTimedEvent(day: day, start: start, end: end)) {
+      return AlicePresenceState.timedEvent;
+    }
+
+    if (isAliceSummerCampOperationalDay(day)) {
+      return AlicePresenceState.summerCamp;
+    }
+
+    if (isAliceSchoolNormalDay(day)) {
+      return AlicePresenceState.school;
+    }
+
+    return AlicePresenceState.home;
   }
 
   bool isAliceSchoolNormalDay(DateTime day) {

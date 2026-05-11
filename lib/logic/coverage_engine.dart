@@ -4,6 +4,7 @@ import '../models/day_override.dart';
 import '../models/person_availability.dart';
 import '../models/disease_period.dart';
 import '../models/real_event.dart';
+import '../models/alice_presence_state.dart';
 import '../models/work_shift.dart';
 
 import 'coverage_logic.dart';
@@ -715,14 +716,7 @@ class CoverageEngine {
     final bool isWeekend =
         d0.weekday == DateTime.saturday || d0.weekday == DateTime.sunday;
 
-    final presenceEngine = AlicePresenceEngine(
-      aliceEventStore: aliceEventStore,
-      aliceSpecialEventStore: aliceSpecialEventStore,
-      realEventStore: realEventStore,
-      schoolStore: schoolStore,
-      summerCampScheduleStore: summerCampScheduleStore,
-      summerCampSpecialEventStore: summerCampSpecialEventStore,
-    );
+    final presenceEngine = _presenceEngine();
 
     final bool aliceAtHome = presenceEngine.isAliceAtHomeDay(d0);
 
@@ -2696,11 +2690,14 @@ class CoverageEngine {
     required DateTime start,
     required DateTime end,
   }) {
-    return _presenceEngine().isAliceAwayFromHomeDuringRange(
+    final state = _presenceEngine().stateForRange(
       day: day,
       start: start,
       end: end,
     );
+
+    return state == AlicePresenceState.realEvent ||
+        state == AlicePresenceState.timedEvent;
   }
 
   bool _isAliceHomeLabel(String label) {
