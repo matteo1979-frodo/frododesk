@@ -32,6 +32,8 @@ import 'summer_camp_special_event_store.dart';
 
 import 'alice_companion_store.dart';
 
+import 'alice_presence_engine.dart';
+
 // ✅ NEW: Scuola strutturata
 import 'school_store.dart';
 
@@ -713,10 +715,17 @@ class CoverageEngine {
     final bool isWeekend =
         d0.weekday == DateTime.saturday || d0.weekday == DateTime.sunday;
 
-    final bool aliceAtHome =
-        isAliceAtHomeDay(d0) ||
-        isWeekend ||
-        (!schoolStore.hasSchoolOn(d0) && !isAliceSummerCampOperationalDay(d0));
+    final presenceEngine = AlicePresenceEngine(
+      aliceEventStore: aliceEventStore,
+      aliceSpecialEventStore: aliceSpecialEventStore,
+      realEventStore: realEventStore,
+      schoolStore: schoolStore,
+      summerCampScheduleStore: summerCampScheduleStore,
+      summerCampSpecialEventStore: summerCampSpecialEventStore,
+    );
+
+    final bool aliceAtHome = presenceEngine.isAliceAtHomeDay(d0);
+
     final aliceType = getAliceEventTypeForDay(d0);
 
     String _aliceHomeBaseLabel(AliceEventType? aliceType) {
@@ -748,10 +757,10 @@ class CoverageEngine {
     final bool hasTimedAliceEvent =
         firstAliceEvent != null && lastAliceEvent != null;
 
-    final bool aliceSchoolNormal = isAliceSchoolNormalDay(d0) && !isWeekend;
+    final bool aliceSchoolNormal = presenceEngine.isAliceSchoolNormalDay(d0);
 
     final bool aliceSummerCamp =
-        isAliceSummerCampOperationalDay(d0) ||
+        presenceEngine.isAliceSummerCampOperationalDay(d0) ||
         getSummerCampSpecialEventForDay(d0) != null;
 
     final AliceEventPeriod? activeSummerCampPeriod = getSummerCampPeriodForDay(
@@ -1376,10 +1385,15 @@ class CoverageEngine {
 
     for (final entry in normalizedEntries) {
       if (aliceCompanionStore.isAliceAccompanied(
-        day: d0,
-        start: entry.fasciaStart,
-        end: entry.fasciaEnd,
-      )) {
+            day: d0,
+            start: entry.fasciaStart,
+            end: entry.fasciaEnd,
+          ) ||
+          _isAliceInsideRealEvent(
+            day: d0,
+            start: entry.fasciaStart,
+            end: entry.fasciaEnd,
+          )) {
         continue;
       }
       gaps.add(entry.label);
@@ -2664,6 +2678,29 @@ class CoverageEngine {
     }
 
     return bestEnd;
+  }
+
+  AlicePresenceEngine _presenceEngine() {
+    return AlicePresenceEngine(
+      aliceEventStore: aliceEventStore,
+      aliceSpecialEventStore: aliceSpecialEventStore,
+      realEventStore: realEventStore,
+      schoolStore: schoolStore,
+      summerCampScheduleStore: summerCampScheduleStore,
+      summerCampSpecialEventStore: summerCampSpecialEventStore,
+    );
+  }
+
+  bool _isAliceInsideRealEvent({
+    required DateTime day,
+    required DateTime start,
+    required DateTime end,
+  }) {
+    return _presenceEngine().isAliceAwayFromHomeDuringRange(
+      day: day,
+      start: start,
+      end: end,
+    );
   }
 
   bool _isAliceHomeLabel(String label) {

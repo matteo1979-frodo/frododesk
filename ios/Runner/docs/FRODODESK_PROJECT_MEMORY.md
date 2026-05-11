@@ -926,3 +926,153 @@ Obiettivi:
 ✔ conflitti logistici
 ✔ supporto necessario
 ✔ Alice al seguito come soluzione reale
+
+---
+
+# 🔄 AGGIORNAMENTO 11 Maggio 2026
+
+## 🔥 HOME + COPERTURA + EVENTI ALICE — ALLINEAMENTO STRUTTURALE
+
+In questa fase è stato corretto un problema architetturale importante:
+
+❌ Home e Calendario potevano leggere la copertura con logiche diverse  
+❌ la Home poteva mostrare falsi problemi futuri  
+❌ alcuni problemi risolti da rete supporto restavano visibili come aperti  
+
+---
+
+## ✅ FIX: HOME ↔ CALENDARIO ↔ COVERAGEENGINE
+
+La Home è stata riallineata al motore reale di copertura.
+
+Ora:
+
+✔ il prossimo problema futuro viene letto dal motore coerente col Calendario  
+✔ la rete supporto reale viene riconosciuta anche in Home  
+✔ se un supporto copre davvero la fascia, il problema sparisce  
+✔ se il supporto viene tolto, il problema ricompare  
+✔ il pulsante “VAI” porta al giorno corretto  
+
+Tag Git:
+
+- `home-support-network-sync`
+
+---
+
+## ✅ FIX: SUPPORTO REALE PER ACCOMPAGNAMENTO SCUOLA
+
+Caso reale validato:
+
+- Beatrice attiva 08:00–08:30
+- buco scuola 08:05–08:25
+
+Risultato corretto:
+
+✔ Calendario passa da rosso ad arancione/coperto  
+✔ Home non mostra più il problema come aperto  
+✔ togliendo Beatrice il problema ricompare  
+✔ rimettendo Beatrice il problema sparisce  
+
+---
+
+## ✅ FIX: ALICE DENTRO EVENTO REALE
+
+Corretto falso buco:
+
+evento reale con partecipanti:
+
+- Matteo
+- Chiara
+- Alice
+
+Prima il motore interpretava:
+
+❌ Matteo fuori  
+❌ Chiara fuori  
+❌ Alice a casa senza copertura  
+
+Ora il motore interpreta correttamente:
+
+✔ Alice è dentro l’evento reale  
+✔ la famiglia è insieme fuori casa  
+✔ non viene generato buco “Alice a casa”  
+✔ Home non segnala falso rischio  
+
+Implementata funzione strutturale:
+
+- `_isAliceInsideRealEvent()`
+
+usata dentro `analyzeDayV2()`.
+
+Tag Git:
+
+- `alice-real-event-presence`
+
+---
+
+## 🧠 PRINCIPIO NUOVO CONSOLIDATO
+
+Evento reale multi-persona con Alice ≠ Alice sola a casa.
+
+Il motore deve distinguere sempre:
+
+- genitore fuori casa
+- Alice a casa
+
+da:
+
+- famiglia insieme dentro evento reale
+
+---
+
+## 🚀 NUOVA FASE UFFICIALE
+
+# MOTORE PRESENZA REALE ALICE
+
+La prossima fase non deve aggiungere solo UI.
+
+Deve centralizzare la domanda:
+
+👉 “Dove si trova realmente Alice?”
+
+Obiettivo:
+
+✔ creare una sorgente unica della presenza Alice  
+✔ evitare logiche duplicate tra Home, Calendario e CoverageEngine  
+✔ preparare IPS futuro più maturo  
+✔ rendere il sistema più stabile e meno soggetto a bug fantasma  
+
+---
+
+## ROADMAP PROSSIMA FASE
+
+☑ Evento logistico Alice: accompagnamento / ritiro  
+☑ Logistica incompleta visibile in Calendario  
+☑ Logistica incompleta visibile in Home  
+☑ Supporto reale sincronizzato Home / Calendario  
+☑ Alice dentro evento reale = niente falso buco  
+☑ Salvataggi Git e tag fatti  
+
+⬜ Creare `alice_presence_engine.dart`  
+⬜ Definire stati Alice: casa / scuola / evento / accompagnata / supporto  
+⬜ Far leggere CoverageEngine dal nuovo motore presenza  
+⬜ Far leggere Home dallo stesso motore  
+⬜ Pulire doppioni logici oggi sparsi tra Home e Calendario  
+⬜ Aggiungere test: Alice in evento familiare, supporto, logistica mancante  
+⬜ Solo dopo: collegamento IPS più maturo  
+
+---
+
+## STATO ATTUALE
+
+✔ Home coerente con Calendario  
+✔ CoverageEngine più realistico  
+✔ Eventi multi-persona letti meglio  
+✔ Rete supporto validata realmente  
+✔ Alice non è più solo “nome evento”, ma inizia a essere entità presente nel motore  
+
+---
+
+## FRASE DI RIPARTENZA UFFICIALE
+
+Ripartiamo da FrodoDesk — Motore presenza reale Alice: creare `alice_presence_engine.dart` come sorgente unica per decidere dove si trova Alice e ridurre le logiche duplicate tra Home, Calendario e CoverageEngine.

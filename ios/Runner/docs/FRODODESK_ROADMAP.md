@@ -495,3 +495,215 @@ Solo dopo:
 ✔ popup adattivo funzionante  
 ✔ struttura statistiche consolidata  
 ✔ base pronta per espansione multi-modulo
+
+---
+
+# 🔄 AGGIORNAMENTO 11 Maggio 2026
+
+# 🔥 NUOVA PRIORITÀ UFFICIALE
+
+La priorità strutturale del progetto cambia.
+
+❌ IPS NON è più il prossimo blocco operativo immediato.
+
+👉 Prima serve completare:
+
+# MOTORE PRESENZA REALE ALICE
+
+---
+
+# 🧠 MOTIVO DEL CAMBIO
+
+Durante i test reali è emerso un problema strutturale:
+
+Alice può risultare:
+
+- a casa
+- fuori
+- accompagnata
+- dentro evento reale
+- sotto supporto
+- dentro logistica
+
+ma queste informazioni oggi sono ancora distribuite in più punti del sistema.
+
+Conseguenze:
+
+❌ possibili incoerenze Home ↔ Calendario  
+❌ possibili falsi buchi  
+❌ duplicazioni logiche  
+❌ difficoltà futura IPS  
+
+---
+
+# 🔥 NUOVO OBIETTIVO STRUTTURALE
+
+Creare una sorgente unica che risponda a:
+
+👉 “Dove si trova realmente Alice?”
+
+---
+
+# 🧱 NUOVO BLOCCO UFFICIALE
+
+# BLOCCO G — MOTORE PRESENZA REALE ALICE
+
+Stato: INIZIO FASE
+
+---
+
+## OBIETTIVO
+
+Centralizzare:
+
+- presenza Alice
+- stato reale Alice
+- accompagnamento
+- supporto
+- evento reale
+- scuola
+- ritorno a casa
+
+in un solo motore leggibile da tutto il sistema.
+
+---
+
+## RISULTATO ATTESO
+
+CoverageEngine, Home e futuro IPS devono leggere:
+
+👉 la stessa identica verità.
+
+---
+
+# 🔥 COMPONENTE NUOVO
+
+## alice_presence_engine.dart
+
+Nuovo motore centrale.
+
+Responsabilità:
+
+✔ decidere dove si trova Alice  
+✔ decidere se Alice è coperta  
+✔ decidere se Alice è accompagnata  
+✔ decidere se Alice è dentro evento reale  
+✔ decidere se Alice è realmente a casa  
+
+---
+
+# 🧠 STATI PRESENZA PREVISTI
+
+✔ casa  
+✔ scuola  
+✔ evento  
+✔ accompagnata  
+✔ supporto  
+✔ centro estivo  
+✔ fuori con famiglia  
+⬜ autonoma futura  
+
+---
+
+# 🔥 FIX IMPORTANTI GIÀ COMPLETATI
+
+✔ Home ↔ Coverage allineati  
+✔ Supporto reale sincronizzato  
+✔ Evento reale multi-persona corretto  
+✔ Alice dentro evento reale = niente falso buco  
+✔ falsi problemi Home eliminati  
+
+---
+
+# 🧠 PRINCIPIO NUOVO CONSOLIDATO
+
+Evento familiare condiviso ≠ Alice sola a casa.
+
+---
+
+# 📌 ROADMAP OPERATIVA
+
+## COMPLETATI
+
+☑ Evento logistico Alice  
+☑ Accompagnamento / ritiro  
+☑ Supporto reale sincronizzato  
+☑ Eventi multi-persona  
+☑ Alice dentro evento reale  
+☑ Home coerente col motore reale  
+
+---
+
+## PROSSIMI STEP
+
+### STEP G1
+⬜ creare `alice_presence_engine.dart`
+
+### STEP G2
+⬜ definire modello presenza unico
+
+### STEP G3
+⬜ far leggere CoverageEngine dal nuovo motore
+
+### STEP G4
+⬜ far leggere Home dal nuovo motore
+
+### STEP G5
+⬜ eliminare doppioni logici presenza Alice
+
+### STEP G6
+⬜ introdurre test presenza reale
+
+### STEP G7
+⬜ solo dopo → riallineamento IPS
+
+---
+
+# 🔥 IPS — NUOVA POSIZIONE
+
+IPS passa da:
+
+❌ prossima fase immediata
+
+a:
+
+✔ fase successiva al completamento del motore presenza reale.
+
+---
+
+# 🧠 SIGNIFICATO EVOLUTIVO
+
+Questo è il passaggio:
+
+❌ da calendario intelligente
+
+👉 a
+
+✔ simulazione reale della presenza familiare
+
+---
+
+# 🚀 STATO ATTUALE REALE
+
+✔ sistema stabile  
+✔ copertura reale affidabile  
+✔ Home coerente  
+✔ supporto reale coerente  
+✔ eventi multi-persona funzionanti  
+✔ Alice non più solo “evento calendario”  
+✔ inizio modellazione presenza reale  
+
+---
+
+# FRASE DI RIPARTENZA UFFICIALE
+
+Ripartiamo da FrodoDesk — BLOCCO G: Motore Presenza Reale Alice.
+
+STEP 1:
+👉 creare `alice_presence_engine.dart`
+
+STEP 2:
+👉 centralizzare la presenza reale Alice
+
+STEP 3:
+👉 far leggere CoverageEngine e Home dalla stessa verità

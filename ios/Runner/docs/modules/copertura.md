@@ -384,3 +384,123 @@ Estensione a:
 # FRASE DI RIPARTENZA
 
 Ripartiamo da FrodoDesk — Copertura stabile, giorni festivi corretti, Home coerente con motore. Prossimo passo: rifinitura UX e naming popup.
+
+---
+
+# 🔄 AGGIORNAMENTO 11 Maggio 2026
+
+## 🔥 COPERTURA REALE — ALLINEAMENTO HOME / CALENDARIO
+
+È stata corretta una incoerenza strutturale tra Home e Calendario.
+
+---
+
+## BUG RISOLTO — SUPPORTO REALE
+
+Caso reale:
+
+- buco accompagnamento scuola 08:05–08:25
+- supporto Beatrice attivo 08:00–08:30
+
+Prima:
+
+❌ Calendario considerava il problema risolto  
+❌ Home continuava a mostrare il problema futuro  
+
+Ora:
+
+✔ Calendario e Home sono coerenti  
+✔ se il supporto copre completamente la fascia, il buco sparisce  
+✔ se il supporto viene tolto, il buco ricompare  
+✔ se il supporto viene rimesso, il buco sparisce di nuovo  
+
+---
+
+## REGOLA CONFERMATA
+
+Una copertura supporto è valida SOLO se copre tutto l’intervallo:
+
+supportStart ≤ gapStart  
+supportEnd ≥ gapEnd
+
+---
+
+## 🔥 BUG RISOLTO — ALICE DENTRO EVENTO REALE
+
+Caso reale:
+
+Evento reale con partecipanti:
+
+- Matteo
+- Chiara
+- Alice
+
+Prima:
+
+❌ Matteo risultava fuori per evento reale  
+❌ Chiara risultava occupata  
+❌ Alice veniva comunque considerata a casa  
+❌ il motore generava falso buco “Alice a casa”  
+
+Ora:
+
+✔ Alice viene riconosciuta dentro l’evento reale  
+✔ il motore non genera buco casa  
+✔ Home non segnala falso problema  
+✔ Calendario resta coerente  
+
+---
+
+## NUOVA FUNZIONE STRUTTURALE
+
+Introdotta nel motore:
+
+`_isAliceInsideRealEvent()`
+
+Responsabilità:
+
+✔ verificare se Alice partecipa a un evento reale  
+✔ controllare sovrapposizione temporale  
+✔ impedire falsi buchi casa durante evento reale  
+
+---
+
+## PRINCIPIO STRUTTURALE
+
+Evento reale con Alice ≠ Alice a casa.
+
+Se Alice partecipa all’evento:
+
+👉 Alice è fisicamente dentro l’evento.
+
+---
+
+## STATO MODULO AGGIORNATO
+
+✔ copertura reale stabile  
+✔ supporto reale coerente  
+✔ Home e Calendario allineati  
+✔ eventi reali multi-persona corretti  
+✔ falso buco Alice a casa eliminato  
+
+---
+
+## DIREZIONE PROSSIMA
+
+La copertura non deve più continuare ad accumulare logiche sparse sulla presenza Alice.
+
+Prossimo step strutturale:
+
+👉 creare `alice_presence_engine.dart`
+
+Obiettivo:
+
+✔ centralizzare presenza Alice  
+✔ ridurre doppioni nel CoverageEngine  
+✔ rendere più stabile Home / Calendario / IPS futuro  
+
+---
+
+## FRASE DI RIPARTENZA
+
+Ripartiamo da FrodoDesk — Motore Presenza Reale Alice: centralizzare la presenza di Alice e far leggere CoverageEngine dalla stessa sorgente unica.

@@ -1019,3 +1019,185 @@ Gli eventi logistici evolveranno verso:
 ✔ conflitti logistici
 ✔ supporto reale
 ✔ Alice al seguito intelligente
+
+---
+
+# 🔴 NUOVA REGOLA STRUTTURALE — PRESENZA REALE ALICE (11 Maggio 2026)
+
+## PRINCIPIO
+
+Alice NON deve essere trattata solo come:
+
+- evento calendario
+- etichetta
+- presenza implicita
+
+Alice deve essere trattata come entità reale con posizione/stato nel tempo.
+
+---
+
+## DOMANDA CENTRALE
+
+Ogni motore che ragiona su Alice deve poter rispondere a:
+
+👉 “Dove si trova realmente Alice in questa fascia?”
+
+---
+
+## STATI REALI POSSIBILI
+
+Alice può essere:
+
+✔ a casa  
+✔ a scuola  
+✔ al centro estivo  
+✔ dentro evento Alice  
+✔ accompagnata da adulto  
+✔ dentro evento reale familiare  
+✔ coperta da rete supporto  
+⬜ autonoma futura  
+
+---
+
+# 🔴 NUOVA REGOLA — EVENTO REALE CON ALICE
+
+## PRINCIPIO
+
+Se un Evento Reale coinvolge Alice:
+
+👉 Alice è dentro quell’evento.
+
+---
+
+## REGOLA
+
+Se un evento reale ha tra i partecipanti:
+
+- Alice
+
+allora, durante l’intervallo dell’evento:
+
+✔ Alice NON è considerata a casa  
+✔ NON viene generato buco “Alice a casa”  
+✔ Home NON deve mostrare falso problema  
+✔ Calendario NON deve mostrare falso buco  
+
+---
+
+## CASO FAMILIARE
+
+Se un evento reale coinvolge:
+
+- Matteo
+- Chiara
+- Alice
+
+allora il sistema deve interpretare:
+
+✔ famiglia insieme fuori casa
+
+NON:
+
+❌ Matteo fuori  
+❌ Chiara fuori  
+❌ Alice sola a casa  
+
+---
+
+# 🔴 NUOVA REGOLA — HOME ↔ CALENDARIO ↔ COVERAGE
+
+## PRINCIPIO
+
+Home, Calendario e CoverageEngine devono leggere la stessa verità.
+
+---
+
+## REGOLA
+
+La Home NON deve ricostruire a mano logiche diverse da quelle del motore.
+
+Ogni volta che un problema appare nel Calendario:
+
+✔ deve apparire coerentemente in Home se rilevante  
+✔ deve sparire in Home se risolto nel Calendario  
+✔ deve portare al giorno corretto  
+✔ deve rispettare supporto reale e copertura reale  
+
+---
+
+## BUG RISOLTO
+
+Caso:
+
+- Beatrice copre 08:05–08:25
+- buco accompagnamento scuola risolto nel Calendario
+
+Prima:
+
+❌ Home continuava a segnalare problema
+
+Ora:
+
+✔ Home non segnala più il problema  
+✔ togliendo Beatrice il problema ricompare  
+✔ rimettendola il problema sparisce  
+
+---
+
+# 🔴 NUOVA REGOLA — MOTORE PRESENZA REALE ALICE
+
+## PRINCIPIO
+
+La logica di presenza Alice deve essere centralizzata.
+
+---
+
+## REGOLA OPERATIVA FUTURA
+
+Creare:
+
+`alice_presence_engine.dart`
+
+Responsabilità:
+
+✔ determinare presenza reale Alice  
+✔ determinare se Alice è a casa  
+✔ determinare se Alice è dentro evento reale  
+✔ determinare se Alice è accompagnata  
+✔ determinare se Alice è coperta da supporto  
+✔ fornire una sola verità a CoverageEngine, Home e IPS  
+
+---
+
+## VIETATO
+
+❌ duplicare logiche presenza Alice in Home  
+❌ duplicare logiche presenza Alice nel Calendario  
+❌ aggiungere patch sparse senza motore centrale  
+❌ far decidere alla UI dove si trova Alice  
+
+---
+
+## OBIETTIVO
+
+Una sola verità:
+
+👉 presenza reale Alice
+
+letta da:
+
+- CoverageEngine
+- Home
+- Calendario
+- IPS futuro
+- Statistiche future
+
+---
+
+# 🔴 NUOVA PRIORITÀ ROADMAP
+
+Prima di riallineare IPS o aggiungere nuove UI:
+
+👉 completare il Motore Presenza Reale Alice.
+
+IPS verrà dopo, quando la presenza Alice sarà centralizzata.

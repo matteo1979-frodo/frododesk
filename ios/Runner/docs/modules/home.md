@@ -570,3 +570,140 @@ a:
 ✔ navigazione funzionante  
 ✔ persistenza funzionante  
 ✔ UI coerente validata
+
+---
+
+# 🔄 AGGIORNAMENTO — MAGGIO 2026
+
+## 🔥 HOME ↔ COVERAGE ENGINE ALLINEATI
+
+Corretta incoerenza critica tra:
+
+- Calendario
+- Home
+- CoverageEngine
+
+---
+
+## 🐛 BUG RISOLTO
+
+Prima:
+
+la Home poteva mostrare:
+
+"Prossimo problema copertura"
+
+anche quando:
+
+- il Calendario risultava coperto
+- la rete supporto copriva realmente la fascia
+
+👉 Home e Calendario NON leggevano la stessa verità.
+
+---
+
+## ✅ FIX STRUTTURALE
+
+La Home ora usa:
+
+- stessi range reali
+- stessa logica copertura
+- stessi SchoolCoverChoice effettivi
+- stessa lettura rete supporto
+
+del Calendario.
+
+---
+
+## 🔧 NUOVA REGOLA
+
+La Home NON deve:
+
+- reinterpretare la copertura
+- semplificare la logica
+- avere fallback diversi
+
+👉 deve leggere la stessa verità del motore.
+
+---
+
+## 🔥 CONSEGUENZA ARCHITETTURALE
+
+La Home evolve definitivamente da:
+
+"dashboard con riassunti"
+
+a:
+
+"vista decisionale del motore reale"
+
+---
+
+## ✅ EVENTI REALI MULTI-PERSONA
+
+Nuova regola introdotta:
+
+se un Evento Reale coinvolge:
+
+- Matteo
+- Chiara
+- Alice
+
+ALLORA:
+
+✔ Alice è considerata dentro evento reale  
+✔ NON viene generato buco casa  
+✔ NON compare falso problema Home  
+
+---
+
+## 🧠 PRINCIPIO REALTÀ
+
+Evento familiare condiviso ≠ Alice sola a casa
+
+---
+
+## 🔥 STATO RAGGIUNTO
+
+✔ Home sincronizzata col motore reale  
+✔ Supporto reale coerente  
+✔ Eventi multi-persona coerenti  
+✔ Eliminati falsi problemi Home  
+✔ Navigazione “Vai” coerente col giorno reale  
+
+---
+
+## 🚀 NUOVA FASE UFFICIALE
+
+# MOTORE PRESENZA REALE ALICE
+
+Direzione ufficiale:
+
+creare una sorgente unica che definisce:
+
+👉 dove si trova Alice realmente
+
+e far leggere da lì:
+
+- CoverageEngine
+- Home
+- IPS futuro
+- conflitti
+- supporto
+- logica accompagnamento
+
+---
+
+## 📌 ROADMAP AGGIORNATA
+
+☑ Home ↔ Coverage allineati  
+☑ Supporto reale sincronizzato  
+☑ Alice dentro evento reale = no falso buco  
+☑ Eventi multi-persona coerenti  
+
+⬜ alice_presence_engine.dart
+⬜ stato presenza centralizzato
+⬜ rimozione doppioni logici
+⬜ lettura unica presenza Alice
+⬜ IPS presenza-aware
+⬜ conflitti presenza reale

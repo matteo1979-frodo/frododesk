@@ -92,3 +92,131 @@ Calendario reale.
 File principale:
 
 lib/screens/calendario_screen_stepa.dart
+
+---
+
+# 🔄 AGGIORNAMENTO 11 Maggio 2026
+
+# NUOVA DIREZIONE ARCHITETTURALE — PRESENZA REALE
+
+## PRINCIPIO
+
+Il sistema sta evolvendo da:
+
+❌ simulazione eventi
+
+👉 a
+
+✔ simulazione presenza reale della famiglia nel tempo
+
+---
+
+# PROBLEMA ARCHITETTURALE IDENTIFICATO
+
+La presenza reale di Alice è oggi distribuita tra più moduli:
+
+- SchoolStore
+- AliceEventStore
+- RealEventStore
+- SupportNetworkStore
+- CoverageEngine
+- Home
+- Stato Ora
+
+Questo crea rischio futuro di:
+
+❌ duplicazioni logiche  
+❌ incoerenze  
+❌ falsi buchi  
+❌ divergenza Home ↔ Calendario ↔ Coverage  
+
+---
+
+# NUOVA DIREZIONE DECISA
+
+La presenza reale deve essere centralizzata.
+
+---
+
+# NUOVO ENGINE PREVISTO
+
+## alice_presence_engine.dart
+
+Responsabilità:
+
+✔ determinare dove si trova Alice realmente  
+✔ determinare se Alice è a casa  
+✔ determinare se Alice è dentro evento reale  
+✔ determinare se Alice è accompagnata  
+✔ determinare se Alice è coperta da supporto  
+✔ fornire una sola verità al sistema  
+
+---
+
+# PRINCIPIO ARCHITETTURALE NUOVO
+
+CoverageEngine NON deve continuare ad accumulare logiche presenza Alice.
+
+👉 deve leggere una sorgente unica.
+
+---
+
+# FLUSSO FUTURO CORRETTO
+
+SchoolStore
+↓
+AliceEventStore
+↓
+RealEventStore
+↓
+SupportNetworkStore
+↓
+alice_presence_engine.dart
+↓
+CoverageEngine / Home / IPS / UI
+
+---
+
+# NUOVO CONCETTO STRUTTURALE
+
+Il sistema deve distinguere:
+
+- evento
+- posizione reale
+- copertura reale
+
+---
+
+# ESEMPIO IMPORTANTE
+
+Evento reale:
+
+- Matteo
+- Chiara
+- Alice
+
+NON significa:
+
+❌ Alice a casa
+
+MA:
+
+✔ famiglia fuori insieme
+
+---
+
+# OBIETTIVO
+
+Una sola verità centrale sulla presenza reale di Alice.
+
+---
+
+# DIREZIONE FUTURA
+
+Questa architettura sarà la base per:
+
+- IPS reale
+- statistiche reali
+- timeline presenza
+- comportamento autonomo futuro
+- simulazione familiare avanzata

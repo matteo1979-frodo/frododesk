@@ -64,3 +64,98 @@ DateTime(
   now.hour,
   now.minute
 )
+
+---
+
+# 🔄 AGGIORNAMENTO 11 Maggio 2026
+
+## 🔥 EVOLUZIONE — PRESENZA REALE ALICE
+
+Lo stato di Alice NON deve più essere derivato solo da:
+
+- scuola
+- centro estivo
+- evento attivo
+
+👉 ma dalla presenza reale simulata nel tempo.
+
+---
+
+## NUOVO PRINCIPIO
+
+La domanda reale del sistema diventa:
+
+👉 “Dove si trova Alice ORA?”
+
+NON:
+
+❌ “Che evento ha?”
+
+---
+
+## NUOVI STATI PREVISTI
+
+Alice può risultare:
+
+✔ a casa  
+✔ a scuola  
+✔ al centro estivo  
+✔ dentro evento Alice  
+✔ accompagnata da adulto  
+✔ dentro evento reale multi-persona  
+✔ coperta da supporto  
+⬜ autonoma futura  
+
+---
+
+## 🔥 NUOVA REGOLA — EVENTO REALE CON ALICE
+
+Se Alice partecipa a un evento reale:
+
+👉 durante quell’intervallo NON è considerata a casa.
+
+---
+
+## CASO IMPORTANTE
+
+Evento reale:
+
+- Matteo
+- Chiara
+- Alice
+
+Prima:
+
+❌ Alice risultava a casa  
+❌ possibile falso buco copertura  
+
+Ora:
+
+✔ Alice è considerata dentro l’evento reale  
+✔ nessun falso buco  
+✔ Home e Calendario coerenti  
+
+---
+
+## 🔥 DIREZIONE STRUTTURALE
+
+Lo Stato Ora dovrà evolvere verso un motore unico:
+
+`alice_presence_engine.dart`
+
+Responsabilità futura:
+
+✔ determinare presenza reale Alice  
+✔ fornire stato coerente a:
+- CoverageEngine
+- Home
+- Stato Ora
+- IPS futuro
+
+---
+
+## PRINCIPIO ARCHITETTURALE
+
+La presenza reale di Alice NON deve essere ricostruita in più punti del sistema.
+
+👉 Una sola verità centrale.

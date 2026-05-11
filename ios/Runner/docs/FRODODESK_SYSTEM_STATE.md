@@ -939,3 +939,181 @@ Le companion generate da evento:
 ✔ test reale completato
 ✔ sincronizzazione eventi funzionante
 ✔ cleanup lifecycle funzionante
+
+---
+
+## 🔄 AGGIORNAMENTO 11 Maggio 2026
+
+### MOTORE PRESENZA REALE ALICE — NUOVA FASE STRUTTURALE
+
+---
+
+## 🔥 CAMBIO DI PRIORITÀ UFFICIALE
+
+La priorità operativa del progetto cambia.
+
+❌ IPS NON è più la prossima fase immediata  
+❌ Eventi Alice → Eventi Globali NON è più il focus principale  
+
+👉 Prima serve completare:
+
+# MOTORE PRESENZA REALE ALICE
+
+---
+
+## 🧠 PROBLEMA STRUTTURALE IDENTIFICATO
+
+Durante i test reali è emerso che la presenza di Alice è ancora distribuita tra più logiche separate:
+
+- scuola
+- eventi Alice
+- companion
+- supporto
+- eventi reali multi-persona
+- stato casa
+- copertura
+
+Questo crea rischio futuro di:
+
+❌ duplicazioni logiche  
+❌ falsi buchi  
+❌ incoerenze Home ↔ Calendario  
+❌ IPS non affidabile  
+
+---
+
+## 🔥 NUOVO OBIETTIVO STRUTTURALE
+
+Creare una sorgente unica di verità che risponda a:
+
+👉 “Dove si trova realmente Alice?”
+
+---
+
+## 🧱 NUOVO BLOCCO ATTIVO
+
+# BLOCCO G — MOTORE PRESENZA REALE ALICE
+
+Stato: AVVIATO
+
+---
+
+## OBIETTIVO
+
+Centralizzare:
+
+✔ presenza reale Alice  
+✔ accompagnamento  
+✔ supporto  
+✔ scuola  
+✔ eventi  
+✔ ritorno a casa  
+✔ stato reale temporale  
+
+in un solo motore centrale.
+
+---
+
+## 🔥 NUOVO MOTORE PREVISTO
+
+## alice_presence_engine.dart
+
+Responsabilità:
+
+✔ determinare presenza reale Alice  
+✔ determinare se Alice è coperta  
+✔ determinare se Alice è accompagnata  
+✔ determinare se Alice è fuori casa  
+✔ eliminare doppioni logici  
+
+---
+
+## 🧠 STATI PRESENZA PREVISTI
+
+✔ casa  
+✔ scuola  
+✔ evento  
+✔ accompagnata  
+✔ supporto  
+✔ centro estivo  
+✔ fuori con famiglia  
+⬜ autonoma futura  
+
+---
+
+## 🔥 FIX GIÀ CONSOLIDATI
+
+✔ Alice dentro evento reale = niente falso buco  
+✔ Home ↔ Coverage coerenti  
+✔ Supporto reale sincronizzato  
+✔ Eventi multi-persona integrati  
+✔ Companion lifecycle stabile  
+
+---
+
+## 🧠 NUOVO PRINCIPIO CONSOLIDATO
+
+Evento condiviso famigliare ≠ Alice sola a casa.
+
+---
+
+## 📌 STATO ATTUALE REALE
+
+Il sistema ora:
+
+✔ simula la presenza reale  
+✔ collega Alice ↔ adulto ↔ copertura  
+✔ distingue accompagnamento da semplice evento  
+✔ inizia a modellare la realtà fisica della famiglia  
+
+---
+
+## 🚀 ROADMAP OPERATIVA NUOVA
+
+### COMPLETATI
+
+☑ eventi accompagnati  
+☑ companion automatiche  
+☑ supporto sincronizzato  
+☑ eventi multi-persona  
+☑ Home coerente col motore reale  
+☑ eliminazione falsi buchi principali  
+
+---
+
+### PROSSIMI STEP
+
+⬜ creare `alice_presence_engine.dart`  
+⬜ centralizzare presenza reale Alice  
+⬜ far leggere CoverageEngine dal nuovo motore  
+⬜ far leggere Home dal nuovo motore  
+⬜ eliminare doppioni logici presenza  
+⬜ introdurre test presenza reale  
+⬜ solo dopo → riallineamento IPS  
+
+---
+
+## 🔥 NUOVA DIREZIONE PROGETTO
+
+Il sistema sta passando da:
+
+❌ calendario intelligente
+
+👉 a
+
+✔ simulazione reale della presenza familiare
+
+---
+
+## 🎯 NUOVA PROSSIMA FASE UFFICIALE
+
+Ripartiamo da FrodoDesk — BLOCCO G: Motore Presenza Reale Alice.
+
+STEP 1:
+👉 creare `alice_presence_engine.dart`
+
+STEP 2:
+👉 centralizzare la presenza reale Alice
+
+STEP 3:
+👉 far leggere CoverageEngine e Home dalla stessa verità

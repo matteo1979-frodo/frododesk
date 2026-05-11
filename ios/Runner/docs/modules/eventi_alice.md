@@ -289,3 +289,106 @@ Questa modifica:
 
 👉 elimina dipendenze pericolose  
 👉 rende il sistema scalabile
+
+---
+
+# 🔥 AGGIORNAMENTO STRUTTURALE — MAGGIO 2026
+
+## ✅ EVENTI REALI FAMILIARI
+
+Nuova regola reale introdotta nel motore:
+
+👉 se Alice partecipa a un Evento Reale insieme ai genitori
+
+ALLORA:
+
+- Alice NON è considerata "a casa"
+- NON viene generato buco automatico
+- Home e Calendario leggono Alice come "dentro evento reale"
+
+---
+
+## 🧠 PRINCIPIO REALTÀ
+
+Prima:
+
+evento reale = solo genitore occupato
+
+Ora:
+
+evento reale con Alice = famiglia insieme fuori casa
+
+👉 il sistema distingue:
+
+- genitore fuori
+- Alice a casa
+
+DA:
+
+- famiglia insieme all’evento
+
+---
+
+## 🔧 FIX MOTORE INTRODOTTO
+
+Nuova funzione strutturale:
+
+- `_isAliceInsideRealEvent()`
+
+Utilizzata dentro:
+
+- analyzeDayV2()
+
+per impedire falsi buchi:
+
+- "Alice a casa"
+- "Alice a casa dopo evento"
+
+quando Alice è realmente dentro l’evento.
+
+---
+
+## ✅ RISULTATO
+
+Corretto il bug:
+
+❌ falso rischio:
+"Matteo fuori per evento reale"
+mentre Alice era dentro lo stesso evento
+
+✔ ora il sistema:
+- non genera buco
+- non genera rischio Home
+- considera Alice presente con i genitori
+
+---
+
+## 🚀 NUOVA DIREZIONE UFFICIALE
+
+Il sistema entra ora nella fase:
+
+# "Motore presenza reale Alice"
+
+Obiettivo:
+
+non ragionare più per eventi sparsi,
+ma tramite UNA sorgente unica di verità:
+
+👉 "Dove si trova realmente Alice?"
+
+---
+
+## 📌 ROADMAP UFFICIALE
+
+☑ Evento logistico Alice  
+☑ Accompagnamento / ritiro  
+☑ Supporto reale sincronizzato  
+☑ Alice dentro evento reale = niente falso buco  
+
+⬜ Creare `alice_presence_engine.dart`
+⬜ Stati presenza Alice centralizzati
+⬜ CoverageEngine legge il motore presenza
+⬜ Home legge il motore presenza
+⬜ Pulizia doppioni logici
+⬜ Test presenza reale complessi
+⬜ Collegamento IPS futuro

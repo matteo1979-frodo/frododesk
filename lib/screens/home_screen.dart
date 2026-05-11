@@ -19,6 +19,7 @@ import '../logic/coverage_engine.dart';
 import '../logic/day_settings_store.dart';
 import 'statistiche_screen.dart';
 import '../widgets/home_people_panel.dart';
+import '../logic/alice_events/alice_event_behavior.dart';
 
 class HomeScreen extends StatefulWidget {
   final IpsStore ipsStore;
@@ -38,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   CoreStore get coreStore => widget.coreStore;
   SettingsStore get settingsStore => coreStore.settingsStore;
   IpsStore get ipsStore => widget.ipsStore;
+  CoverageEngine get _engine => coreStore.coverageEngine;
 
   String _actionLabelFromModule(snap.IpsModule module) {
     switch (module) {
@@ -60,11 +62,33 @@ class _HomeScreenState extends State<HomeScreen> {
     return "$hh:$mm";
   }
 
+  bool _isSchoolInGapLabel(dynamic label) {
+    final l = label.toString().toLowerCase();
+
+    return l.contains("ingresso") ||
+        l.contains("accompagnamento") ||
+        l.contains("scuola");
+  }
+
+  bool _isSchoolOutGapLabel(dynamic label) {
+    final l = label.toString().toLowerCase();
+
+    return l.contains("uscita") ||
+        l.contains("ritiro") ||
+        l.contains("rientro");
+  }
+
+  bool _isLunchGapLabel(dynamic label) {
+    final l = label.toString().toLowerCase();
+
+    return l.contains("pranzo") || l.contains("uscita anticipata");
+  }
+
   List<CoverageGapDetail> _todayCoverageDetails() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    return coreStore.coverageEngine.aliceHomeRiskDetailsForDay(
+    final rawDetails = coreStore.coverageEngine.aliceHomeRiskDetailsForDay(
       day: today,
       uscita13:
           coreStore.daySettingsStore.uscita13ForDay(today) ??
@@ -102,6 +126,56 @@ class _HomeScreenState extends State<HomeScreen> {
         today,
       ),
     );
+
+    return rawDetails.where((detail) {
+      final gapStart = DateTime(
+        today.year,
+        today.month,
+        today.day,
+        detail.start.hour,
+        detail.start.minute,
+      );
+
+      final gapEnd = DateTime(
+        today.year,
+        today.month,
+        today.day,
+        detail.end.hour,
+        detail.end.minute,
+      );
+
+      for (final person in coreStore.supportNetworkStore.people) {
+        if (!person.enabled) continue;
+
+        final enabledForDay = coreStore.daySettingsStore
+            .isSupportPersonEnabledForDay(today, person.id);
+
+        if (!enabledForDay) continue;
+
+        final supportStart = DateTime(
+          today.year,
+          today.month,
+          today.day,
+          person.start.hour,
+          person.start.minute,
+        );
+
+        final supportEnd = DateTime(
+          today.year,
+          today.month,
+          today.day,
+          person.end.hour,
+          person.end.minute,
+        );
+
+        final covers =
+            !supportStart.isAfter(gapStart) && !supportEnd.isBefore(gapEnd);
+
+        if (covers) return false;
+      }
+
+      return true;
+    }).toList();
   }
 
   _HomeCoverageIssue? _relevantCoverageIssueFromNow() {
@@ -135,55 +209,199 @@ class _HomeScreenState extends State<HomeScreen> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
+    bool supportCoversRange({
+      required DateTime day,
+      required TimeOfDay start,
+      required TimeOfDay end,
+    }) {
+      final d0 = DateTime(day.year, day.month, day.day);
+
+      final rangeStart = DateTime(
+        d0.year,
+        d0.month,
+        d0.day,
+        start.hour,
+        start.minute,
+      );
+
+      final rangeEnd = DateTime(
+        d0.year,
+        d0.month,
+        d0.day,
+        end.hour,
+        end.minute,
+      );
+
+      for (final person in coreStore.supportNetworkStore.people) {
+        if (!person.enabled) continue;
+
+        final enabledForDay = coreStore.daySettingsStore
+            .isSupportPersonEnabledForDay(d0, person.id);
+
+        if (!enabledForDay) continue;
+
+        final supportStart = DateTime(
+          d0.year,
+          d0.month,
+          d0.day,
+          person.start.hour,
+          person.start.minute,
+        );
+
+        final supportEnd = DateTime(
+          d0.year,
+          d0.month,
+          d0.day,
+          person.end.hour,
+          person.end.minute,
+        );
+
+        final coversFullRange =
+            !supportStart.isAfter(rangeStart) && !supportEnd.isBefore(rangeEnd);
+
+        if (coversFullRange) return true;
+      }
+
+      return false;
+    }
+
     for (int i = 1; i <= 30; i++) {
       final day = today.add(Duration(days: i));
+      final d0 = DateTime(day.year, day.month, day.day);
 
-      final details = coreStore.coverageEngine.aliceHomeRiskDetailsForDay(
-        day: day,
-        uscita13:
-            coreStore.daySettingsStore.uscita13ForDay(day) ??
-            settingsStore.isUscita13,
-        sandraMattinaOn:
-            coreStore.daySettingsStore.sandraMattinaForDay(day) ?? false,
-        sandraPranzoOn:
-            coreStore.daySettingsStore.sandraPranzoForDay(day) ?? false,
-        sandraSeraOn: coreStore.daySettingsStore.sandraSeraForDay(day) ?? false,
-        schoolStart: TimeOfDay(
-          hour:
-              (coreStore.schoolStore.schoolDayConfigFor(day)?.entryMinutes ??
-                  505) ~/
-              60,
-          minute:
-              (coreStore.schoolStore.schoolDayConfigFor(day)?.entryMinutes ??
-                  505) %
-              60,
-        ),
+      final uscitaAt = coreStore.daySettingsStore.uscitaAnticipataTimeForDay(
+        d0,
+      );
+
+      final uscita13Eff = uscitaAt != null;
+
+      final cfg = coreStore.schoolStore
+          .activePeriodForDay(d0)
+          ?.weekConfig
+          .forWeekday(d0.weekday);
+
+      final schoolStart = TimeOfDay(
+        hour: (cfg?.entryMinutes ?? 505) ~/ 60,
+        minute: (cfg?.entryMinutes ?? 505) % 60,
+      );
+
+      final ingressoInizio = TimeOfDay(
+        hour: ((schoolStart.hour * 60 + schoolStart.minute - 20) ~/ 60) % 24,
+        minute: (schoolStart.hour * 60 + schoolStart.minute - 20) % 60,
+      );
+
+      final schoolOutStart =
+          coreStore.daySettingsStore.schoolOutStartForDay(d0) ??
+          TimeOfDay(
+            hour: (cfg?.exitRealMinutes ?? 985) ~/ 60,
+            minute: (cfg?.exitRealMinutes ?? 985) % 60,
+          );
+
+      final schoolOutEnd =
+          coreStore.daySettingsStore.schoolOutEndForDay(d0) ??
+          TimeOfDay(
+            hour: (cfg?.returnHomeMinutes ?? 1035) ~/ 60,
+            minute: (cfg?.returnHomeMinutes ?? 1035) % 60,
+          );
+
+      final savedSchoolInCover = coreStore.daySettingsStore.schoolInCoverForDay(
+        d0,
+      );
+
+      final savedSchoolOutCover = coreStore.daySettingsStore
+          .schoolOutCoverForDay(d0);
+
+      final savedLunchCover = coreStore.daySettingsStore.lunchCoverForDay(d0);
+
+      final supportCoversIn = supportCoversRange(
+        day: d0,
+        start: ingressoInizio,
+        end: schoolStart,
+      );
+
+      final supportCoversOut = supportCoversRange(
+        day: d0,
+        start: schoolOutStart,
+        end: schoolOutEnd,
+      );
+
+      final supportCoversLunch =
+          uscitaAt != null &&
+          supportCoversRange(
+            day: d0,
+            start: uscitaAt,
+            end: _engine.sandraPranzoEnd,
+          );
+
+      final schoolInCover = savedSchoolInCover != SchoolCoverChoice.none
+          ? savedSchoolInCover
+          : supportCoversIn
+          ? SchoolCoverChoice.altro
+          : SchoolCoverChoice.none;
+
+      final schoolOutCover = savedSchoolOutCover != SchoolCoverChoice.none
+          ? savedSchoolOutCover
+          : supportCoversOut
+          ? SchoolCoverChoice.altro
+          : SchoolCoverChoice.none;
+
+      final lunchCover = savedLunchCover != SchoolCoverChoice.none
+          ? savedLunchCover
+          : supportCoversLunch
+          ? SchoolCoverChoice.altro
+          : SchoolCoverChoice.none;
+
+      final analysis = _engine.analyzeDay(
+        day: d0,
+        uscita13: uscita13Eff,
+        sandraAvailable:
+            (coreStore.daySettingsStore.sandraMattinaForDay(d0) ?? false) ||
+            (coreStore.daySettingsStore.sandraPranzoForDay(d0) ?? false) ||
+            (coreStore.daySettingsStore.sandraSeraForDay(d0) ?? false),
         overrides: coreStore.overrideStore.getEffectiveForDay(
-          day: day,
+          day: d0,
           ferieStore: coreStore.feriePeriodStore,
         ),
         ferieStore: coreStore.feriePeriodStore,
-        schoolInCover: coreStore.daySettingsStore.schoolInCoverForDay(day),
-        schoolOutCover: coreStore.daySettingsStore.schoolOutCoverForDay(day),
-        schoolOutStart:
-            coreStore.daySettingsStore.schoolOutStartForDay(day) ??
-            const TimeOfDay(hour: 16, minute: 25),
-        schoolOutEnd:
-            coreStore.daySettingsStore.schoolOutEndForDay(day) ??
-            const TimeOfDay(hour: 16, minute: 45),
-        lunchCover: coreStore.daySettingsStore.lunchCoverForDay(day),
-        uscitaAnticipataAt: coreStore.daySettingsStore
-            .uscitaAnticipataTimeForDay(day),
+        schoolInCover: schoolInCover,
+        schoolOutCover: schoolOutCover,
+        schoolOutStart: schoolOutStart,
+        schoolOutEnd: schoolOutEnd,
+        lunchCover: lunchCover,
+        uscitaAnticipataAt: uscitaAt,
       );
 
-      if (details.isNotEmpty) {
-        details.sort((a, b) {
+      final filteredDetails = analysis.details.where((d) {
+        final label = d.label;
+
+        if (schoolInCover != SchoolCoverChoice.none &&
+            _isSchoolInGapLabel(label)) {
+          return false;
+        }
+
+        if (!uscita13Eff &&
+            schoolOutCover != SchoolCoverChoice.none &&
+            _isSchoolOutGapLabel(label)) {
+          return false;
+        }
+
+        if (uscita13Eff &&
+            lunchCover != SchoolCoverChoice.none &&
+            _isLunchGapLabel(label)) {
+          return false;
+        }
+
+        return true;
+      }).toList();
+
+      if (filteredDetails.isNotEmpty) {
+        filteredDetails.sort((a, b) {
           final aStart = a.start.hour * 60 + a.start.minute;
           final bStart = b.start.hour * 60 + b.start.minute;
           return aStart.compareTo(bStart);
         });
 
-        return _HomeCoverageIssue(day: day, details: details);
+        return _HomeCoverageIssue(day: d0, details: filteredDetails);
       }
     }
 
@@ -1289,7 +1507,9 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                "Prossimo problema copertura: Alice scoperta $dayLabel ${_formatTime(first.start)}–${_formatTime(first.end)}",
+                first.label.contains(":")
+                    ? "Prossimo problema: $dayLabel • ${first.label} • ${first.lines.isNotEmpty ? first.lines.first : "logistica da completare"}"
+                    : "Prossimo problema copertura: Alice scoperta $dayLabel ${_formatTime(first.start)}–${_formatTime(first.end)}",
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.85),
                   fontWeight: FontWeight.w600,
@@ -2208,20 +2428,16 @@ class _HomeScreenState extends State<HomeScreen> {
         final todayDetails = todayIssue?.details ?? [];
 
         final bool hasTodayCoverageIssue = todayIssue != null;
-        final bool hasIpsIssue = ips.level != snap.IpsLevel.green;
-        final bool hasIssue = hasTodayCoverageIssue || hasIpsIssue;
+        final bool hasIpsIssue = false;
+        final bool hasIssue = hasTodayCoverageIssue;
 
         final color = hasTodayCoverageIssue
             ? const Color(0xFFE57373)
-            : _levelColor(ips.level);
+            : const Color(0xFF8BC34A);
 
         final stateText = hasTodayCoverageIssue
             ? "✋ Problema oggi"
-            : "${ips.level == snap.IpsLevel.green
-                  ? "😌"
-                  : ips.level == snap.IpsLevel.yellow
-                  ? "😐"
-                  : "😨"} ${_stateTextFromLevel(ips.level)}";
+            : "😌 Sistema stabilizzato";
 
         final mainSentence = hasTodayCoverageIssue
             ? "Oggi: Alice non coperta"

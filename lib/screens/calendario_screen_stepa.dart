@@ -2256,6 +2256,46 @@ class _CalendarioScreenStepAStabileState
     final bool lunchHelp =
         uscita13Eff && _effectiveLunchCover(d0) != SchoolCoverChoice.none;
 
+    final logisticAliceEvents = coreStore.aliceSpecialEventStore
+        .eventsForDay(d0)
+        .where((e) => e.behavior == AliceEventBehavior.logistic)
+        .toList();
+
+    final hasIncompleteLogistics = logisticAliceEvents.any(
+      (e) =>
+          !_aliceEventEngine.hasDropOffAssigned(e) ||
+          !_aliceEventEngine.hasPickUpAssigned(e),
+    );
+
+    final hasLogisticConflict = logisticAliceEvents.any((e) {
+      final usesMatteo = _aliceEventEngine.usesMatteo(e);
+      final usesChiara = _aliceEventEngine.usesChiara(e);
+
+      final start = DateTime(
+        d0.year,
+        d0.month,
+        d0.day,
+        e.start.hour,
+        e.start.minute,
+      );
+
+      final end = DateTime(d0.year, d0.month, d0.day, e.end.hour, e.end.minute);
+
+      final matteoBusy = usesMatteo && _engine.isMatteoBusyBetween(start, end);
+
+      final chiaraBusy = usesChiara && _engine.isChiaraBusyBetween(start, end);
+
+      return matteoBusy || chiaraBusy;
+    });
+
+    if (hasLogisticConflict) {
+      return DayGapVisualState.realGap;
+    }
+
+    if (hasIncompleteLogistics) {
+      return DayGapVisualState.coveredNeed;
+    }
+
     if (sandraHelps || schoolInHelp || schoolOutHelp || lunchHelp) {
       return DayGapVisualState.coveredNeed;
     }
@@ -4562,7 +4602,11 @@ class _CalendarioScreenStepAStabileState
                 margin: const EdgeInsets.only(left: 8),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: cov.ok ? Colors.green : Colors.red,
+                  color: _dayGapVisualState(cov) == DayGapVisualState.realGap
+                      ? Colors.red
+                      : _dayGapVisualState(cov) == DayGapVisualState.coveredNeed
+                      ? Colors.orange
+                      : Colors.green,
                 ),
               ),
             ],
