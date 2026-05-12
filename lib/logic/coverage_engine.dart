@@ -2559,42 +2559,11 @@ class CoverageEngine {
     required DateTime fasciaStart,
     required DateTime fasciaEnd,
   }) {
-    final d0 = _onlyDate(day);
-
-    for (final person in supportNetworkStore.people) {
-      if (!person.enabled) continue;
-
-      final enabledForDay = daySettingsStore.isSupportPersonEnabledForDay(
-        d0,
-        person.id,
-      );
-      if (!enabledForDay) continue;
-
-      final supportStart = DateTime(
-        d0.year,
-        d0.month,
-        d0.day,
-        person.start.hour,
-        person.start.minute,
-      );
-
-      final supportEnd = DateTime(
-        d0.year,
-        d0.month,
-        d0.day,
-        person.end.hour,
-        person.end.minute,
-      );
-
-      final coversFullRange =
-          !supportStart.isAfter(fasciaStart) && !supportEnd.isBefore(fasciaEnd);
-
-      if (coversFullRange) {
-        return true;
-      }
-    }
-
-    return false;
+    return _presenceEngine().isCoveredBySupportNetwork(
+      day: day,
+      start: fasciaStart,
+      end: fasciaEnd,
+    );
   }
 
   bool _overlapsImps({
