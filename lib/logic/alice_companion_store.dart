@@ -125,4 +125,40 @@ class AliceCompanionStore {
 
     return false;
   }
+
+  AliceCompanionEntry? findCompanionForRange({
+    required DateTime day,
+    required DateTime start,
+    required DateTime end,
+  }) {
+    final d0 = DateTime(day.year, day.month, day.day);
+
+    final entries = entriesForDay(d0);
+
+    for (final entry in entries) {
+      final entryStart = DateTime(
+        d0.year,
+        d0.month,
+        d0.day,
+        entry.start.hour,
+        entry.start.minute,
+      );
+
+      final entryEnd = DateTime(
+        d0.year,
+        d0.month,
+        d0.day,
+        entry.end.hour,
+        entry.end.minute,
+      );
+
+      final covers = !entryStart.isAfter(start) && !entryEnd.isBefore(end);
+
+      if (covers) {
+        return entry;
+      }
+    }
+
+    return null;
+  }
 }

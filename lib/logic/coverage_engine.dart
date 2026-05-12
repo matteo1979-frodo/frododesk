@@ -137,7 +137,7 @@ class CoverageEngine {
   }
 
   bool isAliceAtHomeDay(DateTime day) {
-    return aliceEventStore.isAliceAtHomeDay(day);
+    return _presenceEngine().isAliceAtHomeDay(day);
   }
 
   bool isAliceExternalActivityDay(DateTime day) {
@@ -145,51 +145,31 @@ class CoverageEngine {
   }
 
   bool isAliceSchoolNormalDay(DateTime day) {
-    final d0 = _onlyDate(day);
-
-    final isWeekend =
-        d0.weekday == DateTime.saturday || d0.weekday == DateTime.sunday;
-    if (isWeekend) return false;
-
-    final type = aliceEventStore.getEventTypeForDay(d0);
-    if (type == AliceEventType.vacation ||
-        type == AliceEventType.sickness ||
-        type == AliceEventType.schoolClosure ||
-        type == AliceEventType.summerCamp) {
-      return false;
-    }
-
-    return schoolStore.hasSchoolOn(d0);
+    return _presenceEngine().isAliceSchoolNormalDay(day);
   }
 
   bool isAliceSummerCampOperationalDay(DateTime day) {
-    final period = aliceEventStore.getSummerCampPeriodForDay(day);
-    if (period == null) return false;
-
-    final special = summerCampSpecialEventStore.getForDay(day);
-    final config = summerCampScheduleStore.getConfigForDay(day);
-
-    return special?.enabled ?? config.enabled;
+    return _presenceEngine().isAliceSummerCampOperationalDay(day);
   }
 
   AliceEventType? getAliceEventTypeForDay(DateTime day) {
-    return aliceEventStore.getEventTypeForDay(day);
+    return _presenceEngine().getAliceEventTypeForDay(day);
   }
 
   AliceEventPeriod? getSummerCampPeriodForDay(DateTime day) {
-    return aliceEventStore.getSummerCampPeriodForDay(day);
+    return _presenceEngine().getSummerCampPeriodForDay(day);
   }
 
   SummerCampDayConfig getSummerCampConfigForDay(DateTime day) {
-    return summerCampScheduleStore.getEffectiveConfigForDay(day);
+    return _presenceEngine().getSummerCampConfigForDay(day);
   }
 
   SummerCampSpecialEvent? getSummerCampSpecialEventForDay(DateTime day) {
-    return summerCampSpecialEventStore.getForDay(day);
+    return _presenceEngine().getSummerCampSpecialEventForDay(day);
   }
 
   bool hasSummerCampSpecialEventForDay(DateTime day) {
-    return summerCampSpecialEventStore.hasEventForDay(day);
+    return _presenceEngine().hasSummerCampSpecialEventForDay(day);
   }
 
   bool isSupportNetworkAvailableForRange({
@@ -718,7 +698,11 @@ class CoverageEngine {
 
     final presenceEngine = _presenceEngine();
 
-    final bool aliceAtHome = presenceEngine.isAliceAtHomeDay(d0);
+    final bool aliceAtHome = presenceEngine.isAliceAtHomeDuringRange(
+      day: d0,
+      start: DateTime(d0.year, d0.month, d0.day, 7, 30),
+      end: DateTime(d0.year, d0.month, d0.day, 23, 59),
+    );
 
     final aliceType = getAliceEventTypeForDay(d0);
 
@@ -1144,15 +1128,9 @@ class CoverageEngine {
         }
 
         final campOutStart = _atTime(d0, effectiveEnd);
-        final campOutEnd = DateTime(
-          d0.year,
-          d0.month,
-          d0.day,
-          sandraSeraStart.hour,
-          sandraSeraStart.minute,
-        );
+        final campOutEnd = campOutStart.add(const Duration(minutes: 20));
         final labelCampOut =
-            "Alice centro estivo uscita: ${_fmt(effectiveEnd)}–18:00";
+            "Alice centro estivo uscita: ${_fmt(effectiveEnd)}–${_fmtTimeDate(campOutEnd)}";
 
         final campOutCoveredInReality = _isFasciaCovered(
           day: d0,
@@ -1175,6 +1153,25 @@ class CoverageEngine {
               fasciaEnd: campOutEnd,
               isHomePresenceWindow: false,
               allowSandra: true,
+            ),
+          );
+        }
+
+        final homeAfterCampStart = campOutEnd;
+        final homeAfterCampEnd = _atTime(d0, sandraSeraStart);
+
+        if (homeAfterCampEnd.isAfter(homeAfterCampStart)) {
+          entries.addAll(
+            _uncoveredHomeSegments(
+              day: d0,
+              windowStart: homeAfterCampStart,
+              windowEnd: homeAfterCampEnd,
+              labelPrefix: 'Alice a casa dopo centro estivo',
+              sandraMattinaAvailable: effSandraMattina,
+              sandraPranzoAvailable: effSandraPranzo,
+              sandraSeraAvailable: effSandraSera,
+              overrides: overrides,
+              ferieStore: ferieStore,
             ),
           );
         }
@@ -2682,6 +2679,9 @@ class CoverageEngine {
       schoolStore: schoolStore,
       summerCampScheduleStore: summerCampScheduleStore,
       summerCampSpecialEventStore: summerCampSpecialEventStore,
+      aliceCompanionStore: aliceCompanionStore,
+      supportNetworkStore: supportNetworkStore,
+      daySettingsStore: daySettingsStore,
     );
   }
 
@@ -2697,7 +2697,9 @@ class CoverageEngine {
     );
 
     return state == AlicePresenceState.realEvent ||
-        state == AlicePresenceState.timedEvent;
+        state == AlicePresenceState.timedEvent ||
+        state == AlicePresenceState.support ||
+        state == AlicePresenceState.accompanied;
   }
 
   bool _isAliceHomeLabel(String label) {

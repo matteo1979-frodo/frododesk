@@ -7,6 +7,9 @@ import 'school_store.dart';
 import 'summer_camp_schedule_store.dart';
 import 'summer_camp_special_event_store.dart';
 import '../models/alice_presence_state.dart';
+import 'alice_companion_store.dart';
+import 'support_network_store.dart';
+import 'day_settings_store.dart';
 
 class AlicePresenceEngine {
   final AliceEventStore aliceEventStore;
@@ -15,6 +18,9 @@ class AlicePresenceEngine {
   final SchoolStore schoolStore;
   final SummerCampScheduleStore summerCampScheduleStore;
   final SummerCampSpecialEventStore summerCampSpecialEventStore;
+  final AliceCompanionStore aliceCompanionStore;
+  final SupportNetworkStore supportNetworkStore;
+  final DaySettingsStore daySettingsStore;
 
   const AlicePresenceEngine({
     required this.aliceEventStore,
@@ -23,6 +29,9 @@ class AlicePresenceEngine {
     required this.schoolStore,
     required this.summerCampScheduleStore,
     required this.summerCampSpecialEventStore,
+    required this.aliceCompanionStore,
+    required this.supportNetworkStore,
+    required this.daySettingsStore,
   });
 
   DateTime _onlyDate(DateTime day) {
@@ -31,6 +40,48 @@ class AlicePresenceEngine {
 
   DateTime _atTime(DateTime d0, time) {
     return DateTime(d0.year, d0.month, d0.day, time.hour, time.minute);
+  }
+
+  bool isCoveredBySupportNetwork({
+    required DateTime day,
+    required DateTime start,
+    required DateTime end,
+  }) {
+    final d0 = _onlyDate(day);
+
+    for (final person in supportNetworkStore.people) {
+      if (!person.enabled) continue;
+
+      final enabledForDay = daySettingsStore.isSupportPersonEnabledForDay(
+        d0,
+        person.id,
+      );
+
+      if (!enabledForDay) continue;
+
+      final supportStart = DateTime(
+        d0.year,
+        d0.month,
+        d0.day,
+        person.start.hour,
+        person.start.minute,
+      );
+
+      final supportEnd = DateTime(
+        d0.year,
+        d0.month,
+        d0.day,
+        person.end.hour,
+        person.end.minute,
+      );
+
+      final coversFullRange =
+          !supportStart.isAfter(start) && !supportEnd.isBefore(end);
+
+      if (coversFullRange) return true;
+    }
+
+    return false;
   }
 
   bool isAliceAtHomeDay(DateTime day) {
@@ -44,6 +95,35 @@ class AlicePresenceEngine {
         (!schoolStore.hasSchoolOn(d0) && !isAliceSummerCampOperationalDay(d0));
   }
 
+  AliceEventType? getAliceEventTypeForDay(DateTime day) {
+    return aliceEventStore.getEventTypeForDay(_onlyDate(day));
+  }
+
+  AliceEventPeriod? getSummerCampPeriodForDay(DateTime day) {
+    return aliceEventStore.getSummerCampPeriodForDay(_onlyDate(day));
+  }
+
+  SummerCampDayConfig getSummerCampConfigForDay(DateTime day) {
+    return summerCampScheduleStore.getEffectiveConfigForDay(_onlyDate(day));
+  }
+
+  SummerCampSpecialEvent? getSummerCampSpecialEventForDay(DateTime day) {
+    return summerCampSpecialEventStore.getForDay(_onlyDate(day));
+  }
+
+  bool hasSummerCampSpecialEventForDay(DateTime day) {
+    return summerCampSpecialEventStore.hasEventForDay(_onlyDate(day));
+  }
+
+  bool isAliceAtHomeDuringRange({
+    required DateTime day,
+    required DateTime start,
+    required DateTime end,
+  }) {
+    return stateForRange(day: day, start: start, end: end) ==
+        AlicePresenceState.home;
+  }
+
   AlicePresenceState stateForRange({
     required DateTime day,
     required DateTime start,
@@ -54,15 +134,29 @@ class AlicePresenceEngine {
     }
 
     if (isAliceInsideTimedEvent(day: day, start: start, end: end)) {
+      final companion = aliceCompanionStore.findCompanionForRange(
+        day: day,
+        start: start,
+        end: end,
+      );
+
+      if (companion != null) {
+        return AlicePresenceState.accompanied;
+      }
+
       return AlicePresenceState.timedEvent;
     }
 
-    if (isAliceSummerCampOperationalDay(day)) {
+    if (isAliceInsideSummerCampRange(day: day, start: start, end: end)) {
       return AlicePresenceState.summerCamp;
     }
 
-    if (isAliceSchoolNormalDay(day)) {
+    if (isAliceInsideSchoolRange(day: day, start: start, end: end)) {
       return AlicePresenceState.school;
+    }
+
+    if (isCoveredBySupportNetwork(day: day, start: start, end: end)) {
+      return AlicePresenceState.support;
     }
 
     return AlicePresenceState.home;
@@ -86,6 +180,74 @@ class AlicePresenceEngine {
     }
 
     return schoolStore.hasSchoolOn(d0);
+  }
+
+  bool isAliceInsideSchoolRange({
+    required DateTime day,
+    required DateTime start,
+    required DateTime end,
+  }) {
+    final d0 = _onlyDate(day);
+
+    if (!isAliceSchoolNormalDay(d0)) return false;
+
+    final cfg = schoolStore
+        .activePeriodForDay(d0)
+        ?.weekConfig
+        .forWeekday(d0.weekday);
+
+    if (cfg == null || !cfg.enabled) return false;
+
+    final schoolStart = DateTime(
+      d0.year,
+      d0.month,
+      d0.day,
+      cfg.entryMinutes ~/ 60,
+      cfg.entryMinutes % 60,
+    );
+
+    final schoolEnd = DateTime(
+      d0.year,
+      d0.month,
+      d0.day,
+      cfg.returnHomeMinutes ~/ 60,
+      cfg.returnHomeMinutes % 60,
+    );
+
+    return schoolStart.isBefore(end) && schoolEnd.isAfter(start);
+  }
+
+  bool isAliceInsideSummerCampRange({
+    required DateTime day,
+    required DateTime start,
+    required DateTime end,
+  }) {
+    final d0 = _onlyDate(day);
+
+    if (!isAliceSummerCampOperationalDay(d0)) {
+      return false;
+    }
+
+    final special = summerCampSpecialEventStore.getForDay(d0);
+    final config = summerCampScheduleStore.getEffectiveConfigForDay(d0);
+
+    final campStart = DateTime(
+      d0.year,
+      d0.month,
+      d0.day,
+      (special?.start ?? config.start).hour,
+      (special?.start ?? config.start).minute,
+    );
+
+    final campEnd = DateTime(
+      d0.year,
+      d0.month,
+      d0.day,
+      (special?.end ?? config.end).hour,
+      (special?.end ?? config.end).minute,
+    );
+
+    return campStart.isBefore(end) && campEnd.isAfter(start);
   }
 
   bool isAliceInsideTimedEvent({
