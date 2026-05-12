@@ -141,7 +141,7 @@ class CoverageEngine {
   }
 
   bool isAliceExternalActivityDay(DateTime day) {
-    return aliceEventStore.isExternalActivityDay(day);
+    return _presenceEngine().isAliceExternalActivityDay(day);
   }
 
   bool isAliceSchoolNormalDay(DateTime day) {
@@ -2616,18 +2616,7 @@ class CoverageEngine {
   }
 
   List<AliceSpecialEvent> _enabledTimedAliceEventsForDay(DateTime day) {
-    final events = aliceSpecialEventStore
-        .eventsForDay(day)
-        .where((event) => event.enabled)
-        .toList();
-
-    events.sort((a, b) {
-      final aMinutes = a.start.hour * 60 + a.start.minute;
-      final bMinutes = b.start.hour * 60 + b.start.minute;
-      return aMinutes.compareTo(bMinutes);
-    });
-
-    return events;
+    return _presenceEngine().enabledTimedEventsForDay(day);
   }
 
   DateTime? _getAliceCompanionEnd({

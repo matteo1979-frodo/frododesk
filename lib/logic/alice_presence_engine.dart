@@ -7,6 +7,7 @@ import 'school_store.dart';
 import 'summer_camp_schedule_store.dart';
 import 'summer_camp_special_event_store.dart';
 import '../models/alice_presence_state.dart';
+import '../models/alice_special_event.dart';
 import 'alice_companion_store.dart';
 import 'support_network_store.dart';
 import 'day_settings_store.dart';
@@ -113,6 +114,10 @@ class AlicePresenceEngine {
 
   bool hasSummerCampSpecialEventForDay(DateTime day) {
     return summerCampSpecialEventStore.hasEventForDay(_onlyDate(day));
+  }
+
+  bool isAliceExternalActivityDay(DateTime day) {
+    return aliceEventStore.isExternalActivityDay(_onlyDate(day));
   }
 
   bool isAliceAtHomeDuringRange({
@@ -248,6 +253,22 @@ class AlicePresenceEngine {
     );
 
     return campStart.isBefore(end) && campEnd.isAfter(start);
+  }
+
+  List<AliceSpecialEvent> enabledTimedEventsForDay(DateTime day) {
+    final events = aliceSpecialEventStore
+        .eventsForDay(_onlyDate(day))
+        .where((event) => event.enabled)
+        .toList();
+
+    events.sort((a, b) {
+      final aMinutes = a.start.hour * 60 + a.start.minute;
+      final bMinutes = b.start.hour * 60 + b.start.minute;
+
+      return aMinutes.compareTo(bMinutes);
+    });
+
+    return events;
   }
 
   bool isAliceInsideTimedEvent({
