@@ -504,3 +504,154 @@ Obiettivo:
 ## FRASE DI RIPARTENZA
 
 Ripartiamo da FrodoDesk — Motore Presenza Reale Alice: centralizzare la presenza di Alice e far leggere CoverageEngine dalla stessa sorgente unica.
+
+---
+
+# 🔄 AGGIORNAMENTO 12 Maggio 2026
+
+# COPERTURA + MOTORE PRESENZA REALE ALICE
+
+## CAMBIO STRUTTURALE
+
+Il modulo Copertura non deve più essere il proprietario diretto della logica di presenza Alice.
+
+Il nuovo flusso corretto è:
+
+AlicePresenceEngine  
+↓  
+CoverageEngine  
+↓  
+Calendario / Home / IPS futuro
+
+---
+
+# NUOVO MOTORE COLLEGATO
+
+È stato creato e collegato:
+
+`alice_presence_engine.dart`
+
+Il motore risponde alla domanda:
+
+👉 “Dove si trova realmente Alice in questa fascia?”
+
+---
+
+# MODELLO PRESENZA
+
+È stato introdotto:
+
+`AlicePresenceState`
+
+Stati attuali:
+
+✔ home  
+✔ school  
+✔ timedEvent  
+✔ realEvent  
+✔ summerCamp  
+✔ accompanied  
+✔ support  
+
+Stati futuri:
+
+⬜ outsideWithFamily  
+⬜ autonomousFuture  
+
+---
+
+# CoverageEngine — STATO ATTUALE
+
+CoverageEngine ora legge dal PresenceEngine per:
+
+☑ `isAliceAtHomeDay()`  
+☑ `isAliceSchoolNormalDay()`  
+☑ `isAliceSummerCampOperationalDay()`  
+☑ `getAliceEventTypeForDay()`  
+☑ `getSummerCampPeriodForDay()`  
+☑ `getSummerCampConfigForDay()`  
+☑ `getSummerCampSpecialEventForDay()`  
+☑ `hasSummerCampSpecialEventForDay()`  
+☑ `enabledTimedEventsForDay()`  
+☑ `_isCoveredBySupportNetwork()`  
+☑ `_isAliceInsideRealEvent()`  
+
+---
+
+# SUPPORTO REALE
+
+La copertura della rete supporto è ora centralizzata nel PresenceEngine.
+
+Regola confermata:
+
+✔ supporto attivo  
+✔ abilitato nel giorno  
+✔ copre tutta la fascia reale  
+
+Solo in questo caso il supporto è valido.
+
+---
+
+# SANDRA RESTA SEPARATA
+
+Sandra NON è stata fusa con la rete supporto.
+
+Regola:
+
+- rete supporto = supporti generici
+- Sandra = categoria separata con fasce dedicate
+
+---
+
+# CENTRO ESTIVO — FIX REALE
+
+È stato corretto il comportamento del centro estivo.
+
+Caso reale testato:
+
+- centro estivo fino a 16:30
+- rientro logistico 20 minuti
+- genitori non disponibili
+- Sandra sera separata
+- supporto parziale possibile
+
+Prima:
+
+❌ uscita centro estivo mostrata 16:30–18:00  
+❌ mancava buco reale casa dopo rientro  
+
+Ora:
+
+✔ uscita centro estivo 16:30–16:50  
+✔ Alice a casa dopo centro estivo 16:50–21:00  
+✔ fascia Sandra sera 21:00–22:35 separata  
+✔ supporto reale spezza correttamente il buco  
+
+---
+
+# SIGNIFICATO TECNICO
+
+Il sistema ora distingue meglio:
+
+- logistica uscita centro estivo
+- rientro a casa
+- Alice a casa dopo centro estivo
+- fascia Sandra sera
+- supporto reale parziale
+
+Questo evita che il centro estivo venga trattato come blocco unico artificiale.
+
+---
+
+# PROSSIMA DIREZIONE
+
+Continuare a ripulire CoverageEngine dai residui legacy.
+
+In particolare:
+
+⬜ segmentazione eventi Alice  
+⬜ tagli temporali  
+⬜ logiche ancora dirette dentro `analyzeDayV2()`  
+
+Non lavorare ancora su Home.  
+Non lavorare ancora su IPS.

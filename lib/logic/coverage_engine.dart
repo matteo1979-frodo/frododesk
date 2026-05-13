@@ -189,10 +189,10 @@ class CoverageEngine {
 
     final fasciaEnd = DateTime(d0.year, d0.month, d0.day, end.hour, end.minute);
 
-    return _isCoveredBySupportNetwork(
+    return _presenceEngine().isCoveredBySupportNetwork(
       day: d0,
-      fasciaStart: fasciaStart,
-      fasciaEnd: fasciaEnd,
+      start: fasciaStart,
+      end: fasciaEnd,
     );
   }
 
@@ -289,7 +289,7 @@ class CoverageEngine {
       DateTime lunchCheckStart = lunchBaseStart;
 
       // 🔥 SE ALICE È ACCOMPAGNATA, PARTI DOPO
-      final companionEnd = _getAliceCompanionEnd(
+      final companionEnd = _presenceEngine().aliceCompanionEndForRange(
         day: d0,
         start: lunchBaseStart,
         end: lunchEnd,
@@ -693,9 +693,6 @@ class CoverageEngine {
       fallbackGlobal: sandraSeraOn,
     );
 
-    final bool isWeekend =
-        d0.weekday == DateTime.saturday || d0.weekday == DateTime.sunday;
-
     final presenceEngine = _presenceEngine();
 
     final bool aliceAtHome = presenceEngine.isAliceAtHomeDuringRange(
@@ -722,7 +719,7 @@ class CoverageEngine {
     final AliceEventType? aliceDayType = getAliceEventTypeForDay(d0);
     final String? aliceDayTypeName = aliceDayType?.name.toLowerCase();
 
-    final aliceSpecialEvents = _enabledTimedAliceEventsForDay(d0);
+    final aliceSpecialEvents = _presenceEngine().enabledTimedEventsForDay(d0);
     final bool hasAliceSpecialEvents = aliceSpecialEvents.isNotEmpty;
 
     final AliceSpecialEvent? firstAliceEvent = hasAliceSpecialEvents
@@ -1375,12 +1372,12 @@ class CoverageEngine {
     final details = <CoverageGapDetail>[];
 
     for (final entry in normalizedEntries) {
-      if (aliceCompanionStore.isAliceAccompanied(
+      if (_presenceEngine().isAliceAccompaniedDuringRange(
             day: d0,
             start: entry.fasciaStart,
             end: entry.fasciaEnd,
           ) ||
-          _isAliceInsideRealEvent(
+          _presenceEngine().isAliceInsideRealEvent(
             day: d0,
             start: entry.fasciaStart,
             end: entry.fasciaEnd,
@@ -1660,25 +1657,11 @@ class CoverageEngine {
       );
 
       if (!covered &&
-          !aliceCompanionStore.entriesForDay(day).any((entry) {
-            final entryStart = DateTime(
-              day.year,
-              day.month,
-              day.day,
-              entry.start.hour,
-              entry.start.minute,
-            );
-
-            final entryEnd = DateTime(
-              day.year,
-              day.month,
-              day.day,
-              entry.end.hour,
-              entry.end.minute,
-            );
-
-            return entryStart.isBefore(segEnd) && entryEnd.isAfter(segStart);
-          })) {
+          !_presenceEngine().isAliceAccompaniedDuringRange(
+            day: day,
+            start: segStart,
+            end: segEnd,
+          )) {
         result.add(
           _CoverageGapEntry(
             label:
@@ -1967,10 +1950,10 @@ class CoverageEngine {
       ),
     );
 
-    final supportAvailable = _isCoveredBySupportNetwork(
+    final supportAvailable = _presenceEngine().isCoveredBySupportNetwork(
       day: day,
-      fasciaStart: fasciaStart,
-      fasciaEnd: fasciaEnd,
+      start: fasciaStart,
+      end: fasciaEnd,
     );
 
     if (supportAvailable) {
@@ -2271,7 +2254,7 @@ class CoverageEngine {
       if (combinedCover) return true;
     }
 
-    if (aliceCompanionStore.isAliceAccompanied(
+    if (_presenceEngine().isAliceAccompaniedDuringRange(
       day: day,
       start: fasciaStart,
       end: fasciaEnd,
@@ -2281,10 +2264,10 @@ class CoverageEngine {
 
     if (matteoCanCover || chiaraCanCover) return true;
 
-    if (_isCoveredBySupportNetwork(
+    if (_presenceEngine().isCoveredBySupportNetwork(
       day: day,
-      fasciaStart: fasciaStart,
-      fasciaEnd: fasciaEnd,
+      start: fasciaStart,
+      end: fasciaEnd,
     )) {
       return true;
     }
@@ -2363,10 +2346,10 @@ class CoverageEngine {
     if (choice == SchoolCoverChoice.altro ||
         choiceName.contains('support') ||
         choiceName.contains('rete')) {
-      return _isCoveredBySupportNetwork(
+      return _presenceEngine().isCoveredBySupportNetwork(
         day: day,
-        fasciaStart: fasciaStart,
-        fasciaEnd: fasciaEnd,
+        start: fasciaStart,
+        end: fasciaEnd,
       );
     }
 
@@ -2554,18 +2537,6 @@ class CoverageEngine {
     return false;
   }
 
-  bool _isCoveredBySupportNetwork({
-    required DateTime day,
-    required DateTime fasciaStart,
-    required DateTime fasciaEnd,
-  }) {
-    return _presenceEngine().isCoveredBySupportNetwork(
-      day: day,
-      start: fasciaStart,
-      end: fasciaEnd,
-    );
-  }
-
   bool _overlapsImps({
     required DateTime day,
     required DateTime start,
@@ -2584,51 +2555,6 @@ class CoverageEngine {
     return o1 || o2;
   }
 
-  List<AliceSpecialEvent> _enabledTimedAliceEventsForDay(DateTime day) {
-    return _presenceEngine().enabledTimedEventsForDay(day);
-  }
-
-  DateTime? _getAliceCompanionEnd({
-    required DateTime day,
-    required DateTime start,
-    required DateTime end,
-  }) {
-    final entries = aliceCompanionStore.entriesForDay(day);
-
-    DateTime? bestEnd;
-
-    for (final entry in entries) {
-      final entryStart = DateTime(
-        day.year,
-        day.month,
-        day.day,
-        entry.start.hour,
-        entry.start.minute,
-      );
-
-      final entryEnd = DateTime(
-        day.year,
-        day.month,
-        day.day,
-        entry.end.hour,
-        entry.end.minute,
-      );
-
-      final overlapsWindow =
-          entryStart.isBefore(end) && entryEnd.isAfter(start);
-
-      if (!overlapsWindow) continue;
-
-      if (entryStart.isAfter(start)) continue;
-
-      if (bestEnd == null || entryEnd.isAfter(bestEnd)) {
-        bestEnd = entryEnd;
-      }
-    }
-
-    return bestEnd;
-  }
-
   AlicePresenceEngine _presenceEngine() {
     return AlicePresenceEngine(
       aliceEventStore: aliceEventStore,
@@ -2641,23 +2567,6 @@ class CoverageEngine {
       supportNetworkStore: supportNetworkStore,
       daySettingsStore: daySettingsStore,
     );
-  }
-
-  bool _isAliceInsideRealEvent({
-    required DateTime day,
-    required DateTime start,
-    required DateTime end,
-  }) {
-    final state = _presenceEngine().stateForRange(
-      day: day,
-      start: start,
-      end: end,
-    );
-
-    return state == AlicePresenceState.realEvent ||
-        state == AlicePresenceState.timedEvent ||
-        state == AlicePresenceState.support ||
-        state == AlicePresenceState.accompanied;
   }
 
   bool _isAliceHomeLabel(String label) {

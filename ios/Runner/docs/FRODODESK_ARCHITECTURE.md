@@ -220,3 +220,139 @@ Questa architettura sarà la base per:
 - timeline presenza
 - comportamento autonomo futuro
 - simulazione familiare avanzata
+
+---
+
+# 🔄 AGGIORNAMENTO 12 Maggio 2026
+
+# MOTORE PRESENZA REALE ALICE — CONSOLIDAMENTO ARCHITETTURALE
+
+## STATO
+
+Il motore previsto `alice_presence_engine.dart` è stato creato ed è ora attivo.
+
+Non è più solo una direzione teorica.
+
+---
+
+# NUOVI COMPONENTI ARCHITETTURALI
+
+## `lib/logic/alice_presence_engine.dart`
+
+Responsabilità attuali:
+
+✔ determinare lo stato reale di Alice su una fascia temporale  
+✔ distinguere Alice a casa  
+✔ distinguere Alice a scuola  
+✔ distinguere Alice al centro estivo  
+✔ distinguere Alice dentro evento temporizzato  
+✔ distinguere Alice dentro evento reale  
+✔ distinguere Alice accompagnata  
+✔ distinguere Alice coperta da supporto reale  
+
+---
+
+## `lib/models/alice_presence_state.dart`
+
+Modello centrale degli stati presenza Alice.
+
+Stati attuali:
+
+- home
+- school
+- timedEvent
+- realEvent
+- summerCamp
+- accompanied
+- support
+
+Stati futuri previsti:
+
+- outsideWithFamily
+- autonomousFuture
+
+---
+
+# NUOVO FLUSSO ARCHITETTURALE REALE
+
+La direzione ora è:
+
+Store reali
+↓
+AlicePresenceEngine
+↓
+CoverageEngine
+↓
+Calendario / Home / IPS futuro
+
+---
+
+# CoverageEngine — NUOVO RUOLO
+
+CoverageEngine sta passando da:
+
+❌ proprietario della logica presenza Alice
+
+a:
+
+✔ consumatore della verità fornita da AlicePresenceEngine
+
+---
+
+# LOGICHE GIÀ CENTRALIZZATE NEL PRESENCE ENGINE
+
+✔ giorno Alice a casa  
+✔ giorno scuola normale  
+✔ centro estivo operativo  
+✔ tipo evento Alice  
+✔ periodo centro estivo  
+✔ configurazione centro estivo  
+✔ evento speciale centro estivo  
+✔ eventi temporizzati Alice ordinati  
+✔ evento reale con Alice  
+✔ copertura rete supporto  
+✔ stato presenza su fascia tramite `stateForRange()`  
+
+---
+
+# BUG CENTRO ESTIVO RISOLTO
+
+È stato risolto un bug strutturale del centro estivo:
+
+Prima:
+
+❌ uscita centro estivo mostrata fino alle 18:00  
+❌ mancava il buco casa dopo rientro  
+
+Ora:
+
+✔ uscita centro estivo 16:30–16:50  
+✔ Alice a casa dopo centro estivo 16:50–21:00  
+✔ fascia Sandra sera separata 21:00–22:35  
+✔ supporto reale spezza correttamente i buchi  
+
+---
+
+# PRINCIPIO ARCHITETTURALE CONSOLIDATO
+
+Alice non deve essere interpretata da UI o da logiche sparse.
+
+La domanda:
+
+👉 “Dove si trova realmente Alice in questa fascia?”
+
+deve essere gestita da una sorgente centrale:
+
+👉 `AlicePresenceEngine`
+
+---
+
+# PROSSIMA DIREZIONE ARCHITETTURALE
+
+Continuare la pulizia progressiva di CoverageEngine:
+
+⬜ eliminare residui legacy  
+⬜ valutare spostamento segmentazione eventi Alice  
+⬜ valutare spostamento tagli temporali  
+⬜ solo dopo collegare Home direttamente alla stessa verità  
+⬜ IPS solo dopo consolidamento completo  

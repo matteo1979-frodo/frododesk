@@ -141,19 +141,77 @@ STATO ATTUALE
 
 PROSSIMO STEP
 
-FASE 3 + RIFONDAZIONE IPS
+🔥 PRIORITÀ STRUTTURALE AGGIORNATA
 
-Priorità:
-1. Rendere la Home AZIONABILE
-2. Rifare IPS basato su dati reali:
-      - buchi veri
-      - eventi reali
-      - conflitti veri
-      - pressioni future reali
-3. Preparare il sistema RISOLVI per tutti i moduli futuri
+La priorità NON è ancora:
+
+❌ Home azionabile completa  
+❌ rifondazione IPS  
+
+Prima serve consolidare il:
+
+# MOTORE PRESENZA REALE ALICE
+
+---
+
+Priorità operative corrette:
+
+1. Consolidare `alice_presence_engine.dart`
+2. Eliminare doppioni legacy nel CoverageEngine
+3. Centralizzare completamente la presenza reale Alice
+4. Far leggere Home dalla stessa verità
+5. Solo dopo → riallineamento IPS reale
+6. Solo dopo → Home realmente azionabile
+
+---
+
+# 🔥 SIGNIFICATO STRUTTURALE
+
+La Home NON deve diventare azionabile sopra una presenza Alice ancora distribuita.
+
+Prima serve:
+
+✔ una sola verità presenza  
+✔ una sola segmentazione temporale  
+✔ una sola interpretazione reale di Alice  
+
+Solo dopo:
+
+✔ Home azionabile  
+✔ IPS reale  
+✔ azioni rapide intelligenti  
+
+---
+
+# 📌 STATO ATTUALE REALE
+
+COMPLETATI:
+
+☑ PresenceEngine creato  
+☑ modello presenza creato  
+☑ supporto reale centralizzato  
+☑ eventi temporizzati centralizzati  
+☑ eventi reali centralizzati  
+☑ fix centro estivo reale  
+☑ fix casa dopo centro estivo  
+☑ CoverageEngine parzialmente riallineato  
+
+RESTA:
+
+⬜ eliminazione doppioni legacy  
+⬜ pulizia `analyzeDayV2()`  
+⬜ Home completamente guidata dal PresenceEngine  
+⬜ test presenza reale complessi  
+⬜ IPS reale coerente  
+⬜ Home azionabile finale  
 
 --------------------------------------------------
 
 FRASE DI RIPARTENZA
 
-Ripartiamo da FrodoDesk Home — popup RISOLVI copertura funzionante, giorni festivi corretti, prossimo passo Home azionabile + rifondazione IPS.
+Ripartiamo da FrodoDesk — Motore Presenza Reale Alice.
+
+Prossimo obiettivo:
+👉 eliminare doppioni legacy dal CoverageEngine
+👉 consolidare PresenceEngine come sorgente unica di verità
+👉 solo dopo riallineare Home e IPS

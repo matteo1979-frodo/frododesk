@@ -1,6 +1,7 @@
 FRODODESK — ROADMAP
 
-Ultimo aggiornamento: 28 Aprile 2026 (post copertura reale Alice a casa)
+Ultimo aggiornamento: 12 Maggio 2026  
+(BLOCCO G — Motore Presenza Reale Alice)
 
 ---
 
@@ -9,28 +10,31 @@ Ultimo aggiornamento: 28 Aprile 2026 (post copertura reale Alice a casa)
 FrodoDesk deve diventare un sistema di controllo familiare che simula la realtà della vita quotidiana per aiutare a prevenire problemi prima che accadano.
 
 Lo sviluppo segue filosofia CNC:
-un passo alla volta, blocchi stabili prima di passare al successivo.
+
+- un passo alla volta
+- blocchi stabili prima di passare al successivo
+- motore prima
+- UI dopo
+- test reale continuo
+- decisione sempre umana
 
 ---
 
-# FASE ATTUALE
+# STATO GENERALE ATTUALE
 
-🔥 CALENDARIO REALE COMPLETO + COPERTURA REALE
+🔥 CALENDARIO REALE COMPLETO  
+🔥 COPERTURA REALE STABILE  
+🔥 HOME COERENTE  
+🔥 STATISTICHE AVVIATE  
+🔥 MOTORE PRESENZA REALE ALICE IN COSTRUZIONE
 
----
+Il sistema ha fatto il passaggio da:
 
-## SIGNIFICATO DELLA FASE
+❌ calendario intelligente
 
-Il sistema ha fatto il passaggio più importante:
+a
 
-👉 da simulazione parziale  
-👉 a simulazione reale della giornata
-
-Ora:
-
-- Alice a casa è gestita correttamente
-- i buchi sono reali
-- la Home legge il motore vero
+✔ simulazione reale della presenza familiare
 
 ---
 
@@ -65,16 +69,19 @@ Stato: COMPLETATO
 ✔ Conflitti funzionanti  
 ✔ Permessi operativi  
 ✔ Copertura integrata  
+✔ Eventi multi-persona funzionanti  
 
 ---
 
 # BLOCCO D — CALENDARIO REALE
 
-Stato: COMPLETATO (USO REALE)
+Stato: COMPLETATO / USO REALE
 
 ✔ Sistema utilizzabile nella vita reale  
 ✔ Motore stabile  
 ✔ Copertura affidabile  
+✔ Home collegata al calendario  
+✔ Navigazione giorno funzionante  
 
 ---
 
@@ -93,26 +100,37 @@ Stato: COMPLETATO
 
 ---
 
-# 🔥 BLOCCO F — COPERTURA REALE (NUOVO)
+# BLOCCO F — COPERTURA REALE
 
-Stato: COMPLETATO
+Stato: COMPLETATO / CONSOLIDATO
 
 ---
 
 ## SIGNIFICATO
 
-👉 Alice NON dipende più dalle fasce Sandra  
-👉 Alice è controllata su tutta la giornata  
+Alice NON dipende più solo dalle fasce Sandra.
+
+La copertura viene calcolata sulla realtà:
+
+- Alice a casa
+- adulti presenti
+- eventi reali
+- scuola
+- centro estivo
+- supporto
+- accompagnamento
+- rientro a casa
 
 ---
 
 ## REGOLE DEFINITIVE
 
 ✔ Alice a casa → serve copertura sempre  
-✔ Nessun adulto → BUCO reale  
-✔ Controllo su 00:00–23:59  
+✔ Nessun adulto/supporto valido → BUCO reale  
+✔ Controllo su tutta la giornata reale  
 ✔ Eventi reali influenzano la copertura  
 ✔ Supporto integrato nel motore  
+✔ Sandra resta categoria separata dalle rete supporto  
 
 ---
 
@@ -121,60 +139,240 @@ Stato: COMPLETATO
 ✔ Buchi reali corretti  
 ✔ Calendario coerente  
 ✔ Home coerente  
-✔ Sistema finalmente affidabile  
+✔ Sistema affidabile nella vita reale  
 
 ---
 
-# BLOCCO G — SISTEMA IPS
+# BLOCCO G — MOTORE PRESENZA REALE ALICE
 
-🔥 STATO: PROSSIMA FASE
-
----
-
-## PROBLEMA ATTUALE
-
-IPS NON è coerente con il sistema reale.
-
-👉 oggi:
-- usa logiche parziali
-- non legge davvero i buchi
-- non rappresenta la realtà
-
----
-
-## OBIETTIVO BLOCCO G
-
-👉 trasformare IPS in:
-
-✔ indicatore reale  
-✔ basato su buchi veri  
-✔ coerente con il calendario  
-✔ utile per decidere  
-
----
-
-## STEP PREVISTI
-
-### STEP G1 — collegare IPS ai buchi reali
-### STEP G2 — definire livelli (verde/giallo/rosso reali)
-### STEP G3 — spiegazione umana coerente
-### STEP G4 — integrazione Home completa
-
----
-
-# BLOCCO H — HOME AZIONABILE
-
-Stato: SUCCESSIVO
+Stato: IN CONSOLIDAMENTO
 
 ---
 
 ## OBIETTIVO
 
-👉 permettere azioni reali dalla Home
+Centralizzare la domanda fondamentale:
 
-- attivare supporto
-- risolvere buchi
-- intervenire subito
+👉 “Dove si trova realmente Alice in questa fascia?”
+
+Il sistema deve distinguere:
+
+- Alice a casa
+- Alice a scuola
+- Alice al centro estivo
+- Alice dentro evento temporizzato
+- Alice dentro evento reale
+- Alice accompagnata
+- Alice coperta da supporto
+- Alice fuori con famiglia
+- futura autonomia
+
+---
+
+## COMPONENTI CREATI
+
+✔ `alice_presence_engine.dart`  
+✔ `AlicePresenceState`  
+
+---
+
+## STATI PRESENZA ATTUALI
+
+✔ home  
+✔ school  
+✔ timedEvent  
+✔ realEvent  
+✔ summerCamp  
+✔ accompanied  
+✔ support  
+
+Mancano:
+
+⬜ outsideWithFamily  
+⬜ autonomousFuture  
+
+---
+
+## COMPLETATI NEL BLOCCO G
+
+☑ creare `alice_presence_engine.dart`  
+☑ creare `AlicePresenceState`  
+☑ centralizzare primo stato presenza Alice  
+☑ collegare CoverageEngine al motore presenza  
+☑ centralizzare evento reale Alice  
+☑ centralizzare evento temporizzato Alice  
+☑ introdurre `AlicePresenceState.accompanied`  
+☑ collegare `AliceCompanionStore`  
+☑ introdurre presenza relazionale  
+☑ introdurre `findCompanionForRange()`  
+☑ CoverageEngine legge `stateForRange()`  
+☑ introdurre `AlicePresenceState.support`  
+☑ collegare `SupportNetworkStore`  
+☑ collegare `DaySettingsStore`  
+☑ distinguere supporto reale attivo sulla fascia  
+☑ scuola resa temporale reale  
+☑ centro estivo reso temporale reale  
+☑ fix centro estivo: uscita 16:30–16:50  
+☑ fix casa dopo centro estivo: buco reale 16:50–21:00  
+☑ buchi coerenti con supporto reale e Sandra  
+☑ centralizzare accesso eventi temporizzati Alice  
+☑ centralizzare copertura rete supporto  
+☑ centralizzare controllo evento reale Alice  
+☑ CoverageEngine ridotto a consumatore progressivo del PresenceEngine  
+
+---
+
+## STEP G2 — MODELLO PRESENZA UNICO
+
+Stato: QUASI COMPLETATO
+
+Attuale:
+
+☑ home  
+☑ school  
+☑ timedEvent  
+☑ realEvent  
+☑ summerCamp  
+☑ accompanied  
+☑ support  
+
+Mancano:
+
+⬜ outsideWithFamily  
+⬜ autonomousFuture  
+
+---
+
+## STEP G3 — CoverageEngine guidato dal PresenceEngine
+
+Stato: IN CONSOLIDAMENTO AVANZATO
+
+Fatto:
+
+☑ `isAliceAtHomeDay()` passa da PresenceEngine  
+☑ `isAliceSchoolNormalDay()` passa da PresenceEngine  
+☑ `isAliceSummerCampOperationalDay()` passa da PresenceEngine  
+☑ `getAliceEventTypeForDay()` passa da PresenceEngine  
+☑ `getSummerCampPeriodForDay()` passa da PresenceEngine  
+☑ `getSummerCampConfigForDay()` passa da PresenceEngine  
+☑ `getSummerCampSpecialEventForDay()` passa da PresenceEngine  
+☑ `hasSummerCampSpecialEventForDay()` passa da PresenceEngine  
+☑ `enabledTimedEventsForDay()` passa da PresenceEngine  
+☑ `_isCoveredBySupportNetwork()` passa da PresenceEngine  
+☑ `_isAliceInsideRealEvent()` passa da PresenceEngine  
+
+Resta:
+
+⬜ eliminare altri doppioni legacy residui  
+⬜ valutare spostamento segmentazione eventi/tagli fascia  
+⬜ verificare logiche presenza Alice ancora dirette dentro `analyzeDayV2()`  
+
+---
+
+## BUG CENTRO ESTIVO RISOLTO
+
+Caso reale:
+
+- Alice al centro estivo fino a 16:30
+- rientro logistico 16:30–16:50
+- genitori entrambi pomeriggio
+- nessuna copertura fino a sera
+
+Prima:
+
+❌ buco uscita mostrato 16:30–18:00  
+❌ mancava buco reale casa 16:50–21:00  
+
+Ora:
+
+✔ uscita centro estivo 16:30–16:50  
+✔ Alice a casa dopo centro estivo 16:50–21:00  
+✔ fascia Sandra sera 21:00–22:35 separata  
+✔ supporto reale spezza correttamente i buchi  
+
+Checkpoint:
+
+`summer-camp-real-home-gaps`
+
+---
+
+# BLOCCO H — HOME GUIDATA DAL PRESENCE ENGINE
+
+Stato: NON ANCORA INIZIATO
+
+---
+
+## OBIETTIVO
+
+La Home dovrà leggere la stessa verità del calendario:
+
+👉 PresenceEngine → CoverageEngine → Home
+
+Non deve ricostruire logiche proprie.
+
+---
+
+# BLOCCO IPS
+
+Stato: RIMANDATO
+
+---
+
+## DECISIONE
+
+IPS NON è più priorità immediata.
+
+Prima serve completare:
+
+1. Motore Presenza Reale Alice
+2. CoverageEngine guidato dal PresenceEngine
+3. Home coerente con la stessa verità
+4. Test presenza reale strutturati
+
+Solo dopo:
+
+👉 riallineamento IPS completo al sistema reale.
+
+---
+
+# BLOCCO EVENTI GLOBALI
+
+Stato: IMPLEMENTATO V1
+
+✔ navigazione anno → mesi → eventi → dettaglio  
+✔ memoria evento persistente  
+✔ eventi multi-persona  
+
+Limite attuale:
+
+❌ Eventi Alice non ancora completamente integrati negli Eventi Globali  
+
+---
+
+# BLOCCO STATISTICHE
+
+Stato: AVVIATO / BASE STRUTTURALE CONSOLIDATA
+
+Principio:
+
+👉 le statistiche NON devono inventare dati  
+👉 devono leggere solo moduli reali vivi  
+
+Struttura temporale:
+
+✔ Giorno  
+✔ Settimana  
+✔ Mese  
+✔ Anno  
+
+Direzione futura:
+
+- supporto
+- copertura
+- eventi
+- costi
+- IPS
+- salute
 
 ---
 
@@ -184,526 +382,53 @@ FINANZE
 SPESE  
 SALUTE  
 AUTO  
-STATISTICHE  
+STATISTICHE AVANZATE  
+IPS REALE  
 
 ---
 
-# STATO ATTUALE
-
-✔ Sistema stabile  
-✔ Copertura reale funzionante  
-✔ Alice a casa corretta  
-✔ Buchi reali su tutta la giornata  
-✔ Eventi reali integrati  
-✔ Scuola completa  
-✔ Support network funzionante  
-✔ Home collegata al motore  
-
-⚠️ IPS NON ancora coerente
-
----
-
-# DIREZIONE OPERATIVA
+# DIREZIONE OPERATIVA ATTUALE
 
 NON fare:
 
-❌ modifiche multiple  
-❌ salti di fase  
-❌ rattoppi UI  
-❌ logiche duplicate  
+❌ Home ora  
+❌ IPS ora  
+❌ mega-refactor  
+❌ spostamenti ciechi  
+❌ duplicazioni logiche  
 
 Fare:
 
+✔ completare PresenceEngine  
+✔ ripulire CoverageEngine dai residui legacy  
 ✔ un passo alla volta  
-✔ fonte di verità unica  
-✔ test reale  
-✔ motore prima  
-✔ UI dopo  
+✔ test reale dopo ogni modifica  
+✔ mantenere Sandra separata dalla rete supporto  
+✔ mantenere decisione sempre umana  
 
 ---
 
 # PROSSIMA RIPARTENZA
 
-Ripartiamo da FrodoDesk — BLOCCO G
+Ripartiamo da FrodoDesk — BLOCCO G: consolidamento Motore Presenza Reale Alice.
 
-STEP 1:
-👉 collegare IPS ai buchi reali del motore
+Stato:
 
-STEP 2:
-👉 definire livelli reali (verde/giallo/rosso)
+- PresenceEngine creato
+- modello presenza avviato
+- CoverageEngine già collegato
+- supporto centralizzato
+- eventi reali Alice centralizzati
+- eventi temporizzati Alice centralizzati
+- centro estivo temporale corretto
+- bug post-centro estivo risolto
 
-STEP 3:
-👉 rendere la Home coerente con IPS reale
+Prossimo fronte:
 
----
-
-# 🔄 AGGIORNAMENTO 5 Maggio 2026
-
----
-
-# 🔥 BLOCCO EVENTI GLOBALI
-
-Stato: IMPLEMENTATO (V1)
-
----
-
-## RISULTATO
-
-✔ navigazione eventi nel tempo funzionante  
-✔ struttura anno → mesi → eventi → dettaglio  
-✔ mesi in griglia con conteggio eventi  
-✔ accesso diretto agli eventi del mese  
-
-✔ introduzione memoria evento persistente  
-✔ supporto eventi multi-persona  
-
----
-
-## LIMITI ATTUALI
-
-❌ Eventi Alice NON ancora inclusi negli Eventi Globali  
-
----
-
-## PROSSIMO STEP
-
-👉 integrazione completa:
-
-- RealEventStore  
-- AliceEventStore  
-- AliceSpecialEventStore  
-
----
-
-# 🔥 BLOCCO HOME — EVOLUZIONE
-
-Stato: CONSOLIDATO (V1.1)
-
----
-
-## RISULTATO
-
-✔ separazione OGGI vs FUTURO funzionante  
-✔ Home decisionale stabile  
-✔ collegamento diretto al calendario  
-
----
-
-## NUOVO STEP
-
-👉 trasformare:
-
-"Prossimi 7 giorni"
-
-in
-
-"Prossimi 30 giorni"
-
----
-
-# 🔥 BLOCCO STATISTICHE (NUOVO)
-
-Stato: AVVIATO (STRUTTURA)
-
----
-
-## DECISIONE
-
-✔ modulo separato  
-✔ NON sviluppato dentro Home  
-
----
-
-## OBIETTIVO
-
-👉 creare sistema di analisi reale della vita familiare  
-
----
-
-## CONTENUTI FUTURI
-
-- ore supporto (Sandra / rete)  
-- eventi gestiti  
-- copertura  
-- carico familiare  
-- finanze  
-- salute  
-
----
-
-## STRUMENTO PRINCIPALE
-
-👉 grafici (lettura immediata)
-
----
-
-# 🔥 DIREZIONE AGGIORNATA
-
-Il sistema ora evolve su 3 linee:
-
-1️⃣ Eventi Globali completi  
-2️⃣ Statistiche reali  
-3️⃣ IPS coerente  
-
----
-
-# 🔥 PROSSIMA RIPARTENZA AGGIORNATA
-
-Ripartiamo da FrodoDesk — Eventi Globali V1 + Memoria evento + avvio modulo Statistiche
-
-STEP 1:
-👉 integrazione Eventi Alice negli Eventi Globali  
-
-STEP 2:
-👉 trasformazione "Prossimi 7 giorni" → "30 giorni"  
-
-STEP 3:
-👉 base modulo Statistiche (dati reali)
-
----
-
-# 🔄 AGGIORNAMENTO 6 Maggio 2026
-
-# 🔥 BLOCCO STATISTICHE — CONSOLIDAMENTO REALE
-
-Stato: CONSOLIDATO (BASE STRUTTURALE COMPLETA)
-
----
-
-## 🧠 NUOVA FILOSOFIA DEFINITA
-
-Decisione ufficiale:
-
-👉 le statistiche NON devono inventare dati  
-
-✔ devono leggere SOLO moduli reali vivi  
-✔ devono essere memoria storica del sistema  
-✔ devono rappresentare evoluzione reale della famiglia  
-
----
-
-## ⏳ NUOVA STRUTTURA TEMPORALE
-
-❌ eliminati:
-- ultimi 7 giorni
-- ultimi 30 giorni
-
-✔ introdotti:
-- Giorno
-- Settimana
-- Mese
-- Anno
-
----
-
-## SIGNIFICATO
-
-FrodoDesk deve leggere il tempo in modo umano e reale.
-
-NON:
-- dashboard tecnica
-- analytics generica
-
-MA:
-- oggi
-- questa settimana
-- questo mese
-- quest’anno
-
----
-
-## 📈 SUPPORTO FAMILIARE — EVOLUZIONE STATISTICHE
-
-Implementato:
-
-✔ popup andamento adattivo  
-✔ confronto periodo precedente  
-✔ navigazione temporale reale  
-✔ grafico adattivo multi-periodo  
-
----
-
-## MODALITÀ ATTIVE
-
-✔ Giorno  
-✔ Settimana  
-✔ Mese  
-✔ Anno  
-
----
-
-## COMPORTAMENTO GRAFICI
-
-✔ confronto reale tra periodi  
-✔ anno ↔ anno precedente  
-✔ mese ↔ mese precedente  
-✔ settimana ↔ settimana precedente  
-✔ giorno ↔ giorno precedente  
-
-✔ scala grafico stabilizzata anche con anni futuri vuoti  
-
----
-
-## 🧱 DIREZIONE STRUTTURALE
-
-Decisione importante:
-
-👉 ogni modulo futuro dovrà avere la propria lettura statistica reale
-
-Esempi:
-
-- Costi
-- IPS
-- Copertura
-- Eventi
-- Salute
-
----
-
-## 🔮 NUOVA DIREZIONE OPERATIVA
-
-Ordine ufficiale aggiornato:
-
-1️⃣ Calendario reale completo  
-2️⃣ Rifiniture intelligenti UX/realtà  
-3️⃣ Modulo Costi / Finanze  
-4️⃣ Espansione Statistiche come lettura naturale dei moduli vivi  
-
----
-
-## 🔥 BLOCCO IPS
-
-⚠️ NON più priorità immediata
-
-Decisione:
-
-👉 prima completare:
-- calendario reale
-- eventi Alice
-- copertura reale completa
-- costi/famiglia
-
-Solo dopo:
-✔ riallineamento IPS completo al sistema reale
-
----
-
-## STATO
-
-✔ stabile  
-✔ compilazione verificata  
-✔ popup adattivo funzionante  
-✔ struttura statistiche consolidata  
-✔ base pronta per espansione multi-modulo
-
----
-
-# 🔄 AGGIORNAMENTO 11 Maggio 2026
-
-# 🔥 NUOVA PRIORITÀ UFFICIALE
-
-La priorità strutturale del progetto cambia.
-
-❌ IPS NON è più il prossimo blocco operativo immediato.
-
-👉 Prima serve completare:
-
-# MOTORE PRESENZA REALE ALICE
-
----
-
-# 🧠 MOTIVO DEL CAMBIO
-
-Durante i test reali è emerso un problema strutturale:
-
-Alice può risultare:
-
-- a casa
-- fuori
-- accompagnata
-- dentro evento reale
-- sotto supporto
-- dentro logistica
-
-ma queste informazioni oggi sono ancora distribuite in più punti del sistema.
-
-Conseguenze:
-
-❌ possibili incoerenze Home ↔ Calendario  
-❌ possibili falsi buchi  
-❌ duplicazioni logiche  
-❌ difficoltà futura IPS  
-
----
-
-# 🔥 NUOVO OBIETTIVO STRUTTURALE
-
-Creare una sorgente unica che risponda a:
-
-👉 “Dove si trova realmente Alice?”
-
----
-
-# 🧱 NUOVO BLOCCO UFFICIALE
-
-# BLOCCO G — MOTORE PRESENZA REALE ALICE
-
-Stato: INIZIO FASE
-
----
-
-## OBIETTIVO
-
-Centralizzare:
-
-- presenza Alice
-- stato reale Alice
-- accompagnamento
-- supporto
-- evento reale
-- scuola
-- ritorno a casa
-
-in un solo motore leggibile da tutto il sistema.
-
----
-
-## RISULTATO ATTESO
-
-CoverageEngine, Home e futuro IPS devono leggere:
-
-👉 la stessa identica verità.
-
----
-
-# 🔥 COMPONENTE NUOVO
-
-## alice_presence_engine.dart
-
-Nuovo motore centrale.
-
-Responsabilità:
-
-✔ decidere dove si trova Alice  
-✔ decidere se Alice è coperta  
-✔ decidere se Alice è accompagnata  
-✔ decidere se Alice è dentro evento reale  
-✔ decidere se Alice è realmente a casa  
-
----
-
-# 🧠 STATI PRESENZA PREVISTI
-
-✔ casa  
-✔ scuola  
-✔ evento  
-✔ accompagnata  
-✔ supporto  
-✔ centro estivo  
-✔ fuori con famiglia  
-⬜ autonoma futura  
-
----
-
-# 🔥 FIX IMPORTANTI GIÀ COMPLETATI
-
-✔ Home ↔ Coverage allineati  
-✔ Supporto reale sincronizzato  
-✔ Evento reale multi-persona corretto  
-✔ Alice dentro evento reale = niente falso buco  
-✔ falsi problemi Home eliminati  
-
----
-
-# 🧠 PRINCIPIO NUOVO CONSOLIDATO
-
-Evento familiare condiviso ≠ Alice sola a casa.
-
----
-
-# 📌 ROADMAP OPERATIVA
-
-## COMPLETATI
-
-☑ Evento logistico Alice  
-☑ Accompagnamento / ritiro  
-☑ Supporto reale sincronizzato  
-☑ Eventi multi-persona  
-☑ Alice dentro evento reale  
-☑ Home coerente col motore reale  
-
----
-
-## PROSSIMI STEP
-
-### STEP G1
-⬜ creare `alice_presence_engine.dart`
-
-### STEP G2
-⬜ definire modello presenza unico
-
-### STEP G3
-⬜ far leggere CoverageEngine dal nuovo motore
-
-### STEP G4
-⬜ far leggere Home dal nuovo motore
-
-### STEP G5
-⬜ eliminare doppioni logici presenza Alice
-
-### STEP G6
-⬜ introdurre test presenza reale
-
-### STEP G7
-⬜ solo dopo → riallineamento IPS
-
----
-
-# 🔥 IPS — NUOVA POSIZIONE
-
-IPS passa da:
-
-❌ prossima fase immediata
-
-a:
-
-✔ fase successiva al completamento del motore presenza reale.
-
----
-
-# 🧠 SIGNIFICATO EVOLUTIVO
-
-Questo è il passaggio:
-
-❌ da calendario intelligente
-
-👉 a
-
-✔ simulazione reale della presenza familiare
-
----
-
-# 🚀 STATO ATTUALE REALE
-
-✔ sistema stabile  
-✔ copertura reale affidabile  
-✔ Home coerente  
-✔ supporto reale coerente  
-✔ eventi multi-persona funzionanti  
-✔ Alice non più solo “evento calendario”  
-✔ inizio modellazione presenza reale  
+👉 ripulire i residui legacy dentro CoverageEngine, soprattutto segmentazione eventi Alice e tagli temporali.
 
 ---
 
 # FRASE DI RIPARTENZA UFFICIALE
 
-Ripartiamo da FrodoDesk — BLOCCO G: Motore Presenza Reale Alice.
-
-STEP 1:
-👉 creare `alice_presence_engine.dart`
-
-STEP 2:
-👉 centralizzare la presenza reale Alice
-
-STEP 3:
-👉 far leggere CoverageEngine e Home dalla stessa verità
+Ripartiamo da FrodoDesk — BLOCCO G: PresenceEngine già attivo, CoverageEngine in progressiva pulizia. Prossimo passo: eliminare residui legacy di presenza Alice dentro CoverageEngine senza toccare Home e senza riallineare IPS.

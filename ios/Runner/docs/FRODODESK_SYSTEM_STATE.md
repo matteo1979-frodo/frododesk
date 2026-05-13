@@ -1,6 +1,7 @@
 # FRODODESK — SYSTEM STATE
 
-Ultimo aggiornamento: 4 Maggio 2026 (Eventi Globali V1 + Memoria Evento Persistente)
+Ultimo aggiornamento: 12 Maggio 2026  
+(BLOCCO G — Motore Presenza Reale Alice)
 
 ---
 
@@ -21,18 +22,26 @@ Principio fondamentale:
 
 # FILOSOFIA DI SVILUPPO
 
-Il sistema è costruito con filosofia CNC (Costruzione Non Caotica):
+Il sistema è costruito con filosofia CNC:
 
 - un passo alla volta
 - zero modifiche multiple insieme
 - ogni blocco deve essere stabile prima di passare al successivo
 - lavoro sempre su file reali
+- motore prima
+- UI dopo
+- test reale continuo
 
 ---
 
 # FASE ATTUALE DEL PROGETTO
 
-🔥 CALENDARIO REALE COMPLETO + COPERTURA REALE + HOME AZIONABILE V1.1 CONSOLIDATA + EVENTI GLOBALI V1
+🔥 CALENDARIO REALE COMPLETO  
+🔥 COPERTURA REALE CONSOLIDATA  
+🔥 HOME AZIONABILE V1.1 CONSOLIDATA  
+🔥 EVENTI GLOBALI V1  
+🔥 MODULO STATISTICHE AVVIATO  
+🔥 MOTORE PRESENZA REALE ALICE IN CONSOLIDAMENTO
 
 Il sistema è:
 
@@ -40,41 +49,38 @@ Il sistema è:
 ✔ testato su casi concreti  
 ✔ stabile nei motori principali  
 ✔ coerente tra motore → calendario → Home  
-✔ capace di distinguere tra stato reale di oggi e problemi futuri  
-✔ capace di trasformare un buco reale in problema visibile dalla Home  
+✔ capace di distinguere oggi e problemi futuri  
+✔ capace di trasformare un buco reale in problema visibile  
 ✔ capace di portare direttamente al giorno del problema  
-✔ coerente anche nei giorni festivi senza scuola  
-✔ capace di navigare eventi nel tempo (anno → mesi → eventi)  
+✔ capace di navigare eventi nel tempo  
 ✔ capace di salvare memoria reale sugli eventi  
+✔ entrato nella fase di simulazione presenza reale Alice  
 
 ---
 
-# 🧠 EVOLUZIONE STRUTTURALE
+# EVOLUZIONE STRUTTURALE
 
-Il sistema ha fatto il passaggio chiave:
+Il sistema ha fatto questi passaggi:
 
-❌ prima → simulazione parziale  
-✔ ora → simulazione reale della giornata  
+❌ simulazione parziale  
+✔ simulazione reale della giornata  
 
-Nuova evoluzione:
+❌ Home solo informativa  
+✔ Home operativa e gerarchica  
 
-❌ prima → Home solo informativa  
-✔ ora → Home operativa e gerarchica (oggi vs futuro)
+❌ eventi temporanei  
+✔ eventi come memoria persistente  
 
 🔥 NUOVO PASSAGGIO:
 
-❌ prima → eventi = dati temporanei  
-✔ ora → eventi = memoria persistente  
+❌ Alice come semplice evento/calendario  
+✔ Alice come presenza reale nel tempo  
 
 ---
 
-# 🔥 BLOCCO SCUOLA
+# BLOCCO SCUOLA
 
 Stato: COMPLETATO
-
----
-
-## RISULTATO
 
 ✔ SchoolStore attivo  
 ✔ Periodi funzionanti  
@@ -82,13 +88,11 @@ Stato: COMPLETATO
 ✔ Stato Alice coerente  
 ✔ Support network validato  
 ✔ UI allineata al motore  
-✔ giorni festivi riconosciuti correttamente come “nessuna scuola prevista”  
-
-👉 La scuola è ora fonte unica di verità
+✔ Giorni festivi riconosciuti correttamente  
 
 ---
 
-# 🔥 BLOCCO COPERTURA REALE
+# BLOCCO COPERTURA REALE
 
 Stato: COMPLETATO / CONSOLIDATO
 
@@ -96,38 +100,19 @@ Stato: COMPLETATO / CONSOLIDATO
 
 ## REGOLA FONDAMENTALE
 
-Alice è considerata **A CASA** quando NON è:
+Alice deve essere coperta quando è realmente a casa.
 
-- a scuola
-- in evento valido
-- fuori casa per attività reale
-
----
-
-## REGOLA COPERTURA
-
-Se Alice è a casa:
-
-👉 deve essere SEMPRE coperta da:
+La copertura dipende da:
 
 - Matteo
 - Chiara
-- Supporto
-- Sandra (solo se attiva)
-
-Se nessuno copre:
-
-👉 ❌ BUCO REALE
-
----
-
-## CAMBIAMENTO CHIAVE
-
-✔ controllo esteso su tutta la giornata  
-❌ NON più limitato a fasce Sandra  
-❌ NON più legato solo alla scuola  
-✔ valido anche nei giorni festivi  
-✔ valido anche quando Alice è a casa perché scuola chiusa / festa / weekend  
+- rete supporto
+- Sandra se attiva nella fascia corretta
+- eventi reali
+- scuola
+- centro estivo
+- accompagnamento
+- rientro reale a casa
 
 ---
 
@@ -138,206 +123,151 @@ Se nessuno copre:
 ✔ Supporto integrato correttamente  
 ✔ Calendario coerente  
 ✔ Home coerente  
-✔ test 1 Maggio validato  
-
-👉 Sistema finalmente affidabile
-
----
-
-# 🔥 BLOCCO HOME AZIONABILE V1
-
-Stato: IMPLEMENTAZIONE COMPLETATA E TESTATA
+✔ giorni festivi corretti  
+✔ Sandra separata dalla rete supporto  
 
 ---
 
-## RISULTATO
+# BLOCCO HOME AZIONABILE V1.1
 
-La Home ora:
+Stato: COMPLETATO E VALIDATO
+
+La Home:
 
 ✔ legge i buchi reali della copertura  
-✔ mostra il problema copertura nella card principale  
-✔ indica quanti problemi ci sono oggi  
-✔ mostra il primo buco da gestire  
-✔ bottone principale: **RISOLVI**  
-✔ apre un popup con il problema  
+✔ separa stato reale di oggi e problema futuro  
+✔ mostra il problema principale  
+✔ apre il calendario sul giorno corretto  
+✔ non propone soluzioni automatiche  
+✔ mantiene decisione umana  
 
 ---
 
-# 🔥 BLOCCO HOME AZIONABILE V1.1 (NUOVO)
+# BLOCCO EVENTI GLOBALI
 
-Stato: COMPLETATO E VALIDATO
+Stato: IMPLEMENTATO V1
 
----
+✔ navigazione anno → mesi → eventi  
+✔ mesi in griglia  
+✔ dettaglio evento  
+✔ memoria evento persistente  
+✔ eventi multi-persona  
 
-## CAMBIAMENTO CHIAVE
+Limite attuale:
 
-La Home ora separa:
-
-👉 STATO REALE DI OGGI  
-👉 PROBLEMA FUTURO  
-
----
-
-## COMPORTAMENTO
-
-### OGGI
-
-✔ Se tutto è coperto → verde  
-✔ testo: **“Nessuna criticità oggi”**  
-✔ nessun falso allarme  
+❌ Eventi Alice non ancora completamente integrati negli Eventi Globali
 
 ---
 
-### FUTURO
+# BLOCCO STATISTICHE
 
-✔ Il problema viene comunque mostrato  
-✔ visibile subito  
-✔ cliccabile  
+Stato: AVVIATO / BASE STRUTTURALE CONSOLIDATA
 
-Esempio reale:
+Principio:
 
-👉 Alice scoperta sabato 30 maggio 13:00–14:30  
+👉 le statistiche leggono solo dati reali vivi  
+👉 non inventano dati  
+👉 sono supporto decisionale, non decorazione
 
----
+Struttura temporale:
 
-## DECISIONE STRUTTURALE IMPORTANTE
-
-❌ eliminata la logica:
-
-"Nessun problema nei prossimi 30 giorni"
-
-✔ sostituita da:
-
-👉 verità reale sempre visibile  
+✔ Giorno  
+✔ Settimana  
+✔ Mese  
+✔ Anno  
 
 ---
 
-## RISULTATO
+# BLOCCO G — MOTORE PRESENZA REALE ALICE
 
-✔ nessuna confusione  
-✔ nessuna falsa sicurezza  
-✔ navigazione diretta al problema  
-✔ comportamento reale  
+Stato: IN CONSOLIDAMENTO AVANZATO
 
 ---
 
-## REGOLA UX PRINCIPALE
+## OBIETTIVO
 
-Quando c’è un problema principale:
+Centralizzare la domanda:
 
-👉 la Home deve mostrare UNA cosa sola da fare
-
----
-
-## FLUSSO DECISO
-
-1. Home mostra stato reale (oggi)  
-2. Mostra eventuale problema futuro  
-3. Click → calendario  
-4. Decisione umana  
+👉 “Dove si trova realmente Alice in questa fascia?”
 
 ---
 
-## REGOLA DECISIONALE
+## FILE / COMPONENTI CREATI
 
-Il sistema:
-
-✔ spiega il problema  
-✔ porta nel punto giusto  
-❌ NON propone soluzioni automatiche  
+✔ `lib/logic/alice_presence_engine.dart`  
+✔ `lib/models/alice_presence_state.dart`  
 
 ---
 
-## NOTA IMPORTANTE
+## STATI PRESENZA ATTUALI
 
-👉 la Home ora è affidabile per uso reale quotidiano  
+✔ home  
+✔ school  
+✔ timedEvent  
+✔ realEvent  
+✔ summerCamp  
+✔ accompanied  
+✔ support  
 
----
+Mancano:
 
-# 🔥 BLOCCO EVENTI GLOBALI (NUOVO)
-
-Stato: IMPLEMENTATO (V1)
-
----
-
-## STRUTTURA
-
-✔ Navigazione:
-
-- Anno
-- Mesi (griglia 4x3)
-- Eventi del mese
-- Scheda evento
+⬜ outsideWithFamily  
+⬜ autonomousFuture  
 
 ---
 
-## RISULTATO
+## COMPLETATO NEL BLOCCO G
 
-✔ eventi organizzati per anno  
-✔ mesi visualizzati come cruscotto  
-✔ conteggio eventi per mese  
-✔ accesso diretto ai mesi con eventi  
-✔ UI non più lista ma struttura visiva  
-
----
-
-## LIMITAZIONE ATTUALE
-
-👉 legge solo:
-
-✔ RealEventStore  
-
-❌ NON ancora inclusi:
-
-- AliceEventStore  
-- AliceSpecialEventStore  
-
-👉 integrazione prevista nella prossima fase
-
----
-
-# 🔥 BLOCCO MEMORIA EVENTO (NUOVO)
-
-Stato: COMPLETATO E VALIDATO
+☑ creare `alice_presence_engine.dart`  
+☑ creare `AlicePresenceState`  
+☑ centralizzare primo stato presenza Alice  
+☑ collegare CoverageEngine al motore presenza  
+☑ centralizzare evento reale Alice  
+☑ centralizzare evento temporizzato Alice  
+☑ introdurre `AlicePresenceState.accompanied`  
+☑ collegare `AliceCompanionStore`  
+☑ introdurre presenza relazionale  
+☑ introdurre `findCompanionForRange()`  
+☑ CoverageEngine legge `stateForRange()`  
+☑ introdurre `AlicePresenceState.support`  
+☑ collegare `SupportNetworkStore`  
+☑ collegare `DaySettingsStore`  
+☑ distinguere supporto reale attivo sulla fascia  
+☑ scuola resa temporale reale  
+☑ centro estivo reso temporale reale  
+☑ centralizzare accesso eventi temporizzati Alice  
+☑ centralizzare copertura rete supporto  
+☑ centralizzare controllo evento reale Alice  
+☑ CoverageEngine ridotto a consumatore progressivo del PresenceEngine  
 
 ---
 
-## FUNZIONALITÀ
+# BUG CENTRO ESTIVO RISOLTO
 
-✔ apertura evento  
-✔ campo note modificabile  
-✔ salvataggio reale nello store  
-✔ persistenza dopo riavvio app  
+Caso reale testato:
 
----
+- centro estivo attivo
+- uscita 16:30
+- rientro logistico 20 minuti
+- Matteo e Chiara entrambi pomeriggio
+- supporto parziale possibile
+- Sandra sera separata
 
-## RISULTATO
+Prima:
 
-✔ ogni evento può diventare memoria  
-✔ dati non più temporanei  
-✔ base per storico reale  
+❌ uscita centro estivo mostrata fino alle 18:00  
+❌ mancava il buco casa 16:50–21:00  
 
----
+Ora:
 
-## SIGNIFICATO
+✔ uscita centro estivo 16:30–16:50  
+✔ Alice a casa dopo centro estivo 16:50–21:00  
+✔ fascia Sandra sera 21:00–22:35 separata  
+✔ supporto reale spezza correttamente i buchi  
 
-👉 primo passo verso:
+Checkpoint:
 
-- diario eventi  
-- storico familiare  
-- analisi futura  
-
----
-
-# 🔥 STRATO AZIONI UNIVERSALE (FUTURO)
-
-Stato: DEFINITO CONCETTUALMENTE, NON ANCORA IMPLEMENTATO
-
----
-
-# 📚 STORICO / ANALISI ANNUALE
-
-Stato: IDEA EMERSA, NON ANCORA IMPLEMENTATA
+`summer-camp-real-home-gaps`
 
 ---
 
@@ -350,6 +280,7 @@ Stato: IDEA EMERSA, NON ANCORA IMPLEMENTATA
 ✔ gestione Alice a casa corretta  
 ✔ gestione giorni festivi corretta  
 ✔ buchi reali letti dalla Home  
+✔ PresenceEngine inizia a guidare la logica Alice  
 
 ---
 
@@ -358,7 +289,11 @@ Stato: IDEA EMERSA, NON ANCORA IMPLEMENTATA
 ✔ AliceEventStore attivo  
 ✔ AliceSpecialEventStore attivo  
 ✔ eventi integrati nel motore  
-❌ NON ancora integrati negli Eventi Globali  
+✔ eventi accompagnati funzionanti  
+✔ companion automatiche funzionanti  
+✔ cleanup lifecycle funzionante  
+✔ eventi temporizzati letti dal PresenceEngine  
+❌ non ancora completamente integrati negli Eventi Globali  
 
 ---
 
@@ -366,6 +301,7 @@ Stato: IDEA EMERSA, NON ANCORA IMPLEMENTATA
 
 - TurnEngine  
 - CoverageEngine  
+- AlicePresenceEngine  
 - EmergencyDayLogic  
 - FourthShiftCycleLogic  
 
@@ -380,11 +316,13 @@ Stato: IDEA EMERSA, NON ANCORA IMPLEMENTATA
 - RealEventStore  
 - AliceEventStore  
 - AliceSpecialEventStore  
+- AliceCompanionStore  
 - SupportNetworkStore  
 - FeriePeriodStore  
 - DiseasePeriodStore  
 - FourthShiftStore  
 - SettingsStore  
+- DaySettingsStore  
 - SummerCampScheduleStore  
 - SummerCampSpecialEventStore  
 - SchoolStore  
@@ -403,17 +341,37 @@ Stato: IDEA EMERSA, NON ANCORA IMPLEMENTATA
 ✔ mesi in griglia FrodoDesk  
 ✔ scheda evento con memoria  
 
----
+Nota:
 
-# ⚠️ STATO IPS
-
-👉 NON ancora coerente con il sistema reale
+👉 Home non è ancora guidata direttamente dal PresenceEngine.
 
 ---
 
-# 🎯 PROSSIMA FASE
+# STATO IPS
 
-🔥 INTEGRAZIONE EVENTI ALICE → EVENTI GLOBALI
+⚠️ NON ancora coerente con il sistema reale
+
+Decisione:
+
+👉 IPS resta rimandato fino al completamento del Motore Presenza Reale Alice.
+
+---
+
+# PROSSIMA FASE OPERATIVA
+
+Non fare Home.  
+Non fare IPS.
+
+Prossimo fronte:
+
+👉 continuare la pulizia di CoverageEngine dai residui legacy presenza Alice.
+
+In particolare:
+
+⬜ eliminare altri doppioni logici  
+⬜ valutare spostamento segmentazione eventi/tagli fascia  
+⬜ verificare logiche presenza Alice ancora dirette dentro `analyzeDayV2()`  
+⬜ solo dopo → Home guidata dal PresenceEngine  
 
 ---
 
@@ -424,696 +382,24 @@ Stato: IDEA EMERSA, NON ANCORA IMPLEMENTATA
 ✔ UI dopo  
 ✔ test reale continuo  
 ✔ decisione sempre umana  
+✔ file reali sempre  
+✔ nessun mega-refactor  
 
 ---
 
 # SIGNIFICATO ATTUALE
 
-Il sistema ora:
+FrodoDesk ora non sta più solo leggendo eventi.
 
-👉 legge la realtà  
-👉 distingue oggi da futuro  
-👉 non nasconde problemi  
-👉 guida l’utente  
-👉 inizia a costruire memoria reale  
+Sta iniziando a modellare:
+
+👉 presenza reale familiare  
+👉 presenza relazionale  
+👉 stato Alice nel tempo  
+👉 copertura reale dinamica  
 
 ---
 
 # FRASE DI RIPARTENZA UFFICIALE
 
-Ripartiamo da FrodoDesk — Eventi Globali V1 + Memoria Evento attiva. Prossima fase: integrazione Eventi Alice negli Eventi Globali.
----
-
-## 🔄 AGGIORNAMENTO 5 Maggio 2026
-
-### HOME + EVENTI GLOBALI + MEMORIA EVENTO
-
-✔ introdotta struttura completa Eventi Globali  
-✔ navigazione anno → mesi → eventi funzionante  
-✔ mesi visualizzati in griglia con conteggio eventi  
-✔ accesso ai mesi solo se contengono eventi  
-
-✔ aggiunta scheda dettaglio evento  
-✔ introdotto campo memoria evento (note)  
-✔ salvataggio persistente verificato  
-✔ memoria evento stabile dopo riavvio  
-
-✔ supporto eventi multi-persona  
-✔ introduzione participants negli eventi  
-✔ integrazione corretta nel CoverageEngine  
-
-✔ Home aggiornata per leggere eventi reali + eventi Alice  
-✔ migliorata coerenza tra eventi e copertura  
-
----
-
-### EVENTI GLOBALI — EVOLUZIONE
-
-✔ introdotta distinzione temporale:
-
-- Eventi passati  
-- Eventi anno corrente  
-- Eventi futuri  
-
-✔ definita regola:
-
-- anno corrente = presente  
-- anni precedenti = passato  
-- anni successivi = futuro  
-
-✔ introdotta base UI per anni futuri  
-
-⚠️ stato attuale:
-
-- anni visibili ma non ancora apribili se vuoti  
-- sistema pronto per espansione  
-
----
-
-### ARCHITETTURA MODULARE
-
-✔ decisione strutturale:
-
-👉 Home NON deve contenere logiche complesse  
-
-✔ definito principio:
-
-- Home = orchestratore  
-- moduli = logica reale  
-
-✔ preparazione per:
-
-- modulo Statistiche  
-- moduli grafici  
-- espansione futura sistema  
-
----
-
-### NUOVO BLOCCO — STATISTICHE
-
-✔ introdotto concetto modulo Statistiche  
-
-✔ decisione:
-
-- modulo separato  
-- NON dentro Home  
-- base per grafici  
-
-✔ direzione:
-
-👉 grafici = lettura immediata della realtà  
-👉 elemento chiave del sistema futuro  
-
----
-
-### STATO
-
-✔ stabile  
-✔ testato su app reale  
-✔ memoria eventi funzionante  
-✔ Eventi Globali funzionanti  
-✔ Home coerente con sistema  
-✔ struttura pronta per espansione
-
----
-
-## 🔄 AGGIORNAMENTO 6 Maggio 2026
-
-### MODULO STATISTICHE — NASCITA STRUTTURALE UFFICIALE
-
-✔ creato ufficialmente il modulo Statistiche come modulo indipendente del sistema  
-
-✔ introdotta filosofia strutturale:
-
-👉 le statistiche NON devono inventare dati  
-👉 devono leggere SOLO moduli reali vivi  
-
-✔ definita nuova identità del modulo:
-
-- memoria storica del sistema
-- lettura evolutiva della famiglia
-- supporto decisionale
-- confronto temporale reale
-
----
-
-### NUOVA STRUTTURA TEMPORALE UFFICIALE
-
-❌ eliminati concetti:
-
-- ultimi 7 giorni
-- ultimi 30 giorni
-
-✔ sostituiti da:
-
-- Giorno
-- Settimana
-- Mese
-- Anno
-
-👉 decisione importante:
-
-FrodoDesk deve leggere il tempo come lo leggono le persone reali e NON come dashboard tecniche.
-
----
-
-### SUPPORTO FAMILIARE — STATISTICHE SANDRA
-
-✔ introdotto popup andamento completo  
-
-✔ confronto reale tra periodi:
-
-- giorno ↔ giorno precedente
-- settimana ↔ settimana precedente
-- mese ↔ mese precedente
-- anno ↔ anno precedente
-
-✔ introdotta navigazione temporale reale  
-
-✔ modalità Anno completamente separata dalla modalità Mese  
-
-✔ confronto grafico anno ↔ anno precedente funzionante  
-
-✔ grafico adattivo:
-
-- giornaliero
-- settimanale
-- mensile
-- annuale
-
-✔ scala grafico corretta anche con anni futuri vuoti  
-
-✔ introdotte statistiche adattive:
-
-- media giorno
-- media mese
-- picco periodo
-- periodo più intenso
-
-✔ introdotta UI statistica coerente con il periodo selezionato
-
----
-
-### ARCHITETTURA STATISTICHE
-
-✔ definito principio:
-
-👉 ogni modulo futuro dovrà poter avere la propria card statistiche
-
-Esempi:
-
-- Costi
-- IPS
-- Salute
-- Copertura
-- Eventi
-
-✔ decisione strutturale:
-
-le statistiche NON devono avere logiche autonome  
-
-👉 leggono solamente i moduli reali del sistema
-
----
-
-### DIREZIONE FUTURA DECISA
-
-Nuovo ordine operativo ufficiale:
-
-1. Calendario reale completo  
-2. Rifiniture intelligenti UX/realtà  
-3. Modulo Costi / Finanze  
-4. Espansione modulo Statistiche come lettura naturale dei moduli vivi  
-
----
-
-### STATO
-
-✔ stabile  
-✔ compilazione verificata  
-✔ popup adattivo funzionante  
-✔ confronto storico funzionante  
-✔ navigazione anni funzionante  
-✔ struttura statistica consolidata  
-✔ base pronta per espansione multi-modulo
-
----
-
-## 🔄 AGGIORNAMENTO 7 Maggio 2026
-
-### PERSON DETAIL PANEL — MINI CALENDARI PERSONALI VIVI
-
----
-
-## 🔥 NUOVA EVOLUZIONE STRUTTURALE
-
-Il sistema ha introdotto una nuova lettura della Home:
-
-❌ prima → popup informative statiche  
-✔ ora → radar personali vivi collegati al sistema reale  
-
----
-
-## 👤 PERSON DETAIL PANEL
-
-Ogni persona ora possiede:
-
-✔ mini calendario mensile reale  
-✔ stato giornata  
-✔ navigazione mese  
-✔ accesso diretto ai giorni reali  
-
----
-
-## 🧱 NAVIGAZIONE DIRETTA CALENDARIO
-
-Implementato:
-
-✔ tap sul giorno  
-✔ apertura automatica Calendario reale  
-✔ posizionamento diretto sul giorno selezionato  
-
-👉 Home e Calendario ora risultano collegati in modo bidirezionale reale.
-
----
-
-## 👨 MATTEO / 👩 CHIARA
-
-Mini calendario collegato a:
-
-✔ TurnEngine  
-✔ ferie  
-✔ malattia  
-
-Con:
-
-✔ colori reali  
-✔ icone reali  
-✔ lettura immediata del mese  
-
----
-
-## 👧 ALICE — NUOVA LETTURA MULTI-LAYER
-
-La scheda Alice ora legge contemporaneamente:
-
-✔ SchoolStore  
-✔ AliceEventStore  
-✔ AliceSpecialEventStore  
-✔ DiseasePeriodStore  
-
----
-
-## 🔥 DISTINZIONE STRUTTURALE CONSOLIDATA
-
-Decisione ufficiale:
-
-❌ weekend ≠ vacanza  
-❌ scuola chiusa ≠ vacanza  
-
-Il sistema distingue ora:
-
-✔ vacanza reale  
-✔ scuola chiusa  
-✔ weekend  
-✔ centro estivo  
-✔ attività/eventi Alice  
-
----
-
-## 🎨 STATI VISIVI ALICE
-
-Implementati:
-
-- scuola
-- vacanza
-- scuola chiusa
-- centro estivo
-- evento attività
-- uscita anticipata
-- malattia
-
-con:
-
-✔ colori dedicati  
-✔ icone dedicate  
-✔ lettura immediata visiva  
-
----
-
-## 🧠 NUOVO PASSAGGIO EVOLUTIVO
-
-La Home evolve da:
-
-❌ dashboard dati
-
-👉
-
-✔ sistema navigabile persona per persona
-
----
-
-## 🔥 DIREZIONE OPERATIVA NUOVA
-
-Prossimo step ufficiale deciso:
-
-👉 conflitti intelligenti reali
-
-Il sistema dovrà:
-
-✔ rilevare incompatibilità reali  
-✔ evidenziare conflitti operativi  
-✔ spiegare problemi decisionali reali  
-
-Esempi:
-
-- evento dentro turno
-- eventi Alice incompatibili
-- copertura impossibile
-- conflitti lavoro ↔ vita reale
-
----
-
-## PRINCIPIO
-
-FrodoDesk NON deve nascondere i conflitti.
-
-👉 Deve renderli leggibili e comprensibili.
-
-La decisione resta sempre umana.
-
----
-
-## STATO
-
-✔ stabile  
-✔ compilazione verificata  
-✔ test reale completato  
-✔ mini calendari vivi funzionanti  
-✔ navigazione giorno → calendario funzionante  
-✔ struttura pronta per conflitti intelligenti
-
-## 🔄 AGGIORNAMENTO 8 Maggio 2026
-
-### EVENTI ALICE — COMPORTAMENTI REALI + EVENTI ACCOMPAGNATI
-
-✔ introdotto sistema comportamenti reali Eventi Alice
-
-Nuovi comportamenti supportati:
-
-- passive
-- logistic
-- accompanied
-- futureAutonomous
-
----
-
-### SIGNIFICATO STRUTTURALE
-
-Gli Eventi Alice non rappresentano più semplici eventi calendario.
-
-👉 rappresentano comportamento reale della presenza di Alice nel sistema.
-
----
-
-### EVENTI PASSIVI
-
-Esempi:
-
-- compiti
-- studio
-- gioco
-- attività in casa
-
-Comportamento:
-
-✔ Alice occupata
-✔ resta nello stesso luogo
-✔ richiede supervisione adulta
-✔ NON richiede logistica
-
----
-
-### EVENTI LOGISTICI
-
-Esempi:
-
-- sport
-- musica
-- dentista
-- visite
-
-Comportamento:
-
-✔ Alice fuori casa
-✔ richiede accompagnamento
-✔ richiede ritiro
-✔ può generare conflitti reali
-
----
-
-### EVENTI ACCOMPAGNATI
-
-Nuova capacità strutturale introdotta:
-
-✔ Alice può seguire un adulto reale
-
-Esempi:
-
-- Alice con Matteo
-- Alice con Chiara
-
----
-
-### COLLEGAMENTO REALE COPERTURA
-
-Implementato:
-
-Evento accompagnato
-→ AliceCompanionStore
-→ copertura reale
-
----
-
-### SINCRONIZZAZIONE CICLO EVENTO
-
-Implementato:
-
-✔ creazione evento → crea companion coverage
-✔ modifica orario → aggiorna coverage
-✔ modifica adulto → aggiorna coverage
-✔ eliminazione evento → cleanup coverage
-
----
-
-### DISTINZIONE STRUTTURALE
-
-Il sistema distingue ora:
-
-✔ companion manuale
-✔ companion generata da evento
-
-Le companion generate da evento:
-
-❌ NON possono essere rimosse dal bottone manuale
-
----
-
-### RISULTATO
-
-✔ riduzione falsi buchi
-✔ relazione reale Alice ↔ adulto
-✔ comportamento più realistico
-✔ base pronta per:
-- accompagnamento reale
-- ritiro reale
-- conflitti logistici
-- Alice al seguito intelligente
-
----
-
-### STATO
-
-✔ stabile
-✔ compilazione verificata
-✔ test reale completato
-✔ sincronizzazione eventi funzionante
-✔ cleanup lifecycle funzionante
-
----
-
-## 🔄 AGGIORNAMENTO 11 Maggio 2026
-
-### MOTORE PRESENZA REALE ALICE — NUOVA FASE STRUTTURALE
-
----
-
-## 🔥 CAMBIO DI PRIORITÀ UFFICIALE
-
-La priorità operativa del progetto cambia.
-
-❌ IPS NON è più la prossima fase immediata  
-❌ Eventi Alice → Eventi Globali NON è più il focus principale  
-
-👉 Prima serve completare:
-
-# MOTORE PRESENZA REALE ALICE
-
----
-
-## 🧠 PROBLEMA STRUTTURALE IDENTIFICATO
-
-Durante i test reali è emerso che la presenza di Alice è ancora distribuita tra più logiche separate:
-
-- scuola
-- eventi Alice
-- companion
-- supporto
-- eventi reali multi-persona
-- stato casa
-- copertura
-
-Questo crea rischio futuro di:
-
-❌ duplicazioni logiche  
-❌ falsi buchi  
-❌ incoerenze Home ↔ Calendario  
-❌ IPS non affidabile  
-
----
-
-## 🔥 NUOVO OBIETTIVO STRUTTURALE
-
-Creare una sorgente unica di verità che risponda a:
-
-👉 “Dove si trova realmente Alice?”
-
----
-
-## 🧱 NUOVO BLOCCO ATTIVO
-
-# BLOCCO G — MOTORE PRESENZA REALE ALICE
-
-Stato: AVVIATO
-
----
-
-## OBIETTIVO
-
-Centralizzare:
-
-✔ presenza reale Alice  
-✔ accompagnamento  
-✔ supporto  
-✔ scuola  
-✔ eventi  
-✔ ritorno a casa  
-✔ stato reale temporale  
-
-in un solo motore centrale.
-
----
-
-## 🔥 NUOVO MOTORE PREVISTO
-
-## alice_presence_engine.dart
-
-Responsabilità:
-
-✔ determinare presenza reale Alice  
-✔ determinare se Alice è coperta  
-✔ determinare se Alice è accompagnata  
-✔ determinare se Alice è fuori casa  
-✔ eliminare doppioni logici  
-
----
-
-## 🧠 STATI PRESENZA PREVISTI
-
-✔ casa  
-✔ scuola  
-✔ evento  
-✔ accompagnata  
-✔ supporto  
-✔ centro estivo  
-✔ fuori con famiglia  
-⬜ autonoma futura  
-
----
-
-## 🔥 FIX GIÀ CONSOLIDATI
-
-✔ Alice dentro evento reale = niente falso buco  
-✔ Home ↔ Coverage coerenti  
-✔ Supporto reale sincronizzato  
-✔ Eventi multi-persona integrati  
-✔ Companion lifecycle stabile  
-
----
-
-## 🧠 NUOVO PRINCIPIO CONSOLIDATO
-
-Evento condiviso famigliare ≠ Alice sola a casa.
-
----
-
-## 📌 STATO ATTUALE REALE
-
-Il sistema ora:
-
-✔ simula la presenza reale  
-✔ collega Alice ↔ adulto ↔ copertura  
-✔ distingue accompagnamento da semplice evento  
-✔ inizia a modellare la realtà fisica della famiglia  
-
----
-
-## 🚀 ROADMAP OPERATIVA NUOVA
-
-### COMPLETATI
-
-☑ eventi accompagnati  
-☑ companion automatiche  
-☑ supporto sincronizzato  
-☑ eventi multi-persona  
-☑ Home coerente col motore reale  
-☑ eliminazione falsi buchi principali  
-
----
-
-### PROSSIMI STEP
-
-⬜ creare `alice_presence_engine.dart`  
-⬜ centralizzare presenza reale Alice  
-⬜ far leggere CoverageEngine dal nuovo motore  
-⬜ far leggere Home dal nuovo motore  
-⬜ eliminare doppioni logici presenza  
-⬜ introdurre test presenza reale  
-⬜ solo dopo → riallineamento IPS  
-
----
-
-## 🔥 NUOVA DIREZIONE PROGETTO
-
-Il sistema sta passando da:
-
-❌ calendario intelligente
-
-👉 a
-
-✔ simulazione reale della presenza familiare
-
----
-
-## 🎯 NUOVA PROSSIMA FASE UFFICIALE
-
-Ripartiamo da FrodoDesk — BLOCCO G: Motore Presenza Reale Alice.
-
-STEP 1:
-👉 creare `alice_presence_engine.dart`
-
-STEP 2:
-👉 centralizzare la presenza reale Alice
-
-STEP 3:
-👉 far leggere CoverageEngine e Home dalla stessa verità
+Ripartiamo da FrodoDesk — BLOCCO G: PresenceEngine già attivo, CoverageEngine in progressiva pulizia. Prossimo passo: eliminare residui legacy di presenza Alice dentro CoverageEngine senza toccare Home e senza riallineare IPS.

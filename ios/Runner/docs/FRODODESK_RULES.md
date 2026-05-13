@@ -1201,3 +1201,177 @@ Prima di riallineare IPS o aggiungere nuove UI:
 👉 completare il Motore Presenza Reale Alice.
 
 IPS verrà dopo, quando la presenza Alice sarà centralizzata.
+
+---
+
+# 🔴 AGGIORNAMENTO 12 MAGGIO 2026 — PRESENCE ENGINE ATTIVO
+
+## PRINCIPIO
+
+Il Motore Presenza Reale Alice non è più solo previsto.
+
+È stato creato ed è attivo tramite:
+
+`alice_presence_engine.dart`
+
+---
+
+## REGOLA STRUTTURALE AGGIORNATA
+
+CoverageEngine NON deve tornare ad accumulare logiche dirette sulla presenza Alice.
+
+La regola corretta è:
+
+👉 CoverageEngine chiede al PresenceEngine  
+👉 PresenceEngine interpreta dove si trova Alice  
+👉 CoverageEngine usa il risultato per generare buchi e copertura  
+
+---
+
+## STATI PRESENZA ATTUALI
+
+Il modello `AlicePresenceState` supporta:
+
+✔ home  
+✔ school  
+✔ timedEvent  
+✔ realEvent  
+✔ summerCamp  
+✔ accompanied  
+✔ support  
+
+Stati futuri previsti:
+
+⬜ outsideWithFamily  
+⬜ autonomousFuture  
+
+---
+
+## REGOLA TEMPORALE PRESENZA
+
+La presenza Alice non deve essere valutata solo “a giornata”.
+
+Deve essere valutata per fascia temporale reale.
+
+Domanda corretta:
+
+👉 “Dove si trova Alice in questa fascia?”
+
+Non:
+
+❌ “Che tipo di giorno è oggi?”  
+
+---
+
+## REGOLA SCUOLA
+
+La scuola non vale automaticamente per tutto il giorno.
+
+La scuola vale solo sulla fascia temporale reale:
+
+- ingresso
+- permanenza scuola
+- rientro
+
+Fuori da quella fascia, Alice può tornare a essere:
+
+- a casa
+- in evento
+- accompagnata
+- sotto supporto
+- al centro estivo
+- altro stato futuro
+
+---
+
+## REGOLA CENTRO ESTIVO
+
+Il centro estivo non vale automaticamente per tutto il giorno.
+
+Il centro estivo deve essere interpretato come:
+
+1. ingresso / logistica  
+2. permanenza reale  
+3. uscita / rientro  
+4. casa dopo centro estivo  
+
+---
+
+## FIX STRUTTURALE CENTRO ESTIVO
+
+Caso risolto:
+
+- centro estivo fino alle 16:30
+- rientro logistico 20 minuti
+- genitori entrambi non disponibili
+- fascia Sandra sera separata
+
+Comportamento corretto:
+
+✔ buco uscita centro estivo 16:30–16:50  
+✔ buco Alice a casa dopo centro estivo 16:50–21:00  
+✔ buco fascia Sandra sera 21:00–22:35  
+✔ supporto reale può spezzare i buchi  
+
+---
+
+## REGOLA SUPPORTO
+
+La rete supporto è distinta da Sandra.
+
+- Supporto = persone della rete supporto
+- Sandra = categoria separata con fasce dedicate
+
+Il supporto è valido solo se:
+
+✔ è attivo  
+✔ è abilitato nel giorno  
+✔ copre completamente la fascia reale  
+
+---
+
+## REGOLA PRESENZA RELAZIONALE
+
+Alice può essere accompagnata da un adulto reale.
+
+Questo non è solo “copertura”.
+
+È stato di presenza relazionale:
+
+👉 Alice + adulto
+
+Il sistema deve mantenere distinta:
+
+- Alice a casa
+- Alice accompagnata
+- Alice coperta da supporto
+- Alice dentro evento
+- Alice al centro estivo
+- Alice a scuola
+
+---
+
+## REGOLA ANTI-DOPPIONE
+
+Da ora, ogni nuova logica sulla presenza di Alice deve essere valutata prima nel PresenceEngine.
+
+Vietato aggiungere nuove patch sparse in:
+
+❌ Home  
+❌ Calendario  
+❌ CoverageEngine  
+❌ UI  
+
+senza prima verificare se appartengono al PresenceEngine.
+
+---
+
+## REGOLA DI PROGRESSIONE
+
+Prima di lavorare su Home o IPS:
+
+1. consolidare PresenceEngine  
+2. ripulire CoverageEngine dai residui legacy  
+3. verificare casi reali  
+4. solo dopo collegare Home alla stessa verità  
+5. solo dopo riallineare IPS  

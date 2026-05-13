@@ -129,6 +129,61 @@ class AlicePresenceEngine {
         AlicePresenceState.home;
   }
 
+  bool isAliceAccompaniedDuringRange({
+    required DateTime day,
+    required DateTime start,
+    required DateTime end,
+  }) {
+    return aliceCompanionStore.findCompanionForRange(
+          day: day,
+          start: start,
+          end: end,
+        ) !=
+        null;
+  }
+
+  DateTime? aliceCompanionEndForRange({
+    required DateTime day,
+    required DateTime start,
+    required DateTime end,
+  }) {
+    final d0 = _onlyDate(day);
+    final entries = aliceCompanionStore.entriesForDay(d0);
+
+    DateTime? bestEnd;
+
+    for (final entry in entries) {
+      final entryStart = DateTime(
+        d0.year,
+        d0.month,
+        d0.day,
+        entry.start.hour,
+        entry.start.minute,
+      );
+
+      final entryEnd = DateTime(
+        d0.year,
+        d0.month,
+        d0.day,
+        entry.end.hour,
+        entry.end.minute,
+      );
+
+      final overlapsWindow =
+          entryStart.isBefore(end) && entryEnd.isAfter(start);
+
+      if (!overlapsWindow) continue;
+
+      if (entryStart.isAfter(start)) continue;
+
+      if (bestEnd == null || entryEnd.isAfter(bestEnd)) {
+        bestEnd = entryEnd;
+      }
+    }
+
+    return bestEnd;
+  }
+
   AlicePresenceState stateForRange({
     required DateTime day,
     required DateTime start,

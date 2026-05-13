@@ -392,3 +392,184 @@ ma tramite UNA sorgente unica di verità:
 ⬜ Pulizia doppioni logici
 ⬜ Test presenza reale complessi
 ⬜ Collegamento IPS futuro
+
+---
+
+# 🔄 AGGIORNAMENTO 12 Maggio 2026
+
+# 🔥 MOTORE PRESENZA REALE ALICE — FASE ATTIVA
+
+La roadmap PresenceEngine non è più solo teorica.
+
+È stato creato e collegato:
+
+`alice_presence_engine.dart`
+
+---
+
+# 🧠 NUOVO PRINCIPIO STRUTTURALE
+
+Gli Eventi Alice non devono più decidere direttamente la presenza reale finale.
+
+Gli eventi diventano:
+
+👉 INPUT del PresenceEngine
+
+Il PresenceEngine diventa:
+
+👉 sorgente unica di verità sulla presenza reale di Alice
+
+---
+
+# 🔥 NUOVO MODELLO PRESENZA
+
+Introdotto:
+
+`AlicePresenceState`
+
+Stati attivi:
+
+✔ home  
+✔ school  
+✔ timedEvent  
+✔ realEvent  
+✔ summerCamp  
+✔ accompanied  
+✔ support  
+
+Stati futuri:
+
+⬜ outsideWithFamily  
+⬜ autonomousFuture  
+
+---
+
+# EVENTI TEMPORIZZATI
+
+Gli eventi Alice temporizzati sono ora letti centralmente dal PresenceEngine.
+
+Nuova funzione centrale:
+
+`enabledTimedEventsForDay()`
+
+Obiettivo:
+
+✔ eliminare doppioni nel CoverageEngine  
+✔ evitare letture sparse degli eventi  
+✔ mantenere una sola verità temporale  
+
+---
+
+# 🔥 EVENTI REALI FAMILIARI
+
+La gestione eventi reali multi-persona è ora completamente integrata nel PresenceEngine.
+
+Caso:
+
+Evento reale con:
+
+- Matteo
+- Chiara
+- Alice
+
+Risultato corretto:
+
+✔ Alice dentro evento reale  
+✔ Alice NON a casa  
+✔ nessun falso buco  
+
+---
+
+# 🧠 PRESENZA RELAZIONALE
+
+Il sistema ora distingue realmente:
+
+- Alice a casa
+- Alice accompagnata
+- Alice sotto supporto
+- Alice dentro evento reale
+- Alice dentro evento temporizzato
+
+Questa NON è solo copertura.
+
+👉 È presenza fisica reale nel tempo.
+
+---
+
+# 🔥 SUPPORTO REALE
+
+La rete supporto è stata integrata nel PresenceEngine.
+
+Una persona supporto è valida solo se:
+
+✔ attiva  
+✔ abilitata nel giorno  
+✔ copre tutta la fascia reale  
+
+---
+
+# 🔥 CENTRO ESTIVO — EVOLUZIONE
+
+Il centro estivo non viene più trattato come semplice stato giornata.
+
+Ora il sistema distingue:
+
+1. uscita verso centro estivo  
+2. permanenza reale  
+3. rientro logistico  
+4. casa dopo centro estivo  
+
+---
+
+# FIX IMPORTANTE — CASA DOPO CENTRO ESTIVO
+
+Caso reale corretto:
+
+Prima:
+
+❌ Alice risultava "fuori" troppo a lungo  
+
+Ora:
+
+✔ uscita centro estivo 16:30–16:50  
+✔ ritorno Alice a casa 16:50  
+✔ da lì torna la regola copertura reale  
+
+---
+
+# 🧠 SIGNIFICATO EVOLUTIVO
+
+Il modulo Eventi Alice non rappresenta più:
+
+❌ semplici eventi calendario
+
+Ma:
+
+✔ comportamento reale della presenza Alice  
+✔ relazioni Alice ↔ adulti  
+✔ spostamenti reali  
+✔ ritorni reali  
+✔ copertura reale nel tempo  
+
+---
+
+# 📌 STATO ATTUALE REALE
+
+COMPLETATI:
+
+☑ PresenceEngine creato  
+☑ modello presenza creato  
+☑ supporto reale centralizzato  
+☑ eventi temporizzati centralizzati  
+☑ eventi reali centralizzati  
+☑ CoverageEngine collegato al PresenceEngine  
+☑ fix centro estivo reale  
+☑ fix casa dopo centro estivo  
+
+RESTA:
+
+⬜ eliminazione doppioni legacy residui  
+⬜ pulizia analyzeDayV2()  
+⬜ Home completamente guidata dal PresenceEngine  
+⬜ test strutturati presenza reale  
+⬜ riallineamento IPS futuro  

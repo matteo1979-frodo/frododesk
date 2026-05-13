@@ -67,95 +67,196 @@ DateTime(
 
 ---
 
-# 🔄 AGGIORNAMENTO 11 Maggio 2026
+# 🔄 AGGIORNAMENTO 12 Maggio 2026
 
-## 🔥 EVOLUZIONE — PRESENZA REALE ALICE
+## 🔥 PRESENCE ENGINE ATTIVO
 
-Lo stato di Alice NON deve più essere derivato solo da:
+Lo Stato Ora NON deve più ricostruire manualmente la presenza Alice.
 
-- scuola
-- centro estivo
-- evento attivo
+È ora collegato al sistema:
 
-👉 ma dalla presenza reale simulata nel tempo.
+`alice_presence_engine.dart`
 
 ---
 
-## NUOVO PRINCIPIO
+# 🧠 NUOVO PRINCIPIO
 
-La domanda reale del sistema diventa:
+La domanda reale del sistema è:
 
-👉 “Dove si trova Alice ORA?”
+👉 “Dove si trova Alice in questo preciso istante?”
 
 NON:
 
-❌ “Che evento ha?”
+❌ “Che tipo di giorno è?”  
+❌ “Che evento ha oggi?”  
 
 ---
 
-## NUOVI STATI PREVISTI
+# 🔥 SORGENTE UNICA DI VERITÀ
 
-Alice può risultare:
+La presenza Alice viene determinata centralmente dal:
 
-✔ a casa  
-✔ a scuola  
-✔ al centro estivo  
-✔ dentro evento Alice  
-✔ accompagnata da adulto  
-✔ dentro evento reale multi-persona  
-✔ coperta da supporto  
-⬜ autonoma futura  
+`AlicePresenceEngine`
 
----
+Lo Stato Ora deve leggere:
 
-## 🔥 NUOVA REGOLA — EVENTO REALE CON ALICE
+✔ presenza reale  
+✔ accompagnamento  
+✔ supporto  
+✔ scuola  
+✔ centro estivo  
+✔ eventi reali  
+✔ eventi temporizzati  
 
-Se Alice partecipa a un evento reale:
-
-👉 durante quell’intervallo NON è considerata a casa.
+senza ricostruire logiche duplicate.
 
 ---
 
-## CASO IMPORTANTE
+# 🔥 MODELLO PRESENZA ATTIVO
 
-Evento reale:
+Introdotto ufficialmente:
+
+`AlicePresenceState`
+
+Stati attivi:
+
+✔ home  
+✔ school  
+✔ timedEvent  
+✔ realEvent  
+✔ summerCamp  
+✔ accompanied  
+✔ support  
+
+Stati futuri:
+
+⬜ outsideWithFamily  
+⬜ autonomousFuture  
+
+---
+
+# 👧 ALICE — NUOVA PRIORITÀ REALE
+
+La priorità non è più basata solo sul “tipo giornata”.
+
+Ora è basata sulla presenza reale temporale.
+
+Ordine corretto:
+
+1. evento reale multi-persona → realEvent
+2. evento temporizzato → timedEvent
+3. accompagnamento → accompanied
+4. supporto reale → support
+5. centro estivo → summerCamp
+6. scuola → school
+7. fallback → home
+
+---
+
+# 🔥 EVENTI REALI FAMILIARI
+
+Caso:
+
+Evento reale con:
 
 - Matteo
 - Chiara
 - Alice
 
+Comportamento corretto:
+
+✔ Alice dentro evento reale  
+✔ Alice NON a casa  
+✔ nessun falso buco  
+✔ Stato Ora coerente con Coverage e Home  
+
+---
+
+# 🔥 SUPPORTO REALE
+
+Il supporto non è più semplice informazione UI.
+
+Ora influenza realmente la presenza Alice.
+
+Una persona supporto è valida solo se:
+
+✔ attiva  
+✔ abilitata nel giorno  
+✔ copre completamente la fascia reale  
+
+---
+
+# 🔥 CENTRO ESTIVO — LETTURA REALE
+
+Il centro estivo viene ora interpretato temporalmente.
+
+Il sistema distingue:
+
+1. uscita verso centro estivo  
+2. permanenza reale  
+3. rientro logistico  
+4. Alice a casa dopo il rientro  
+
+---
+
+# FIX IMPORTANTE — CASA DOPO CENTRO ESTIVO
+
+Caso reale corretto:
+
 Prima:
 
-❌ Alice risultava a casa  
-❌ possibile falso buco copertura  
+❌ Alice risultava fuori troppo a lungo  
 
 Ora:
 
-✔ Alice è considerata dentro l’evento reale  
-✔ nessun falso buco  
-✔ Home e Calendario coerenti  
+✔ ritorno casa corretto  
+✔ Alice torna nello stato `home`
+✔ da quel momento torna la regola copertura reale  
 
 ---
 
-## 🔥 DIREZIONE STRUTTURALE
+# 🔥 PRINCIPIO ARCHITETTURALE CONSOLIDATO
 
-Lo Stato Ora dovrà evolvere verso un motore unico:
+Lo Stato Ora NON deve:
 
-`alice_presence_engine.dart`
+❌ interpretare manualmente eventi Alice  
+❌ decidere da solo se Alice è a casa  
+❌ duplicare logiche PresenceEngine  
 
-Responsabilità futura:
+Deve:
 
-✔ determinare presenza reale Alice  
-✔ fornire stato coerente a:
+✔ leggere la presenza reale centrale  
+
+---
+
+# 🎯 OBIETTIVO STRUTTURALE
+
+Una sola verità condivisa tra:
+
 - CoverageEngine
 - Home
 - Stato Ora
+- Calendario
 - IPS futuro
+- Statistiche future
 
 ---
 
-## PRINCIPIO ARCHITETTURALE
+# 📌 STATO ATTUALE
 
-La presenza reale di Alice NON deve essere ricostruita in più punti del sistema.
+COMPLETATI:
 
-👉 Una sola verità centrale.
+☑ PresenceEngine creato  
+☑ modello presenza creato  
+☑ supporto reale centralizzato  
+☑ eventi temporizzati centralizzati  
+☑ eventi reali centralizzati  
+☑ CoverageEngine collegato  
+☑ Stato Ora riallineato concettualmente  
+
+RESTA:
+
+⬜ eliminazione residui legacy  
+⬜ Home completamente guidata dal PresenceEngine  
+⬜ test presenza reale complessi  
+⬜ riallineamento IPS futuro  
