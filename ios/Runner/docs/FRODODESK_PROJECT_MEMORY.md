@@ -1076,3 +1076,149 @@ Obiettivo:
 ## FRASE DI RIPARTENZA UFFICIALE
 
 Ripartiamo da FrodoDesk — Motore presenza reale Alice: creare `alice_presence_engine.dart` come sorgente unica per decidere dove si trova Alice e ridurre le logiche duplicate tra Home, Calendario e CoverageEngine.
+# 🔄 AGGIORNAMENTO 12–13 Maggio 2026
+
+## 🔥 MOTORE PRESENZA REALE ALICE — CONSOLIDAMENTO
+
+Il progetto ha fatto un nuovo salto strutturale.
+
+❌ prima:
+CoverageEngine interpretava direttamente la presenza Alice
+
+✔ ora:
+la presenza Alice viene progressivamente centralizzata nel nuovo:
+
+`alice_presence_engine.dart`
+
+---
+
+## 🧠 NUOVA DOMANDA STRUTTURALE
+
+Il sistema ora ragiona sulla domanda:
+
+👉 “Dove si trova realmente Alice in questa fascia?”
+
+e NON più solo su eventi o calendario.
+
+---
+
+## ✅ STATI PRESENZA INTRODOTTI
+
+È stato introdotto:
+
+`AlicePresenceState`
+
+Stati attivi:
+
+✔ home  
+✔ school  
+✔ timedEvent  
+✔ realEvent  
+✔ summerCamp  
+✔ accompanied  
+✔ support  
+
+Stati futuri previsti:
+
+⬜ outsideWithFamily  
+⬜ autonomousFuture  
+
+---
+
+## 🔗 CENTRALIZZAZIONI COMPLETATE
+
+CoverageEngine ora legge dal PresenceEngine per:
+
+✔ eventi temporizzati Alice  
+✔ eventi reali Alice  
+✔ supporto reale  
+✔ scuola  
+✔ centro estivo  
+✔ accompagnamento Alice  
+
+---
+
+## 👨‍👩‍👧 PRESENZA RELAZIONALE
+
+Nuovo passaggio importante:
+
+Alice non è più solo “a casa” o “fuori”.
+
+Ora il sistema distingue:
+
+✔ Alice con adulto  
+✔ Alice dentro evento reale familiare  
+✔ Alice coperta da supporto reale  
+✔ Alice realmente a casa  
+
+---
+
+## 🔥 FIX REALI IMPORTANTI
+
+Corretti bug strutturali reali:
+
+✔ falso buco “Alice a casa” durante eventi multi-persona  
+✔ incoerenza Home ↔ Calendario  
+✔ supporto reale parziale non validato correttamente  
+✔ buco post centro estivo corretto (16:50–21:00)  
+✔ separazione reale fascia Sandra sera  
+
+---
+
+## 🧱 NUOVA DIREZIONE STRUTTURALE
+
+CoverageEngine deve progressivamente:
+
+❌ interpretare Alice direttamente  
+❌ leggere CompanionStore direttamente  
+❌ segmentare manualmente presenza Alice  
+
+e diventare:
+
+✔ consumatore del PresenceEngine  
+✔ motore copertura puro  
+✔ interprete dei buchi reali  
+
+---
+
+## 🎯 STATO ATTUALE REALE
+
+✔ PresenceEngine attivo  
+✔ CoverageEngine collegato  
+✔ Home coerente col motore reale  
+✔ eventi multi-persona realistici  
+✔ supporto reale validato correttamente  
+✔ accompagnamento Alice centralizzato  
+✔ motore presenza in consolidamento avanzato  
+
+---
+
+## 🚀 DIREZIONE PROSSIMA
+
+NON lavorare ancora su:
+
+❌ Home avanzata  
+❌ IPS reale  
+
+Prossimo lavoro corretto:
+
+👉 eliminare i residui legacy presenza Alice dentro CoverageEngine.
+
+In particolare:
+
+- segmentazione eventi
+- tagli temporali
+- logiche manuali dentro `analyzeDayV2()`
+
+---
+
+## 🧠 SIGNIFICATO EVOLUTIVO
+
+FrodoDesk non sta più solo leggendo eventi.
+
+Sta iniziando a modellare:
+
+✔ presenza reale familiare  
+✔ presenza relazionale  
+✔ posizione reale nel tempo  
+✔ copertura dinamica viva

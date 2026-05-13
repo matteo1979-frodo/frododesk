@@ -238,6 +238,9 @@ class AlicePresenceEngine {
         type == AliceEventType.summerCamp) {
       return false;
     }
+    if (enabledTimedEventsForDay(d0).isNotEmpty) {
+      return false;
+    }
 
     return schoolStore.hasSchoolOn(d0);
   }

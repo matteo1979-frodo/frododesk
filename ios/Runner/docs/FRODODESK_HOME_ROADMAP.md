@@ -1,5 +1,8 @@
 FRODODESK — HOME ROADMAP
 
+Ultimo aggiornamento: 13 Maggio 2026
+(PresenceEngine attivo + Home rimandata dopo consolidamento motore)
+
 OBIETTIVO
 Trasformare la Home in:
 - cruscotto reale della giornata
@@ -27,25 +30,20 @@ FASE 1 — HOME VIVA (DATI REALI)
 
 FASE 2 — HOME INTELLIGENTE
 
-[✔] Spiegazioni semplici (es: "Fermati un attimo")
-[✔] IPS collegato a linguaggio umano (manina rossa / pollice 👍)
-[✔] Evidenziazione anomalie reali (buchi, sovrapposizioni, carichi)
-[✔] Stato reale Alice visibile (coperta / non coperta)
+[✔] Spiegazioni semplici
+[✔] IPS collegato a linguaggio umano iniziale
+[✔] Evidenziazione anomalie reali
+[✔] Stato reale Alice visibile
 [✔] Problema copertura mostrato chiaramente nella card principale
 [✔] Numero problemi/buchi visibile nella Home
 [✔] Primo buco visibile con orario
 [✔] Bottone RISOLVI collegato al popup della Home
-[✔] Popup RISOLVI mostra il perché del problema:
-      - Matteo occupato / fuori
-      - Chiara occupata / fuori
-      - rete supporto non disponibile
-      - Sandra non attiva
-[✔] Popup RISOLVI usa la stessa logica esplicativa di “Buchi del giorno” nel calendario
-[✔] Giorni festivi gestiti correttamente:
-      - se non c’è scuola
-      - Alice è a casa
-      - se adulti/supporti non coprono
-      - deve comparire buco reale
+[✔] Popup RISOLVI mostra il perché del problema
+[✔] Popup RISOLVI coerente con “Buchi del giorno”
+[✔] Giorni festivi gestiti correttamente
+[✔] Supporto reale sincronizzato Home / Calendario
+[✔] Evento reale con Alice non genera falso buco
+[✔] Home non segnala falsi problemi se il motore li considera risolti
 
 [ ] Micro-avvisi non invasivi
 [ ] Gestione temporale reale completa:
@@ -55,37 +53,47 @@ FASE 2 — HOME INTELLIGENTE
 
 NOTA:
 IPS attualmente NON è ancora coerente al 100% con il motore reale.
-Da rifondare nella fase successiva.
+Da rifondare dopo il consolidamento del PresenceEngine.
 
 --------------------------------------------------
 
-FASE 3 — HOME AZIONABILE (PROSSIMA)
+FASE 3 — HOME AZIONABILE
 
-[ ] Azioni rapide REALI (non solo suggerimenti)
+STATO: RIMANDATA
+
+Motivo:
+la Home non deve diventare azionabile sopra una logica di presenza Alice ancora in pulizia dentro CoverageEngine.
+
+Prima serve completare:
+
+1. PresenceEngine
+2. cleanup CoverageEngine
+3. una sola verità temporale su Alice
+4. test reali strutturati
+
+Solo dopo si passa alla Home azionabile.
+
+[ ] Azioni rapide REALI
 [ ] Attivazione diretta Sandra dalla Home
 [ ] Accesso diretto ai punti critici
 [ ] Riduzione click per arrivare alle decisioni
 [ ] Tap diretto sui buchi → apertura punto preciso nel calendario
-
-AGGIUNTA IMPORTANTE:
 [ ] Azione rapida “risolvi buco”:
       - attiva Sandra
       - assegna supporto
       - porta Alice con te
-
-[ ] Futuro sistema “RISOLVI” multi-problema:
-      - oggi funziona per copertura
-      - domani dovrà funzionare anche per banca
+[ ] Sistema “RISOLVI” multi-problema futuro:
+      - copertura
+      - banca
       - assicurazioni
       - auto
       - salute
       - scadenze
       - altri moduli
-      Ogni problema dovrà avere il proprio “perché” dentro il popup.
 
 --------------------------------------------------
 
-FASE 4 — RIFINITURA UI (DOPO)
+FASE 4 — RIFINITURA UI
 
 [✔] Uniformare stile card
 [✔] Migliorare gerarchie visive
@@ -97,31 +105,83 @@ FASE 4 — RIFINITURA UI (DOPO)
 
 --------------------------------------------------
 
-BUG / CORREZIONI EMERSE IN QUESTA CHAT
+BUG / CORREZIONI GIÀ CONSOLIDATE
 
-[✔] Bug: nei giorni festivi Alice risultava correttamente senza scuola, ma non sempre generava buco se i genitori erano occupati.
-[✔] Correzione: giorno festivo = Alice a casa; se Matteo/Chiara/supporti/Sandra non coprono, il buco deve comparire.
-[✔] Test reale 1 maggio:
-      - scuola non prevista
-      - Chiara OFF
-      - eventi Matteo e Chiara 14:00–18:00
-      - Alice a casa
-      - buco ora rilevato correttamente
-[✔] Popup RISOLVI verificato:
-      - mostra motivi coerenti con calendario
-      - spiega perché Alice è scoperta
+[✔] Bug giorni festivi: Alice senza scuola non sempre generava buco
+[✔] Correzione: giorno festivo = Alice a casa
+[✔] Test reale 1 maggio validato
+[✔] Popup RISOLVI coerente con calendario
+[✔] Home e calendario allineati su supporto reale
+[✔] Beatrice 08:00–08:30 copre buco 08:05–08:25
+[✔] Togliendo supporto il buco torna
+[✔] Rimettendo supporto il buco sparisce
+[✔] Evento reale multi-persona con Alice non genera falso buco “Alice a casa”
 
 --------------------------------------------------
 
-REGOLA BASE
+AGGIORNAMENTO 13 MAGGIO 2026 — BLOCCO G
+
+In questa fase è stato consolidato il lavoro sul Motore Presenza Reale Alice.
+
+COMPLETATO:
+
+[✔] PresenceEngine creato
+[✔] AlicePresenceState creato
+[✔] stati presenza attuali:
+      - home
+      - school
+      - timedEvent
+      - realEvent
+      - summerCamp
+      - accompanied
+      - support
+[✔] supporto reale centralizzato nel PresenceEngine
+[✔] eventi reali Alice centralizzati
+[✔] eventi temporizzati Alice centralizzati
+[✔] accompagnamento Alice centralizzato
+[✔] isAliceAccompaniedDuringRange()
+[✔] aliceCompanionEndForRange()
+[✔] CoverageEngine legge sempre più dal PresenceEngine
+[✔] bug centro estivo corretto:
+      - uscita 16:30–16:50
+      - casa dopo centro estivo 16:50–21:00
+[✔] bug serale evento reale 21:00–22:30 corretto
+[✔] buco serale ora rispetta il range reale dell’evento
+[✔] rete supporto non si attiva solo perché viene modificato l’orario
+[✔] supporto parziale spezza correttamente il buco
+[✔] Sandra resta separata dalla rete supporto
+[✔] CoverageEngine ridotto a consumatore progressivo del PresenceEngine
+
+--------------------------------------------------
+
+REGOLA BASE HOME
 
 La Home:
+
 - NON deve inventare nulla
 - deve leggere il sistema
 - deve aiutare a decidere
 - deve mostrare prima il problema vero
 - deve spiegare il perché solo dove serve
 - deve diventare azionabile un passo alla volta
+- NON deve duplicare logiche del CoverageEngine
+- NON deve duplicare logiche del PresenceEngine
+
+--------------------------------------------------
+
+REGOLA STRUTTURALE NUOVA
+
+La Home futura dovrà leggere la stessa verità di:
+
+PresenceEngine
+↓
+CoverageEngine
+↓
+Home
+
+La Home NON deve decidere dove si trova Alice.
+
+La Home deve solo mostrare ciò che il motore ha già stabilito.
 
 --------------------------------------------------
 
@@ -134,8 +194,13 @@ STATO ATTUALE
 [✔] Card Home coerente con problema copertura
 [✔] Popup RISOLVI funzionante e spiegato
 [✔] Giorni festivi gestiti come giorni con Alice a casa
-[⚠] IPS ancora parziale (da rifare)
-[⚠] Home ancora non completamente azionabile
+[✔] Supporto reale sincronizzato
+[✔] Evento reale con Alice corretto
+[✔] PresenceEngine attivo
+[✔] CoverageEngine in progressiva pulizia
+[⚠] IPS ancora parziale
+[⚠] Home non ancora completamente guidata dal PresenceEngine
+[⚠] Home azionabile rimandata
 
 --------------------------------------------------
 
@@ -145,71 +210,62 @@ PROSSIMO STEP
 
 La priorità NON è ancora:
 
-❌ Home azionabile completa  
-❌ rifondazione IPS  
+❌ Home azionabile completa
+❌ rifondazione IPS
+❌ nuove UI avanzate
 
-Prima serve consolidare il:
+Prima serve consolidare:
 
 # MOTORE PRESENZA REALE ALICE
-
----
 
 Priorità operative corrette:
 
 1. Consolidare `alice_presence_engine.dart`
 2. Eliminare doppioni legacy nel CoverageEngine
 3. Centralizzare completamente la presenza reale Alice
-4. Far leggere Home dalla stessa verità
-5. Solo dopo → riallineamento IPS reale
-6. Solo dopo → Home realmente azionabile
+4. Ripulire `analyzeDayV2()`
+5. Verificare casi reali complessi
+6. Far leggere Home dalla stessa verità
+7. Solo dopo → riallineamento IPS reale
+8. Solo dopo → Home realmente azionabile
 
----
+--------------------------------------------------
 
-# 🔥 SIGNIFICATO STRUTTURALE
+COSA RESTA DA FARE
 
-La Home NON deve diventare azionabile sopra una presenza Alice ancora distribuita.
+⬜ eliminazione doppioni legacy
+⬜ pulizia `analyzeDayV2()`
+⬜ spostamento progressivo segmentazione eventi/tagli fascia nel PresenceEngine
+⬜ Home completamente guidata dal PresenceEngine
+⬜ test presenza reale complessi
+⬜ IPS reale coerente
+⬜ Home azionabile finale
 
-Prima serve:
+--------------------------------------------------
 
-✔ una sola verità presenza  
-✔ una sola segmentazione temporale  
-✔ una sola interpretazione reale di Alice  
+SIGNIFICATO STRUTTURALE
 
-Solo dopo:
+La Home NON deve diventare intelligente da sola.
 
-✔ Home azionabile  
-✔ IPS reale  
-✔ azioni rapide intelligenti  
+La Home deve diventare lo schermo chiaro di una verità già calcolata bene dal sistema.
 
----
+Prima:
 
-# 📌 STATO ATTUALE REALE
+✔ una sola verità presenza
+✔ una sola segmentazione temporale
+✔ una sola interpretazione reale di Alice
 
-COMPLETATI:
+Dopo:
 
-☑ PresenceEngine creato  
-☑ modello presenza creato  
-☑ supporto reale centralizzato  
-☑ eventi temporizzati centralizzati  
-☑ eventi reali centralizzati  
-☑ fix centro estivo reale  
-☑ fix casa dopo centro estivo  
-☑ CoverageEngine parzialmente riallineato  
-
-RESTA:
-
-⬜ eliminazione doppioni legacy  
-⬜ pulizia `analyzeDayV2()`  
-⬜ Home completamente guidata dal PresenceEngine  
-⬜ test presenza reale complessi  
-⬜ IPS reale coerente  
-⬜ Home azionabile finale  
+✔ Home azionabile
+✔ IPS reale
+✔ azioni rapide intelligenti
 
 --------------------------------------------------
 
 FRASE DI RIPARTENZA
 
-Ripartiamo da FrodoDesk — Motore Presenza Reale Alice.
+Ripartiamo da FrodoDesk — Home rimandata dopo consolidamento PresenceEngine.
 
 Prossimo obiettivo:
 👉 eliminare doppioni legacy dal CoverageEngine

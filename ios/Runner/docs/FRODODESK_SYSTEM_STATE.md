@@ -403,3 +403,211 @@ Sta iniziando a modellare:
 # FRASE DI RIPARTENZA UFFICIALE
 
 Ripartiamo da FrodoDesk — BLOCCO G: PresenceEngine già attivo, CoverageEngine in progressiva pulizia. Prossimo passo: eliminare residui legacy di presenza Alice dentro CoverageEngine senza toccare Home e senza riallineare IPS.
+---
+
+# 🔄 AGGIORNAMENTO 14 Maggio 2026
+(BLOCCO G — Consolidamento avanzato PresenceEngine)
+
+---
+
+# CAMBIO STRUTTURALE IN CORSO
+
+Il progetto è entrato nella fase:
+
+👉 “CoverageEngine come consumatore puro del PresenceEngine”
+
+Questo significa:
+
+❌ CoverageEngine non deve più interpretare direttamente Alice  
+❌ CoverageEngine non deve più leggere CompanionStore  
+❌ CoverageEngine non deve più segmentare manualmente la presenza Alice  
+
+e deve diventare:
+
+✔ motore copertura reale  
+✔ interprete buchi  
+✔ lettore presenza reale già costruita dal PresenceEngine  
+
+---
+
+# NUOVA DIREZIONE ARCHITETTURALE
+
+Nuovo flusso strutturale:
+
+AlicePresenceEngine  
+↓  
+CoverageEngine  
+↓  
+Calendario / Home / IPS futuro
+
+---
+
+# CONSOLIDAMENTO STEP G3
+
+## COMPLETATO
+
+☑ centralizzazione accompagnamento Alice
+☑ centralizzazione overlap accompagnamento
+☑ centralizzazione companion end
+☑ centralizzazione support network reale
+☑ centralizzazione eventi reali Alice
+☑ centralizzazione eventi temporizzati Alice
+
+---
+
+# NUOVE API ATTIVE
+
+Introdotte nel PresenceEngine:
+
+✔ `isAliceAccompaniedDuringRange()`
+✔ `aliceCompanionEndForRange()`
+
+CoverageEngine ora usa queste API invece di leggere direttamente:
+
+- CompanionStore
+- overlap manuali
+- companion end legacy
+
+---
+
+# PULIZIA DIPENDENZE DIRETTE
+
+Eliminato:
+
+☑ `_getAliceCompanionEnd()`
+
+CoverageEngine NON legge più direttamente CompanionStore in:
+
+☑ `_isFasciaCovered()`
+☑ `_uncoveredHomeSegments()`
+☑ filtro finale `analyzeDayV2()`
+
+---
+
+# FIX STRUTTURALE — DUPLICAZIONE BUCHI LEGACY
+
+## Caso reale testato
+
+- evento reale 21:00–22:30
+- supporto reale 21:00–22:00
+
+Risultato errato precedente:
+
+❌ doppio buco:
+- 21:00–22:30
+- 22:00–22:30
+
+---
+
+# CAUSA IDENTIFICATA
+
+CoverageEngine continuava a generare:
+
+- gap legacy completo
+- fascia Sandra legacy
+
+anche dopo la segmentazione reale del support network.
+
+---
+
+# FIX APPLICATO
+
+Aggiunto filtro anti-duplicazione strutturale.
+
+Il motore ora verifica:
+
+✔ presenza gap Alice reale già esistente
+✔ stessa fascia iniziale
+
+e impedisce la creazione del doppione legacy.
+
+---
+
+# RISULTATO
+
+Ora il sistema genera correttamente:
+
+✔ SOLO il residuo reale:
+22:00–22:30
+
+---
+
+# SIGNIFICATO STRUTTURALE
+
+Questo conferma il cambio architetturale reale:
+
+❌ fasce statiche legacy
+❌ blocchi artificiali
+❌ simulazioni rigide
+
+→ sostituiti progressivamente da:
+
+✔ range reali
+✔ segmentazione reale
+✔ presenza reale
+✔ supporto reale parziale
+✔ accompagnamento reale
+
+---
+
+# STATO ATTUALE DEL MOTORE
+
+CoverageEngine:
+
+✔ legge progressivamente PresenceEngine
+✔ usa supporto reale segmentato
+✔ usa accompagnamento centralizzato
+✔ usa eventi reali centralizzati
+✔ evita doppioni legacy serali
+
+PresenceEngine:
+
+✔ proprietario progressivo presenza Alice
+✔ proprietario accompagnamento
+✔ proprietario supporto reale
+✔ proprietario stato presenza nel tempo
+
+---
+
+# RESIDUI LEGACY ANCORA PRESENTI
+
+⬜ segmentazione manuale dentro `analyzeDayV2()`
+⬜ tagli fascia legacy
+⬜ logiche “Alice a casa dopo...”
+⬜ letture dirette residue store Alice
+
+---
+
+# DECISIONE OPERATIVA
+
+NON lavorare ancora su:
+
+❌ Home
+❌ IPS
+
+Continuare invece:
+
+👉 consolidamento STEP G3
+👉 eliminazione residui legacy CoverageEngine
+👉 separazione definitiva presenza Alice / copertura
+
+---
+
+# STATO STRUTTURALE REALE
+
+FrodoDesk sta passando da:
+
+❌ calendario con logiche sparse
+
+a:
+
+✔ simulatore presenza familiare reale
+✔ presenza relazionale
+✔ copertura dinamica reale
+✔ interpretazione temporale reale della giornata
+
+---
+
+# FRASE DI RIPARTENZA AGGIORNATA
+
+Ripartiamo da FrodoDesk — BLOCCO G consolidamento avanzato: PresenceEngine proprietario progressivo della presenza Alice, CoverageEngine in pulizia legacy. Prossimo passo: eliminare segmentazioni manuali residue dentro analyzeDayV2() senza toccare ancora Home e IPS.

@@ -655,3 +655,196 @@ In particolare:
 
 Non lavorare ancora su Home.  
 Non lavorare ancora su IPS.
+---
+
+# 🔄 AGGIORNAMENTO 14 Maggio 2026
+
+# CONSOLIDAMENTO STEP G3 — PRESENCE ENGINE
+
+Il modulo Copertura sta entrando nella nuova fase strutturale:
+
+👉 CoverageEngine smette progressivamente di interpretare Alice direttamente.
+
+La presenza reale Alice viene centralizzata nel:
+
+`alice_presence_engine.dart`
+
+---
+
+# OBIETTIVO STRUTTURALE
+
+CoverageEngine deve diventare:
+
+✔ motore copertura  
+✔ interprete buchi  
+✔ lettore range reali  
+
+e NON più:
+
+❌ proprietario presenza Alice  
+❌ segmentatore manuale eventi Alice  
+❌ lettore diretto CompanionStore  
+
+---
+
+# CENTRALIZZAZIONI COMPLETATE
+
+Completato:
+
+☑ centralizzazione accompagnamento Alice
+☑ centralizzazione overlap accompagnamento
+☑ centralizzazione companion end
+☑ centralizzazione support network reale
+☑ centralizzazione eventi reali Alice
+☑ centralizzazione eventi temporizzati Alice
+
+---
+
+# NUOVE API PRESENCE ENGINE
+
+Introdotte:
+
+✔ `isAliceAccompaniedDuringRange()`
+✔ `aliceCompanionEndForRange()`
+
+CoverageEngine ora legge il PresenceEngine invece di leggere direttamente:
+
+- CompanionStore
+- supporti accompagnamento
+- overlap manuali
+
+---
+
+# RIMOZIONE DIPENDENZE DIRETTE
+
+Eliminato:
+
+☑ `_getAliceCompanionEnd()`
+
+CoverageEngine NON legge più direttamente CompanionStore in:
+
+☑ `_isFasciaCovered()`
+☑ `_uncoveredHomeSegments()`
+☑ filtro finale `analyzeDayV2()`
+
+---
+
+# FIX STRUTTURALE — BUCHI DUPLICATI
+
+## Problema reale
+
+Caso testato:
+
+- evento reale 21:00–22:30
+- supporto reale 21:00–22:00
+
+Risultato errato precedente:
+
+❌ doppio buco:
+- 21:00–22:30
+- 22:00–22:30
+
+Il motore manteneva ancora un gap legacy serale completo.
+
+---
+
+# CAUSA
+
+CoverageEngine continuava a generare:
+
+- fascia Sandra legacy
+- gap completo legacy
+
+anche dopo segmentazione reale support network.
+
+---
+
+# SOLUZIONE
+
+Aggiunto filtro strutturale anti-duplicazione:
+
+✔ il motore verifica ora:
+- presenza gap Alice reale già esistente
+- stessa fascia iniziale
+
+e impedisce creazione doppione legacy.
+
+---
+
+# RISULTATO
+
+Ora il sistema genera correttamente:
+
+✔ SOLO il residuo reale:
+22:00–22:30
+
+---
+
+# SIGNIFICATO STRUTTURALE
+
+Questo fix conferma il cambio architetturale reale:
+
+❌ fasce statiche legacy
+❌ blocchi artificiali
+
+→ sostituiti progressivamente da:
+
+✔ segmentazione reale
+✔ range reali
+✔ copertura reale
+✔ supporto reale parziale
+
+---
+
+# STATO ATTUALE STEP G3
+
+Completato:
+
+☑ CoverageEngine legge PresenceEngine per presenza Alice
+☑ accompagnamento centralizzato
+☑ support network centralizzato
+☑ eventi reali centralizzati
+☑ fix duplicazione buchi legacy
+☑ supporto reale parziale funzionante
+
+Residui ancora presenti:
+
+⬜ segmentazione legacy dentro analyzeDayV2()
+⬜ tagli temporali legacy
+⬜ logiche “Alice a casa dopo…”
+⬜ letture dirette store Alice residue
+
+---
+
+# DIREZIONE UFFICIALE
+
+CoverageEngine deve progressivamente:
+
+❌ smettere di interpretare Alice
+❌ smettere di conoscere CompanionStore
+❌ smettere di segmentare presenza Alice
+
+e diventare:
+
+✔ consumatore puro del PresenceEngine
+✔ motore copertura reale
+✔ interprete buchi
+✔ NON proprietario presenza Alice
+
+---
+
+# PROSSIMO STEP
+
+Continuare consolidamento STEP G3.
+
+NON lavorare ancora su:
+
+❌ Home
+❌ IPS
+
+Lavorare invece su:
+
+👉 eliminazione residui legacy CoverageEngine
+👉 segmentazione eventi Alice
+👉 tagli temporali
+👉 logiche presenza ancora dirette dentro analyzeDayV2()

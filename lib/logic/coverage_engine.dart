@@ -1609,15 +1609,6 @@ class CoverageEngine {
       addIfInside(shift.end);
     }
 
-    for (final shift in matteoBusy) {
-      final startsInside =
-          !shift.start.isBefore(windowStart) && shift.start.isBefore(windowEnd);
-
-      if (startsInside) {
-        points.add(shift.start);
-      }
-    }
-
     for (final shift in chiaraBusy) {
       addIfInside(shift.start);
       addIfInside(shift.end);

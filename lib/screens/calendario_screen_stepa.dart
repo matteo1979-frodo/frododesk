@@ -2589,7 +2589,9 @@ class _CalendarioScreenStepAStabileState
   }
 
   Widget _buildDayGapsBox(CoverageResultStepA cov) {
-    final state = _dayGapVisualState(cov);
+    final state = cov.gapDetails.isNotEmpty
+        ? DayGapVisualState.realGap
+        : DayGapVisualState.noProblem;
 
     late final Color color;
     late final IconData icon;
@@ -2697,11 +2699,24 @@ class _CalendarioScreenStepAStabileState
           !_aliceEventEngine.hasPickUpAssigned(e),
     );
 
-    final hasLogisticConflict = logisticAliceEvents.any((e) {
-      final usesMatteo = _aliceEventEngine.usesMatteo(e);
-      final usesChiara = _aliceEventEngine.usesChiara(e);
+    bool isAdultBusyForRange({
+      required String? adultKey,
+      required DateTime start,
+      required DateTime end,
+    }) {
+      if (adultKey == 'matteo') {
+        return _engine.isMatteoBusyBetween(start, end);
+      }
 
-      final start = DateTime(
+      if (adultKey == 'chiara') {
+        return _engine.isChiaraBusyBetween(start, end);
+      }
+
+      return false;
+    }
+
+    final hasLogisticConflict = logisticAliceEvents.any((e) {
+      final eventStart = DateTime(
         _selectedDay.year,
         _selectedDay.month,
         _selectedDay.day,
@@ -2709,7 +2724,7 @@ class _CalendarioScreenStepAStabileState
         e.start.minute,
       );
 
-      final end = DateTime(
+      final eventEnd = DateTime(
         _selectedDay.year,
         _selectedDay.month,
         _selectedDay.day,
@@ -2717,17 +2732,35 @@ class _CalendarioScreenStepAStabileState
         e.end.minute,
       );
 
-      final matteoBusy = usesMatteo && _engine.isMatteoBusyBetween(start, end);
-      final chiaraBusy = usesChiara && _engine.isChiaraBusyBetween(start, end);
+      final dropOffStart = eventStart.subtract(const Duration(minutes: 20));
+      final dropOffEnd = eventStart;
 
-      return matteoBusy || chiaraBusy;
+      final pickUpStart = eventEnd;
+      final pickUpEnd = eventEnd.add(const Duration(minutes: 20));
+
+      final dropOffBusy = isAdultBusyForRange(
+        adultKey: e.dropOffAdultKey,
+        start: dropOffStart,
+        end: dropOffEnd,
+      );
+
+      final pickUpBusy = isAdultBusyForRange(
+        adultKey: e.pickUpAdultKey,
+        start: pickUpStart,
+        end: pickUpEnd,
+      );
+
+      return dropOffBusy || pickUpBusy;
     });
-    final effectiveState =
-        hasLogisticConflict || state == DayGapVisualState.realGap
+    final hasRealCoverageGap = cov.gapDetails.isNotEmpty;
+
+    final effectiveState = hasLogisticConflict || hasRealCoverageGap
         ? DayGapVisualState.realGap
         : hasIncompleteLogistics
         ? DayGapVisualState.coveredNeed
-        : state;
+        : state == DayGapVisualState.coveredNeed
+        ? DayGapVisualState.coveredNeed
+        : DayGapVisualState.noProblem;
 
     final visibleGapDetails = cov.gapDetails.isNotEmpty
         ? cov.gapDetails
@@ -2949,43 +2982,48 @@ class _CalendarioScreenStepAStabileState
                   final usesMatteo = _aliceEventEngine.usesMatteo(e);
                   final usesChiara = _aliceEventEngine.usesChiara(e);
 
-                  final matteoBusy =
-                      usesMatteo &&
-                      _engine.isMatteoBusyBetween(
-                        DateTime(
-                          _selectedDay.year,
-                          _selectedDay.month,
-                          _selectedDay.day,
-                          e.start.hour,
-                          e.start.minute,
-                        ),
-                        DateTime(
-                          _selectedDay.year,
-                          _selectedDay.month,
-                          _selectedDay.day,
-                          e.end.hour,
-                          e.end.minute,
-                        ),
-                      );
+                  final eventStart = DateTime(
+                    _selectedDay.year,
+                    _selectedDay.month,
+                    _selectedDay.day,
+                    e.start.hour,
+                    e.start.minute,
+                  );
 
-                  final chiaraBusy =
-                      usesChiara &&
-                      _engine.isChiaraBusyBetween(
-                        DateTime(
-                          _selectedDay.year,
-                          _selectedDay.month,
-                          _selectedDay.day,
-                          e.start.hour,
-                          e.start.minute,
-                        ),
-                        DateTime(
-                          _selectedDay.year,
-                          _selectedDay.month,
-                          _selectedDay.day,
-                          e.end.hour,
-                          e.end.minute,
-                        ),
-                      );
+                  final eventEnd = DateTime(
+                    _selectedDay.year,
+                    _selectedDay.month,
+                    _selectedDay.day,
+                    e.end.hour,
+                    e.end.minute,
+                  );
+
+                  final dropOffEnd = eventStart.add(
+                    const Duration(minutes: 20),
+                  );
+
+                  final pickUpStart = eventEnd.subtract(
+                    const Duration(minutes: 20),
+                  );
+
+                  final matteoDropOffBusy =
+                      e.dropOffAdultKey == 'matteo' &&
+                      _engine.isMatteoBusyBetween(eventStart, dropOffEnd);
+
+                  final matteoPickUpBusy =
+                      e.pickUpAdultKey == 'matteo' &&
+                      _engine.isMatteoBusyBetween(pickUpStart, eventEnd);
+
+                  final chiaraDropOffBusy =
+                      e.dropOffAdultKey == 'chiara' &&
+                      _engine.isChiaraBusyBetween(eventStart, dropOffEnd);
+
+                  final chiaraPickUpBusy =
+                      e.pickUpAdultKey == 'chiara' &&
+                      _engine.isChiaraBusyBetween(pickUpStart, eventEnd);
+
+                  final matteoBusy = matteoDropOffBusy || matteoPickUpBusy;
+                  final chiaraBusy = chiaraDropOffBusy || chiaraPickUpBusy;
 
                   final canSuggestSupport =
                       (matteoBusy || chiaraBusy) &&
@@ -4608,11 +4646,7 @@ class _CalendarioScreenStepAStabileState
                 margin: const EdgeInsets.only(left: 8),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: _dayGapVisualState(cov) == DayGapVisualState.realGap
-                      ? Colors.red
-                      : _dayGapVisualState(cov) == DayGapVisualState.coveredNeed
-                      ? Colors.orange
-                      : Colors.green,
+                  color: cov.gapDetails.isNotEmpty ? Colors.red : Colors.green,
                 ),
               ),
             ],

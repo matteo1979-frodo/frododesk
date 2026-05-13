@@ -231,3 +231,127 @@ Il rischio vero è mischiare:
 - regole del motore
 
 Da ora gli Eventi Alice devono iniziare ad avere una loro architettura.
+---
+
+# BLOCCO G — MOTORE PRESENZA REALE ALICE
+
+Stato aggiornato reale — Maggio 2026
+
+---
+
+## OBIETTIVO REALE DEL BLOCCO G
+
+Trasformare la presenza Alice da:
+- semplice evento calendario
+- semplice fascia oraria
+
+a:
+
+- stato reale temporale
+- interpretabile dal motore
+- compatibile con:
+  - accompagnamento
+  - support network
+  - eventi reali
+  - scuola
+  - centro estivo
+  - copertura reale
+
+---
+
+# PRESENCE ENGINE
+
+Creato:
+
+`alice_presence_engine.dart`
+
+Il PresenceEngine sta diventando il proprietario progressivo della presenza Alice.
+
+CoverageEngine deve progressivamente diventare:
+
+- consumatore puro della presenza
+- motore copertura
+- NON interprete della logica Alice
+
+---
+
+# STATI PRESENZA ATTUALI
+
+Attualmente gestiti:
+
+☑ home
+☑ school
+☑ timedEvent
+☑ realEvent
+☑ summerCamp
+☑ accompanied
+☑ support
+
+Previsti in futuro:
+
+⬜ outsideWithFamily
+⬜ autonomousFuture
+
+---
+
+# CENTRALIZZAZIONI COMPLETATE
+
+Completato:
+
+☑ centralizzazione accompagnamento Alice
+☑ centralizzazione companion overlap
+☑ centralizzazione companion end
+☑ centralizzazione support network
+☑ centralizzazione controllo eventi reali Alice
+☑ centralizzazione eventi temporizzati Alice
+
+CoverageEngine legge progressivamente PresenceEngine invece di leggere direttamente gli store.
+
+---
+
+# DEBUG REALE COMPLETATO
+
+Completato fix strutturale:
+
+☑ duplicazione buchi serali legacy
+☑ conflitto Sandra/eventi reali
+☑ support network parziale
+☑ segmentazione reale dei gap
+
+Caso reale verificato:
+
+- evento 21:00–22:30
+- supporto 21:00–22:00
+
+Risultato corretto:
+
+- residuo reale 22:00–22:30
+
+Il motore ora usa progressivamente:
+- range reali
+- segmentazione reale
+- copertura reale
+
+e non più fasce legacy statiche.
+
+---
+
+# DIREZIONE STRUTTURALE
+
+CoverageEngine deve progressivamente:
+
+❌ smettere di interpretare Alice
+❌ smettere di leggere CompanionStore direttamente
+❌ smettere di segmentare manualmente la presenza
+❌ smettere di mischiare:
+   - logica Sandra
+   - support network
+   - eventi reali
+
+e diventare:
+
+✔ interprete copertura
+✔ lettore range reali
+✔ consumatore PresenceEngine
+✔ motore buchi
+✔ NON proprietario presenza Alice

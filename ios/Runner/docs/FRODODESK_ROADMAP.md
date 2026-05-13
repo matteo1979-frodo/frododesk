@@ -1,7 +1,7 @@
 FRODODESK — ROADMAP
 
-Ultimo aggiornamento: 12 Maggio 2026  
-(BLOCCO G — Motore Presenza Reale Alice)
+Ultimo aggiornamento: 14 Maggio 2026  
+(BLOCCO G — Consolidamento avanzato PresenceEngine)
 
 ---
 
@@ -26,7 +26,7 @@ Lo sviluppo segue filosofia CNC:
 🔥 COPERTURA REALE STABILE  
 🔥 HOME COERENTE  
 🔥 STATISTICHE AVVIATE  
-🔥 MOTORE PRESENZA REALE ALICE IN COSTRUZIONE
+🔥 MOTORE PRESENZA REALE ALICE IN CONSOLIDAMENTO AVANZATO
 
 Il sistema ha fatto il passaggio da:
 
@@ -130,7 +130,7 @@ La copertura viene calcolata sulla realtà:
 ✔ Controllo su tutta la giornata reale  
 ✔ Eventi reali influenzano la copertura  
 ✔ Supporto integrato nel motore  
-✔ Sandra resta categoria separata dalle rete supporto  
+✔ Sandra resta categoria separata dalla rete supporto  
 
 ---
 
@@ -145,7 +145,7 @@ La copertura viene calcolata sulla realtà:
 
 # BLOCCO G — MOTORE PRESENZA REALE ALICE
 
-Stato: IN CONSOLIDAMENTO
+Stato: CONSOLIDAMENTO AVANZATO
 
 ---
 
@@ -220,6 +220,16 @@ Mancano:
 ☑ centralizzare controllo evento reale Alice  
 ☑ CoverageEngine ridotto a consumatore progressivo del PresenceEngine  
 
+☑ centralizzare accompagnamento Alice nel PresenceEngine  
+☑ aggiungere `isAliceAccompaniedDuringRange()`  
+☑ aggiungere `aliceCompanionEndForRange()`  
+☑ CoverageEngine non legge più direttamente CompanionStore in `_isFasciaCovered()`  
+☑ CoverageEngine non legge più direttamente CompanionStore in `_uncoveredHomeSegments()`  
+☑ CoverageEngine non legge più direttamente CompanionStore nel filtro finale `analyzeDayV2()`  
+☑ eliminata funzione legacy `_getAliceCompanionEnd()`  
+☑ fix duplicazione buchi legacy con supporto reale parziale  
+☑ supporto reale segmentato funzionante  
+
 ---
 
 ## STEP G2 — MODELLO PRESENZA UNICO
@@ -245,9 +255,11 @@ Mancano:
 
 ## STEP G3 — CoverageEngine guidato dal PresenceEngine
 
-Stato: IN CONSOLIDAMENTO AVANZATO
+Stato: CONSOLIDAMENTO AVANZATO
 
-Fatto:
+---
+
+### FATTO
 
 ☑ `isAliceAtHomeDay()` passa da PresenceEngine  
 ☑ `isAliceSchoolNormalDay()` passa da PresenceEngine  
@@ -261,11 +273,68 @@ Fatto:
 ☑ `_isCoveredBySupportNetwork()` passa da PresenceEngine  
 ☑ `_isAliceInsideRealEvent()` passa da PresenceEngine  
 
-Resta:
+☑ accompagnamento Alice centralizzato  
+☑ overlap accompagnamento centralizzato  
+☑ companion end centralizzato  
+☑ support network reale centralizzato  
+☑ eventi reali Alice centralizzati  
+☑ eventi temporizzati Alice centralizzati  
+
+☑ CoverageEngine non legge più direttamente CompanionStore  
+☑ eliminata funzione legacy `_getAliceCompanionEnd()`  
+
+☑ fix duplicazione buchi legacy con supporto reale segmentato  
+☑ supporto reale parziale funzionante  
+
+---
+
+### BUG STRUTTURALE RISOLTO — DUPLICAZIONE BUCHI
+
+Caso reale testato:
+
+- evento reale 21:00–22:30
+- supporto reale 21:00–22:00
+
+Prima:
+
+❌ doppio buco:
+- 21:00–22:30
+- 22:00–22:30
+
+Causa:
+
+CoverageEngine manteneva ancora gap legacy completi dopo la segmentazione reale.
+
+Ora:
+
+✔ viene generato SOLO il residuo reale:
+22:00–22:30
+
+---
+
+### SIGNIFICATO STRUTTURALE
+
+Il sistema sta passando da:
+
+❌ fasce statiche legacy  
+❌ blocchi artificiali  
+
+a:
+
+✔ range reali  
+✔ presenza reale  
+✔ segmentazione reale  
+✔ supporto reale parziale  
+✔ accompagnamento reale  
+
+---
+
+### RESTA
 
 ⬜ eliminare altri doppioni legacy residui  
 ⬜ valutare spostamento segmentazione eventi/tagli fascia  
 ⬜ verificare logiche presenza Alice ancora dirette dentro `analyzeDayV2()`  
+⬜ ridurre ulteriormente letture dirette store Alice nel CoverageEngine  
 
 ---
 
@@ -410,25 +479,60 @@ Fare:
 
 # PROSSIMA RIPARTENZA
 
-Ripartiamo da FrodoDesk — BLOCCO G: consolidamento Motore Presenza Reale Alice.
+Ripartiamo da FrodoDesk — BLOCCO G consolidamento avanzato PresenceEngine.
 
 Stato:
 
-- PresenceEngine creato
-- modello presenza avviato
-- CoverageEngine già collegato
-- supporto centralizzato
-- eventi reali Alice centralizzati
-- eventi temporizzati Alice centralizzati
-- centro estivo temporale corretto
-- bug post-centro estivo risolto
+✔ PresenceEngine proprietario progressivo presenza Alice  
+✔ accompagnamento centralizzato  
+✔ supporto reale centralizzato  
+✔ eventi reali Alice centralizzati  
+✔ eventi temporizzati Alice centralizzati  
+✔ CoverageEngine progressivamente semplificato  
+✔ CompanionStore non più letto direttamente nei punti principali  
+✔ fix duplicazione buchi legacy completato  
+✔ supporto reale segmentato funzionante  
 
-Prossimo fronte:
+---
 
-👉 ripulire i residui legacy dentro CoverageEngine, soprattutto segmentazione eventi Alice e tagli temporali.
+# DIREZIONE REALE ATTUALE
+
+CoverageEngine deve progressivamente:
+
+❌ smettere di interpretare Alice  
+❌ smettere di conoscere CompanionStore  
+❌ smettere di segmentare manualmente la presenza Alice  
+
+e diventare:
+
+✔ consumatore puro del PresenceEngine  
+✔ motore copertura reale  
+✔ interprete buchi  
+✔ NON proprietario presenza Alice  
+
+---
+
+# PROSSIMO FRONTE
+
+Continuare la pulizia legacy dentro CoverageEngine.
+
+In particolare:
+
+👉 segmentazione eventi Alice  
+👉 tagli temporali legacy  
+👉 logiche “Alice a casa dopo...”  
+👉 logiche presenza ancora dirette dentro `analyzeDayV2()`  
+
+---
+
+# NON FARE ANCORA
+
+❌ Home  
+❌ IPS  
+❌ mega-refactor  
 
 ---
 
 # FRASE DI RIPARTENZA UFFICIALE
 
-Ripartiamo da FrodoDesk — BLOCCO G: PresenceEngine già attivo, CoverageEngine in progressiva pulizia. Prossimo passo: eliminare residui legacy di presenza Alice dentro CoverageEngine senza toccare Home e senza riallineare IPS.
+Ripartiamo da FrodoDesk — BLOCCO G consolidamento avanzato: PresenceEngine proprietario progressivo della presenza Alice, CoverageEngine in pulizia legacy. Prossimo passo: eliminare segmentazioni manuali residue dentro analyzeDayV2() senza toccare ancora Home e IPS.

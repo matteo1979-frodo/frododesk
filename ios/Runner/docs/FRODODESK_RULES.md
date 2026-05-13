@@ -1,6 +1,7 @@
 FRODODESK — RULES
 
-Ultimo aggiornamento: 4 Maggio 2026 (Eventi Globali V1 + Memoria Evento Persistente)
+Ultimo aggiornamento: 13 Maggio 2026
+(PresenceEngine attivo + consolidamento CoverageEngine)
 
 ---
 
@@ -10,9 +11,9 @@ FrodoDesk è un sistema di controllo familiare e motore decisionale preventivo.
 
 Non è:
 
-un semplice calendario  
-una semplice app turni  
-un semplice gestionale spese  
+un semplice calendario
+una semplice app turni
+un semplice gestionale spese
 
 È un sistema che simula la realtà della vita familiare per rendere visibile la pressione prima che diventi problema.
 
@@ -20,7 +21,7 @@ un semplice gestionale spese
 
 PRINCIPIO FONDAMENTALE
 
-Il sistema suggerisce.  
+Il sistema suggerisce.
 La decisione resta sempre umana.
 
 ---
@@ -31,8 +32,8 @@ Utente
 
 Responsabile di:
 
-visione strategica  
-decisione finale  
+visione strategica
+decisione finale
 
 ---
 
@@ -40,9 +41,9 @@ Frodo
 
 Responsabile di:
 
-architettura sistema  
-metodo CNC  
-coerenza tecnica  
+architettura sistema
+metodo CNC
+coerenza tecnica
 
 ---
 
@@ -50,10 +51,10 @@ FILOSOFIA DI SVILUPPO
 
 Regole fondamentali:
 
-un passo alla volta  
-micro-step  
-prima struttura poi estetica  
-prima stabilità poi estensione  
+un passo alla volta
+micro-step
+prima struttura poi estetica
+prima stabilità poi estensione
 
 Ogni blocco deve essere stabile prima di passare al successivo.
 
@@ -69,9 +70,9 @@ Frodo modifica solo quel file reale.
 
 È vietato:
 
-ricostruire file grandi basandosi sulla memoria  
-ipotizzare il contenuto di file non inviati  
-sostituire file interi senza partire dal file reale  
+ricostruire file grandi basandosi sulla memoria
+ipotizzare il contenuto di file non inviati
+sostituire file interi senza partire dal file reale
 
 Obiettivo:
 
@@ -83,8 +84,8 @@ REGOLA OPERATIVA CHAT
 
 Durante lo sviluppo:
 
-Matteo invia il file reale.  
-Frodo restituisce lo stesso file completo modificato.  
+Matteo invia il file reale.
+Frodo restituisce lo stesso file completo modificato.
 Matteo copia e testa nell’app reale.
 
 Mai saltare passaggi.
@@ -97,9 +98,9 @@ Quando Matteo chiede una modifica o verifica:
 
 Frodo deve:
 
-indicare un solo passo  
-attendere risposta  
-non anticipare passi successivi  
+indicare un solo passo
+attendere risposta
+non anticipare passi successivi
 
 Se vengono dati più passi insieme si rompe la logica CNC.
 
@@ -131,10 +132,10 @@ Dipende dal lavoro fatto nella chat.
 
 Esempi:
 
-modifica architettura → FRODODESK_ARCHITECTURE.md  
-modifica roadmap → FRODODESK_ROADMAP.md  
-modifica stato progetto → FRODODESK_SYSTEM_STATE.md  
-nuove regole operative → FRODODESK_RULES.md  
+modifica architettura → FRODODESK_ARCHITECTURE.md
+modifica roadmap → FRODODESK_ROADMAP.md
+modifica stato progetto → FRODODESK_SYSTEM_STATE.md
+nuove regole operative → FRODODESK_RULES.md
 
 Matteo invia solo i file richiesti.
 
@@ -156,18 +157,18 @@ Chiudiamo la chat. Quali file docs dobbiamo aggiornare?
 
 Frodo analizza tutta la chat e verifica modifiche a:
 
-codice  
-struttura  
-roadmap  
-regole  
-stato sistema  
+codice
+struttura
+roadmap
+regole
+stato sistema
 
 👉 Poi DEVE rispondere:
 
 Mandami questi file da aggiornare:
 
-- nome_file  
-- nome_file  
+- nome_file
+- nome_file
 
 ⚠️ Solo quelli realmente coinvolti
 
@@ -175,17 +176,17 @@ Mandami questi file da aggiornare:
 
 Regole fondamentali:
 
-sempre file completo  
-uno alla volta  
-mai versioni ricostruite  
-presi dalla cartella /docs  
+sempre file completo
+uno alla volta
+mai versioni ricostruite
+presi dalla cartella /docs
 
 4️⃣ Frodo restituisce i file aggiornati
 
 Formato obbligatorio:
 
-FILE AGGIORNATO  
-nome_file  
+FILE AGGIORNATO
+nome_file
 
 (contenuto completo)
 
@@ -195,7 +196,7 @@ nome_file
 
 Copia i file nella cartella:
 
-/docs  
+/docs
 
 Poi scrive:
 
@@ -205,9 +206,9 @@ Poi scrive:
 
 Frodo fornisce i comandi:
 
-git add .  
-git commit -m "docs update"  
-git push  
+git add .
+git commit -m "docs update"
+git push
 
 7️⃣ BACKUP DATI (quando necessario)
 
@@ -217,13 +218,13 @@ Se Frodo rileva rischio perdita dati (clean, debug, modifiche):
 
 Contenuti:
 
-- malattia a periodo  
-- ferie  
-- eventi Alice  
-- eventi reali  
-- rete supporto  
-- quarta squadra  
-- override  
+- malattia a periodo
+- ferie
+- eventi Alice
+- eventi reali
+- rete supporto
+- quarta squadra
+- override
 
 Formato:
 
@@ -235,11 +236,11 @@ Formato:
 
 Verificare:
 
-file docs aggiornati ✔  
-copiati ✔  
-commit ✔  
-push ✔  
-backup (se necessario) ✔  
+file docs aggiornati ✔
+copiati ✔
+commit ✔
+push ✔
+backup (se necessario) ✔
 
 9️⃣ Conferma finale di Frodo
 
@@ -255,9 +256,9 @@ REGOLA OBIETTIVO DOCUMENTAZIONE
 
 La cartella docs deve permettere di:
 
-cambiare chat senza perdere contesto  
-capire subito lo stato  
-ripartire immediatamente  
+cambiare chat senza perdere contesto
+capire subito lo stato
+ripartire immediatamente
 
 ---
 
@@ -279,17 +280,17 @@ Quando un evento cade dentro un turno:
 
 Il sistema deve:
 
-- evidenziare sovrapposizione  
-- mostrare turno  
-- mostrare fascia  
-- aiutare decisione  
+- evidenziare sovrapposizione
+- mostrare turno
+- mostrare fascia
+- aiutare decisione
 
 Azioni:
 
-- permesso  
-- ferie  
-- cambio turno  
-- spostamento evento  
+- permesso
+- ferie
+- cambio turno
+- spostamento evento
 
 ---
 
@@ -298,12 +299,12 @@ NUOVE REGOLE — MALATTIA
 Distinzione obbligatoria:
 
 Malattia leggera:
-- può muoversi  
-- può accompagnare Alice  
+- può muoversi
+- può accompagnare Alice
 
 Malattia a letto:
-- non può uscire  
-- non disponibile  
+- non può uscire
+- non disponibile
 
 ---
 
@@ -323,14 +324,14 @@ Durante malattia:
 
 Fasce obbligatorie:
 
-10:00–12:00  
-17:00–19:00  
+10:00–12:00
+17:00–19:00
 
 Sistema deve:
 
-- considerare non disponibile  
-- segnalare conflitti  
-- permettere violazione consapevole  
+- considerare non disponibile
+- segnalare conflitti
+- permettere violazione consapevole
 
 ---
 
@@ -350,8 +351,8 @@ EVOLUZIONE FUTURA MOTORE
 
 Il conflitto evento ↔ turno dipenderà dallo stato:
 
-normale → conflitto pieno  
-malattia → valutazione diversa  
+normale → conflitto pieno
+malattia → valutazione diversa
 
 (non ancora implementato)
 
@@ -367,9 +368,9 @@ Quando un giorno è marcato come turno NOTTE (`N`):
 
 Ma deve rappresentare SEMPRE tre componenti reali:
 
-1. coda della notte precedente → 00:00–06:30  
-2. indisponibilità post-notte → 00:00–14:30  
-3. nuova notte la sera → 21:00–06:30  
+1. coda della notte precedente → 00:00–06:30
+2. indisponibilità post-notte → 00:00–14:30
+3. nuova notte la sera → 21:00–06:30
 
 ---
 
@@ -377,19 +378,19 @@ Ma deve rappresentare SEMPRE tre componenti reali:
 
 👉 Il post-notte è sempre presente se il giorno è `N`
 
-È una **regola fisica della persona**.
+È una regola fisica della persona.
 
 ---
 
 ## Implicazioni
 
-- NON disponibile fino alle 14:30  
-- genera buchi reali  
-- niente copertura falsa  
+- NON disponibile fino alle 14:30
+- genera buchi reali
+- niente copertura falsa
 
 ---
 
-# 🔥 NUOVA REGOLA STRUTTURALE — AZIONI SENZA SOLUZIONI (CONSOLIDATA)
+# 🔥 NUOVA REGOLA STRUTTURALE — AZIONI SENZA SOLUZIONI
 
 ## PRINCIPIO
 
@@ -397,120 +398,90 @@ Il sistema NON deve proporre soluzioni operative.
 
 ## COMPORTAMENTO CORRETTO
 
-✔ rileva il problema  
-✔ spiega il problema  
-✔ mostra il perché  
-✔ porta al punto corretto  
+✔ rileva il problema
+✔ spiega il problema
+✔ mostra il perché
+✔ porta al punto corretto
 
 ## COMPORTAMENTO VIETATO
 
-❌ suggerire azioni  
-❌ decidere al posto dell’utente  
+❌ suggerire azioni
+❌ decidere al posto dell’utente
 
 ---
 
-# 🔴 NUOVA REGOLA CRITICA — COPERTURA FESTIVI (1 MAGGIO 2026)
+# 🔴 NUOVA REGOLA CRITICA — COPERTURA FESTIVI
 
-## Problema emerso
-
-Nei giorni festivi:
-
-👉 Alice risultava a casa  
-👉 ma il sistema poteva NON generare buco  
-
-## Regola corretta
+## REGOLA
 
 👉 Se Alice è a casa (anche festivo):
 
 SI applica SEMPRE la regola copertura
 
-## Implicazione
+## PRINCIPIO FINALE
 
-✔ festivo ≠ giorno speciale  
-✔ festivo ≠ copertura automatica  
-✔ festivo segue stessa logica reale  
-
-## Principio finale
-
-👉 La copertura NON dipende dalla scuola  
-👉 Dipende SOLO da: presenza reale degli adulti  
+👉 La copertura NON dipende dalla scuola
+👉 Dipende SOLO dalla presenza reale degli adulti
 
 ---
 
 # 🔴 NUOVA REGOLA — COERENZA HOME ↔ CALENDARIO
 
-## Principio
+## PRINCIPIO
 
 👉 La Home deve mostrare ESATTAMENTE ciò che il calendario mostra
 
-## Regola
+## REGOLA
 
-✔ stesso buco  
-✔ stessa fascia  
-✔ stessi motivi  
+✔ stesso buco
+✔ stessa fascia
+✔ stessi motivi
 
-## Vietato
+## VIETATO
 
-❌ Home dice OK ma calendario ha buco  
-❌ spiegazioni diverse  
-
-## Obiettivo
-
-👉 una sola verità nel sistema  
+❌ Home dice OK ma calendario ha buco
+❌ spiegazioni diverse
 
 ---
 
 # 🔴 NUOVA REGOLA — POPUP AZIONI
 
-## Comportamento obbligatorio
+## COMPORTAMENTO OBBLIGATORIO
 
 Il popup deve mostrare:
 
-✔ problema reale  
-✔ fascia oraria  
-✔ spiegazione reale  
-✔ motivi (Matteo fuori, Chiara fuori, ecc.)  
+✔ problema reale
+✔ fascia oraria
+✔ spiegazione reale
+✔ motivi (Matteo fuori, Chiara fuori, ecc.)
 
-✔ bottone: "Vai al problema"  
+✔ bottone: "Vai al problema"
 
-## Vietato
+## VIETATO
 
-❌ suggerimenti operativi  
-❌ azioni automatiche  
-
-## Obiettivo
-
-👉 rendere il problema chiaro  
-👉 NON risolverlo automaticamente  
+❌ suggerimenti operativi
+❌ azioni automatiche
 
 ---
 
 # 🔴 NUOVA REGOLA — COERENZA SPIEGAZIONE BUCHI
 
-## Principio
+## PRINCIPIO
 
-La spiegazione deve essere:
+La spiegazione deve essere identica tra:
 
-✔ identica tra:
-- Home popup  
-- Buchi del giorno (calendario)
-
-## Obiettivo
-
-👉 evitare doppie logiche  
-👉 evitare confusione  
+- Home popup
+- Buchi del giorno
 
 ---
 
-# 🔴 REGOLA CRITICA — CONTINUITÀ DOCUMENTALE (21 Marzo 2026)
+# 🔴 REGOLA CRITICA — CONTINUITÀ DOCUMENTALE
 
-(file NON deve mai essere ridotto)
+✔ sempre completo
+✔ mai riassunto
+✔ mai semplificato
 
-✔ sempre completo  
-✔ mai riassunto  
-✔ mai semplificato  
-
-👉 memoria viva del sistema  
+👉 memoria viva del sistema
 
 ---
 
@@ -518,89 +489,34 @@ La spiegazione deve essere:
 
 Una copertura è valida SOLO se copre completamente l’intervallo.
 
-supportStart ≤ gapStart  
-AND  
-supportEnd ≥ gapEnd  
+supportStart ≤ gapStart
+AND
+supportEnd ≥ gapEnd
 
-👉 niente coperture parziali  
+👉 niente coperture parziali
 
 ---
 
-## PRINCIPIO FINALE
-
-👉 Il sistema NON deve mai “pensare che basti”  
-👉 Deve verificare che COPRA davvero  
----
-
-# 🔴 NUOVA REGOLA STRUTTURALE — HOME V1.1 (3 Maggio 2026)
+# 🔴 NUOVA REGOLA STRUTTURALE — HOME V1.1
 
 ## PRINCIPIO
 
 La Home deve separare SEMPRE:
 
-👉 stato reale di oggi  
-👉 problemi futuri  
-
----
-
-## REGOLA
-
-### OGGI
-
-Se oggi è coperto:
-
-✔ icona verde  
-✔ testo: "Nessuna criticità oggi"  
-✔ nessun falso problema  
-
----
-
-### FUTURO
-
-Se esiste un problema nei giorni successivi:
-
-✔ deve essere mostrato  
-✔ deve essere visibile subito  
-✔ deve essere cliccabile  
-
-Esempio:
-
-"Prossimo problema copertura → sabato 30 maggio 13:00–14:30"
-
----
-
-## VIETATO
-
-❌ nascondere problemi futuri  
-❌ dire "tutto ok" se esiste un problema dopo  
-❌ creare falso allarme oggi  
-
----
-
-## REGOLA CRITICA
-
-❌ eliminata definitivamente la logica:
-
-"Nessun problema nei prossimi 30 giorni"
+👉 stato reale di oggi
+👉 problemi futuri
 
 ---
 
 ## COMPORTAMENTO CORRETTO
 
-✔ oggi = verità immediata  
-✔ futuro = visibile e navigabile  
-✔ click → calendario giorno corretto  
+✔ oggi = verità immediata
+✔ futuro = visibile e navigabile
+✔ click → calendario giorno corretto
 
 ---
 
-## OBIETTIVO
-
-👉 colpo d’occhio reale  
-👉 zero bug cognitivi  
-👉 zero interpretazioni  
----
-
-# 🔴 NUOVA REGOLA STRUTTURALE — EVENTI GLOBALI (4 MAGGIO 2026)
+# 🔴 NUOVA REGOLA STRUTTURALE — EVENTI GLOBALI
 
 ## PRINCIPIO
 
@@ -608,28 +524,14 @@ Gli eventi devono essere navigabili nel tempo.
 
 ## STRUTTURA
 
-✔ anno  
-✔ mesi  
-✔ eventi  
-✔ dettaglio evento  
-
-## OBIETTIVO
-
-👉 trasformare il calendario in sistema esplorabile  
-👉 permettere visione globale del tempo  
-
-## STATO ATTUALE
-
-✔ RealEventStore integrato  
-❌ Eventi Alice NON ancora inclusi  
-
-## REGOLA FUTURA
-
-👉 tutti gli eventi devono confluire in un unico sistema globale  
+✔ anno
+✔ mesi
+✔ eventi
+✔ dettaglio
 
 ---
 
-# 🔴 NUOVA REGOLA CRITICA — MEMORIA EVENTI (4 MAGGIO 2026)
+# 🔴 NUOVA REGOLA CRITICA — MEMORIA EVENTI
 
 ## PRINCIPIO
 
@@ -637,24 +539,9 @@ Gli eventi NON sono più solo dati temporanei.
 
 👉 diventano memoria reale persistente
 
-## REGOLA
-
-✔ ogni evento deve poter salvare note  
-✔ le note devono essere persistenti dopo riavvio  
-✔ store e UI devono essere coerenti  
-
-## VIETATO
-
-❌ perdita memoria  
-❌ dati temporanei non salvati  
-
-## SIGNIFICATO
-
-👉 FrodoDesk inizia a costruire storico reale della vita  
-
 ---
 
-# 🔴 NUOVA REGOLA STRUTTURALE — ARCHITETTURA MODULARE HOME (5 Maggio 2026)
+# 🔴 NUOVA REGOLA STRUTTURALE — ARCHITETTURA MODULARE HOME
 
 ## PRINCIPIO
 
@@ -664,148 +551,17 @@ La Home NON deve contenere logiche complesse.
 
 ---
 
-## REGOLA
-
-✔ Home legge dati dai moduli  
-✔ Home mostra stato e decisione  
-✔ Home indirizza l’utente  
-
-❌ Home NON deve:
-- contenere logiche pesanti
-- calcolare statistiche complesse
-- gestire grafici
-- duplicare logiche dei moduli
-
----
-
-## STRUTTURA CORRETTA
-
-- Home → orchestratore  
-- Moduli → logica reale  
-
-Esempio:
-
-✔ Statistiche → modulo dedicato  
-✔ Copertura → CoverageEngine  
-✔ Eventi → Store + Engine  
-
----
-
-## OBIETTIVO
-
-👉 mantenere il sistema stabile  
-👉 evitare file enormi  
-👉 permettere evoluzione senza rompere la struttura  
-
----
-
-# 🔴 NUOVA REGOLA — EVENTI COME MEMORIA (5 Maggio 2026)
-
-## PRINCIPIO
-
-Gli eventi NON sono più temporanei.
-
-👉 diventano memoria reale persistente
-
----
-
-## REGOLA
-
-✔ ogni evento deve poter salvare note  
-✔ le note devono essere persistenti  
-✔ la modifica deve aggiornare lo store reale  
-
----
-
-## VIETATO
-
-❌ eventi senza persistenza  
-❌ perdita dati dopo riavvio  
-❌ memoria solo visiva  
-
----
-
-## SIGNIFICATO
-
-👉 FrodoDesk diventa storico reale della vita  
-
----
-
-# 🔴 NUOVA REGOLA — NAVIGAZIONE TEMPORALE EVENTI (5 Maggio 2026)
-
-## PRINCIPIO
-
-Gli eventi devono essere navigabili nel tempo.
-
----
-
-## STRUTTURA OBBLIGATORIA
-
-✔ anno  
-✔ mesi  
-✔ eventi  
-✔ dettaglio  
-
----
-
-## REGOLA TEMPORALE
-
-✔ anno corrente = presente  
-✔ anni precedenti = passato  
-✔ anni successivi = futuro  
-
----
-
-## OBIETTIVO
-
-👉 permettere visione completa della vita nel tempo  
-👉 costruire base per storico e analisi  
-
----
-
-# 🔴 NUOVA REGOLA — MODULO STATISTICHE (5 Maggio 2026)
+# 🔴 NUOVA REGOLA — MODULO STATISTICHE
 
 ## PRINCIPIO
 
 Le statistiche NON appartengono alla Home.
 
----
-
-## REGOLA
-
-✔ devono vivere in un modulo separato  
-✔ devono essere basate su dati reali  
-✔ devono essere visualizzate con grafici  
+👉 devono vivere in un modulo separato
 
 ---
 
-## OBIETTIVO
-
-👉 lettura immediata dei dati  
-👉 supporto decisionale visivo  
-
----
-
-## DIREZIONE FUTURA
-
-Le statistiche includeranno:
-
-- copertura  
-- supporto  
-- eventi  
-- finanze  
-- salute  
-- attività familiari  
-
----
-
-## PRINCIPIO CHIAVE
-
-👉 i grafici sono uno strumento decisionale, non estetico
-
----
-
-# 🔴 NUOVA REGOLA STRUTTURALE — PERSON DETAIL PANEL VIVO (6 Maggio 2026)
+# 🔴 NUOVA REGOLA STRUTTURALE — PERSON DETAIL PANEL VIVO
 
 ## PRINCIPIO
 
@@ -815,101 +571,7 @@ Le schede persona NON devono essere popup statici.
 
 ---
 
-## COMPORTAMENTO OBBLIGATORIO
-
-Ogni PersonDetailPanel deve:
-
-✔ mostrare il mese reale  
-✔ mostrare stato reale persona  
-✔ mostrare eventi/stati nel tempo  
-✔ permettere navigazione diretta al calendario reale  
-
----
-
-## MINI CALENDARIO
-
-Il mini calendario persona deve essere:
-
-✔ cliccabile  
-✔ coerente col motore reale  
-✔ collegato al giorno reale del calendario  
-
----
-
-## REGOLA NAVIGAZIONE
-
-Click su un giorno:
-
-👉 apre direttamente CalendarioScreenStepAStabile sul giorno corretto
-
----
-
-## REGOLA VISIVA
-
-Il mini calendario NON deve mostrare solo colori.
-
-Deve usare:
-
-✔ pallini stato  
-✔ icone contestuali  
-✔ significato immediato  
-
-Esempi:
-
-- ferie
-- malattia
-- notte
-- centro estivo
-- vacanza
-- scuola chiusa
-- evento reale
-
----
-
-## PRINCIPIO UX
-
-La UI deve permettere lettura immediata della vita reale.
-
-NON:
-
-❌ popup vuoti  
-❌ schermate decorative  
-
-MA:
-
-✔ navigazione reale  
-✔ lettura rapida  
-✔ accesso immediato al problema/giorno
-
----
-
-## DIREZIONE FUTURA
-
-Il PersonDetailPanel diventa:
-
-👉 radar personale operativo del sistema
-
-e sarà base futura per:
-
-- conflitti
-- storico persona
-- statistiche persona
-- timeline reale
-- pressione personale
-- memoria eventi
-
----
-
-## STATO
-
-✔ implementato  
-✔ compilazione verificata  
-✔ testato su app reale  
-✔ navigazione giorno funzionante  
-✔ icone contestuali funzionanti  
-✔ integrazione AliceEventStore funzionante
-
-# 🔴 NUOVA REGOLA STRUTTURALE — EVENTI ALICE COMPORTAMENTALI (8 Maggio 2026)
+# 🔴 NUOVA REGOLA STRUTTURALE — EVENTI ALICE COMPORTAMENTALI
 
 ## PRINCIPIO
 
@@ -921,108 +583,14 @@ Gli Eventi Alice NON sono più semplici eventi calendario.
 
 ## COMPORTAMENTI UFFICIALI
 
-Il sistema supporta:
-
-✔ passive  
-✔ logistic  
-✔ accompanied  
+✔ passive
+✔ logistic
+✔ accompanied
 ✔ futureAutonomous
 
 ---
 
-## EVENTO PASSIVO
-
-Evento in cui Alice:
-
-✔ resta nello stesso luogo  
-✔ è occupata  
-✔ richiede supervisione adulta  
-
-❌ NON richiede accompagnamento
-
----
-
-## EVENTO LOGISTICO
-
-Evento in cui Alice:
-
-✔ è fuori casa  
-✔ richiede accompagnamento  
-✔ richiede ritiro  
-✔ può generare conflitti reali  
-
----
-
-## EVENTO ACCOMPAGNATO
-
-Evento in cui:
-
-✔ Alice segue un adulto reale  
-
-Esempi:
-
-- Matteo
-- Chiara
-
----
-
-## REGOLA STRUTTURALE
-
-Evento accompagnato:
-
-Evento Alice
-→ genera automaticamente companion coverage
-
----
-
-## REGOLA CICLO EVENTO
-
-Il lifecycle evento deve restare coerente.
-
-Quindi:
-
-✔ creazione evento → crea companion
-✔ modifica evento → aggiorna companion
-✔ eliminazione evento → elimina companion
-
----
-
-## REGOLA CRITICA
-
-Le companion generate automaticamente da evento:
-
-❌ NON devono essere modificabili dai controlli manuali
-
-Per modificarle:
-
-👉 si modifica l’evento sorgente
-
----
-
-## PRINCIPIO ARCHITETTURALE
-
-La relazione:
-
-Alice ↔ adulto
-
-deve vivere nel motore reale e NON nella sola UI.
-
----
-
-## DIREZIONE FUTURA
-
-Gli eventi logistici evolveranno verso:
-
-✔ accompagnamento reale
-✔ ritiro reale
-✔ disponibilità reale adulto
-✔ conflitti logistici
-✔ supporto reale
-✔ Alice al seguito intelligente
-
----
-
-# 🔴 NUOVA REGOLA STRUTTURALE — PRESENZA REALE ALICE (11 Maggio 2026)
+# 🔴 NUOVA REGOLA STRUTTURALE — PRESENZA REALE ALICE
 
 ## PRINCIPIO
 
@@ -1038,24 +606,20 @@ Alice deve essere trattata come entità reale con posizione/stato nel tempo.
 
 ## DOMANDA CENTRALE
 
-Ogni motore che ragiona su Alice deve poter rispondere a:
-
 👉 “Dove si trova realmente Alice in questa fascia?”
 
 ---
 
 ## STATI REALI POSSIBILI
 
-Alice può essere:
-
-✔ a casa  
-✔ a scuola  
-✔ al centro estivo  
-✔ dentro evento Alice  
-✔ accompagnata da adulto  
-✔ dentro evento reale familiare  
-✔ coperta da rete supporto  
-⬜ autonoma futura  
+✔ a casa
+✔ a scuola
+✔ al centro estivo
+✔ dentro evento Alice
+✔ accompagnata da adulto
+✔ dentro evento reale familiare
+✔ coperta da rete supporto
+⬜ autonoma futura
 
 ---
 
@@ -1071,36 +635,12 @@ Se un Evento Reale coinvolge Alice:
 
 ## REGOLA
 
-Se un evento reale ha tra i partecipanti:
+Durante l’intervallo dell’evento:
 
-- Alice
-
-allora, durante l’intervallo dell’evento:
-
-✔ Alice NON è considerata a casa  
-✔ NON viene generato buco “Alice a casa”  
-✔ Home NON deve mostrare falso problema  
-✔ Calendario NON deve mostrare falso buco  
-
----
-
-## CASO FAMILIARE
-
-Se un evento reale coinvolge:
-
-- Matteo
-- Chiara
-- Alice
-
-allora il sistema deve interpretare:
-
-✔ famiglia insieme fuori casa
-
-NON:
-
-❌ Matteo fuori  
-❌ Chiara fuori  
-❌ Alice sola a casa  
+✔ Alice NON è considerata a casa
+✔ NON viene generato falso buco casa
+✔ Home NON deve mostrare falso problema
+✔ Calendario NON deve mostrare falso buco
 
 ---
 
@@ -1114,33 +654,7 @@ Home, Calendario e CoverageEngine devono leggere la stessa verità.
 
 ## REGOLA
 
-La Home NON deve ricostruire a mano logiche diverse da quelle del motore.
-
-Ogni volta che un problema appare nel Calendario:
-
-✔ deve apparire coerentemente in Home se rilevante  
-✔ deve sparire in Home se risolto nel Calendario  
-✔ deve portare al giorno corretto  
-✔ deve rispettare supporto reale e copertura reale  
-
----
-
-## BUG RISOLTO
-
-Caso:
-
-- Beatrice copre 08:05–08:25
-- buco accompagnamento scuola risolto nel Calendario
-
-Prima:
-
-❌ Home continuava a segnalare problema
-
-Ora:
-
-✔ Home non segnala più il problema  
-✔ togliendo Beatrice il problema ricompare  
-✔ rimettendola il problema sparisce  
+La Home NON deve ricostruire logiche diverse dal motore.
 
 ---
 
@@ -1148,170 +662,94 @@ Ora:
 
 ## PRINCIPIO
 
-La logica di presenza Alice deve essere centralizzata.
+La logica presenza Alice deve essere centralizzata.
 
 ---
 
-## REGOLA OPERATIVA FUTURA
+## MOTORE ATTIVO
 
-Creare:
+È stato creato:
 
 `alice_presence_engine.dart`
 
-Responsabilità:
-
-✔ determinare presenza reale Alice  
-✔ determinare se Alice è a casa  
-✔ determinare se Alice è dentro evento reale  
-✔ determinare se Alice è accompagnata  
-✔ determinare se Alice è coperta da supporto  
-✔ fornire una sola verità a CoverageEngine, Home e IPS  
-
 ---
 
-## VIETATO
+## RESPONSABILITÀ
 
-❌ duplicare logiche presenza Alice in Home  
-❌ duplicare logiche presenza Alice nel Calendario  
-❌ aggiungere patch sparse senza motore centrale  
-❌ far decidere alla UI dove si trova Alice  
+Il PresenceEngine deve:
 
----
-
-## OBIETTIVO
-
-Una sola verità:
-
-👉 presenza reale Alice
-
-letta da:
-
+✔ determinare presenza reale Alice
+✔ determinare se Alice è a casa
+✔ determinare se Alice è dentro evento reale
+✔ determinare se Alice è accompagnata
+✔ determinare se Alice è coperta da supporto
+✔ fornire una sola verità a:
 - CoverageEngine
 - Home
 - Calendario
 - IPS futuro
-- Statistiche future
-
----
-
-# 🔴 NUOVA PRIORITÀ ROADMAP
-
-Prima di riallineare IPS o aggiungere nuove UI:
-
-👉 completare il Motore Presenza Reale Alice.
-
-IPS verrà dopo, quando la presenza Alice sarà centralizzata.
-
----
-
-# 🔴 AGGIORNAMENTO 12 MAGGIO 2026 — PRESENCE ENGINE ATTIVO
-
-## PRINCIPIO
-
-Il Motore Presenza Reale Alice non è più solo previsto.
-
-È stato creato ed è attivo tramite:
-
-`alice_presence_engine.dart`
-
----
-
-## REGOLA STRUTTURALE AGGIORNATA
-
-CoverageEngine NON deve tornare ad accumulare logiche dirette sulla presenza Alice.
-
-La regola corretta è:
-
-👉 CoverageEngine chiede al PresenceEngine  
-👉 PresenceEngine interpreta dove si trova Alice  
-👉 CoverageEngine usa il risultato per generare buchi e copertura  
 
 ---
 
 ## STATI PRESENZA ATTUALI
 
-Il modello `AlicePresenceState` supporta:
+`AlicePresenceState`
 
-✔ home  
-✔ school  
-✔ timedEvent  
-✔ realEvent  
-✔ summerCamp  
-✔ accompanied  
-✔ support  
+✔ home
+✔ school
+✔ timedEvent
+✔ realEvent
+✔ summerCamp
+✔ accompanied
+✔ support
 
-Stati futuri previsti:
+Stati futuri:
 
-⬜ outsideWithFamily  
-⬜ autonomousFuture  
+⬜ outsideWithFamily
+⬜ autonomousFuture
 
 ---
 
 ## REGOLA TEMPORALE PRESENZA
 
-La presenza Alice non deve essere valutata solo “a giornata”.
-
-Deve essere valutata per fascia temporale reale.
+La presenza Alice deve essere valutata per fascia reale.
 
 Domanda corretta:
 
 👉 “Dove si trova Alice in questa fascia?”
 
-Non:
+NON:
 
-❌ “Che tipo di giorno è oggi?”  
+❌ “Che tipo di giorno è oggi?”
 
 ---
 
 ## REGOLA SCUOLA
 
-La scuola non vale automaticamente per tutto il giorno.
-
-La scuola vale solo sulla fascia temporale reale:
+La scuola vale solo sulla fascia reale:
 
 - ingresso
-- permanenza scuola
+- permanenza
 - rientro
 
-Fuori da quella fascia, Alice può tornare a essere:
+Fuori da quella fascia Alice può tornare:
 
 - a casa
 - in evento
 - accompagnata
 - sotto supporto
 - al centro estivo
-- altro stato futuro
 
 ---
 
 ## REGOLA CENTRO ESTIVO
 
-Il centro estivo non vale automaticamente per tutto il giorno.
-
 Il centro estivo deve essere interpretato come:
 
-1. ingresso / logistica  
-2. permanenza reale  
-3. uscita / rientro  
-4. casa dopo centro estivo  
-
----
-
-## FIX STRUTTURALE CENTRO ESTIVO
-
-Caso risolto:
-
-- centro estivo fino alle 16:30
-- rientro logistico 20 minuti
-- genitori entrambi non disponibili
-- fascia Sandra sera separata
-
-Comportamento corretto:
-
-✔ buco uscita centro estivo 16:30–16:50  
-✔ buco Alice a casa dopo centro estivo 16:50–21:00  
-✔ buco fascia Sandra sera 21:00–22:35  
-✔ supporto reale può spezzare i buchi  
+1. ingresso/logistica
+2. permanenza reale
+3. uscita/rientro
+4. casa dopo centro estivo
 
 ---
 
@@ -1319,59 +757,136 @@ Comportamento corretto:
 
 La rete supporto è distinta da Sandra.
 
-- Supporto = persone della rete supporto
-- Sandra = categoria separata con fasce dedicate
+- Supporto = rete supporto
+- Sandra = categoria separata
 
 Il supporto è valido solo se:
 
-✔ è attivo  
-✔ è abilitato nel giorno  
-✔ copre completamente la fascia reale  
+✔ attivo
+✔ abilitato nel giorno
+✔ copre completamente la fascia
 
 ---
 
 ## REGOLA PRESENZA RELAZIONALE
 
-Alice può essere accompagnata da un adulto reale.
+Alice può essere:
 
-Questo non è solo “copertura”.
+✔ accompagnata da adulto
+✔ dentro evento familiare
+✔ coperta da supporto
+✔ a casa
+✔ a scuola
+✔ al centro estivo
 
-È stato di presenza relazionale:
-
-👉 Alice + adulto
-
-Il sistema deve mantenere distinta:
-
-- Alice a casa
-- Alice accompagnata
-- Alice coperta da supporto
-- Alice dentro evento
-- Alice al centro estivo
-- Alice a scuola
+Questi stati NON devono essere fusi.
 
 ---
 
 ## REGOLA ANTI-DOPPIONE
 
-Da ora, ogni nuova logica sulla presenza di Alice deve essere valutata prima nel PresenceEngine.
+Ogni nuova logica presenza Alice deve essere valutata PRIMA nel PresenceEngine.
 
-Vietato aggiungere nuove patch sparse in:
+Vietato aggiungere patch sparse in:
 
-❌ Home  
-❌ Calendario  
-❌ CoverageEngine  
-❌ UI  
+❌ Home
+❌ Calendario
+❌ CoverageEngine
+❌ UI
 
-senza prima verificare se appartengono al PresenceEngine.
+senza prima verificare il PresenceEngine.
 
 ---
 
 ## REGOLA DI PROGRESSIONE
 
-Prima di lavorare su Home o IPS:
+Prima di lavorare su:
 
-1. consolidare PresenceEngine  
-2. ripulire CoverageEngine dai residui legacy  
-3. verificare casi reali  
-4. solo dopo collegare Home alla stessa verità  
-5. solo dopo riallineare IPS  
+- Home avanzata
+- IPS
+
+serve:
+
+1. consolidare PresenceEngine
+2. ripulire CoverageEngine dai residui legacy
+3. verificare casi reali
+4. collegare tutto alla stessa verità
+
+---
+
+# 🔴 NUOVA REGOLA — COVERAGEENGINE CONSUMATORE
+
+## PRINCIPIO
+
+CoverageEngine NON deve più interpretare direttamente Alice.
+
+Deve diventare:
+
+✔ motore copertura puro
+✔ interprete buchi reali
+✔ consumatore del PresenceEngine
+
+---
+
+## VIETATO
+
+❌ leggere CompanionStore direttamente
+❌ segmentare manualmente Alice
+❌ duplicare presenza Alice
+❌ ricostruire stati Alice
+
+---
+
+## DIREZIONE STRUTTURALE
+
+PresenceEngine
+↓
+CoverageEngine
+↓
+Home / Calendario / IPS futuro
+
+---
+
+# 🔴 NUOVA REGOLA — BUG FANTASMA COPERTURA
+
+## PRINCIPIO
+
+Un buco NON deve mai esistere se:
+
+✔ supporto copre davvero
+✔ Alice è dentro evento reale
+✔ Alice è accompagnata
+✔ Alice non è realmente a casa
+
+---
+
+## CASI RISOLTI
+
+✔ falso buco Alice durante evento reale multi-persona
+✔ falso problema Home con supporto reale valido
+✔ doppio buco serale dovuto a segmentazione errata
+✔ buco post-centro-estivo incoerente
+
+---
+
+# 🔴 DIREZIONE OPERATIVA ATTUALE
+
+NON fare:
+
+❌ IPS
+❌ mega-refactor
+❌ Home avanzata
+
+Fare:
+
+✔ consolidamento PresenceEngine
+✔ cleanup CoverageEngine
+✔ eliminazione doppioni legacy
+✔ test reali continui
+✔ centralizzazione presenza Alice
+
+---
+
+# FRASE DI RIPARTENZA UFFICIALE
+
+Ripartiamo da FrodoDesk — PresenceEngine attivo, CoverageEngine in progressiva pulizia. Prossimo passo: eliminare residui legacy presenza Alice dentro CoverageEngine senza toccare Home e senza riallineare IPS.
