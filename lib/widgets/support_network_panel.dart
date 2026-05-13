@@ -42,6 +42,36 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
     return "$dd/$mm/$yy";
   }
 
+  int _sameNameIndex(SupportPerson person) {
+    final sameName = widget.store.people
+        .where(
+          (p) =>
+              p.name.trim().toLowerCase() == person.name.trim().toLowerCase(),
+        )
+        .toList();
+
+    if (sameName.length <= 1) return 1;
+
+    final index = sameName.indexWhere((p) => p.id == person.id);
+    return index == -1 ? 1 : index + 1;
+  }
+
+  int _sameNameCount(SupportPerson person) {
+    return widget.store.people
+        .where(
+          (p) =>
+              p.name.trim().toLowerCase() == person.name.trim().toLowerCase(),
+        )
+        .length;
+  }
+
+  String _displayNameForPerson(SupportPerson person) {
+    final count = _sameNameCount(person);
+    if (count <= 1) return person.name;
+
+    return "${person.name} • fascia ${_sameNameIndex(person)}";
+  }
+
   Future<void> _addPerson() async {
     final nameCtrl = TextEditingController();
 
@@ -56,7 +86,7 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
         return StatefulBuilder(
           builder: (context, setLocalState) {
             return AlertDialog(
-              title: const Text("Aggiungi persona"),
+              title: const Text("Aggiungi fascia supporto"),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -89,6 +119,8 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
                     controller: nameCtrl,
                     decoration: const InputDecoration(
                       labelText: "Nome persona",
+                      helperText:
+                          "Puoi usare lo stesso nome più volte, es. Sandra mattina e Sandra sera.",
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -157,7 +189,7 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
                       ),
                     );
                   },
-                  child: const Text("Salva"),
+                  child: const Text("Salva fascia"),
                 ),
               ],
             );
@@ -190,7 +222,7 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
         return StatefulBuilder(
           builder: (context, setLocalState) {
             return AlertDialog(
-              title: const Text("Modifica persona"),
+              title: const Text("Modifica fascia supporto"),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -355,7 +387,7 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
                 children: [
                   Expanded(
                     child: Text(
-                      p.name,
+                      _displayNameForPerson(p),
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 15,
@@ -401,6 +433,25 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
                       color: activeColor,
                     ),
                   ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "Fascia: ${_fmt(p.start)}–${_fmt(p.end)}",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black.withOpacity(0.68),
+                    ),
+                  ),
+                  if (_sameNameCount(p) > 1) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      "Stesso supporto, fascia ${_sameNameIndex(p)} di ${_sameNameCount(p)}.",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: Colors.blueGrey.withOpacity(0.85),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -416,7 +467,7 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
                         child: OutlinedButton.icon(
                           onPressed: () => _removePerson(p),
                           icon: const Icon(Icons.delete_outline, size: 18),
-                          label: const Text("Rimuovi"),
+                          label: const Text("Rimuovi fascia"),
                         ),
                       ),
                     ],
@@ -475,7 +526,7 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
             OutlinedButton.icon(
               onPressed: _addPerson,
               icon: const Icon(Icons.add),
-              label: const Text("Aggiungi persona"),
+              label: const Text("Aggiungi fascia supporto"),
             ),
             const SizedBox(height: 16),
             if (activeToday.isEmpty)
@@ -499,8 +550,8 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
                     children: [
                       Text(
                         _showInactivePeople
-                            ? "Nascondi persone non attive"
-                            : "Mostra persone non attive (${inactiveToday.length})",
+                            ? "Nascondi fasce non attive"
+                            : "Mostra fasce non attive (${inactiveToday.length})",
                         style: TextStyle(
                           fontWeight: FontWeight.w800,
                           color: Colors.black.withOpacity(0.72),

@@ -60,26 +60,28 @@ class AlicePresenceEngine {
 
       if (!enabledForDay) continue;
 
-      final supportStart = DateTime(
-        d0.year,
-        d0.month,
-        d0.day,
-        person.start.hour,
-        person.start.minute,
-      );
+      for (final window in person.effectiveSlots) {
+        final supportStart = DateTime(
+          d0.year,
+          d0.month,
+          d0.day,
+          window.start.hour,
+          window.start.minute,
+        );
 
-      final supportEnd = DateTime(
-        d0.year,
-        d0.month,
-        d0.day,
-        person.end.hour,
-        person.end.minute,
-      );
+        final supportEnd = DateTime(
+          d0.year,
+          d0.month,
+          d0.day,
+          window.end.hour,
+          window.end.minute,
+        );
 
-      final coversFullRange =
-          !supportStart.isAfter(start) && !supportEnd.isBefore(end);
+        final coversFullRange =
+            !supportStart.isAfter(start) && !supportEnd.isBefore(end);
 
-      if (coversFullRange) return true;
+        if (coversFullRange) return true;
+      }
     }
 
     return false;

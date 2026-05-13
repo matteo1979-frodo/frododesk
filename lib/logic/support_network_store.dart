@@ -61,6 +61,7 @@ class SupportNetworkStore {
             enabled: enabled,
             start: start,
             end: end,
+            slots: [SupportTimeSlot(start: start, end: end)],
           ),
         );
       }
