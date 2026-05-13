@@ -1901,6 +1901,12 @@ class _CalendarioScreenStepAStabileState
     required DateTime day,
   }) {
     if (turnPlan.isOff) return const [];
+    final isSick =
+        manualOverride?.status == OverrideStatus.malattiaLeggera ||
+        manualOverride?.status == OverrideStatus.malattiaALetto ||
+        coreStore.diseasePeriodStore.getPeriodForDay(personKey, day) != null;
+
+    if (isSick) return const [];
 
     final turnRange = _DateRange(
       start: _atDayTime(day, turnPlan.start),
@@ -6991,7 +6997,9 @@ class _CalendarioScreenStepAStabileState
                 if (conflicts.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(
-                    "⚠ Conflitto con turno",
+                    isMalattiaALetto
+                        ? "⚠ Conflitto con stato reale"
+                        : "⚠ Conflitto con turno",
                     style: TextStyle(
                       color: Colors.red,
                       fontWeight: FontWeight.w700,

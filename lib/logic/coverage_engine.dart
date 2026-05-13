@@ -1333,10 +1333,26 @@ class CoverageEngine {
     final fSeraEnd = _atTime(d0, sandraSeraEnd);
 
     DateTime seraGapStart = fSeraStart;
-    final DateTime seraGapEnd = fSeraEnd;
+    DateTime seraGapEnd = fSeraEnd;
 
     if (effectiveCampEnd != null && effectiveCampEnd.isAfter(seraGapStart)) {
       seraGapStart = effectiveCampEnd;
+    }
+    final eveningRealEvents = [
+      ..._busyShiftsFromRealEventsForPerson(personKey: 'matteo', day: d0),
+      ..._busyShiftsFromRealEventsForPerson(personKey: 'chiara', day: d0),
+    ];
+
+    for (final eventBusy in eveningRealEvents) {
+      final overlapsEvening =
+          eventBusy.start.isBefore(seraGapEnd) &&
+          eventBusy.end.isAfter(seraGapStart);
+
+      if (overlapsEvening &&
+          eventBusy.start.isAtSameMomentAs(seraGapStart) &&
+          eventBusy.end.isBefore(seraGapEnd)) {
+        seraGapEnd = eventBusy.end;
+      }
     }
 
     if (seraGapEnd.isAfter(seraGapStart)) {
@@ -1354,15 +1370,24 @@ class CoverageEngine {
       );
 
       if (!okSera) {
-        entries.add(
-          _CoverageGapEntry(
-            label: _homeGapLabel(seraGapStart, seraGapEnd),
-            fasciaStart: seraGapStart,
-            fasciaEnd: seraGapEnd,
-            isHomePresenceWindow: true,
-            allowSandra: true,
-          ),
+        final hasExistingHomeGapOverlappingSera = entries.any(
+          (e) =>
+              _isAliceHomeLabel(e.label) &&
+              e.fasciaStart.isBefore(seraGapEnd) &&
+              e.fasciaEnd.isAfter(seraGapStart),
         );
+
+        if (!hasExistingHomeGapOverlappingSera) {
+          entries.add(
+            _CoverageGapEntry(
+              label: _homeGapLabel(seraGapStart, seraGapEnd),
+              fasciaStart: seraGapStart,
+              fasciaEnd: seraGapEnd,
+              isHomePresenceWindow: true,
+              allowSandra: true,
+            ),
+          );
+        }
       }
     }
 
@@ -1582,6 +1607,15 @@ class CoverageEngine {
     for (final shift in matteoBusy) {
       addIfInside(shift.start);
       addIfInside(shift.end);
+    }
+
+    for (final shift in matteoBusy) {
+      final startsInside =
+          !shift.start.isBefore(windowStart) && shift.start.isBefore(windowEnd);
+
+      if (startsInside) {
+        points.add(shift.start);
+      }
     }
 
     for (final shift in chiaraBusy) {
