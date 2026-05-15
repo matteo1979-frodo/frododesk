@@ -1,6 +1,6 @@
 # FRODODESK — ROADMAP FINANZE / SPESE
 
-Ultimo aggiornamento: 14 Maggio 2026
+Ultimo aggiornamento: 15 Maggio 2026
 
 ---
 
@@ -113,7 +113,7 @@ Stato: COMPLETATO
 
 # BLOCCO F2 — STRUTTURA DATI MINIMA FINANZE
 
-Stato: NON INIZIATO
+Stato: COMPLETATO
 
 ---
 
@@ -121,23 +121,195 @@ Stato: NON INIZIATO
 
 Definire il primo modello reale di:
 
-✔ saldo
-✔ ricorrenze
-✔ stipendi
-✔ fondi
-✔ simulazione base
+✔ saldo  
+✔ ricorrenze  
+✔ stipendi  
+✔ fondi  
+✔ simulazione base  
 
 ---
 
-## DA DEFINIRE
+## COMPLETATO
 
-⬜ saldo iniziale manuale  
-⬜ saldo reale aggiornabile  
-⬜ entrate previste  
-⬜ uscite previste  
-⬜ ricorrenze  
-⬜ fondi dedicati  
-⬜ struttura persona economica  
+☑ struttura persona economica  
+☑ saldi iniziali  
+☑ saldi reali aggiornabili  
+☑ fondi dedicati  
+☑ ricorrenze  
+☑ entrate previste  
+☑ uscite previste  
+☑ margine previsto  
+☑ snapshot finanze  
+☑ pressione economica base  
+☑ dati demo separati dallo store  
+☑ store centrale `FinanceStore`  
+☑ funzione riepilogo testuale  
+☑ caricamento demo controllato  
+
+---
+
+# BLOCCO F2.1 — MODELLO RICORRENZE AVANZATO
+
+Stato: COMPLETATO / BASE V1
+
+---
+
+## OBIETTIVO
+
+Trasformare ogni ricorrenza economica da semplice importo a oggetto economico vivo.
+
+---
+
+## COMPLETATO
+
+☑ categoria  
+☑ descrizione  
+☑ ricorrenza mensile / annuale / singola  
+☑ obbligatorietà  
+☑ pressione economica  
+☑ conferma manuale  
+☑ stato previsto / confermato  
+☑ variabilità fissa / variabile  
+☑ stabilità  
+☑ priorità pagamento  
+☑ protezione  
+☑ rischio sospensione  
+
+---
+
+## SIGNIFICATO
+
+Una ricorrenza non è più solo:
+
+- nome
+- importo
+
+ma diventa:
+
+👉 comportamento economico nel tempo.
+
+Esempio:
+
+Netflix non è solo “18€”.
+
+È:
+
+- uscita prevista
+- facoltativa
+- pressione bassa
+- prevista
+- priorità bassa
+- non protetta
+- stabile
+- rischio sospensione basso
+- categoria intrattenimento
+- ricorrenza mensile
+
+---
+
+# BLOCCO F2.2 — FONDI FINANZE
+
+Stato: AVVIATO / BASE V1
+
+---
+
+## COMPLETATO
+
+☑ modello fondo  
+☑ nome fondo  
+☑ descrizione fondo  
+☑ importo fondo  
+☑ fondo protetto / non protetto  
+☑ popup fondi  
+☑ dettaglio singolo fondo  
+
+---
+
+## ESEMPI ATTUALI
+
+- Emergenze
+- Fondo Auto
+
+---
+
+# BLOCCO F4 — DASHBOARD MINIMALE FINANZE
+
+Stato: AVVIATA / V1 VISIVA FUNZIONANTE
+
+---
+
+## OBIETTIVO
+
+Mostrare:
+
+✔ saldo stimato  
+✔ pressione  
+✔ fondi  
+✔ proiezione minima  
+
+Senza:
+
+❌ complessità eccessiva  
+❌ grafici pesanti  
+❌ automazioni premature  
+
+---
+
+## COMPLETATO
+
+☑ card Finanze visibile in Home  
+☑ saldo totale visibile in Home  
+☑ margine previsto visibile in Home  
+☑ popup principale Finanze  
+☑ popup Saldo totale  
+☑ popup Fondi  
+☑ popup singolo fondo  
+☑ popup Entrate previste  
+☑ popup Uscite previste  
+☑ popup Margine previsto  
+☑ popup dettaglio singola ricorrenza  
+☑ badge UI modularizzati con `_financeBadge()`  
+
+---
+
+# BLOCCO F4.1 — UI FINANZE PROVVISORIA
+
+Stato: FUNZIONANTE / DA RIFINIRE
+
+---
+
+## DECISIONE
+
+La UI attuale è provvisoria.
+
+Serve ora per:
+
+✔ vedere i dati  
+✔ testare il modello  
+✔ capire quali informazioni servono davvero  
+✔ navigare il modulo  
+
+NON serve ancora per:
+
+❌ estetica definitiva  
+❌ layout compatto  
+❌ grafici evoluti  
+
+---
+
+## NOTA IMPORTANTE
+
+Durante la costruzione, alcune logiche/badge delle Uscite sono stati temporaneamente usati anche nelle Entrate.
+
+Decisione:
+
+❌ NON rifinire ora.
+
+In futuro:
+
+✔ separare UI Entrate  
+✔ separare UI Uscite  
+✔ creare badge coerenti per ciascun tipo  
 
 ---
 
@@ -161,29 +333,6 @@ Definire il primo modello reale delle spese.
 ⬜ metodo pagamento  
 ⬜ note  
 ⬜ data reale  
-
----
-
-# BLOCCO F4 — DASHBOARD MINIMALE FINANZE
-
-Stato: NON INIZIATO
-
----
-
-## OBIETTIVO
-
-Mostrare:
-
-✔ saldo stimato  
-✔ pressione  
-✔ fondi  
-✔ proiezione minima  
-
-Senza:
-
-❌ complessità eccessiva  
-❌ grafici pesanti  
-❌ automazioni premature  
 
 ---
 
@@ -219,6 +368,8 @@ Statistiche dovrà leggere:
 ✔ andamento fondi  
 ✔ pressione futura  
 ✔ differenza previsione ↔ realtà  
+✔ rischio sospensione  
+✔ stabilità economica  
 
 ---
 
@@ -253,6 +404,8 @@ Ogni modulo:
 ❌ automazioni aggressive  
 ❌ blocchi automatici spese  
 ❌ consigli automatici invasivi  
+❌ persistenza complessa prima dei dati reali  
+❌ grafici evoluti prima della struttura reale  
 
 ---
 
@@ -268,4 +421,25 @@ Ogni modulo:
 
 # PROSSIMO PASSO OPERATIVO
 
-👉 Definire struttura dati minima FINANZE v1.
+👉 Sostituire i dati demo con struttura dati reale Finanze.
+
+Ordine corretto:
+
+1. saldo reale Matteo  
+2. saldo reale Chiara  
+3. fondi reali  
+4. ricorrenze reali  
+5. solo dopo modifica/inserimento da UI  
+
+---
+
+# CHECKPOINT ATTUALE
+
+Finanze V1 è:
+
+✔ visibile  
+✔ navigabile  
+✔ collegata alla Home  
+✔ ancora basata su dati demo  
+✔ senza persistenza reale  
+✔ pronta per il passaggio ai dati reali

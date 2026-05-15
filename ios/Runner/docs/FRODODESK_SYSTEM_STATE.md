@@ -855,3 +855,361 @@ SENZA ancora collegare:
 # FRASE DI RIPARTENZA AGGIORNATA
 
 Ripartiamo da FrodoDesk — fondazione moduli Finanze e Spese: definizione strutture dati minime, separazione previsione/realtà e crescita parallela dei moduli senza perdere la filosofia “decisione sempre umana”.
+
+---
+
+# 🔄 AGGIORNAMENTO 15 Maggio 2026
+(BLOCCO FINANZE V1 — Modello economico visivo funzionante)
+
+---
+
+# NUOVO STATO MODULO FINANZE
+
+Il modulo Finanze è passato da:
+
+❌ fondazione concettuale
+
+a:
+
+✔ Finanze V1 visiva funzionante  
+✔ modello dati economico avviato  
+✔ card Home attiva  
+✔ popup navigabili  
+✔ ricorrenze economiche vive  
+✔ struttura ancora basata su dati demo  
+
+---
+
+# COMPONENTI CREATI / ATTIVI
+
+Sono stati creati e collegati i primi file del modulo Finanze:
+
+✔ `lib/models/finance_person.dart`  
+✔ `lib/models/finance_balance.dart`  
+✔ `lib/models/finance_fund.dart`  
+✔ `lib/models/finance_recurring_item.dart`  
+✔ `lib/models/finance_snapshot.dart`  
+✔ `lib/stores/finance_store.dart`  
+✔ `lib/stores/finance_demo_data.dart`  
+
+---
+
+# FINANCESTORE
+
+`FinanceStore` ora gestisce:
+
+✔ persone economiche  
+✔ saldi  
+✔ fondi  
+✔ ricorrenze  
+✔ snapshot  
+✔ saldo totale  
+✔ fondi totali  
+✔ entrate previste  
+✔ uscite previste  
+✔ margine mensile previsto  
+✔ stato pressione  
+✔ riepilogo testuale  
+✔ caricamento demo controllato  
+
+---
+
+# PERSONE ECONOMICHE
+
+Il sistema economico conosce:
+
+✔ Matteo  
+✔ Chiara  
+✔ Alice  
+
+Alice resta già predisposta come entità economica futura anche se oggi non ha:
+
+- conto reale
+- entrate
+- spese autonome
+
+---
+
+# SALDI
+
+Introdotto modello saldi con:
+
+✔ persona collegata  
+✔ saldo iniziale  
+✔ saldo corrente  
+✔ data aggiornamento  
+
+Stato attuale:
+
+⚠️ saldi ancora demo.
+
+Prossimo passo:
+
+👉 sostituire i demo con saldo reale Matteo e saldo reale Chiara.
+
+---
+
+# FONDI
+
+Introdotto modello fondi con:
+
+✔ id  
+✔ nome  
+✔ descrizione  
+✔ importo  
+✔ protetto / non protetto  
+
+Fondi demo attuali:
+
+- Emergenze
+- Fondo Auto
+
+UI funzionante:
+
+✔ popup Fondi  
+✔ dettaglio singolo fondo  
+✔ messaggio diverso per fondo protetto / non protetto  
+
+---
+
+# RICORRENZE ECONOMICHE VIVE
+
+`FinanceRecurringItem` è diventato un oggetto economico avanzato.
+
+Ogni ricorrenza contiene:
+
+✔ id  
+✔ nome  
+✔ descrizione  
+✔ importo previsto  
+✔ prossima scadenza  
+✔ entrata / uscita  
+✔ tipo ricorrenza  
+✔ categoria  
+✔ conferma manuale richiesta  
+✔ obbligatorietà  
+✔ pressione economica  
+✔ stato previsto / confermato  
+✔ variabilità  
+✔ stabilità  
+✔ priorità pagamento  
+✔ protezione  
+✔ rischio sospensione  
+
+---
+
+# DISTINZIONI STRUTTURALI ATTIVE
+
+Il sistema ora distingue:
+
+✔ previsto  
+✔ confermato  
+✔ obbligatorio  
+✔ facoltativo  
+✔ stabile  
+✔ instabile  
+✔ protetto  
+✔ non protetto  
+✔ pressione economica  
+✔ priorità pagamento  
+✔ rischio sospensione  
+✔ fisso  
+✔ variabile  
+
+---
+
+# ESEMPIO STRUTTURALE — NETFLIX
+
+Netflix non è più solo:
+
+- nome
+- importo
+
+ma viene letto come:
+
+✔ uscita prevista  
+✔ ricorrenza mensile  
+✔ categoria intrattenimento  
+✔ facoltativa  
+✔ pressione bassa  
+✔ prevista  
+✔ priorità bassa  
+✔ non protetta  
+✔ stabile  
+✔ rischio sospensione basso  
+✔ descrizione leggibile  
+
+Significato:
+
+👉 FrodoDesk legge comportamento economico nel tempo, non solo movimenti.
+
+---
+
+# ESEMPIO STRUTTURALE — STIPENDI
+
+Gli stipendi Matteo / Chiara sono modellati come:
+
+✔ entrate previste  
+✔ mensili  
+✔ protette  
+✔ stabili  
+✔ da confermare manualmente  
+✔ previste il giorno 5 del mese  
+
+Decisione reale:
+
+👉 il riferimento contrattuale dello stipendio è il giorno 5.
+
+Anche se nella realtà può arrivare il 3 o il 4, il sistema usa il giorno 5 come data strutturale prevista.
+
+---
+
+# HOME FINANZE
+
+La card Finanze nella Home ora:
+
+✔ non è più solo decorativa  
+✔ mostra saldo totale  
+✔ mostra margine previsto  
+✔ legge dati dal FinanceStore  
+✔ apre il popup Finanze  
+
+---
+
+# NAVIGAZIONE FINANZE V1
+
+Percorsi funzionanti:
+
+Home  
+→ Finanze  
+→ Saldo totale  
+→ saldi persone
+
+Home  
+→ Finanze  
+→ Fondi  
+→ singolo fondo
+
+Home  
+→ Finanze  
+→ Entrate previste  
+→ singola entrata
+
+Home  
+→ Finanze  
+→ Uscite previste  
+→ singola uscita
+
+Home  
+→ Finanze  
+→ Margine previsto
+
+---
+
+# UI FINANZE
+
+Introdotto componente:
+
+`_financeBadge()`
+
+per evitare duplicazioni e iniziare la modularizzazione UI.
+
+Badge attualmente usati:
+
+- DA CONFERMARE
+- PREVISTO
+- FACOLTATIVA
+- PRESSIONE BASSA
+- PRIORITÀ BASSA
+- NON PROTETTA
+- STABILE
+- RISCHIO BASSO
+- PROTETTA
+
+---
+
+# NOTA UI TEMPORANEA
+
+Durante la costruzione veloce del modello:
+
+alcuni badge/logiche delle Uscite sono stati temporaneamente presenti anche nelle Entrate.
+
+Decisione ufficiale:
+
+❌ NON rifinire ora.
+
+In futuro:
+
+✔ separare UI Entrate  
+✔ separare UI Uscite  
+✔ creare badge coerenti per ciascun tipo  
+
+---
+
+# NON ANCORA FATTO
+
+Non è ancora presente:
+
+❌ persistenza reale Finanze  
+❌ inserimento/modifica da UI  
+❌ saldi reali  
+❌ fondi reali  
+❌ ricorrenze reali  
+❌ collegamento Spese  
+❌ collegamento Statistiche  
+❌ collegamento IPS economico  
+
+---
+
+# STATO ATTUALE FINANZE
+
+Finanze V1 è:
+
+✔ visibile  
+✔ navigabile  
+✔ collegata alla Home  
+✔ stabile in compilazione  
+✔ basata su dati demo  
+✔ senza persistenza reale  
+✔ pronta per passare ai dati reali  
+
+---
+
+# PROSSIMA FASE OPERATIVA
+
+Dopo salvataggio Git/tag:
+
+👉 sostituire i dati demo con dati reali Finanze.
+
+Ordine operativo deciso:
+
+1. saldo reale Matteo  
+2. saldo reale Chiara  
+3. fondi reali  
+4. ricorrenze reali  
+5. solo dopo modifica/inserimento da UI  
+
+---
+
+# DIREZIONE OPERATIVA CONFERMATA
+
+Non fare ancora:
+
+❌ IPS economico  
+❌ Statistiche economiche  
+❌ Spese  
+❌ persistenza complessa  
+❌ grafica definitiva  
+
+Fare prima:
+
+✔ rendere reali i dati Finanze  
+✔ mantenere il modulo separato  
+✔ continuare un passo alla volta  
+✔ non rompere Home / Calendario / PresenceEngine  
+
+---
+
+# FRASE DI RIPARTENZA AGGIORNATA
+
+Ripartiamo da FrodoDesk — Finanze V1 visiva funzionante: Home collegata al FinanceStore, popup navigabili, ricorrenze economiche vive ancora su dati demo. Prossimo passo: sostituire i demo con dati reali Finanze partendo dai saldi Matteo/Chiara, senza toccare IPS, Statistiche o Spese.

@@ -12,4 +12,24 @@ class FinanceFund {
     required this.amount,
     required this.protected,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'amount': amount,
+      'protected': protected,
+    };
+  }
+
+  factory FinanceFund.fromJson(Map<String, dynamic> json) {
+    return FinanceFund(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String,
+      amount: (json['amount'] as num).toDouble(),
+      protected: json['protected'] as bool,
+    );
+  }
 }

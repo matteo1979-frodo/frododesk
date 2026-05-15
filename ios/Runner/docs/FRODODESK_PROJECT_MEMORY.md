@@ -1,6 +1,7 @@
 # FRODODESK — PROJECT MEMORY
 
-Ultimo aggiornamento: Aprile 2026 (post fix scuola motore + support network)
+Ultimo aggiornamento: 15 Maggio 2026  
+(Finanze V1 visiva funzionante)
 
 ---
 
@@ -17,8 +18,9 @@ Non è un semplice calendario o un planner turni.
 - eventi familiari
 - rete di supporto
 - rilevazione automatica dei buchi
+- simulazione economica familiare futura
 
-per offrire una visione reale della giornata e del futuro.
+per offrire una visione reale della giornata, del futuro e della stabilità familiare.
 
 👉 Il sistema suggerisce  
 👉 La decisione resta sempre umana
@@ -66,13 +68,37 @@ Coverage layer
 - rilevazione buchi
 - spiegazione copertura
 
+Economic layer
+- saldi
+- fondi
+- entrate previste
+- uscite previste
+- ricorrenze
+- pressione economica
+- simulazione futura
+
 ---
 
 # PRINCIPIO DI SVILUPPO
 
-Il calendario deve diventare completamente utilizzabile nella vita reale prima di espandere il sistema.
+Il calendario deve restare stabile e utilizzabile nella vita reale.
 
-Solo dopo si svilupperanno altri moduli come finanze, salute e statistiche.
+I nuovi moduli devono crescere senza rompere il calendario.
+
+Decisione consolidata:
+
+👉 i moduli possono crescere in parallelo
+
+MA:
+
+✔ separati  
+✔ modulari  
+✔ senza mega-refactor  
+✔ senza contaminare i motori già stabili  
+
+Principio:
+
+👉 “app dentro app dentro app”
 
 ---
 
@@ -225,7 +251,7 @@ copriva ingresso 09:05–09:25 ❌
 
 ---
 
-## PRINCIPIO STRUTTURALE (NUOVO)
+## PRINCIPIO STRUTTURALE
 
 👉 La copertura è valida SOLO se il tempo coincide
 
@@ -798,6 +824,8 @@ La decisione resta sempre umana.
 ✔ navigazione giorno → calendario funzionante  
 ✔ struttura pronta per conflitti intelligenti
 
+---
+
 # 🔄 AGGIORNAMENTO 8 Maggio 2026
 
 ## 🧠 EVENTI ALICE — EVOLUZIONE COMPORTAMENTALE REALE
@@ -1076,6 +1104,9 @@ Obiettivo:
 ## FRASE DI RIPARTENZA UFFICIALE
 
 Ripartiamo da FrodoDesk — Motore presenza reale Alice: creare `alice_presence_engine.dart` come sorgente unica per decidere dove si trova Alice e ridurre le logiche duplicate tra Home, Calendario e CoverageEngine.
+
+---
+
 # 🔄 AGGIORNAMENTO 12–13 Maggio 2026
 
 ## 🔥 MOTORE PRESENZA REALE ALICE — CONSOLIDAMENTO
@@ -1222,6 +1253,7 @@ Sta iniziando a modellare:
 ✔ presenza relazionale  
 ✔ posizione reale nel tempo  
 ✔ copertura dinamica viva
+
 ---
 
 # 🔄 AGGIORNAMENTO 14 Maggio 2026
@@ -1539,3 +1571,311 @@ finché la struttura reale non emergerà naturalmente.
 ⬜ Definizione struttura dati minima Spese v1  
 ⬜ Prima dashboard economica minimale  
 ⬜ Collegamento futuro Statistiche ↔ Finanze ↔ Spese
+
+---
+
+# 🔄 AGGIORNAMENTO 15 Maggio 2026
+
+## 💰 FINANZE V1 — MODELLO ECONOMICO VISIVO FUNZIONANTE
+
+Il modulo Finanze è passato da:
+
+❌ fondazione concettuale
+
+a:
+
+✔ prima versione visiva funzionante  
+✔ modello dati reale avviato  
+✔ UI navigabile collegata alla Home  
+✔ ricorrenze economiche vive  
+
+---
+
+## 🧱 FONDAMENTA CREATE
+
+Creati e collegati i primi modelli/stores del modulo Finanze:
+
+✔ `finance_person.dart`  
+✔ `finance_balance.dart`  
+✔ `finance_fund.dart`  
+✔ `finance_recurring_item.dart`  
+✔ `finance_snapshot.dart`  
+✔ `finance_store.dart`  
+✔ `finance_demo_data.dart`  
+
+---
+
+## 👨‍👩‍👧 PERSONE ECONOMICHE
+
+Il sistema economico conosce già:
+
+✔ Matteo  
+✔ Chiara  
+✔ Alice  
+
+anche se Alice oggi non ha ancora:
+
+- conto
+- entrate
+- spese autonome
+
+---
+
+## 💳 SALDI
+
+Introdotta struttura base saldi:
+
+✔ saldo iniziale  
+✔ saldo corrente  
+✔ collegamento persona  
+✔ data aggiornamento  
+
+Attualmente i saldi sono ancora demo.
+
+Prossima fase:
+
+👉 passare a saldi reali Matteo / Chiara.
+
+---
+
+## 🛡️ FONDI
+
+Introdotto modello fondi:
+
+✔ nome  
+✔ descrizione  
+✔ importo  
+✔ protetto / non protetto  
+
+Fondi demo attuali:
+
+- Emergenze
+- Fondo Auto
+
+---
+
+## 🔁 RICORRENZE ECONOMICHE VIVE
+
+Le ricorrenze sono diventate oggetti economici vivi.
+
+Ogni `FinanceRecurringItem` contiene:
+
+✔ id  
+✔ nome  
+✔ descrizione  
+✔ importo previsto  
+✔ prossima scadenza  
+✔ entrata / uscita  
+✔ tipo ricorrenza  
+✔ categoria  
+✔ conferma manuale richiesta  
+✔ obbligatorietà  
+✔ pressione economica  
+✔ stato previsto / confermato  
+✔ variabilità  
+✔ stabilità  
+✔ priorità pagamento  
+✔ protezione  
+✔ rischio sospensione  
+
+---
+
+## 🔥 SIGNIFICATO STRUTTURALE
+
+Il sistema ora può distinguere:
+
+✔ previsto  
+✔ confermato  
+✔ obbligatorio  
+✔ facoltativo  
+✔ stabile  
+✔ instabile  
+✔ protetto  
+✔ non protetto  
+✔ pressione bassa/media/alta/critica  
+✔ priorità pagamento  
+✔ rischio sospensione  
+✔ fisso  
+✔ variabile  
+
+---
+
+## 🧠 ESEMPIO REALE — NETFLIX
+
+Netflix non è più solo:
+
+- nome
+- 18€
+
+È diventato:
+
+✔ uscita prevista  
+✔ facoltativa  
+✔ pressione bassa  
+✔ prevista  
+✔ priorità bassa  
+✔ non protetta  
+✔ stabile  
+✔ rischio sospensione basso  
+✔ ricorrenza mensile  
+✔ categoria intrattenimento  
+✔ descrizione  
+
+Questo conferma il principio:
+
+👉 FrodoDesk non registra solo soldi.  
+👉 FrodoDesk legge comportamento economico nel tempo.
+
+---
+
+## 💼 ESEMPIO REALE — STIPENDI
+
+Gli stipendi Matteo / Chiara sono modellati come:
+
+✔ entrate previste  
+✔ mensili  
+✔ protette  
+✔ stabili  
+✔ da confermare manualmente  
+✔ previste il giorno 5 del mese  
+
+Decisione reale:
+
+👉 da contratto lo stipendio viene considerato previsto il giorno 5.
+
+Anche se può arrivare il 3 o il 4, il riferimento strutturale è il 5.
+
+---
+
+## 🏠 HOME FINANZE
+
+La card Finanze in Home ora mostra:
+
+✔ saldo totale  
+✔ margine previsto  
+
+La card non è più “presto disponibile”.
+
+Ora:
+
+✔ legge dati dal FinanceStore  
+✔ apre il popup Finanze  
+✔ permette navigazione interna  
+
+---
+
+## 🧭 NAVIGAZIONE FINANZE V1
+
+Percorsi funzionanti:
+
+Home  
+→ Finanze  
+→ Saldo totale  
+→ persone / saldi
+
+Home  
+→ Finanze  
+→ Fondi  
+→ singolo fondo
+
+Home  
+→ Finanze  
+→ Entrate previste  
+→ singola entrata
+
+Home  
+→ Finanze  
+→ Uscite previste  
+→ singola uscita
+
+Home  
+→ Finanze  
+→ Margine previsto
+
+---
+
+## 🧩 UI FINANZE
+
+Introdotto componente:
+
+`_financeBadge()`
+
+Serve per mostrare badge economici riutilizzabili:
+
+- DA CONFERMARE
+- PREVISTO
+- FACOLTATIVA
+- PRESSIONE BASSA
+- PRIORITÀ BASSA
+- NON PROTETTA
+- STABILE
+- RISCHIO BASSO
+
+---
+
+## ⚠️ DECISIONE TEMPORANEA UI
+
+Durante la costruzione del modello:
+
+alcuni badge/logiche delle Uscite sono stati temporaneamente usati anche nelle Entrate.
+
+Decisione ufficiale:
+
+❌ NON rifinire ora.
+
+In futuro:
+
+✔ separare chiaramente UI Entrate  
+✔ separare chiaramente UI Uscite  
+✔ creare badge coerenti per ciascun tipo  
+
+---
+
+## 🚫 NON FATTO
+
+Non è stato ancora fatto:
+
+❌ persistenza reale  
+❌ inserimento/modifica da UI  
+❌ saldi reali  
+❌ fondi reali  
+❌ ricorrenze reali  
+❌ collegamento IPS  
+❌ collegamento Statistiche  
+❌ collegamento Spese  
+
+---
+
+## ✅ STATO ATTUALE
+
+Finanze V1 è:
+
+✔ visibile  
+✔ navigabile  
+✔ collegata alla Home  
+✔ basata su dati demo  
+✔ senza persistenza reale  
+✔ stabile in compilazione  
+✔ pronta al passaggio dati reali  
+
+---
+
+## 🎯 PROSSIMA DIREZIONE
+
+Dopo salvataggio Git/tag:
+
+👉 passare dai demo ai dati reali Finanze.
+
+Ordine corretto:
+
+1. saldo reale Matteo  
+2. saldo reale Chiara  
+3. fondi reali  
+4. ricorrenze reali  
+5. solo dopo modifica/inserimento da UI  
+
+---
+
+## FRASE DI RIPARTENZA UFFICIALE
+
+Ripartiamo da FrodoDesk — Finanze V1 visiva funzionante: card Home attiva, popup navigabili, ricorrenze economiche vive ancora su dati demo. Prossimo passo: sostituire i demo con dati reali Finanze partendo dai saldi Matteo/Chiara, senza toccare IPS, Statistiche o Spese.

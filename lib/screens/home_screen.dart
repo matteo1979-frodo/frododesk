@@ -49,8 +49,17 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    financeStore.loadDemoData();
+    _loadFinanceData();
+  }
+
+  Future<void> _loadFinanceData() async {
+    await financeStore.loadInitialRealData();
+
     financeStore.saveSnapshot(DateTime.now());
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   String _actionLabelFromModule(snap.IpsModule module) {
@@ -2754,123 +2763,183 @@ class _HomeScreenState extends State<HomeScreen> {
       color: const Color(0xFF8D6E63),
       title: "Finanze",
       subtitle: "Riepilogo economico familiare",
+      child: StatefulBuilder(
+        builder: (context, refreshFinancePopup) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () async {
+                        await _showFinanceBalancesPopup();
+                        refreshFinancePopup(() {});
+                      },
+                      child: _buildFinanceInfoCard(
+                        title: "Saldo totale",
+                        value:
+                            "€${financeStore.totalBalance().toStringAsFixed(0)}",
+                        icon: Icons.account_balance_wallet_rounded,
+                        color: const Color(0xFF43A047),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () async {
+                        await _showFinanceFundsPopup();
+                        refreshFinancePopup(() {});
+                      },
+                      child: _buildFinanceInfoCard(
+                        title: "Fondi",
+                        value:
+                            "€${financeStore.totalFunds().toStringAsFixed(0)}",
+                        icon: Icons.savings_rounded,
+                        color: const Color(0xFF1E88E5),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 14),
+
+              InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: _showFinanceMarginPopup,
+                child: _buildFinanceInfoCard(
+                  title: "Margine previsto",
+                  value:
+                      "€${financeStore.projectedMonthlyMargin().toStringAsFixed(0)}",
+                  icon: Icons.trending_up_rounded,
+                  color: financeStore.isUnderPressure()
+                      ? const Color(0xFFE53935)
+                      : const Color(0xFF43A047),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: _showFinanceIncomePopup,
+                      child: _buildFinanceInfoCard(
+                        icon: Icons.arrow_downward_rounded,
+                        title: "Entrate previste",
+                        value:
+                            "€${financeStore.projectedMonthlyIncome().toStringAsFixed(0)}",
+                        color: const Color(0xFF43A047),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: _showFinanceExpensesPopup,
+                      child: _buildFinanceInfoCard(
+                        icon: Icons.arrow_upward_rounded,
+                        title: "Uscite previste",
+                        value:
+                            "€${financeStore.projectedMonthlyExpenses().toStringAsFixed(0)}",
+                        color: const Color(0xFFE53935),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 18),
+
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: financeStore.isUnderPressure()
+                      ? const Color(0xFFE53935).withOpacity(0.12)
+                      : const Color(0xFF43A047).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  financeStore.isUnderPressure()
+                      ? "Il sistema rileva pressione economica."
+                      : "Situazione economica stabile.",
+                  style: TextStyle(
+                    color: Colors.black.withOpacity(0.78),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _showEditFundAmountPopup({
+    required String fundId,
+    required String fundName,
+    required double currentAmount,
+  }) async {
+    final controller = TextEditingController(
+      text: currentAmount.toStringAsFixed(2),
+    );
+
+    await _showHomeDialog(
+      icon: Icons.edit_rounded,
+      color: const Color(0xFF1E88E5),
+      title: "Modifica fondo",
+      subtitle: fundName,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(18),
-                  onTap: () {
-                    _showFinanceBalancesPopup();
-                  },
-                  child: _buildFinanceInfoCard(
-                    title: "Saldo totale",
-                    value: "€${financeStore.totalBalance().toStringAsFixed(0)}",
-                    icon: Icons.account_balance_wallet_rounded,
-                    color: const Color(0xFF43A047),
-                  ),
-                ),
+          TextField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: "Importo fondo",
+              hintText: "Es. 1200.00",
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.82),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(18),
               ),
-
-              const SizedBox(width: 12),
-
-              Expanded(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(18),
-                  onTap: () {
-                    _showFinanceFundsPopup();
-                  },
-                  child: _buildFinanceInfoCard(
-                    title: "Fondi",
-                    value: "€${financeStore.totalFunds().toStringAsFixed(0)}",
-                    icon: Icons.savings_rounded,
-                    color: const Color(0xFF1E88E5),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-
           const SizedBox(height: 14),
-
-          InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: () {
-              _showFinanceMarginPopup();
-            },
-            child: _buildFinanceInfoCard(
-              title: "Margine previsto",
-              value:
-                  "€${financeStore.projectedMonthlyMargin().toStringAsFixed(0)}",
-              icon: Icons.trending_up_rounded,
-              color: financeStore.isUnderPressure()
-                  ? const Color(0xFFE53935)
-                  : const Color(0xFF43A047),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(18),
-                  onTap: () {
-                    _showFinanceIncomePopup();
-                  },
-                  child: _buildFinanceInfoCard(
-                    icon: Icons.arrow_downward_rounded,
-                    title: "Entrate previste",
-                    value:
-                        "€${financeStore.projectedMonthlyIncome().toStringAsFixed(0)}",
-                    color: const Color(0xFF43A047),
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              Expanded(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(18),
-                  onTap: () {
-                    _showFinanceExpensesPopup();
-                  },
-                  child: _buildFinanceInfoCard(
-                    icon: Icons.arrow_upward_rounded,
-                    title: "Uscite previste",
-                    value:
-                        "€${financeStore.projectedMonthlyExpenses().toStringAsFixed(0)}",
-                    color: const Color(0xFFE53935),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 18),
-
-          Container(
+          SizedBox(
             width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: financeStore.isUnderPressure()
-                  ? const Color(0xFFE53935).withOpacity(0.12)
-                  : const Color(0xFF43A047).withOpacity(0.12),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Text(
-              financeStore.isUnderPressure()
-                  ? "Il sistema rileva pressione economica."
-                  : "Situazione economica stabile.",
-              style: TextStyle(
-                color: Colors.black.withOpacity(0.78),
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
-              ),
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                final raw = controller.text.trim().replaceAll(',', '.');
+                final value = double.tryParse(raw);
+
+                if (value == null) {
+                  return;
+                }
+
+                await financeStore.updateFundAmount(
+                  fundId: fundId,
+                  newAmount: value,
+                );
+
+                if (mounted) {
+                  setState(() {});
+                }
+
+                Navigator.of(context).pop();
+              },
+              icon: const Icon(Icons.save_rounded),
+              label: const Text("Salva fondo"),
             ),
           ),
         ],
@@ -2879,121 +2948,93 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showFinanceFundsPopup() async {
-    final store = financeStore;
-
     await _showHomeDialog(
       icon: Icons.savings_rounded,
       color: const Color(0xFF1E88E5),
       title: "Fondi",
-      subtitle: "${store.funds.length} fondi economici della famiglia",
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: store.funds.map((fund) {
-          return InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: () {
-              _showSingleFundPopup(fund);
-            },
-            child: Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.72),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.white.withOpacity(0.38)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E88E5).withOpacity(0.14),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
+      subtitle: "${financeStore.funds.length} fondi economici della famiglia",
+      child: StatefulBuilder(
+        builder: (context, refreshDialog) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: financeStore.funds.map((fund) {
+              return Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.72),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.white.withOpacity(0.38)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
                       Icons.account_balance_wallet_rounded,
                       color: Color(0xFF1E88E5),
                     ),
-                  ),
-
-                  const SizedBox(width: 14),
-
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                fund.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 16,
-                                ),
-                              ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            fund.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
                             ),
-
-                            if (fund.protected)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFFE53935,
-                                  ).withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: const Text(
-                                  "PROTETTO",
-                                  style: TextStyle(
-                                    color: Color(0xFFE53935),
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 11,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 4),
-
-                        const SizedBox(height: 4),
-
-                        Text(
-                          fund.description,
-                          style: TextStyle(
-                            color: Colors.black.withOpacity(0.58),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
                           ),
-                        ),
-
-                        Text(
-                          "€${fund.amount.toStringAsFixed(0)}",
-                          style: TextStyle(
-                            color: Colors.black.withOpacity(0.72),
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
+                          const SizedBox(height: 4),
+                          Text(
+                            fund.description,
+                            style: TextStyle(
+                              color: Colors.black.withOpacity(0.58),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
                           ),
-                        ),
-                      ],
+                          Text(
+                            "€${fund.amount.toStringAsFixed(0)}",
+                            style: TextStyle(
+                              color: Colors.black.withOpacity(0.72),
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                    if (fund.protected)
+                      _financeBadge("PROTETTO", const Color(0xFFE53935)),
+                    IconButton(
+                      tooltip: "Modifica fondo",
+                      onPressed: () async {
+                        await _showEditFundAmountPopup(
+                          fundId: fund.id,
+                          fundName: fund.name,
+                          currentAmount: fund.amount,
+                        );
+
+                        refreshDialog(() {});
+                      },
+                      icon: const Icon(Icons.edit_rounded, size: 18),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
           );
-        }).toList(),
+        },
       ),
     );
   }
 
   Future<void> _showSingleFundPopup(FinanceFund fund) async {
+    final controller = TextEditingController(
+      text: fund.amount.toStringAsFixed(2),
+    );
+
     await _showHomeDialog(
       icon: Icons.savings_rounded,
       color: const Color(0xFF1E88E5),
@@ -3007,6 +3048,56 @@ class _HomeScreenState extends State<HomeScreen> {
             value: "€${fund.amount.toStringAsFixed(0)}",
             icon: Icons.account_balance_wallet_rounded,
             color: const Color(0xFF1E88E5),
+          ),
+
+          const SizedBox(height: 14),
+
+          TextField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: "Nuovo importo fondo",
+              hintText: "Es. 2500",
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.82),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                final raw = controller.text.trim().replaceAll(',', '.');
+
+                final value = double.tryParse(raw);
+
+                if (value == null) {
+                  return;
+                }
+
+                await financeStore.updateFundAmount(
+                  fundId: fund.id,
+                  newAmount: value,
+                );
+
+                if (mounted) {
+                  setState(() {});
+                }
+
+                Navigator.of(context).pop();
+
+                await _showSingleFundPopup(
+                  financeStore.funds.firstWhere((f) => f.id == fund.id),
+                );
+              },
+              icon: const Icon(Icons.save_rounded),
+              label: const Text("Salva fondo"),
+            ),
           ),
 
           const SizedBox(height: 14),
@@ -3530,55 +3621,142 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _showEditBalancePopup({
+    required String personId,
+    required String personName,
+    required double currentAmount,
+  }) async {
+    final controller = TextEditingController(
+      text: currentAmount.toStringAsFixed(2),
+    );
+
+    await _showHomeDialog(
+      icon: Icons.edit_rounded,
+      color: const Color(0xFF43A047),
+      title: "Modifica saldo",
+      subtitle: personName,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: "Saldo attuale",
+              hintText: "Es. 993.32",
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.82),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                final raw = controller.text.trim().replaceAll(',', '.');
+                final value = double.tryParse(raw);
+
+                if (value == null) {
+                  return;
+                }
+
+                await financeStore.updateBalance(
+                  personId: personId,
+                  newAmount: value,
+                );
+
+                if (mounted) {
+                  setState(() {});
+                }
+
+                Navigator.of(context).pop();
+              },
+              icon: const Icon(Icons.save_rounded),
+              label: const Text("Salva saldo"),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _showFinanceBalancesPopup() async {
     await _showHomeDialog(
       icon: Icons.account_balance_wallet_rounded,
       color: const Color(0xFF43A047),
       title: "Saldo totale",
       subtitle: "Saldi economici della famiglia",
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: financeStore.balances.map((balance) {
-          final person = financeStore.people.firstWhere(
-            (p) => p.id == balance.personId,
-          );
+      child: StatefulBuilder(
+        builder: (context, refreshDialog) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: financeStore.balances.map((balance) {
+              final person = financeStore.people.firstWhere(
+                (p) => p.id == balance.personId,
+              );
 
-          return Container(
-            width: double.infinity,
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.72),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white.withOpacity(0.38)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.person_rounded, color: Color(0xFF43A047)),
+              return Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.72),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.white.withOpacity(0.38)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.person_rounded, color: Color(0xFF43A047)),
 
-                const SizedBox(width: 14),
+                    const SizedBox(width: 14),
 
-                Expanded(
-                  child: Text(
-                    person.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 16,
+                    Expanded(
+                      child: Text(
+                        person.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
 
-                Text(
-                  "€${balance.currentAmount.toStringAsFixed(0)}",
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 16,
-                  ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "€${balance.currentAmount.toStringAsFixed(0)}",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 16,
+                          ),
+                        ),
+
+                        const SizedBox(width: 8),
+
+                        IconButton(
+                          tooltip: "Modifica saldo",
+                          onPressed: () async {
+                            await _showEditBalancePopup(
+                              personId: balance.personId,
+                              personName: person.name,
+                              currentAmount: balance.currentAmount,
+                            );
+
+                            refreshDialog(() {});
+                          },
+                          icon: const Icon(Icons.edit_rounded, size: 18),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            }).toList(),
           );
-        }).toList(),
+        },
       ),
     );
   }

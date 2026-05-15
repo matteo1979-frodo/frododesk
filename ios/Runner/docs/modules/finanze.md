@@ -1,7 +1,7 @@
 # FRODODESK — MODULO FINANZE
 
-Stato: Fondazione concettuale completata  
-Ultimo aggiornamento: 14 Maggio 2026
+Stato: Finanze V1 visiva funzionante  
+Ultimo aggiornamento: 15 Maggio 2026
 
 ---
 
@@ -210,6 +210,229 @@ NON:
 
 ---
 
+# MODELLO RICORRENZE — FINANZE V1
+
+Ogni ricorrenza economica è ora considerata un:
+
+👉 oggetto economico vivo del sistema.
+
+Le ricorrenze non contengono più solo:
+
+- nome
+- importo
+
+ma anche:
+
+- categoria
+- ricorrenza
+- obbligatorietà
+- pressione economica
+- stato reale
+- variabilità
+- stabilità
+- protezione
+- priorità pagamento
+- rischio sospensione
+- descrizione
+- conferma manuale
+
+---
+
+# DISTINZIONI STRUTTURALI INTRODOTTE
+
+## Obbligatorietà
+
+Il sistema distingue:
+
+✔ spese obbligatorie  
+✔ spese facoltative
+
+Esempi:
+
+- mutuo → obbligatorio
+- bollette → obbligatorie
+- Netflix → facoltativa
+
+---
+
+## Pressione economica
+
+Ogni ricorrenza può avere:
+
+- bassa
+- media
+- alta
+- critica
+
+Questa informazione servirà in futuro per:
+
+- IPS economico
+- simulazioni crisi
+- pressione familiare
+
+---
+
+## Stato reale
+
+Il sistema distingue:
+
+✔ previsto  
+✔ confermato
+
+Esempio:
+
+Uno stipendio previsto NON significa:
+
+✔ stipendio realmente ricevuto.
+
+---
+
+## Variabilità
+
+Ogni ricorrenza può essere:
+
+✔ fissa  
+✔ variabile
+
+Esempi:
+
+- Netflix → fissa
+- bolletta luce → variabile
+- mensa Alice → variabile
+
+---
+
+## Stabilità
+
+Ogni ricorrenza può essere:
+
+✔ stabile  
+✔ instabile
+
+Questa informazione servirà per:
+
+- simulazioni future
+- rischio oscillazione
+- previsione sostenibilità
+
+---
+
+## Protezione
+
+Il sistema distingue:
+
+✔ elementi protetti  
+✔ elementi non protetti
+
+Esempi:
+
+- fondo emergenze → protetto
+- stipendio principale → protetto
+- Netflix → non protetto
+
+---
+
+## Priorità pagamento
+
+Ogni ricorrenza può avere:
+
+- bassa
+- normale
+- alta
+- critica
+
+Esempi:
+
+- mutuo → critica
+- luce → alta
+- Netflix → bassa
+
+---
+
+## Rischio sospensione
+
+Il sistema deve poter stimare:
+
+👉 cosa succede se una ricorrenza viene saltata.
+
+Esempi:
+
+- Netflix → rischio basso
+- bolletta luce → rischio alto
+- mutuo → rischio critico
+
+---
+
+# FONDI — FINANZE V1
+
+Finanze V1 introduce già:
+
+✔ Fondi economici separati
+
+con:
+
+- nome
+- descrizione
+- importo
+- stato protetto/non protetto
+
+Esempi attuali:
+
+- Emergenze
+- Fondo Auto
+
+---
+
+# UI FINANZE V1
+
+Finanze V1 possiede già:
+
+✔ Home Finanze funzionante  
+✔ Popup Entrate previste  
+✔ Popup Uscite previste  
+✔ Popup Margine previsto  
+✔ Popup Fondi  
+✔ Popup dettaglio singola ricorrenza
+
+---
+
+# COMPONENTI UI INTRODOTTI
+
+Finanze V1 introduce:
+
+✔ `_financeBadge()`
+
+come componente UI riutilizzabile per:
+
+- badge stato
+- pressione
+- protezione
+- rischio
+- stabilità
+- priorità
+
+Decisione architetturale:
+
+👉 modularizzare progressivamente la UI evitando duplicazioni.
+
+---
+
+# DECISIONE ARCHITETTURALE TEMPORANEA
+
+Durante la costruzione di Finanze V1:
+
+alcuni badge/logiche delle Uscite sono stati temporaneamente utilizzati anche nelle Entrate per velocizzare la costruzione.
+
+Decisione ufficiale:
+
+❌ NON rifinire ora.
+
+In futuro:
+
+✔ separare completamente logica/UI Entrate vs Uscite.
+
+---
+
 # ESEMPI FUTURI
 
 - assicurazione auto
@@ -219,6 +442,9 @@ NON:
 - telefono
 - manutenzioni
 - tasse
+- mensa Alice
+- carburante
+- straordinari
 
 ---
 
@@ -231,6 +457,8 @@ Statistiche dovrà leggere:
 ✔ pressione futura  
 ✔ consumo fondi  
 ✔ andamento persone  
+✔ stabilità economica  
+✔ rischio sospensione
 
 ---
 
@@ -246,6 +474,20 @@ e collegarsi gradualmente.
 
 ---
 
+# STATO ATTUALE — FINANZE V1
+
+✔ Fondamenta Finanze V1 completate  
+✔ Distinzione previsione/realtà consolidata  
+✔ Entrate/Uscite separate  
+✔ Ricorrenze economiche vive  
+✔ Fondi base presenti  
+✔ Badge modularizzati  
+✔ Modello economico avanzato introdotto  
+✔ UI navigabile stabile  
+✔ Nessuna persistenza ancora presente
+
+---
+
 # ROADMAP ATTUALE
 
 ☑ Filosofia modulo definita  
@@ -253,10 +495,15 @@ e collegarsi gradualmente.
 ☑ Struttura persone definita  
 ☑ Simulazione futura definita  
 ☑ Ricorrenze definite come previsione  
+☑ Fondamenta Finanze V1 costruite  
+☑ Popup Entrate/Uscite funzionanti  
+☑ Sistema badge modulare introdotto  
+☑ Modello ricorrenze avanzato introdotto  
 
-⬜ Definizione struttura dati minima  
-⬜ Definizione dashboard minimale  
-⬜ Definizione fondi  
-⬜ Definizione saldo iniziale  
-⬜ Prima simulazione mensile  
-⬜ Collegamento futuro con Statistiche
+⬜ Persistenza reale dati finanze  
+⬜ Inserimento/modifica saldi reali  
+⬜ Inserimento/modifica fondi reali  
+⬜ Inserimento/modifica ricorrenze reali  
+⬜ Prima simulazione economica reale  
+⬜ Collegamento futuro con Statistiche  
+⬜ Collegamento futuro con IPS economico

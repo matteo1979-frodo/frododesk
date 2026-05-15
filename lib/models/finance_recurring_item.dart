@@ -60,4 +60,64 @@ class FinanceRecurringItem {
     required this.stability,
     required this.suspensionRisk,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'description': description,
+      'expectedAmount': expectedAmount,
+      'nextDueDate': nextDueDate.toIso8601String(),
+      'isIncome': isIncome,
+      'recurringType': recurringType.name,
+      'category': category.name,
+      'requiresManualConfirmation': requiresManualConfirmation,
+      'mandatory': mandatory,
+      'pressureLevel': pressureLevel.name,
+      'confirmed': confirmed,
+      'variability': variability.name,
+      'paymentPriority': paymentPriority.name,
+      'protectionLevel': protectionLevel.name,
+      'stability': stability.name,
+      'suspensionRisk': suspensionRisk.name,
+    };
+  }
+
+  factory FinanceRecurringItem.fromJson(Map<String, dynamic> json) {
+    return FinanceRecurringItem(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      description: json['description'] as String,
+      expectedAmount: (json['expectedAmount'] as num).toDouble(),
+      nextDueDate: DateTime.parse(json['nextDueDate'] as String),
+      isIncome: json['isIncome'] as bool,
+      recurringType: FinanceRecurringType.values.firstWhere(
+        (e) => e.name == json['recurringType'],
+      ),
+      category: FinanceCategory.values.firstWhere(
+        (e) => e.name == json['category'],
+      ),
+      requiresManualConfirmation: json['requiresManualConfirmation'] as bool,
+      mandatory: json['mandatory'] as bool,
+      pressureLevel: FinancePressureLevel.values.firstWhere(
+        (e) => e.name == json['pressureLevel'],
+      ),
+      confirmed: json['confirmed'] as bool,
+      variability: FinanceVariability.values.firstWhere(
+        (e) => e.name == json['variability'],
+      ),
+      paymentPriority: FinancePaymentPriority.values.firstWhere(
+        (e) => e.name == json['paymentPriority'],
+      ),
+      protectionLevel: FinanceProtectionLevel.values.firstWhere(
+        (e) => e.name == json['protectionLevel'],
+      ),
+      stability: FinanceStability.values.firstWhere(
+        (e) => e.name == json['stability'],
+      ),
+      suspensionRisk: FinanceSuspensionRisk.values.firstWhere(
+        (e) => e.name == json['suspensionRisk'],
+      ),
+    );
+  }
 }
