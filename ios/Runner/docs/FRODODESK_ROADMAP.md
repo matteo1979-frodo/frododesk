@@ -536,3 +536,230 @@ In particolare:
 # FRASE DI RIPARTENZA UFFICIALE
 
 Ripartiamo da FrodoDesk — BLOCCO G consolidamento avanzato: PresenceEngine proprietario progressivo della presenza Alice, CoverageEngine in pulizia legacy. Prossimo passo: eliminare segmentazioni manuali residue dentro analyzeDayV2() senza toccare ancora Home e IPS.
+---
+
+# BLOCCO FINANZE / SPESE
+
+Stato: FONDAZIONE CONCETTUALE COMPLETATA
+
+---
+
+## SIGNIFICATO
+
+FrodoDesk entra nella simulazione economica familiare reale.
+
+NON come:
+- banca
+- gestionale
+- Excel movimenti
+
+MA come:
+
+👉 sistema di lettura della stabilità economica familiare.
+
+---
+
+# PRINCIPIO FONDAMENTALE
+
+# PREVISIONE ≠ REALTÀ
+
+Regola strutturale globale del progetto.
+
+Il sistema deve distinguere sempre:
+
+✔ previsione  
+✔ simulazione  
+✔ ricorrenza  
+
+da:
+
+✔ realtà  
+✔ importo reale  
+✔ evento realmente avvenuto  
+
+---
+
+## ESEMPI
+
+### Spese ricorrenti
+
+Netflix 17€/mese
+
+NON genera automaticamente:
+
+✔ spesa reale
+
+Genera:
+
+✔ previsione futura
+
+che può essere:
+
+- confermata
+- modificata
+- saltata
+- annullata
+
+---
+
+### Stipendi
+
+Il sistema può:
+
+✔ stimare  
+✔ simulare andamento  
+
+ma:
+
+✔ l’utente inserisce manualmente il valore reale mensile
+
+---
+
+# MODULO FINANZE
+
+Stato: DEFINIZIONE FILOSOFICA COMPLETATA
+
+---
+
+## OBIETTIVO
+
+Leggere:
+
+👉 “Dove stiamo andando?”
+
+---
+
+## FINANZE DOVRÀ GESTIRE
+
+✔ saldi iniziali  
+✔ simulazione futura  
+✔ stipendi  
+✔ fondi  
+✔ ricorrenze  
+✔ pressione economica  
+✔ andamento storico  
+✔ margine reale futuro  
+
+---
+
+## PRINCIPIO
+
+Finanze NON rappresenta:
+
+❌ movimenti reali
+
+Rappresenta:
+
+✔ simulazione della sostenibilità futura.
+
+---
+
+# MODULO SPESE
+
+Stato: DEFINIZIONE FILOSOFICA COMPLETATA
+
+---
+
+## OBIETTIVO
+
+Leggere:
+
+👉 “Cosa è successo davvero?”
+
+---
+
+## SPESE DOVRÀ GESTIRE
+
+✔ spese reali  
+✔ categorie  
+✔ persone  
+✔ metodo pagamento  
+✔ note  
+✔ storico reale  
+
+---
+
+## ESEMPI
+
+- benzina
+- farmacia
+- supermercato
+- pizza
+- Amazon
+- assicurazione
+- revisione
+- prelievi
+
+---
+
+# STRUTTURA PERSONE ECONOMICHE
+
+Decisione ufficiale:
+
+Il sistema deve già conoscere:
+
+✔ Matteo  
+✔ Chiara  
+✔ Alice  
+
+anche se Alice oggi non ha ancora:
+
+- conto
+- spese autonome
+- entrate
+
+👉 struttura già predisposta per evoluzione futura.
+
+---
+
+# STATISTICHE — NUOVA DIREZIONE
+
+Statistiche diventa:
+
+👉 lettura globale della vita reale del sistema
+
+e NON semplice modulo grafici.
+
+---
+
+## STATISTICHE LEGGERÀ FUTURAMENTE
+
+✔ calendario  
+✔ supporto  
+✔ copertura  
+✔ spese  
+✔ finanze  
+✔ salute  
+✔ IPS  
+
+---
+
+# DIREZIONE OPERATIVA
+
+I moduli:
+
+✔ devono crescere insieme  
+✔ restare separati inizialmente  
+✔ collegarsi gradualmente  
+
+👉 “app dentro app dentro app”
+
+finché emergerà naturalmente la forma reale finale.
+
+---
+
+# ROADMAP BLOCCO FINANZE / SPESE
+
+☑ Separazione Finanze vs Spese  
+☑ Distinzione previsione vs realtà  
+☑ Filosofia umana consolidata  
+☑ Struttura persone economiche definita  
+☑ Ricorrenze definite come previsione  
+☑ Statistiche riconosciuto come modulo centrale futuro  
+
+⬜ Creazione docs dedicati Finanze  
+⬜ Creazione docs dedicati Spese  
+⬜ Definizione struttura minima Finanze v1  
+⬜ Definizione struttura minima Spese v1  
+⬜ Dashboard economica minimale v1  
+⬜ Collegamento futuro Statistiche ↔ Finanze ↔ Spese

@@ -1222,3 +1222,320 @@ Sta iniziando a modellare:
 ✔ presenza relazionale  
 ✔ posizione reale nel tempo  
 ✔ copertura dinamica viva
+---
+
+# 🔄 AGGIORNAMENTO 14 Maggio 2026
+
+# 💰 NASCITA STRUTTURALE — MODULI FINANZE / SPESE
+
+Il progetto entra ufficialmente nella fase:
+
+👉 simulazione economica familiare reale
+
+NON come gestionale,
+NON come banca,
+NON come semplice lista movimenti.
+
+---
+
+# 🧠 FILOSOFIA FONDAMENTALE
+
+Decisione ufficiale consolidata:
+
+❌ FrodoDesk NON deve controllare la vita economica delle persone  
+❌ NON deve impedire errori  
+❌ NON deve bloccare decisioni rischiose  
+
+✔ deve simulare  
+✔ deve mostrare pressione  
+✔ deve mostrare conseguenze future  
+✔ deve aiutare la consapevolezza  
+
+👉 La decisione resta sempre umana.
+
+---
+
+# 🔥 PRINCIPIO STRUTTURALE GLOBALE
+
+Nuova regola architetturale consolidata:
+
+# PREVISIONE ≠ REALTÀ
+
+Il sistema deve distinguere sempre:
+
+✔ ciò che è previsto  
+da  
+✔ ciò che è realmente successo
+
+---
+
+## ESEMPI
+
+### Calendario
+
+- turno previsto
+- evento previsto
+- ferie previste
+
+≠
+
+- realtà vissuta
+
+---
+
+### Spese
+
+- spesa prevista
+- ricorrenza prevista
+- stipendio stimato
+
+≠
+
+- importo reale
+- pagamento reale
+- stipendio reale inserito manualmente
+
+---
+
+# 🧱 NASCITA MODULO FINANZE
+
+Il modulo Finanze rappresenta:
+
+👉 simulazione futura della stabilità economica familiare
+
+NON movimenti.
+
+---
+
+## FINANZE LEGGE
+
+✔ saldi iniziali  
+✔ stipendi  
+✔ spese previste  
+✔ ricorrenze  
+✔ fondi  
+✔ andamento storico  
+✔ pressione futura  
+
+---
+
+## OBIETTIVO
+
+Rispondere a domande come:
+
+- “Dove stiamo andando?”
+- “Tra 3 mesi siamo stabili?”
+- “Questa scelta crea pressione futura?”
+- “Quanto margine reale abbiamo?”
+
+---
+
+# 🧱 NASCITA MODULO SPESE
+
+Il modulo Spese rappresenta:
+
+👉 memoria reale del denaro vissuto
+
+NON simulazione.
+
+---
+
+## SPESE CONTERRÀ
+
+✔ spese reali  
+✔ categoria  
+✔ persona  
+✔ metodo pagamento  
+✔ note  
+✔ storico  
+
+---
+
+## ESEMPI
+
+- benzina
+- supermercato
+- farmacia
+- Amazon
+- pizza
+- prelievi
+- assicurazioni
+- revisione auto
+
+---
+
+# 🔥 DISTINZIONE FONDAMENTALE
+
+## SPESE
+
+Domanda:
+
+👉 “Cosa è successo davvero?”
+
+---
+
+## FINANZE
+
+Domanda:
+
+👉 “Dove stiamo andando?”
+
+---
+
+# 👨‍👩‍👧 STRUTTURA PERSONE
+
+Decisione ufficiale:
+
+Il sistema nasce già predisposto per:
+
+✔ Matteo  
+✔ Chiara  
+✔ Alice  
+
+anche se Alice oggi non possiede ancora:
+
+- conto reale
+- spese reali
+- entrate
+
+👉 il sistema deve comunque conoscerla come entità economica futura.
+
+---
+
+# 💳 SPESE RICORRENTI
+
+Decisione strutturale importante:
+
+Una spesa ricorrente NON genera automaticamente una spesa reale.
+
+Genera:
+
+✔ una previsione economica
+
+che poi può essere:
+
+- confermata
+- modificata
+- saltata
+- aggiornata manualmente
+
+---
+
+## ESEMPIO
+
+Netflix:
+
+17€ / mese previsti
+
+ma il mese reale può diventare:
+
+- 17€
+- 19€
+- annullato
+- sospeso
+
+---
+
+# ⛽ SPESE IMPREVEDIBILI
+
+Il sistema deve convivere con:
+
+✔ spese quotidiane imprevedibili
+
+Esempi:
+
+- benzina
+- prelievi
+- piccoli acquisti
+- farmacia
+- emergenze
+
+---
+
+## EVOLUZIONE FUTURA
+
+Queste spese dovranno generare:
+
+✔ statistiche reali  
+✔ medie comportamento  
+✔ proiezioni future  
+✔ pressione economica stimata  
+
+---
+
+# 📊 EVOLUZIONE MODULO STATISTICHE
+
+Decisione importante:
+
+Statistiche diventerà:
+
+👉 il sistema di lettura globale della vita reale
+
+NON semplice grafico.
+
+---
+
+## STATISTICHE LEGGERÀ
+
+✔ calendario  
+✔ copertura  
+✔ supporti  
+✔ costi  
+✔ spese  
+✔ finanze  
+✔ salute  
+✔ IPS  
+
+---
+
+## OBIETTIVO
+
+Permettere:
+
+✔ colpo d’occhio immediato  
+✔ lettura trend  
+✔ pressione reale  
+✔ comportamento storico  
+
+---
+
+# 🧱 FILOSOFIA DI SVILUPPO
+
+I moduli devono:
+
+✔ crescere insieme  
+✔ influenzarsi lentamente  
+✔ restare separati inizialmente  
+
+👉 “app dentro app dentro app”
+
+finché la struttura reale non emergerà naturalmente.
+
+---
+
+# 🚀 STATO ATTUALE
+
+✔ filosofia finanze definita  
+✔ filosofia spese definita  
+✔ distinzione previsione/realtà consolidata  
+✔ distinzione finanze/spese consolidata  
+✔ struttura persone definita  
+✔ statistiche riconosciuto come modulo strategico centrale  
+
+---
+
+# 📋 ROADMAP CONCETTUALE ATTUALE
+
+☑ Separazione Finanze vs Spese  
+☑ Distinzione previsione vs realtà  
+☑ Modello umano decisionale confermato  
+☑ Alice riconosciuta come entità economica futura  
+☑ Ricorrenze trattate come previsione  
+☑ Statistiche riconosciuto come lettura globale del sistema  
+
+⬜ Creazione docs dedicati Finanze  
+⬜ Creazione docs dedicati Spese  
+⬜ Definizione struttura dati minima Finanze v1  
+⬜ Definizione struttura dati minima Spese v1  
+⬜ Prima dashboard economica minimale  
+⬜ Collegamento futuro Statistiche ↔ Finanze ↔ Spese

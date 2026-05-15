@@ -611,3 +611,247 @@ a:
 # FRASE DI RIPARTENZA AGGIORNATA
 
 Ripartiamo da FrodoDesk — BLOCCO G consolidamento avanzato: PresenceEngine proprietario progressivo della presenza Alice, CoverageEngine in pulizia legacy. Prossimo passo: eliminare segmentazioni manuali residue dentro analyzeDayV2() senza toccare ancora Home e IPS.
+---
+
+# 🔄 AGGIORNAMENTO 14 Maggio 2026
+(BLOCCO FINANZE / SPESE — Fondazione Concettuale)
+
+---
+
+# NUOVA FASE STRUTTURALE APERTA
+
+Decisione ufficiale:
+
+FrodoDesk entra nella fase di fondazione dei moduli:
+
+- Finanze
+- Spese
+
+MA:
+
+⚠️ senza abbandonare la crescita parallela del Calendario reale.
+
+---
+
+# PRINCIPIO STRUTTURALE DECISO
+
+I moduli devono crescere insieme.
+
+NON:
+
+❌ completare totalmente un modulo prima degli altri
+
+MA:
+
+✔ far crescere il sistema in modo organico
+✔ moduli separati ma collegabili
+✔ evoluzione progressiva condivisa
+
+---
+
+# DISTINZIONE UFFICIALE — FINANZE vs SPESE
+
+## FINANZE
+
+Domanda:
+
+👉 “Dove stiamo andando?”
+
+Finanze rappresenta:
+
+✔ simulazione futura
+✔ sostenibilità
+✔ pressione economica
+✔ previsione
+✔ fondi
+✔ andamento futuro
+
+---
+
+## SPESE
+
+Domanda:
+
+👉 “Cosa è successo davvero?”
+
+Spese rappresenta:
+
+✔ memoria reale del denaro
+✔ movimenti reali
+✔ comportamento reale
+✔ storico reale
+
+---
+
+# PRINCIPIO FONDAMENTALE CONSOLIDATO
+
+# PREVISIONE ≠ REALTÀ
+
+Esempi:
+
+✔ Netflix prevista ≠ pagamento reale
+✔ assicurazione prevista ≠ importo reale futuro
+✔ stipendio stimato ≠ stipendio reale ricevuto
+
+---
+
+# DECISIONE IMPORTANTE — CONTROLLO UMANO
+
+Il sistema:
+
+✔ può simulare
+✔ può prevedere
+✔ può avvisare
+✔ può mostrare pressione
+
+MA:
+
+❌ non decide
+❌ non blocca
+❌ non vieta spese
+
+Anche in presenza di:
+
+- rischio
+- saldo basso
+- fondi esauriti
+- pressione economica alta
+
+👉 la decisione resta sempre umana.
+
+---
+
+# PERSONE ECONOMICHE DEL SISTEMA
+
+La struttura economica deve già conoscere:
+
+✔ Matteo
+✔ Chiara
+✔ Alice
+
+anche se Alice oggi:
+
+- non ha conto
+- non ha entrate
+- non ha spese autonome
+
+Questo serve a preparare:
+
+✔ crescita futura
+✔ statistiche
+✔ evoluzione sistema
+
+---
+
+# SALDI
+
+Decisione strutturale:
+
+✔ saldo iniziale inserito manualmente
+✔ aggiornamento reale periodico manuale
+✔ sistema deve ricordare di riallineare il saldo reale ogni alcuni mesi
+
+---
+
+# STIPENDI
+
+Decisione ufficiale:
+
+✔ simulazione automatica possibile
+✔ utilizzo statistiche storiche possibile
+
+MA:
+
+✔ conferma reale manuale ogni mese
+
+Il sistema NON deve inventare il denaro reale disponibile.
+
+---
+
+# SPESE IMPREVEDIBILI
+
+Il sistema deve convivere con:
+
+✔ benzina variabile
+✔ prelievi
+✔ spese improvvise
+✔ acquisti casuali
+✔ emergenze
+
+---
+
+# RUOLO FUTURO DELLE STATISTICHE
+
+Nuova direzione consolidata:
+
+Statistiche diventerà:
+
+✔ lettura del passato
+✔ lettura del presente
+✔ lettura evolutiva futura
+
+leggendo:
+
+- spese
+- finanze
+- fondi
+- categorie
+- comportamenti
+- trend familiari
+
+---
+
+# DIREZIONE ARCHITETTURALE
+
+In questa fase:
+
+✔ Finanze
+✔ Spese
+✔ Statistiche
+
+devono crescere separati ma compatibili.
+
+Principio:
+
+👉 “app dentro app dentro app”
+
+ovvero:
+
+✔ moduli indipendenti
+✔ responsabilità chiare
+✔ collegamenti progressivi
+✔ nessun mega-modulo monolitico
+
+---
+
+# STATO ATTUALE
+
+✔ filosofia Finanze definita
+✔ filosofia Spese definita
+✔ distinzione previsione/realtà consolidata
+✔ struttura persone definita
+✔ controllo umano consolidato
+✔ direzione statistica chiarita
+
+---
+
+# PROSSIMO PASSO OPERATIVO
+
+Definire:
+
+⬜ struttura dati minima Finanze
+⬜ struttura dati minima Spese
+⬜ primi modelli reali
+⬜ prime dashboard minimali
+
+SENZA ancora collegare:
+
+❌ IPS
+❌ Home avanzata
+❌ automazioni pesanti
+
+---
+
+# FRASE DI RIPARTENZA AGGIORNATA
+
+Ripartiamo da FrodoDesk — fondazione moduli Finanze e Spese: definizione strutture dati minime, separazione previsione/realtà e crescita parallela dei moduli senza perdere la filosofia “decisione sempre umana”.

@@ -890,3 +890,183 @@ Fare:
 # FRASE DI RIPARTENZA UFFICIALE
 
 Ripartiamo da FrodoDesk — PresenceEngine attivo, CoverageEngine in progressiva pulizia. Prossimo passo: eliminare residui legacy presenza Alice dentro CoverageEngine senza toccare Home e senza riallineare IPS.
+---
+
+# 🔴 NUOVA REGOLA STRUTTURALE — FINANZE vs SPESE
+
+## PRINCIPIO
+
+Finanze e Spese NON sono lo stesso modulo.
+
+Devono nascere separati.
+
+---
+
+## FINANZE
+
+Domanda:
+
+👉 “Dove stiamo andando?”
+
+Finanze rappresenta:
+
+✔ simulazione futura  
+✔ sostenibilità  
+✔ pressione economica  
+✔ fondi  
+✔ previsione  
+
+---
+
+## SPESE
+
+Domanda:
+
+👉 “Cosa è successo davvero?”
+
+Spese rappresenta:
+
+✔ memoria reale del denaro  
+✔ movimenti reali  
+✔ storico reale  
+✔ comportamento economico reale  
+
+---
+
+# 🔴 NUOVA REGOLA FONDAMENTALE — PREVISIONE ≠ REALTÀ
+
+Una previsione NON equivale a realtà economica.
+
+Esempi:
+
+✔ Netflix prevista ≠ pagamento reale  
+✔ stipendio stimato ≠ stipendio ricevuto  
+✔ assicurazione prevista ≠ importo reale futuro  
+
+---
+
+# 🔴 NUOVA REGOLA — CONTROLLO UMANO ECONOMICO
+
+Il sistema economico:
+
+✔ può simulare  
+✔ può avvisare  
+✔ può mostrare rischio  
+✔ può mostrare pressione  
+
+MA:
+
+❌ non decide  
+❌ non blocca  
+❌ non vieta spese  
+
+Anche se:
+
+- il saldo cala
+- i fondi si svuotano
+- la simulazione peggiora
+- la pressione cresce
+
+👉 la decisione resta sempre umana.
+
+---
+
+# 🔴 NUOVA REGOLA — SALDI REALI
+
+I saldi economici:
+
+✔ partono da inserimento manuale reale  
+✔ devono poter essere riallineati manualmente  
+
+Il sistema NON deve assumere automaticamente che la simulazione coincida col saldo reale.
+
+---
+
+# 🔴 NUOVA REGOLA — STIPENDI
+
+Gli stipendi possono essere:
+
+✔ simulati
+✔ stimati
+✔ previsti tramite storico
+
+MA:
+
+✔ il valore reale mensile deve essere confermato manualmente.
+
+---
+
+# 🔴 NUOVA REGOLA — SPESE IMPREVEDIBILI
+
+Il sistema deve convivere con spese impossibili da prevedere.
+
+Esempi:
+
+- benzina variabile
+- prelievi
+- emergenze
+- acquisti casuali
+
+Il sistema deve:
+
+✔ registrarle
+✔ imparare statisticamente
+✔ mostrarne il peso storico
+
+MA:
+
+❌ non fingere previsione perfetta.
+
+---
+
+# 🔴 NUOVA REGOLA STRUTTURALE — MODULI ECONOMICI
+
+Finanze, Spese e Statistiche devono crescere:
+
+✔ separati
+✔ modulari
+✔ collegabili progressivamente
+
+Principio architetturale:
+
+👉 “app dentro app dentro app”
+
+---
+
+# 🔴 NUOVA REGOLA — STATISTICHE ECONOMICHE
+
+Statistiche deve diventare:
+
+✔ lettura del passato
+✔ lettura del presente
+✔ lettura evolutiva futura
+
+leggendo:
+
+- spese reali
+- finanze
+- fondi
+- categorie
+- trend familiari
+
+---
+
+# 🔴 NUOVA REGOLA — PERSONE ECONOMICHE
+
+Il sistema economico deve già conoscere:
+
+✔ Matteo
+✔ Chiara
+✔ Alice
+
+anche se Alice oggi non possiede ancora:
+
+- conto
+- entrate
+- spese autonome
+
+Questo per permettere:
+
+✔ crescita futura
+✔ statistiche evolutive
+✔ coerenza sistema
