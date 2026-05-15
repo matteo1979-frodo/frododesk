@@ -118,9 +118,15 @@ class FinanceStore {
     final loaded = await loadSavedBalances();
 
     if (loaded) {
-      funds
-        ..clear()
-        ..addAll(demoFunds);
+      final fundsLoaded = await loadSavedFunds();
+
+      if (!fundsLoaded) {
+        funds
+          ..clear()
+          ..addAll(demoFunds);
+
+        await saveFunds();
+      }
 
       final recurringItemsLoaded = await loadSavedRecurringItems();
 
