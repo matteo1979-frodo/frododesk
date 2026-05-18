@@ -23,6 +23,7 @@ import 'statistiche_screen.dart';
 import '../widgets/home_people_panel.dart';
 import '../stores/finance_store.dart';
 import '../logic/alice_events/alice_event_behavior.dart';
+import '../widgets/finance/finance_time_item_card.dart';
 
 class HomeScreen extends StatefulWidget {
   final IpsStore ipsStore;
@@ -2757,6 +2758,163 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _showFinancePresentPopup() async {
+    await _showHomeDialog(
+      icon: Icons.today_rounded,
+      color: const Color(0xFFE53935),
+      title: "Presente economico",
+      subtitle: "Scadenze attive e pressione immediata",
+      child: StatefulBuilder(
+        builder: (context, refreshDialog) {
+          final items = financeStore.presentRecurringItems();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: items.map((item) {
+              return _buildFinanceTimeItem(
+                item,
+                onChanged: () {
+                  refreshDialog(() {});
+                },
+              );
+            }).toList(),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _showFinancePastPopup() async {
+    await _showHomeDialog(
+      icon: Icons.history_rounded,
+      color: const Color(0xFF8D6E63),
+      title: "Passato economico",
+      subtitle: "Ricorrenze già confermate",
+      child: StatefulBuilder(
+        builder: (context, refreshDialog) {
+          final items = financeStore.pastRecurringItems();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: items.map((item) {
+              return _buildFinanceTimeItem(
+                item,
+                onChanged: () {
+                  refreshDialog(() {});
+                },
+              );
+            }).toList(),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _showFinanceFuturePopup() async {
+    await _showHomeDialog(
+      icon: Icons.event_available_rounded,
+      color: const Color(0xFF1E88E5),
+      title: "Futuro economico",
+      subtitle: "Prossime scadenze previste",
+      child: StatefulBuilder(
+        builder: (context, refreshDialog) {
+          final items = financeStore.futureRecurringItems();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: items.map((item) {
+              return _buildFinanceTimeItem(
+                item,
+                onChanged: () {
+                  refreshDialog(() {});
+                },
+              );
+            }).toList(),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFinanceTimeItem(
+    FinanceRecurringItem item, {
+    VoidCallback? onChanged,
+  }) {
+    final Color amountColor = item.isIncome
+        ? const Color(0xFF43A047)
+        : const Color(0xFFE53935);
+
+    final String statusLabel = item.confirmed
+        ? "CONFERMATA"
+        : financeStore.isRecurringItemOverdue(item)
+        ? "SCADUTA"
+        : financeStore.isRecurringItemDueToday(item)
+        ? "OGGI"
+        : financeStore.isRecurringItemUpcoming(item)
+        ? "IN ARRIVO"
+        : "FUTURA";
+
+    final Color statusColor = item.confirmed
+        ? const Color(0xFF8D6E63)
+        : financeStore.isRecurringItemOverdue(item)
+        ? const Color(0xFFE53935)
+        : financeStore.isRecurringItemDueToday(item)
+        ? const Color(0xFFFF9800)
+        : const Color(0xFF1E88E5);
+
+    return FinanceTimeItemCard(
+      item: item,
+      financeStore: financeStore,
+      getMonthName: _getMonthName,
+      onTap: () {
+        _showSingleRecurringItemPopup(item);
+      },
+      onChanged: onChanged,
+      onConfirm: () async {
+        await financeStore.confirmRecurringItem(item.id);
+
+        if (mounted) {
+          setState(() {});
+        }
+      },
+      onEdit: () async {
+        await _showEditRecurringItemPopup(item);
+
+        if (mounted) {
+          setState(() {});
+        }
+      },
+      onDelete: () async {
+        await financeStore.removeRecurringItem(item.id);
+
+        if (mounted) {
+          setState(() {});
+        }
+      },
+    );
+  }
+
+  Widget _buildFinanceStatusBadge({
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.14),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w800,
+          fontSize: 10,
+        ),
+      ),
+    );
+  }
+
   Future<void> _showFinancePopup() async {
     await _showHomeDialog(
       icon: Icons.euro_rounded,
@@ -2856,6 +3014,63 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
 
+              const SizedBox(height: 18),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () async {
+                        await _showFinancePastPopup();
+                        refreshFinancePopup(() {});
+                      },
+                      child: _buildFinanceInfoCard(
+                        title: "Passato",
+                        value: "${financeStore.pastRecurringItems().length}",
+                        icon: Icons.history_rounded,
+                        color: const Color(0xFF8D6E63),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  Expanded(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () async {
+                        await _showFinancePresentPopup();
+                        refreshFinancePopup(() {});
+                      },
+                      child: _buildFinanceInfoCard(
+                        title: "Presente",
+                        value: "${financeStore.presentRecurringItems().length}",
+                        icon: Icons.today_rounded,
+                        color: const Color(0xFFE53935),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  Expanded(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () async {
+                        await _showFinanceFuturePopup();
+                        refreshFinancePopup(() {});
+                      },
+                      child: _buildFinanceInfoCard(
+                        title: "Futuro",
+                        value: "${financeStore.futureRecurringItems().length}",
+                        icon: Icons.event_available_rounded,
+                        color: const Color(0xFF1E88E5),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 18),
 
               Container(
@@ -3127,7 +3342,145 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _showEditRecurringItemPopup(FinanceRecurringItem item) async {
+    final nameController = TextEditingController(text: item.name);
+
+    final amountController = TextEditingController(
+      text: item.expectedAmount.toStringAsFixed(2),
+    );
+
+    final descriptionController = TextEditingController(text: item.description);
+
+    DateTime selectedDate = item.nextDueDate;
+
+    await _showHomeDialog(
+      icon: Icons.edit_rounded,
+      color: const Color(0xFF1E88E5),
+      title: "Modifica ricorrenza",
+      subtitle: item.name,
+      child: StatefulBuilder(
+        builder: (context, refreshDialog) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: "Nome",
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.82),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              TextField(
+                controller: amountController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: "Importo previsto",
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.82),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2100),
+                  );
+
+                  if (picked == null) return;
+
+                  refreshDialog(() {
+                    selectedDate = picked;
+                  });
+                },
+                child: _buildFinanceInfoCard(
+                  title: "Data prevista",
+                  value:
+                      "${selectedDate.day} ${_getMonthName(selectedDate.month)} ${selectedDate.year}",
+                  icon: Icons.event_rounded,
+                  color: const Color(0xFF8D6E63),
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              TextField(
+                controller: descriptionController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: "Descrizione",
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.82),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final raw = amountController.text.trim().replaceAll(
+                      ',',
+                      '.',
+                    );
+
+                    final amount = double.tryParse(raw);
+
+                    if (amount == null) {
+                      return;
+                    }
+
+                    final updatedItem = item.copyWith(
+                      name: nameController.text.trim(),
+                      description: descriptionController.text.trim(),
+                      expectedAmount: amount,
+                      nextDueDate: selectedDate,
+                    );
+
+                    await financeStore.updateRecurringItem(updatedItem);
+
+                    if (mounted) {
+                      setState(() {});
+                    }
+
+                    Navigator.of(context).pop();
+                  },
+                  icon: const Icon(Icons.save_rounded),
+                  label: const Text("Salva modifiche"),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Future<void> _showSingleRecurringItemPopup(FinanceRecurringItem item) async {
+    final realAmountController = TextEditingController(
+      text: item.expectedAmount.toStringAsFixed(2),
+    );
     await _showHomeDialog(
       icon: item.isIncome
           ? Icons.arrow_downward_rounded
@@ -3156,6 +3509,32 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
           const SizedBox(height: 14),
+
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                await _showEditRecurringItemPopup(item);
+
+                if (mounted) {
+                  setState(() {});
+                }
+
+                Navigator.of(context).pop();
+
+                await _showSingleRecurringItemPopup(
+                  financeStore.recurringItems.firstWhere(
+                    (r) => r.id == item.id,
+                  ),
+                );
+              },
+              icon: const Icon(Icons.edit_rounded),
+              label: const Text("Modifica ricorrenza"),
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
           _buildFinanceInfoCard(
             title: "Importo previsto",
             value: "€${item.expectedAmount.toStringAsFixed(0)}",
@@ -3185,7 +3564,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 ? "Mensile"
                 : item.recurringType == FinanceRecurringType.yearly
                 ? "Annuale"
-                : "Singola",
+                : item.recurringType == FinanceRecurringType.oneShot
+                ? "Singola"
+                : "Ogni ${item.customInterval ?? 1} ${item.customIntervalUnit == 'days'
+                      ? 'giorni'
+                      : item.customIntervalUnit == 'years'
+                      ? 'anni'
+                      : 'mesi'}",
             icon: Icons.repeat_rounded,
             color: const Color(0xFF5E35B1),
           ),
@@ -3266,6 +3651,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 ? const Color(0xFF43A047)
                 : const Color(0xFFFF9800),
           ),
+
+          const SizedBox(height: 14),
+
+          if (item.realAmount != null)
+            _buildFinanceInfoCard(
+              title: "Importo reale",
+              value: "€${item.realAmount!.toStringAsFixed(2)}",
+              icon: Icons.payments_rounded,
+              color: const Color(0xFF1E88E5),
+            ),
 
           const SizedBox(height: 14),
 
@@ -3352,6 +3747,83 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 14),
 
+          if (!item.confirmed) ...[
+            TextField(
+              controller: realAmountController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: InputDecoration(
+                labelText: "Importo reale",
+                hintText: "Es. 17.99",
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.82),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final raw = realAmountController.text.trim().replaceAll(
+                    ',',
+                    '.',
+                  );
+
+                  final value = double.tryParse(raw);
+
+                  await financeStore.confirmRecurringItem(
+                    item.id,
+                    realAmount: value,
+                  );
+
+                  if (mounted) {
+                    setState(() {});
+                  }
+
+                  Navigator.of(context).pop();
+
+                  await _showSingleRecurringItemPopup(
+                    financeStore.recurringItems.firstWhere(
+                      (r) => r.id == item.id,
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.check_circle_rounded),
+                label: Text(
+                  item.isIncome
+                      ? "Conferma entrata ricevuta"
+                      : "Conferma uscita pagata",
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 14),
+          ],
+
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                await financeStore.removeRecurringItem(item.id);
+
+                if (mounted) {
+                  setState(() {});
+                }
+
+                Navigator.of(context).pop();
+              },
+              icon: const Icon(Icons.delete_rounded),
+              label: const Text("Elimina ricorrenza"),
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(14),
@@ -3377,106 +3849,457 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _showFinanceIncomePopup() async {
-    final incomeItems = financeStore.recurringItems
-        .where((item) => item.isIncome)
-        .toList();
+  Future<void> _showAddRecurringItemPopup({required bool isIncome}) async {
+    final nameController = TextEditingController();
+    final amountController = TextEditingController();
+    final descriptionController = TextEditingController();
 
+    DateTime selectedDate = DateTime.now();
+
+    FinanceRecurringType selectedRecurringType = FinanceRecurringType.monthly;
+    final customIntervalController = TextEditingController(text: '1');
+
+    String selectedCustomUnit = 'months';
+
+    await _showHomeDialog(
+      icon: isIncome
+          ? Icons.arrow_downward_rounded
+          : Icons.arrow_upward_rounded,
+      color: isIncome ? const Color(0xFF43A047) : const Color(0xFFE53935),
+      title: isIncome ? "Nuova entrata" : "Nuova uscita",
+      subtitle: "Aggiungi una ricorrenza economica",
+      child: StatefulBuilder(
+        builder: (context, refreshDialog) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: "Nome",
+                  hintText: isIncome ? "Es. Stipendio" : "Es. Bolletta luce",
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.82),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              TextField(
+                controller: amountController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: "Importo previsto",
+                  hintText: "Es. 50.00",
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.82),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate,
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2100),
+                  );
+
+                  if (picked == null) return;
+
+                  refreshDialog(() {
+                    selectedDate = picked;
+                  });
+                },
+                child: _buildFinanceInfoCard(
+                  title: isIncome
+                      ? "Data entrata prevista"
+                      : "Data scadenza prevista",
+                  value:
+                      "${selectedDate.day} ${_getMonthName(selectedDate.month)} ${selectedDate.year}",
+                  icon: Icons.event_rounded,
+                  color: const Color(0xFF8D6E63),
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              DropdownButtonFormField<FinanceRecurringType>(
+                value: selectedRecurringType,
+                decoration: InputDecoration(
+                  labelText: "Tipo ricorrenza",
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.82),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: FinanceRecurringType.monthly,
+                    child: Text("Mensile"),
+                  ),
+                  DropdownMenuItem(
+                    value: FinanceRecurringType.yearly,
+                    child: Text("Annuale"),
+                  ),
+                  DropdownMenuItem(
+                    value: FinanceRecurringType.oneShot,
+                    child: Text("Una tantum"),
+                  ),
+                  DropdownMenuItem(
+                    value: FinanceRecurringType.custom,
+                    child: Text("Personalizzata"),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value == null) return;
+
+                  refreshDialog(() {
+                    selectedRecurringType = value;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 14),
+
+              if (selectedRecurringType == FinanceRecurringType.custom) ...[
+                TextField(
+                  controller: customIntervalController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: "Ogni quanto",
+                    hintText: "Es. 3",
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.82),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 14),
+
+                DropdownButtonFormField<String>(
+                  value: selectedCustomUnit,
+                  decoration: InputDecoration(
+                    labelText: "Unità",
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.82),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'days', child: Text("Giorni")),
+                    DropdownMenuItem(value: 'months', child: Text("Mesi")),
+                    DropdownMenuItem(value: 'years', child: Text("Anni")),
+                  ],
+                  onChanged: (value) {
+                    if (value == null) return;
+
+                    refreshDialog(() {
+                      selectedCustomUnit = value;
+                    });
+                  },
+                ),
+
+                const SizedBox(height: 14),
+              ],
+
+              TextField(
+                controller: descriptionController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: "Descrizione",
+                  hintText: "Scrivi una nota breve",
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.82),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final name = nameController.text.trim();
+
+                    final description = descriptionController.text.trim();
+
+                    final rawAmount = amountController.text.trim().replaceAll(
+                      ',',
+                      '.',
+                    );
+
+                    final amount = double.tryParse(rawAmount);
+
+                    if (name.isEmpty || amount == null) {
+                      return;
+                    }
+
+                    final now = DateTime.now();
+
+                    await financeStore.addRecurringItem(
+                      FinanceRecurringItem(
+                        id: 'recurring_${now.microsecondsSinceEpoch}',
+
+                        name: name,
+
+                        description: description.isEmpty
+                            ? (isIncome
+                                  ? "Entrata inserita manualmente"
+                                  : "Uscita inserita manualmente")
+                            : description,
+
+                        expectedAmount: amount,
+
+                        nextDueDate: DateTime(
+                          selectedDate.year,
+                          selectedDate.month,
+                          selectedDate.day,
+                        ),
+
+                        isIncome: isIncome,
+
+                        recurringType: selectedRecurringType,
+
+                        customInterval:
+                            selectedRecurringType == FinanceRecurringType.custom
+                            ? int.tryParse(customIntervalController.text.trim())
+                            : null,
+                        customIntervalUnit:
+                            selectedRecurringType == FinanceRecurringType.custom
+                            ? selectedCustomUnit
+                            : null,
+
+                        category: isIncome
+                            ? FinanceCategory.salary
+                            : FinanceCategory.generic,
+
+                        requiresManualConfirmation: true,
+
+                        mandatory: !isIncome,
+
+                        pressureLevel: isIncome
+                            ? FinancePressureLevel.low
+                            : FinancePressureLevel.medium,
+
+                        confirmed: false,
+
+                        realAmount: null,
+
+                        variability: FinanceVariability.fixed,
+
+                        paymentPriority: isIncome
+                            ? FinancePaymentPriority.high
+                            : FinancePaymentPriority.normal,
+
+                        protectionLevel: isIncome
+                            ? FinanceProtectionLevel.protected
+                            : FinanceProtectionLevel.none,
+
+                        stability: FinanceStability.stable,
+
+                        suspensionRisk: isIncome
+                            ? FinanceSuspensionRisk.low
+                            : FinanceSuspensionRisk.medium,
+                      ),
+                    );
+
+                    if (mounted) {
+                      setState(() {});
+                    }
+
+                    Navigator.of(context).pop();
+                  },
+                  icon: const Icon(Icons.add_rounded),
+                  label: Text(
+                    isIncome ? "Aggiungi entrata" : "Aggiungi uscita",
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _showFinanceIncomePopup() async {
     await _showHomeDialog(
       icon: Icons.arrow_downward_rounded,
       color: const Color(0xFF43A047),
       title: "Entrate previste",
-      subtitle: "${incomeItems.length} entrate economiche previste",
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: incomeItems.map((item) {
-          return InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: () {
-              _showSingleRecurringItemPopup(item);
-            },
-            child: Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.72),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.white.withOpacity(0.38)),
+      subtitle: "Entrate economiche previste",
+      child: StatefulBuilder(
+        builder: (context, refreshDialog) {
+          final incomeItems = financeStore.recurringItems
+              .where((item) => item.isIncome)
+              .toList();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    await _showAddRecurringItemPopup(isIncome: true);
+
+                    if (mounted) {
+                      setState(() {});
+                    }
+
+                    refreshDialog(() {});
+                  },
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text("Aggiungi entrata"),
+                ),
               ),
-              child: Row(
-                children: [
-                  const Icon(Icons.payments_rounded, color: Color(0xFF43A047)),
 
-                  const SizedBox(width: 14),
+              const SizedBox(height: 14),
 
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              ...incomeItems.map((item) {
+                return InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: () async {
+                    await _showSingleRecurringItemPopup(item);
+
+                    refreshDialog(() {});
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.72),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.white.withOpacity(0.38)),
+                    ),
+                    child: Row(
                       children: [
-                        Text(
-                          item.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
+                        const Icon(
+                          Icons.payments_rounded,
+                          color: Color(0xFF43A047),
+                        ),
+
+                        const SizedBox(width: 14),
+
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 16,
+                                ),
+                              ),
+
+                              const SizedBox(height: 3),
+
+                              Text(
+                                item.description,
+                                style: TextStyle(
+                                  color: Colors.black.withOpacity(0.55),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
 
-                        const SizedBox(height: 3),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            if (!item.confirmed &&
+                                financeStore.isRecurringItemOverdue(item))
+                              _financeBadge("SCADUTA", const Color(0xFFE53935)),
 
-                        Text(
-                          item.description,
-                          style: TextStyle(
-                            color: Colors.black.withOpacity(0.55),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12.5,
-                          ),
+                            if (!item.confirmed &&
+                                financeStore.isRecurringItemDueToday(item))
+                              _financeBadge("OGGI", const Color(0xFF1E88E5)),
+
+                            if (!item.confirmed &&
+                                financeStore.isRecurringItemUpcoming(item))
+                              _financeBadge(
+                                "IN ARRIVO",
+                                const Color(0xFFFF9800),
+                              ),
+
+                            if (item.requiresManualConfirmation)
+                              _financeBadge(
+                                "DA CONFERMARE",
+                                const Color(0xFFFF9800),
+                              ),
+
+                            if (!item.confirmed)
+                              _financeBadge(
+                                "PREVISTO",
+                                const Color(0xFFFF9800),
+                              ),
+
+                            if (item.confirmed)
+                              _financeBadge(
+                                "CONFERMATA",
+                                const Color(0xFF43A047),
+                              ),
+
+                            _financeBadge(
+                              item.stability == FinanceStability.stable
+                                  ? "STABILE"
+                                  : "INSTABILE",
+                              item.stability == FinanceStability.stable
+                                  ? const Color(0xFF43A047)
+                                  : const Color(0xFFFF9800),
+                            ),
+
+                            _financeBadge(
+                              item.protectionLevel ==
+                                      FinanceProtectionLevel.protected
+                                  ? "PROTETTA"
+                                  : "NON PROTETTA",
+                              item.protectionLevel ==
+                                      FinanceProtectionLevel.protected
+                                  ? const Color(0xFFE53935)
+                                  : const Color(0xFF43A047),
+                            ),
+
+                            Text(
+                              "€${item.expectedAmount.toStringAsFixed(0)}",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      if (item.requiresManualConfirmation)
-                        _financeBadge("DA CONFERMARE", const Color(0xFFFF9800)),
-
-                      if (!item.confirmed)
-                        _financeBadge("PREVISTO", const Color(0xFFFF9800)),
-
-                      _financeBadge(
-                        item.stability == FinanceStability.stable
-                            ? "STABILE"
-                            : "INSTABILE",
-                        item.stability == FinanceStability.stable
-                            ? const Color(0xFF43A047)
-                            : const Color(0xFFFF9800),
-                      ),
-
-                      _financeBadge(
-                        item.protectionLevel == FinanceProtectionLevel.protected
-                            ? "PROTETTA"
-                            : "NON PROTETTA",
-                        item.protectionLevel == FinanceProtectionLevel.protected
-                            ? const Color(0xFFE53935)
-                            : const Color(0xFF43A047),
-                      ),
-
-                      Text(
-                        "€${item.expectedAmount.toStringAsFixed(0)}",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+                );
+              }),
+            ],
           );
-        }).toList(),
+        },
       ),
     );
   }
@@ -3501,122 +4324,184 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showFinanceExpensesPopup() async {
-    final expenseItems = financeStore.recurringItems
-        .where((item) => !item.isIncome)
-        .toList();
-
     await _showHomeDialog(
       icon: Icons.arrow_upward_rounded,
       color: const Color(0xFFE53935),
       title: "Uscite previste",
-      subtitle: "${expenseItems.length} uscite economiche previste",
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: expenseItems.map((item) {
-          return InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: () {
-              _showSingleRecurringItemPopup(item);
-            },
-            child: Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.72),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.white.withOpacity(0.38)),
+      subtitle: "Uscite economiche previste",
+      child: StatefulBuilder(
+        builder: (context, refreshDialog) {
+          final expenseItems = financeStore.recurringItems
+              .where((item) => !item.isIncome)
+              .toList();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    await _showAddRecurringItemPopup(isIncome: false);
+
+                    if (mounted) {
+                      setState(() {});
+                    }
+
+                    refreshDialog(() {});
+                  },
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text("Aggiungi uscita"),
+                ),
               ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.receipt_long_rounded,
-                    color: Color(0xFFE53935),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+
+              const SizedBox(height: 14),
+
+              ...expenseItems.map((item) {
+                return InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: () async {
+                    await _showSingleRecurringItemPopup(item);
+
+                    refreshDialog(() {});
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.72),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.white.withOpacity(0.38)),
+                    ),
+                    child: Row(
                       children: [
-                        Text(
-                          item.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16,
+                        const Icon(
+                          Icons.receipt_long_rounded,
+                          color: Color(0xFFE53935),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                item.description,
+                                style: TextStyle(
+                                  color: Colors.black.withOpacity(0.55),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          item.description,
-                          style: TextStyle(
-                            color: Colors.black.withOpacity(0.55),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12.5,
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            if (!item.confirmed &&
+                                financeStore.isRecurringItemOverdue(item))
+                              _financeBadge("SCADUTA", const Color(0xFFE53935)),
+                            if (!item.confirmed &&
+                                financeStore.isRecurringItemDueToday(item))
+                              _financeBadge("OGGI", const Color(0xFF1E88E5)),
+                            if (!item.confirmed &&
+                                financeStore.isRecurringItemUpcoming(item))
+                              _financeBadge(
+                                "IN ARRIVO",
+                                const Color(0xFFFF9800),
+                              ),
+                            if (item.requiresManualConfirmation)
+                              _financeBadge(
+                                "DA CONFERMARE",
+                                const Color(0xFFFF9800),
+                              ),
+                            if (!item.mandatory)
+                              _financeBadge(
+                                "FACOLTATIVA",
+                                const Color(0xFF43A047),
+                              ),
+                            _financeBadge(
+                              "PRESSIONE BASSA",
+                              const Color(0xFF43A047),
+                            ),
+                            if (!item.confirmed)
+                              _financeBadge(
+                                "PREVISTO",
+                                const Color(0xFFFF9800),
+                              ),
+                            if (item.confirmed)
+                              _financeBadge(
+                                "CONFERMATA",
+                                const Color(0xFF43A047),
+                              ),
+                            _financeBadge(
+                              "PRIORITÀ BASSA",
+                              const Color(0xFF43A047),
+                            ),
+                            _financeBadge(
+                              item.protectionLevel ==
+                                      FinanceProtectionLevel.none
+                                  ? "NON PROTETTA"
+                                  : item.protectionLevel ==
+                                        FinanceProtectionLevel.protected
+                                  ? "PROTETTA"
+                                  : "CRITICA",
+                              item.protectionLevel ==
+                                      FinanceProtectionLevel.none
+                                  ? const Color(0xFF43A047)
+                                  : const Color(0xFFE53935),
+                            ),
+                            _financeBadge(
+                              item.stability == FinanceStability.stable
+                                  ? "STABILE"
+                                  : "INSTABILE",
+                              item.stability == FinanceStability.stable
+                                  ? const Color(0xFF43A047)
+                                  : const Color(0xFFFF9800),
+                            ),
+                            _financeBadge(
+                              item.suspensionRisk == FinanceSuspensionRisk.low
+                                  ? "RISCHIO BASSO"
+                                  : item.suspensionRisk ==
+                                        FinanceSuspensionRisk.medium
+                                  ? "RISCHIO MEDIO"
+                                  : item.suspensionRisk ==
+                                        FinanceSuspensionRisk.high
+                                  ? "RISCHIO ALTO"
+                                  : "RISCHIO CRITICO",
+                              item.suspensionRisk == FinanceSuspensionRisk.low
+                                  ? const Color(0xFF43A047)
+                                  : item.suspensionRisk ==
+                                        FinanceSuspensionRisk.medium
+                                  ? const Color(0xFFFF9800)
+                                  : const Color(0xFFE53935),
+                            ),
+                            Text(
+                              "€${item.expectedAmount.toStringAsFixed(0)}",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      if (item.requiresManualConfirmation)
-                        _financeBadge("DA CONFERMARE", const Color(0xFFFF9800)),
-                      if (!item.mandatory)
-                        _financeBadge("FACOLTATIVA", const Color(0xFF43A047)),
-                      _financeBadge("PRESSIONE BASSA", const Color(0xFF43A047)),
-                      if (!item.confirmed)
-                        _financeBadge("PREVISTO", const Color(0xFFFF9800)),
-                      _financeBadge("PRIORITÀ BASSA", const Color(0xFF43A047)),
-                      _financeBadge(
-                        item.protectionLevel == FinanceProtectionLevel.none
-                            ? "NON PROTETTA"
-                            : item.protectionLevel ==
-                                  FinanceProtectionLevel.protected
-                            ? "PROTETTA"
-                            : "CRITICA",
-                        item.protectionLevel == FinanceProtectionLevel.none
-                            ? const Color(0xFF43A047)
-                            : const Color(0xFFE53935),
-                      ),
-                      _financeBadge(
-                        item.stability == FinanceStability.stable
-                            ? "STABILE"
-                            : "INSTABILE",
-                        item.stability == FinanceStability.stable
-                            ? const Color(0xFF43A047)
-                            : const Color(0xFFFF9800),
-                      ),
-                      _financeBadge(
-                        item.suspensionRisk == FinanceSuspensionRisk.low
-                            ? "RISCHIO BASSO"
-                            : item.suspensionRisk ==
-                                  FinanceSuspensionRisk.medium
-                            ? "RISCHIO MEDIO"
-                            : item.suspensionRisk == FinanceSuspensionRisk.high
-                            ? "RISCHIO ALTO"
-                            : "RISCHIO CRITICO",
-                        item.suspensionRisk == FinanceSuspensionRisk.low
-                            ? const Color(0xFF43A047)
-                            : item.suspensionRisk ==
-                                  FinanceSuspensionRisk.medium
-                            ? const Color(0xFFFF9800)
-                            : const Color(0xFFE53935),
-                      ),
-                      Text(
-                        "€${item.expectedAmount.toStringAsFixed(0)}",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+                );
+              }),
+            ],
           );
-        }).toList(),
+        },
       ),
     );
   }

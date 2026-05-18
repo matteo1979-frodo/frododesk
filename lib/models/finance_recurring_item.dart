@@ -1,4 +1,4 @@
-enum FinanceRecurringType { monthly, yearly, oneShot }
+enum FinanceRecurringType { monthly, yearly, oneShot, custom }
 
 enum FinanceCategory {
   salary,
@@ -30,11 +30,14 @@ class FinanceRecurringItem {
   final DateTime nextDueDate;
   final bool isIncome;
   final FinanceRecurringType recurringType;
+  final int? customInterval;
+  final String? customIntervalUnit;
   final FinanceCategory category;
   final bool requiresManualConfirmation;
   final bool mandatory;
   final FinancePressureLevel pressureLevel;
   final bool confirmed;
+  final double? realAmount;
   final FinanceVariability variability;
   final FinancePaymentPriority paymentPriority;
   final FinanceProtectionLevel protectionLevel;
@@ -49,17 +52,55 @@ class FinanceRecurringItem {
     required this.nextDueDate,
     required this.isIncome,
     required this.recurringType,
+    this.customInterval,
+    this.customIntervalUnit,
     required this.category,
     required this.requiresManualConfirmation,
     required this.mandatory,
     required this.pressureLevel,
     required this.confirmed,
+    this.realAmount,
     required this.variability,
     required this.paymentPriority,
     required this.protectionLevel,
     required this.stability,
     required this.suspensionRisk,
   });
+
+  FinanceRecurringItem copyWith({
+    String? name,
+    String? description,
+    double? expectedAmount,
+    DateTime? nextDueDate,
+    bool? confirmed,
+    double? realAmount,
+    int? customInterval,
+    String? customIntervalUnit,
+    String? id,
+  }) {
+    return FinanceRecurringItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      expectedAmount: expectedAmount ?? this.expectedAmount,
+      nextDueDate: nextDueDate ?? this.nextDueDate,
+      isIncome: isIncome,
+      recurringType: recurringType,
+      customInterval: customInterval ?? this.customInterval,
+      customIntervalUnit: customIntervalUnit ?? this.customIntervalUnit,
+      category: category,
+      requiresManualConfirmation: requiresManualConfirmation,
+      mandatory: mandatory,
+      pressureLevel: pressureLevel,
+      confirmed: confirmed ?? this.confirmed,
+      realAmount: realAmount ?? this.realAmount,
+      variability: variability,
+      paymentPriority: paymentPriority,
+      protectionLevel: protectionLevel,
+      stability: stability,
+      suspensionRisk: suspensionRisk,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -70,11 +111,14 @@ class FinanceRecurringItem {
       'nextDueDate': nextDueDate.toIso8601String(),
       'isIncome': isIncome,
       'recurringType': recurringType.name,
+      'customInterval': customInterval,
+      'customIntervalUnit': customIntervalUnit,
       'category': category.name,
       'requiresManualConfirmation': requiresManualConfirmation,
       'mandatory': mandatory,
       'pressureLevel': pressureLevel.name,
       'confirmed': confirmed,
+      'realAmount': realAmount,
       'variability': variability.name,
       'paymentPriority': paymentPriority.name,
       'protectionLevel': protectionLevel.name,
@@ -94,6 +138,8 @@ class FinanceRecurringItem {
       recurringType: FinanceRecurringType.values.firstWhere(
         (e) => e.name == json['recurringType'],
       ),
+      customInterval: json['customInterval'] as int?,
+      customIntervalUnit: json['customIntervalUnit'] as String?,
       category: FinanceCategory.values.firstWhere(
         (e) => e.name == json['category'],
       ),
@@ -103,6 +149,7 @@ class FinanceRecurringItem {
         (e) => e.name == json['pressureLevel'],
       ),
       confirmed: json['confirmed'] as bool,
+      realAmount: (json['realAmount'] as num?)?.toDouble(),
       variability: FinanceVariability.values.firstWhere(
         (e) => e.name == json['variability'],
       ),

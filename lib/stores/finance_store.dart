@@ -42,8 +42,116 @@ class FinanceStore {
     return projectedMonthlyIncome() - projectedMonthlyExpenses();
   }
 
+  bool isRecurringItemDueToday(FinanceRecurringItem item) {
+    final now = DateTime.now();
+
+    return item.nextDueDate.year == now.year &&
+        item.nextDueDate.month == now.month &&
+        item.nextDueDate.day == now.day;
+  }
+
+  bool isRecurringItemOverdue(FinanceRecurringItem item) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final dueDay = DateTime(
+      item.nextDueDate.year,
+      item.nextDueDate.month,
+      item.nextDueDate.day,
+    );
+
+    return dueDay.isBefore(today) && !item.confirmed;
+  }
+
+  bool isRecurringItemUpcoming(
+    FinanceRecurringItem item, {
+    int withinDays = 7,
+  }) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final dueDay = DateTime(
+      item.nextDueDate.year,
+      item.nextDueDate.month,
+      item.nextDueDate.day,
+    );
+
+    final limit = today.add(Duration(days: withinDays));
+
+    return !item.confirmed &&
+        dueDay.isAfter(today) &&
+        (dueDay.isBefore(limit) || dueDay == limit);
+  }
+
+  DateTime nextDueDateAfterConfirmation(FinanceRecurringItem item) {
+    final base = item.nextDueDate;
+
+    switch (item.recurringType) {
+      case FinanceRecurringType.monthly:
+        return DateTime(base.year, base.month + 1, base.day);
+
+      case FinanceRecurringType.yearly:
+        return DateTime(base.year + 1, base.month, base.day);
+
+      case FinanceRecurringType.oneShot:
+        return base;
+
+      case FinanceRecurringType.custom:
+        final interval = item.customInterval ?? 1;
+        final unit = item.customIntervalUnit ?? 'months';
+
+        if (unit == 'days') {
+          return base.add(Duration(days: interval));
+        }
+
+        if (unit == 'years') {
+          return DateTime(base.year + interval, base.month, base.day);
+        }
+
+        return DateTime(base.year, base.month + interval, base.day);
+    }
+  }
+
   bool isUnderPressure() {
     return projectedMonthlyMargin() < 0;
+  }
+
+  List<FinanceRecurringItem> pastRecurringItems() {
+    final items = recurringItems.where((item) => item.confirmed).toList();
+
+    items.sort((a, b) => b.nextDueDate.compareTo(a.nextDueDate));
+
+    return items;
+  }
+
+  List<FinanceRecurringItem> presentRecurringItems() {
+    final items = recurringItems.where((item) {
+      return !item.confirmed &&
+          (isRecurringItemDueToday(item) || isRecurringItemOverdue(item));
+    }).toList();
+
+    items.sort((a, b) => a.nextDueDate.compareTo(b.nextDueDate));
+
+    return items;
+  }
+
+  List<FinanceRecurringItem> futureRecurringItems() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final items = recurringItems.where((item) {
+      final dueDay = DateTime(
+        item.nextDueDate.year,
+        item.nextDueDate.month,
+        item.nextDueDate.day,
+      );
+
+      return !item.confirmed && dueDay.isAfter(today);
+    }).toList();
+
+    items.sort((a, b) => a.nextDueDate.compareTo(b.nextDueDate));
+
+    return items;
   }
 
   FinanceSnapshot createSnapshot(DateTime date) {
@@ -230,6 +338,64 @@ class FinanceStore {
     );
 
     await saveFunds();
+  }
+
+  Future<void> confirmRecurringItem(String itemId, {double? realAmount}) async {
+    final index = recurringItems.indexWhere((item) => item.id == itemId);
+
+    if (index == -1) {
+      return;
+    }
+
+    final item = recurringItems[index];
+
+    recurringItems[index] = item.copyWith(
+      confirmed: true,
+      realAmount: realAmount ?? item.expectedAmount,
+    );
+
+    if (item.recurringType != FinanceRecurringType.oneShot) {
+      final nextDate = nextDueDateAfterConfirmation(item);
+
+      final now = DateTime.now();
+
+      recurringItems.add(
+        item.copyWith(
+          id: 'recurring_${now.microsecondsSinceEpoch}',
+          nextDueDate: nextDate,
+          confirmed: false,
+          realAmount: null,
+        ),
+      );
+    }
+
+    await saveRecurringItems();
+  }
+
+  Future<void> addRecurringItem(FinanceRecurringItem item) async {
+    recurringItems.add(item);
+
+    await saveRecurringItems();
+  }
+
+  Future<void> removeRecurringItem(String itemId) async {
+    recurringItems.removeWhere((item) => item.id == itemId);
+
+    await saveRecurringItems();
+  }
+
+  Future<void> updateRecurringItem(FinanceRecurringItem updatedItem) async {
+    final index = recurringItems.indexWhere(
+      (item) => item.id == updatedItem.id,
+    );
+
+    if (index == -1) {
+      return;
+    }
+
+    recurringItems[index] = updatedItem;
+
+    await saveRecurringItems();
   }
 
   Future<bool> loadSavedRecurringItems() async {
