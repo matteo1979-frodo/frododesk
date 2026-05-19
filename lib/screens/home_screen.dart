@@ -3181,60 +3181,271 @@ class _HomeScreenState extends State<HomeScreen> {
     required String fundName,
     required double currentAmount,
   }) async {
-    final controller = TextEditingController(
-      text: currentAmount.toStringAsFixed(2),
+    final fund = financeStore.funds.firstWhere((f) => f.id == fundId);
+
+    final nameController = TextEditingController(text: fund.name);
+    final descriptionController = TextEditingController(text: fund.description);
+    final amountController = TextEditingController(
+      text: fund.amount.toStringAsFixed(2),
     );
+
+    bool isProtected = fund.protected;
+    FinanceFundCategory selectedCategory = fund.category;
 
     await _showHomeDialog(
       icon: Icons.edit_rounded,
       color: const Color(0xFF1E88E5),
       title: "Modifica fondo",
-      subtitle: fundName,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextField(
-            controller: controller,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: "Importo fondo",
-              hintText: "Es. 1200.00",
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.82),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(18),
+      subtitle: fund.name,
+      child: StatefulBuilder(
+        builder: (context, refreshDialog) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: "Nome fondo",
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.82),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                final raw = controller.text.trim().replaceAll(',', '.');
-                final value = double.tryParse(raw);
 
-                if (value == null) {
-                  return;
-                }
+              const SizedBox(height: 12),
 
-                await financeStore.updateFundAmount(
-                  fundId: fundId,
-                  newAmount: value,
-                );
+              TextField(
+                controller: descriptionController,
+                decoration: InputDecoration(
+                  labelText: "Descrizione",
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.82),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+              ),
 
-                if (mounted) {
-                  setState(() {});
-                }
+              const SizedBox(height: 12),
 
-                Navigator.of(context).pop();
-              },
-              icon: const Icon(Icons.save_rounded),
-              label: const Text("Salva fondo"),
-            ),
-          ),
-        ],
+              TextField(
+                controller: amountController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: "Importo fondo",
+                  hintText: "Es. 1200.00",
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.82),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              DropdownButtonFormField<FinanceFundCategory>(
+                value: selectedCategory,
+                decoration: InputDecoration(
+                  labelText: "Categoria",
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.82),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+                items: FinanceFundCategory.values.map((cat) {
+                  return DropdownMenuItem(value: cat, child: Text(cat.name));
+                }).toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+
+                  refreshDialog(() {
+                    selectedCategory = value;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 12),
+
+              SwitchListTile(
+                value: isProtected,
+                title: const Text("Fondo protetto"),
+                contentPadding: EdgeInsets.zero,
+                onChanged: (value) {
+                  refreshDialog(() {
+                    isProtected = value;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 14),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final raw = amountController.text.trim().replaceAll(
+                      ',',
+                      '.',
+                    );
+                    final value = double.tryParse(raw);
+
+                    if (value == null) {
+                      return;
+                    }
+
+                    await financeStore.updateFund(
+                      FinanceFund(
+                        id: fund.id,
+                        name: nameController.text.trim(),
+                        description: descriptionController.text.trim(),
+                        amount: value,
+                        protected: isProtected,
+                        category: selectedCategory,
+                      ),
+                    );
+
+                    if (mounted) {
+                      setState(() {});
+                    }
+
+                    Navigator.of(context).pop();
+                  },
+                  icon: const Icon(Icons.save_rounded),
+                  label: const Text("Salva fondo"),
+                ),
+              ),
+            ],
+          );
+        },
       ),
+    );
+  }
+
+  Future<void> _showAddFundPopup() async {
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+    final amountController = TextEditingController();
+
+    bool isProtected = false;
+
+    FinanceFundCategory selectedCategory = FinanceFundCategory.generic;
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text("Nuovo fondo"),
+
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: "Nome fondo",
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    TextField(
+                      controller: descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: "Descrizione",
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    TextField(
+                      controller: amountController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: "Importo"),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    DropdownButtonFormField<FinanceFundCategory>(
+                      value: selectedCategory,
+                      decoration: const InputDecoration(labelText: "Categoria"),
+                      items: FinanceFundCategory.values.map((cat) {
+                        return DropdownMenuItem(
+                          value: cat,
+                          child: Text(cat.name),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+
+                        setDialogState(() {
+                          selectedCategory = value;
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    SwitchListTile(
+                      value: isProtected,
+                      title: const Text("Fondo protetto"),
+                      contentPadding: EdgeInsets.zero,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          isProtected = value;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Annulla"),
+                ),
+
+                ElevatedButton(
+                  onPressed: () async {
+                    final amount = double.tryParse(amountController.text) ?? 0;
+
+                    final newFund = FinanceFund(
+                      id: DateTime.now().millisecondsSinceEpoch.toString(),
+                      name: nameController.text.trim(),
+                      description: descriptionController.text.trim(),
+                      amount: amount,
+                      protected: isProtected,
+                      category: selectedCategory,
+                    );
+
+                    financeStore.funds.add(newFund);
+
+                    await financeStore.saveFunds();
+
+                    if (mounted) {
+                      setState(() {});
+                    }
+
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Salva"),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -3248,73 +3459,112 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context, refreshDialog) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: financeStore.funds.map((fund) {
-              return Container(
+            children: [
+              SizedBox(
                 width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.72),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.white.withOpacity(0.38)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.account_balance_wallet_rounded,
-                      color: Color(0xFF1E88E5),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            fund.name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            fund.description,
-                            style: TextStyle(
-                              color: Colors.black.withOpacity(0.58),
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
-                          ),
-                          Text(
-                            "€${fund.amount.toStringAsFixed(0)}",
-                            style: TextStyle(
-                              color: Colors.black.withOpacity(0.72),
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (fund.protected)
-                      _financeBadge("PROTETTO", const Color(0xFFE53935)),
-                    IconButton(
-                      tooltip: "Modifica fondo",
-                      onPressed: () async {
-                        await _showEditFundAmountPopup(
-                          fundId: fund.id,
-                          fundName: fund.name,
-                          currentAmount: fund.amount,
-                        );
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    await _showAddFundPopup();
 
-                        refreshDialog(() {});
-                      },
-                      icon: const Icon(Icons.edit_rounded, size: 18),
-                    ),
-                  ],
+                    if (mounted) {
+                      setState(() {});
+                    }
+
+                    refreshDialog(() {});
+                  },
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text("Aggiungi fondo"),
                 ),
-              );
-            }).toList(),
+              ),
+
+              const SizedBox(height: 14),
+
+              ...financeStore.funds.map((fund) {
+                return Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.72),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: Colors.white.withOpacity(0.38)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.account_balance_wallet_rounded,
+                        color: Color(0xFF1E88E5),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              fund.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              fund.description,
+                              style: TextStyle(
+                                color: Colors.black.withOpacity(0.58),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "€${fund.amount.toStringAsFixed(0)}",
+                              style: TextStyle(
+                                color: Colors.black.withOpacity(0.72),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (fund.protected)
+                        _financeBadge("PROTETTO", const Color(0xFFE53935)),
+                      IconButton(
+                        tooltip: "Modifica fondo",
+                        onPressed: () async {
+                          await _showEditFundAmountPopup(
+                            fundId: fund.id,
+                            fundName: fund.name,
+                            currentAmount: fund.amount,
+                          );
+
+                          refreshDialog(() {});
+                        },
+                        icon: const Icon(Icons.edit_rounded, size: 18),
+                      ),
+                      IconButton(
+                        tooltip: "Elimina fondo",
+                        onPressed: () async {
+                          await financeStore.removeFund(fund.id);
+
+                          if (mounted) {
+                            setState(() {});
+                          }
+
+                          refreshDialog(() {});
+                        },
+                        icon: const Icon(
+                          Icons.delete_rounded,
+                          size: 18,
+                          color: Color(0xFFE53935),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
           );
         },
       ),

@@ -387,6 +387,24 @@ class FinanceStore {
     await saveFunds();
   }
 
+  Future<void> updateFund(FinanceFund updatedFund) async {
+    final index = funds.indexWhere((f) => f.id == updatedFund.id);
+
+    if (index == -1) {
+      return;
+    }
+
+    funds[index] = updatedFund;
+
+    await saveFunds();
+  }
+
+  Future<void> removeFund(String fundId) async {
+    funds.removeWhere((f) => f.id == fundId);
+
+    await saveFunds();
+  }
+
   Future<void> confirmRecurringItem(String itemId, {double? realAmount}) async {
     final index = recurringItems.indexWhere((item) => item.id == itemId);
 
