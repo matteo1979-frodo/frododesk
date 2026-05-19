@@ -1,9 +1,12 @@
+enum FinanceFundCategory { emergency, auto, home, health, school, generic }
+
 class FinanceFund {
   final String id;
   final String name;
   final String description;
   final double amount;
   final bool protected;
+  final FinanceFundCategory category;
 
   const FinanceFund({
     required this.id,
@@ -11,6 +14,7 @@ class FinanceFund {
     required this.description,
     required this.amount,
     required this.protected,
+    required this.category,
   });
 
   Map<String, dynamic> toJson() {
@@ -20,6 +24,7 @@ class FinanceFund {
       'description': description,
       'amount': amount,
       'protected': protected,
+      'category': category.name,
     };
   }
 
@@ -30,6 +35,10 @@ class FinanceFund {
       description: json['description'] as String,
       amount: (json['amount'] as num).toDouble(),
       protected: json['protected'] as bool,
+      category: FinanceFundCategory.values.firstWhere(
+        (e) => e.name == json['category'],
+        orElse: () => FinanceFundCategory.generic,
+      ),
     );
   }
 }

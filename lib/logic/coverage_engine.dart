@@ -927,36 +927,36 @@ class CoverageEngine {
       final labelSchoolIn =
           "Alice ingresso: ${_fmtTimeDate(schoolInRealStart)}–${_fmt(schoolStart)}";
 
-      final schoolInCoveredByChoice = _isSchoolCoverChoiceValid(
-        choice: schoolInCover,
-        day: d0,
-        fasciaStart: schoolInStart,
-        fasciaEnd: schoolInEnd,
-        allowSandra: true,
-        sandraMattinaAvailable: effSandraMattina,
-        sandraPranzoAvailable: effSandraPranzo,
-        sandraSeraAvailable: effSandraSera,
-        isHomePresenceWindow: false,
-        overrides: overrides,
-        ferieStore: ferieStore,
-      );
-
       if (schoolInCover == SchoolCoverChoice.none) {
         entries.add(
           _CoverageGapEntry(
             label: labelSchoolIn,
-            fasciaStart: schoolInStart,
+            fasciaStart: schoolInRealStart,
             fasciaEnd: schoolInEnd,
             isHomePresenceWindow: false,
             allowSandra: true,
           ),
         );
       } else {
+        final schoolInCoveredByChoice = _isSchoolCoverChoiceValid(
+          choice: schoolInCover,
+          day: d0,
+          fasciaStart: schoolInRealStart,
+          fasciaEnd: schoolInEnd,
+          allowSandra: true,
+          sandraMattinaAvailable: effSandraMattina,
+          sandraPranzoAvailable: effSandraPranzo,
+          sandraSeraAvailable: effSandraSera,
+          isHomePresenceWindow: false,
+          overrides: overrides,
+          ferieStore: ferieStore,
+        );
+
         if (!schoolInCoveredByChoice) {
           entries.add(
             _CoverageGapEntry(
               label: labelSchoolIn,
-              fasciaStart: schoolInStart,
+              fasciaStart: schoolInRealStart,
               fasciaEnd: schoolInEnd,
               isHomePresenceWindow: false,
               allowSandra: true,
@@ -972,20 +972,6 @@ class CoverageEngine {
         final labelSchoolOut =
             "Alice uscita: ${_fmt(schoolOutStart)}–${_fmtTimeDate(schoolOutPickupEndDt)}";
 
-        final schoolOutCoveredByChoice = _isSchoolCoverChoiceValid(
-          choice: schoolOutCover,
-          day: d0,
-          fasciaStart: schoolOutRealDt,
-          fasciaEnd: schoolOutPickupEndDt,
-          allowSandra: true,
-          sandraMattinaAvailable: effSandraMattina,
-          sandraPranzoAvailable: effSandraPranzo,
-          sandraSeraAvailable: effSandraSera,
-          isHomePresenceWindow: false,
-          overrides: overrides,
-          ferieStore: ferieStore,
-        );
-
         if (schoolOutCover == SchoolCoverChoice.none) {
           entries.add(
             _CoverageGapEntry(
@@ -997,6 +983,20 @@ class CoverageEngine {
             ),
           );
         } else {
+          final schoolOutCoveredByChoice = _isSchoolCoverChoiceValid(
+            choice: schoolOutCover,
+            day: d0,
+            fasciaStart: schoolOutRealDt,
+            fasciaEnd: schoolOutPickupEndDt,
+            allowSandra: true,
+            sandraMattinaAvailable: effSandraMattina,
+            sandraPranzoAvailable: effSandraPranzo,
+            sandraSeraAvailable: effSandraSera,
+            isHomePresenceWindow: false,
+            overrides: overrides,
+            ferieStore: ferieStore,
+          );
+
           if (!schoolOutCoveredByChoice) {
             entries.add(
               _CoverageGapEntry(
@@ -1018,48 +1018,35 @@ class CoverageEngine {
         final lunchStart = _atTime(d0, startLunch);
         final lunchEnd = lunchStart.add(const Duration(minutes: 20));
 
-        final lunchCoveredByChoice = _isSchoolCoverChoiceValid(
-          choice: lunchCover,
-          day: d0,
-          fasciaStart: lunchStart,
-          fasciaEnd: lunchEnd,
-          allowSandra: true,
-          sandraMattinaAvailable: effSandraMattina,
-          sandraPranzoAvailable: effSandraPranzo,
-          sandraSeraAvailable: effSandraSera,
-          isHomePresenceWindow: false,
-          overrides: overrides,
-          ferieStore: ferieStore,
-        );
-
         final labelLunch =
             "Alice pranzo: ${_fmt(startLunch)}–${_fmtTimeDate(lunchEnd)}";
-
-        final lunchCoveredInReality = _isFasciaCovered(
-          day: d0,
-          fasciaStart: lunchStart,
-          fasciaEnd: lunchStart.add(const Duration(minutes: 20)),
-          allowSandra: true,
-          sandraMattinaAvailable: effSandraMattina,
-          sandraPranzoAvailable: effSandraPranzo,
-          sandraSeraAvailable: effSandraSera,
-          isHomePresenceWindow: false,
-          overrides: overrides,
-          ferieStore: ferieStore,
-        );
 
         if (lunchCover == SchoolCoverChoice.none) {
           entries.add(
             _CoverageGapEntry(
               label: labelLunch,
               fasciaStart: lunchStart,
-              fasciaEnd: lunchStart.add(const Duration(minutes: 20)),
+              fasciaEnd: lunchEnd,
               isHomePresenceWindow: false,
               allowSandra: true,
             ),
           );
         } else {
-          if (!lunchCoveredByChoice && !lunchCoveredInReality) {
+          final lunchCoveredByChoice = _isSchoolCoverChoiceValid(
+            choice: lunchCover,
+            day: d0,
+            fasciaStart: lunchStart,
+            fasciaEnd: lunchEnd,
+            allowSandra: true,
+            sandraMattinaAvailable: effSandraMattina,
+            sandraPranzoAvailable: effSandraPranzo,
+            sandraSeraAvailable: effSandraSera,
+            isHomePresenceWindow: false,
+            overrides: overrides,
+            ferieStore: ferieStore,
+          );
+
+          if (!lunchCoveredByChoice) {
             entries.add(
               _CoverageGapEntry(
                 label: labelLunch,
@@ -1397,18 +1384,30 @@ class CoverageEngine {
     final details = <CoverageGapDetail>[];
 
     for (final entry in normalizedEntries) {
-      if (_presenceEngine().isAliceAccompaniedDuringRange(
-            day: d0,
-            start: entry.fasciaStart,
-            end: entry.fasciaEnd,
-          ) ||
-          _presenceEngine().isAliceInsideRealEvent(
-            day: d0,
-            start: entry.fasciaStart,
-            end: entry.fasciaEnd,
-          )) {
+      final lowerLabel = entry.label.toLowerCase();
+
+      final isSchoolLogisticGap =
+          lowerLabel.startsWith('alice ingresso:') ||
+          lowerLabel.startsWith('alice uscita:') ||
+          lowerLabel.startsWith('alice pranzo:');
+
+      final aliceAlreadyCovered =
+          !isSchoolLogisticGap &&
+          (_presenceEngine().isAliceAccompaniedDuringRange(
+                day: d0,
+                start: entry.fasciaStart,
+                end: entry.fasciaEnd,
+              ) ||
+              _presenceEngine().isAliceInsideRealEvent(
+                day: d0,
+                start: entry.fasciaStart,
+                end: entry.fasciaEnd,
+              ));
+
+      if (aliceAlreadyCovered) {
         continue;
       }
+
       gaps.add(entry.label);
       details.add(
         CoverageGapDetail(

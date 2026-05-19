@@ -2654,6 +2654,74 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 18),
+          Builder(
+            builder: (_) {
+              final pressure = financeStore.economicPressureScore();
+
+              String label;
+              Color color;
+              String description;
+
+              if (pressure < 500) {
+                label = "Pressione economica bassa";
+                description = "Situazione stabile e sostenibile.";
+                color = const Color(0xFF66BB6A);
+              } else if (pressure < 1500) {
+                label = "Pressione economica media";
+                description = "Le uscite iniziano a pesare.";
+                color = const Color(0xFFFFB300);
+              } else if (pressure < 3000) {
+                label = "Pressione economica alta";
+                description = "Serve attenzione sulle prossime spese.";
+                color = const Color(0xFFE57373);
+              } else {
+                label = "Pressione economica critica";
+                description =
+                    "La situazione economica è sotto forte pressione.";
+                color = const Color(0xFFD32F2F);
+              }
+
+              return Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: color.withOpacity(0.28)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.ssid_chart_rounded, color: color),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            label,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.92),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            description,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.65),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
           Wrap(
             spacing: 14,
             runSpacing: 14,
@@ -2923,6 +2991,10 @@ class _HomeScreenState extends State<HomeScreen> {
       subtitle: "Riepilogo economico familiare",
       child: StatefulBuilder(
         builder: (context, refreshFinancePopup) {
+          final pastItems = financeStore.pastRecurringItems();
+          final presentItems = financeStore.presentRecurringItems();
+          final futureItems = financeStore.futureRecurringItems();
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -3027,7 +3099,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                       child: _buildFinanceInfoCard(
                         title: "Passato",
-                        value: "${financeStore.pastRecurringItems().length}",
+                        value:
+                            "${pastItems.length} • €${financeStore.totalRecurringAmount(pastItems).toStringAsFixed(0)}",
                         icon: Icons.history_rounded,
                         color: const Color(0xFF8D6E63),
                       ),
@@ -3045,7 +3118,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                       child: _buildFinanceInfoCard(
                         title: "Presente",
-                        value: "${financeStore.presentRecurringItems().length}",
+                        value:
+                            "${presentItems.length} • €${financeStore.totalRecurringAmount(presentItems).toStringAsFixed(0)}",
                         icon: Icons.today_rounded,
                         color: const Color(0xFFE53935),
                       ),
@@ -3063,7 +3137,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                       child: _buildFinanceInfoCard(
                         title: "Futuro",
-                        value: "${financeStore.futureRecurringItems().length}",
+                        value:
+                            "${futureItems.length} • €${financeStore.totalRecurringAmount(futureItems).toStringAsFixed(0)}",
                         icon: Icons.event_available_rounded,
                         color: const Color(0xFF1E88E5),
                       ),
@@ -3071,6 +3146,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
+
               const SizedBox(height: 18),
 
               Container(
@@ -4176,125 +4252,42 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 14),
 
               ...incomeItems.map((item) {
-                return InkWell(
-                  borderRadius: BorderRadius.circular(18),
+                return FinanceTimeItemCard(
+                  item: item,
+                  financeStore: financeStore,
+                  getMonthName: _getMonthName,
                   onTap: () async {
                     await _showSingleRecurringItemPopup(item);
 
                     refreshDialog(() {});
                   },
-                  child: Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.72),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.white.withOpacity(0.38)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.payments_rounded,
-                          color: Color(0xFF43A047),
-                        ),
+                  onConfirm: () async {
+                    await financeStore.confirmRecurringItem(item.id);
 
-                        const SizedBox(width: 14),
+                    if (mounted) {
+                      setState(() {});
+                    }
 
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 16,
-                                ),
-                              ),
+                    refreshDialog(() {});
+                  },
+                  onEdit: () async {
+                    await _showEditRecurringItemPopup(item);
 
-                              const SizedBox(height: 3),
+                    if (mounted) {
+                      setState(() {});
+                    }
 
-                              Text(
-                                item.description,
-                                style: TextStyle(
-                                  color: Colors.black.withOpacity(0.55),
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                    refreshDialog(() {});
+                  },
+                  onDelete: () async {
+                    await financeStore.removeRecurringItem(item.id);
 
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            if (!item.confirmed &&
-                                financeStore.isRecurringItemOverdue(item))
-                              _financeBadge("SCADUTA", const Color(0xFFE53935)),
+                    if (mounted) {
+                      setState(() {});
+                    }
 
-                            if (!item.confirmed &&
-                                financeStore.isRecurringItemDueToday(item))
-                              _financeBadge("OGGI", const Color(0xFF1E88E5)),
-
-                            if (!item.confirmed &&
-                                financeStore.isRecurringItemUpcoming(item))
-                              _financeBadge(
-                                "IN ARRIVO",
-                                const Color(0xFFFF9800),
-                              ),
-
-                            if (item.requiresManualConfirmation)
-                              _financeBadge(
-                                "DA CONFERMARE",
-                                const Color(0xFFFF9800),
-                              ),
-
-                            if (!item.confirmed)
-                              _financeBadge(
-                                "PREVISTO",
-                                const Color(0xFFFF9800),
-                              ),
-
-                            if (item.confirmed)
-                              _financeBadge(
-                                "CONFERMATA",
-                                const Color(0xFF43A047),
-                              ),
-
-                            _financeBadge(
-                              item.stability == FinanceStability.stable
-                                  ? "STABILE"
-                                  : "INSTABILE",
-                              item.stability == FinanceStability.stable
-                                  ? const Color(0xFF43A047)
-                                  : const Color(0xFFFF9800),
-                            ),
-
-                            _financeBadge(
-                              item.protectionLevel ==
-                                      FinanceProtectionLevel.protected
-                                  ? "PROTETTA"
-                                  : "NON PROTETTA",
-                              item.protectionLevel ==
-                                      FinanceProtectionLevel.protected
-                                  ? const Color(0xFFE53935)
-                                  : const Color(0xFF43A047),
-                            ),
-
-                            Text(
-                              "€${item.expectedAmount.toStringAsFixed(0)}",
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w900,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                    refreshDialog(() {});
+                  },
                 );
               }),
             ],
@@ -4358,145 +4351,42 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 14),
 
               ...expenseItems.map((item) {
-                return InkWell(
-                  borderRadius: BorderRadius.circular(18),
+                return FinanceTimeItemCard(
+                  item: item,
+                  financeStore: financeStore,
+                  getMonthName: _getMonthName,
                   onTap: () async {
                     await _showSingleRecurringItemPopup(item);
 
                     refreshDialog(() {});
                   },
-                  child: Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.72),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.white.withOpacity(0.38)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.receipt_long_rounded,
-                          color: Color(0xFFE53935),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                item.description,
-                                style: TextStyle(
-                                  color: Colors.black.withOpacity(0.55),
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            if (!item.confirmed &&
-                                financeStore.isRecurringItemOverdue(item))
-                              _financeBadge("SCADUTA", const Color(0xFFE53935)),
-                            if (!item.confirmed &&
-                                financeStore.isRecurringItemDueToday(item))
-                              _financeBadge("OGGI", const Color(0xFF1E88E5)),
-                            if (!item.confirmed &&
-                                financeStore.isRecurringItemUpcoming(item))
-                              _financeBadge(
-                                "IN ARRIVO",
-                                const Color(0xFFFF9800),
-                              ),
-                            if (item.requiresManualConfirmation)
-                              _financeBadge(
-                                "DA CONFERMARE",
-                                const Color(0xFFFF9800),
-                              ),
-                            if (!item.mandatory)
-                              _financeBadge(
-                                "FACOLTATIVA",
-                                const Color(0xFF43A047),
-                              ),
-                            _financeBadge(
-                              "PRESSIONE BASSA",
-                              const Color(0xFF43A047),
-                            ),
-                            if (!item.confirmed)
-                              _financeBadge(
-                                "PREVISTO",
-                                const Color(0xFFFF9800),
-                              ),
-                            if (item.confirmed)
-                              _financeBadge(
-                                "CONFERMATA",
-                                const Color(0xFF43A047),
-                              ),
-                            _financeBadge(
-                              "PRIORITÀ BASSA",
-                              const Color(0xFF43A047),
-                            ),
-                            _financeBadge(
-                              item.protectionLevel ==
-                                      FinanceProtectionLevel.none
-                                  ? "NON PROTETTA"
-                                  : item.protectionLevel ==
-                                        FinanceProtectionLevel.protected
-                                  ? "PROTETTA"
-                                  : "CRITICA",
-                              item.protectionLevel ==
-                                      FinanceProtectionLevel.none
-                                  ? const Color(0xFF43A047)
-                                  : const Color(0xFFE53935),
-                            ),
-                            _financeBadge(
-                              item.stability == FinanceStability.stable
-                                  ? "STABILE"
-                                  : "INSTABILE",
-                              item.stability == FinanceStability.stable
-                                  ? const Color(0xFF43A047)
-                                  : const Color(0xFFFF9800),
-                            ),
-                            _financeBadge(
-                              item.suspensionRisk == FinanceSuspensionRisk.low
-                                  ? "RISCHIO BASSO"
-                                  : item.suspensionRisk ==
-                                        FinanceSuspensionRisk.medium
-                                  ? "RISCHIO MEDIO"
-                                  : item.suspensionRisk ==
-                                        FinanceSuspensionRisk.high
-                                  ? "RISCHIO ALTO"
-                                  : "RISCHIO CRITICO",
-                              item.suspensionRisk == FinanceSuspensionRisk.low
-                                  ? const Color(0xFF43A047)
-                                  : item.suspensionRisk ==
-                                        FinanceSuspensionRisk.medium
-                                  ? const Color(0xFFFF9800)
-                                  : const Color(0xFFE53935),
-                            ),
-                            Text(
-                              "€${item.expectedAmount.toStringAsFixed(0)}",
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w900,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                  onConfirm: () async {
+                    await financeStore.confirmRecurringItem(item.id);
+
+                    if (mounted) {
+                      setState(() {});
+                    }
+
+                    refreshDialog(() {});
+                  },
+                  onEdit: () async {
+                    await _showEditRecurringItemPopup(item);
+
+                    if (mounted) {
+                      setState(() {});
+                    }
+
+                    refreshDialog(() {});
+                  },
+                  onDelete: () async {
+                    await financeStore.removeRecurringItem(item.id);
+
+                    if (mounted) {
+                      setState(() {});
+                    }
+
+                    refreshDialog(() {});
+                  },
                 );
               }),
             ],

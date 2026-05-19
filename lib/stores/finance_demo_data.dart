@@ -24,6 +24,7 @@ final demoFunds = [
     description: 'Protezione imprevisti familiari',
     amount: 3000,
     protected: true,
+    category: FinanceFundCategory.emergency,
   ),
 
   FinanceFund(
@@ -32,6 +33,7 @@ final demoFunds = [
     description: 'Bollo, revisione, gomme e guasti',
     amount: 1200,
     protected: false,
+    category: FinanceFundCategory.auto,
   ),
 ];
 

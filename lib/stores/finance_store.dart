@@ -116,10 +116,36 @@ class FinanceStore {
     return projectedMonthlyMargin() < 0;
   }
 
+  int _priorityWeight(FinancePaymentPriority priority) {
+    switch (priority) {
+      case FinancePaymentPriority.low:
+        return 1;
+
+      case FinancePaymentPriority.normal:
+        return 2;
+
+      case FinancePaymentPriority.high:
+        return 3;
+
+      case FinancePaymentPriority.critical:
+        return 4;
+    }
+  }
+
   List<FinanceRecurringItem> pastRecurringItems() {
     final items = recurringItems.where((item) => item.confirmed).toList();
 
-    items.sort((a, b) => b.nextDueDate.compareTo(a.nextDueDate));
+    items.sort((a, b) {
+      final dateCompare = b.nextDueDate.compareTo(a.nextDueDate);
+
+      if (dateCompare != 0) {
+        return dateCompare;
+      }
+
+      return _priorityWeight(
+        b.paymentPriority,
+      ).compareTo(_priorityWeight(a.paymentPriority));
+    });
 
     return items;
   }
@@ -130,7 +156,17 @@ class FinanceStore {
           (isRecurringItemDueToday(item) || isRecurringItemOverdue(item));
     }).toList();
 
-    items.sort((a, b) => a.nextDueDate.compareTo(b.nextDueDate));
+    items.sort((a, b) {
+      final priorityCompare = _priorityWeight(
+        b.paymentPriority,
+      ).compareTo(_priorityWeight(a.paymentPriority));
+
+      if (priorityCompare != 0) {
+        return priorityCompare;
+      }
+
+      return a.nextDueDate.compareTo(b.nextDueDate);
+    });
 
     return items;
   }
@@ -149,7 +185,17 @@ class FinanceStore {
       return !item.confirmed && dueDay.isAfter(today);
     }).toList();
 
-    items.sort((a, b) => a.nextDueDate.compareTo(b.nextDueDate));
+    items.sort((a, b) {
+      final priorityCompare = _priorityWeight(
+        b.paymentPriority,
+      ).compareTo(_priorityWeight(a.paymentPriority));
+
+      if (priorityCompare != 0) {
+        return priorityCompare;
+      }
+
+      return a.nextDueDate.compareTo(b.nextDueDate);
+    });
 
     return items;
   }
@@ -335,6 +381,7 @@ class FinanceStore {
       description: old.description,
       amount: newAmount,
       protected: old.protected,
+      category: old.category,
     );
 
     await saveFunds();
@@ -424,6 +471,114 @@ class FinanceStore {
     final jsonList = recurringItems.map((item) => item.toJson()).toList();
 
     await PersistenceStore.saveJsonList('finance_recurring_items', jsonList);
+  }
+
+  double totalRecurringAmount(List<FinanceRecurringItem> items) {
+    return items.fold(0.0, (sum, item) => sum + item.expectedAmount);
+  }
+
+  double economicPressureScore() {
+    double score = 0;
+
+    final now = DateTime.now();
+
+    for (final item in recurringItems) {
+      if (item.isIncome) continue;
+
+      double weight = item.expectedAmount;
+
+      final matchingProtectedFundsAmount = funds
+          .where((fund) {
+            if (!fund.protected) return false;
+
+            if (fund.category == FinanceFundCategory.emergency) {
+              weight *= 0.80;
+              return true;
+            }
+
+            if (fund.category == FinanceFundCategory.auto &&
+                item.category == FinanceCategory.auto) {
+              return true;
+            }
+
+            if (fund.category == FinanceFundCategory.home &&
+                item.category == FinanceCategory.house) {
+              return true;
+            }
+
+            if (fund.category == FinanceFundCategory.health &&
+                item.category == FinanceCategory.health) {
+              return true;
+            }
+
+            if (fund.category == FinanceFundCategory.school &&
+                item.category == FinanceCategory.school) {
+              return true;
+            }
+
+            return false;
+          })
+          .fold<double>(0, (sum, f) => sum + f.amount);
+
+      if (item.protectionLevel == FinanceProtectionLevel.protected &&
+          matchingProtectedFundsAmount >= item.expectedAmount) {
+        weight *= 0.55;
+
+        final minimumPressure = item.expectedAmount * 0.28;
+
+        if (weight < minimumPressure) {
+          weight = minimumPressure;
+        }
+      }
+
+      switch (item.paymentPriority) {
+        case FinancePaymentPriority.low:
+          weight *= 0.5;
+          break;
+
+        case FinancePaymentPriority.normal:
+          weight *= 1.0;
+          break;
+
+        case FinancePaymentPriority.high:
+          weight *= 1.5;
+          break;
+
+        case FinancePaymentPriority.critical:
+          weight *= 2.0;
+          break;
+      }
+
+      final dueDate = DateTime(
+        item.nextDueDate.year,
+        item.nextDueDate.month,
+        item.nextDueDate.day,
+      );
+
+      final days = dueDate.difference(now).inDays;
+
+      if (days <= 30) {
+        weight *= 1.8;
+      } else if (days <= 90) {
+        weight *= 1.4;
+      } else if (days <= 180) {
+        weight *= 1.1;
+      } else if (days <= 365) {
+        weight *= 0.8;
+      } else {
+        weight *= 0.5;
+      }
+
+      score += weight;
+    }
+
+    final margin = projectedMonthlyMargin();
+
+    if (margin < 0) {
+      score *= 1.5;
+    }
+
+    return score;
   }
 
   String financeSummaryText() {
