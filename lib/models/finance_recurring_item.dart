@@ -18,6 +18,8 @@ enum FinancePaymentPriority { low, normal, high, critical }
 
 enum FinanceProtectionLevel { none, protected, critical }
 
+enum FinancePaymentOwner { matteo, chiara, shared }
+
 enum FinanceStability { stable, unstable }
 
 enum FinanceSuspensionRisk { low, medium, high, critical }
@@ -41,6 +43,7 @@ class FinanceRecurringItem {
   final FinanceVariability variability;
   final FinancePaymentPriority paymentPriority;
   final FinanceProtectionLevel protectionLevel;
+  final FinancePaymentOwner paymentOwner;
   final FinanceStability stability;
   final FinanceSuspensionRisk suspensionRisk;
 
@@ -63,6 +66,7 @@ class FinanceRecurringItem {
     required this.variability,
     required this.paymentPriority,
     required this.protectionLevel,
+    required this.paymentOwner,
     required this.stability,
     required this.suspensionRisk,
   });
@@ -99,6 +103,7 @@ class FinanceRecurringItem {
       protectionLevel: protectionLevel,
       stability: stability,
       suspensionRisk: suspensionRisk,
+      paymentOwner: paymentOwner ?? this.paymentOwner,
     );
   }
 
@@ -122,6 +127,7 @@ class FinanceRecurringItem {
       'variability': variability.name,
       'paymentPriority': paymentPriority.name,
       'protectionLevel': protectionLevel.name,
+      'paymentOwner': paymentOwner.name,
       'stability': stability.name,
       'suspensionRisk': suspensionRisk.name,
     };
@@ -159,6 +165,11 @@ class FinanceRecurringItem {
       protectionLevel: FinanceProtectionLevel.values.firstWhere(
         (e) => e.name == json['protectionLevel'],
       ),
+      paymentOwner: json['paymentOwner'] == null
+          ? FinancePaymentOwner.shared
+          : FinancePaymentOwner.values.firstWhere(
+              (e) => e.name == json['paymentOwner'],
+            ),
       stability: FinanceStability.values.firstWhere(
         (e) => e.name == json['stability'],
       ),

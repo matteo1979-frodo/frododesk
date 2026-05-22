@@ -507,3 +507,108 @@ e collegarsi gradualmente.
 ⬜ Prima simulazione economica reale  
 ⬜ Collegamento futuro con Statistiche  
 ⬜ Collegamento futuro con IPS economico
+---
+
+# EVOLUZIONE UI — PRESSIONE TEMPORALE (MAGGIO 2026)
+
+Durante questa fase è iniziata la trasformazione della UI Finanze da:
+
+❌ lista verticale tecnica
+
+verso:
+
+✔ dashboard economica temporale reale.
+
+---
+
+# NUOVA DIREZIONE UI
+
+Decisione strutturale confermata:
+
+La sezione “Pressione temporale” NON deve essere:
+
+- una semplice lista mesi
+- una colonna infinita di card
+- una visualizzazione tecnica
+
+Deve diventare:
+
+👉 una lettura temporale economica della vita familiare.
+
+---
+
+# EVOLUZIONE INTRODOTTA
+
+Sono state introdotte:
+
+✔ card mesi compatte  
+✔ stato visivo mese  
+✔ colori pressione economica  
+✔ vista annuale Gennaio → Dicembre  
+✔ struttura predisposta anni multipli  
+✔ navigazione temporale futura  
+
+---
+
+# STATI VISIVI MESE
+
+Ogni mese ora può essere:
+
+✔ stabile  
+✔ pressione  
+✔ critico  
+
+con:
+
+- colore dedicato
+- stato visivo
+- margine economico
+
+---
+
+# DIREZIONE FUTURA
+
+La sezione evolverà verso:
+
+✔ heatmap pressione economica  
+✔ timeline economica reale  
+✔ navigazione anni completa  
+✔ confronto anni  
+✔ pressione economica storica  
+✔ pressione futura simulata  
+
+---
+
+# PROBLEMA ATTUALMENTE APERTO
+
+La nuova navigazione anni è stata introdotta ma NON è ancora stabile.
+
+Problemi emersi:
+
+- gestione stato selectedYear
+- refactor incompleto della sezione
+- rischio perdita popup dettaglio mese durante modifiche rapide
+
+Decisione ufficiale:
+
+❌ fermare modifiche veloci
+
+✔ fare refactor completo e sicuro del blocco “Pressione temporale”
+
+con approccio:
+
+👉 0 rischio
+👉 blocco intero
+👉 preservazione popup mese
+👉 preservazione logica economica esistente.
+
+---
+
+# STATO REALE ATTUALE
+
+✔ struttura dashboard migliorata  
+✔ popup mesi più leggibile  
+✔ mesi annuali visibili  
+✔ base navigazione anni introdotta  
+
+🟡 navigazione anni ancora instabile

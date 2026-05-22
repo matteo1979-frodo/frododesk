@@ -24,6 +24,8 @@ import '../widgets/home_people_panel.dart';
 import '../stores/finance_store.dart';
 import '../logic/alice_events/alice_event_behavior.dart';
 import '../widgets/finance/finance_time_item_card.dart';
+import '../models/fund_transaction.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   final IpsStore ipsStore;
@@ -2995,6 +2997,167 @@ class _HomeScreenState extends State<HomeScreen> {
           final presentItems = financeStore.presentRecurringItems();
           final futureItems = financeStore.futureRecurringItems();
 
+          final projections = financeStore.nextMonthProjections(months: 6);
+          int selectedYear = DateTime.now().year;
+
+          Widget compactMonthStat({
+            required String title,
+            required String value,
+            required IconData icon,
+            required Color color,
+          }) {
+            return Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: color.withOpacity(0.18)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(icon, color: color, size: 18),
+                    const SizedBox(height: 8),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: Colors.black.withOpacity(0.58),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      value,
+                      style: TextStyle(
+                        color: color,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          Widget compactRecurringRow({
+            required FinanceRecurringItem item,
+            required DateTime projectionMonth,
+          }) {
+            DateTime visibleDateForItem() {
+              final lastDayOfMonth = DateTime(
+                projectionMonth.year,
+                projectionMonth.month + 1,
+                0,
+              ).day;
+
+              final safeDay = item.nextDueDate.day > lastDayOfMonth
+                  ? lastDayOfMonth
+                  : item.nextDueDate.day;
+
+              switch (item.recurringType) {
+                case FinanceRecurringType.monthly:
+                  return DateTime(
+                    projectionMonth.year,
+                    projectionMonth.month,
+                    safeDay,
+                  );
+
+                case FinanceRecurringType.yearly:
+                  return DateTime(
+                    projectionMonth.year,
+                    item.nextDueDate.month,
+                    safeDay,
+                  );
+
+                case FinanceRecurringType.oneShot:
+                case FinanceRecurringType.custom:
+                  return item.nextDueDate;
+              }
+            }
+
+            final isIncome = item.isIncome;
+            final color = isIncome
+                ? const Color(0xFF43A047)
+                : const Color(0xFFE53935);
+
+            final dateText = DateFormat(
+              'd MMM',
+              'it_IT',
+            ).format(visibleDateForItem());
+
+            return Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.70),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withOpacity(0.38)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      isIncome
+                          ? Icons.arrow_downward_rounded
+                          : Icons.arrow_upward_rounded,
+                      color: color,
+                      size: 18,
+                    ),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          dateText,
+                          style: TextStyle(
+                            color: Colors.black.withOpacity(0.52),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  Text(
+                    "€${item.expectedAmount.toStringAsFixed(0)}",
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -3106,9 +3269,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(width: 12),
-
                   Expanded(
                     child: InkWell(
                       borderRadius: BorderRadius.circular(18),
@@ -3125,9 +3286,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(width: 12),
-
                   Expanded(
                     child: InkWell(
                       borderRadius: BorderRadius.circular(18),
@@ -3145,6 +3304,724 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ],
+              ),
+
+              const SizedBox(height: 22),
+
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.72),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withOpacity(0.38)),
+                ),
+                child: StatefulBuilder(
+                  builder: (context, refreshYears) {
+                    final yearlyProjections = financeStore.yearProjections(
+                      selectedYear,
+                    );
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.insights_rounded,
+                              color: Color(0xFF8D6E63),
+                            ),
+
+                            const SizedBox(width: 10),
+
+                            Expanded(
+                              child: Text(
+                                "Pressione temporale",
+                                style: TextStyle(
+                                  color: Colors.black.withOpacity(0.78),
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 17,
+                                ),
+                              ),
+                            ),
+
+                            InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () {
+                                refreshYears(() {
+                                  selectedYear--;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.70),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.chevron_left_rounded,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(width: 8),
+
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(
+                                  0xFF8D6E63,
+                                ).withOpacity(0.10),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Text(
+                                "$selectedYear",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(width: 8),
+
+                            InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () {
+                                refreshYears(() {
+                                  selectedYear++;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.70),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: yearlyProjections.map((projection) {
+                            final monthName = DateFormat(
+                              'MMM',
+                              'it_IT',
+                            ).format(projection.month);
+
+                            final isNegative = projection.expectedMargin < 0;
+
+                            final isMedium =
+                                projection.expectedExpenses >
+                                projection.expectedIncome * 0.75;
+
+                            Color color;
+
+                            String label;
+
+                            if (isNegative) {
+                              color = const Color(0xFFE53935);
+                              label = "Critico";
+                            } else if (isMedium) {
+                              color = const Color(0xFFFFB300);
+                              label = "Pressione";
+                            } else {
+                              color = const Color(0xFF43A047);
+                              label = "Stabile";
+                            }
+
+                            return InkWell(
+                              borderRadius: BorderRadius.circular(18),
+                              onTap: () async {
+                                final monthItems = financeStore
+                                    .itemsForProjectionMonth(projection.month);
+
+                                monthItems.sort(
+                                  (a, b) =>
+                                      a.nextDueDate.compareTo(b.nextDueDate),
+                                );
+
+                                final monthIncomeItems = monthItems
+                                    .where((item) => item.isIncome)
+                                    .toList();
+
+                                final monthExpenseItems = monthItems
+                                    .where((item) => !item.isIncome)
+                                    .toList();
+
+                                await _showHomeDialog(
+                                  icon: Icons.calendar_month_rounded,
+                                  color: color,
+                                  title: DateFormat(
+                                    'MMMM yyyy',
+                                    'it_IT',
+                                  ).format(projection.month),
+                                  subtitle: "Dettaglio economico del mese",
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          compactMonthStat(
+                                            title: "Entrate",
+                                            value:
+                                                "€${projection.expectedIncome.toStringAsFixed(0)}",
+                                            icon: Icons.arrow_downward_rounded,
+                                            color: const Color(0xFF43A047),
+                                          ),
+
+                                          const SizedBox(width: 10),
+
+                                          compactMonthStat(
+                                            title: "Uscite",
+                                            value:
+                                                "€${projection.expectedExpenses.toStringAsFixed(0)}",
+                                            icon: Icons.arrow_upward_rounded,
+                                            color: const Color(0xFFE53935),
+                                          ),
+
+                                          const SizedBox(width: 10),
+
+                                          compactMonthStat(
+                                            title: "Margine",
+                                            value:
+                                                "€${projection.expectedMargin.toStringAsFixed(0)}",
+                                            icon: Icons.trending_up_rounded,
+                                            color: projection.expectedMargin < 0
+                                                ? const Color(0xFFE53935)
+                                                : const Color(0xFF43A047),
+                                          ),
+                                        ],
+                                      ),
+
+                                      const SizedBox(height: 14),
+
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(14),
+                                        decoration: BoxDecoration(
+                                          color: projection.expectedMargin < 0
+                                              ? const Color(
+                                                  0xFFE53935,
+                                                ).withOpacity(0.10)
+                                              : const Color(
+                                                  0xFF43A047,
+                                                ).withOpacity(0.10),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          projection.expectedMargin < 0
+                                              ? "Questo mese potrebbe essere pesante economicamente."
+                                              : projection.expectedExpenses >
+                                                    projection.expectedIncome *
+                                                        0.75
+                                              ? "Pressione economica medio-alta."
+                                              : "Situazione sostenibile.",
+                                          style: TextStyle(
+                                            color: Colors.black.withOpacity(
+                                              0.78,
+                                            ),
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+
+                                      const SizedBox(height: 18),
+
+                                      Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.72),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.white.withOpacity(
+                                              0.38,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "Situazione persone",
+                                              style: TextStyle(
+                                                color: Colors.black.withOpacity(
+                                                  0.78,
+                                                ),
+                                                fontWeight: FontWeight.w900,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+
+                                            const SizedBox(height: 16),
+
+                                            Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Expanded(
+                                                  child: Container(
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                          14,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: const Color(
+                                                        0xFF8D6E63,
+                                                      ).withOpacity(0.10),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            18,
+                                                          ),
+                                                      border: Border.all(
+                                                        color: const Color(
+                                                          0xFF8D6E63,
+                                                        ).withOpacity(0.18),
+                                                      ),
+                                                    ),
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        const Row(
+                                                          children: [
+                                                            Icon(
+                                                              Icons
+                                                                  .person_rounded,
+                                                              color: Color(
+                                                                0xFF8D6E63,
+                                                              ),
+                                                              size: 18,
+                                                            ),
+                                                            SizedBox(width: 8),
+                                                            Text(
+                                                              "Matteo",
+                                                              style: TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w900,
+                                                                fontSize: 15,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+
+                                                        const SizedBox(
+                                                          height: 12,
+                                                        ),
+
+                                                        Text(
+                                                          "Entrate",
+                                                          style: TextStyle(
+                                                            color: Colors.black
+                                                                .withOpacity(
+                                                                  0.58,
+                                                                ),
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            fontSize: 12,
+                                                          ),
+                                                        ),
+
+                                                        Text(
+                                                          "€${financeStore.projectedIncomeForOwner(month: projection.month, owner: FinancePaymentOwner.matteo).toStringAsFixed(0)}",
+                                                          style:
+                                                              const TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w900,
+                                                                fontSize: 17,
+                                                              ),
+                                                        ),
+
+                                                        const SizedBox(
+                                                          height: 8,
+                                                        ),
+
+                                                        Text(
+                                                          "Peso",
+                                                          style: TextStyle(
+                                                            color: Colors.black
+                                                                .withOpacity(
+                                                                  0.58,
+                                                                ),
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            fontSize: 12,
+                                                          ),
+                                                        ),
+
+                                                        Text(
+                                                          "€${financeStore.projectedAmountForOwner(month: projection.month, owner: FinancePaymentOwner.matteo).toStringAsFixed(0)}",
+                                                          style:
+                                                              const TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w900,
+                                                                fontSize: 17,
+                                                              ),
+                                                        ),
+
+                                                        const SizedBox(
+                                                          height: 8,
+                                                        ),
+
+                                                        Text(
+                                                          "Margine",
+                                                          style: TextStyle(
+                                                            color: Colors.black
+                                                                .withOpacity(
+                                                                  0.58,
+                                                                ),
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            fontSize: 12,
+                                                          ),
+                                                        ),
+
+                                                        Text(
+                                                          "€${financeStore.projectedMarginForOwner(month: projection.month, owner: FinancePaymentOwner.matteo).toStringAsFixed(0)}",
+                                                          style: TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.w900,
+                                                            fontSize: 17,
+                                                            color:
+                                                                financeStore.projectedMarginForOwner(
+                                                                      month: projection
+                                                                          .month,
+                                                                      owner: FinancePaymentOwner
+                                                                          .matteo,
+                                                                    ) <
+                                                                    0
+                                                                ? const Color(
+                                                                    0xFFE53935,
+                                                                  )
+                                                                : const Color(
+                                                                    0xFF43A047,
+                                                                  ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+
+                                                const SizedBox(width: 12),
+
+                                                Expanded(
+                                                  child: Container(
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                          14,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: const Color(
+                                                        0xFF26A69A,
+                                                      ).withOpacity(0.10),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            18,
+                                                          ),
+                                                      border: Border.all(
+                                                        color: const Color(
+                                                          0xFF26A69A,
+                                                        ).withOpacity(0.18),
+                                                      ),
+                                                    ),
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        const Row(
+                                                          children: [
+                                                            Icon(
+                                                              Icons
+                                                                  .person_rounded,
+                                                              color: Color(
+                                                                0xFF26A69A,
+                                                              ),
+                                                              size: 18,
+                                                            ),
+                                                            SizedBox(width: 8),
+                                                            Text(
+                                                              "Chiara",
+                                                              style: TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w900,
+                                                                fontSize: 15,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+
+                                                        const SizedBox(
+                                                          height: 12,
+                                                        ),
+
+                                                        Text(
+                                                          "Entrate",
+                                                          style: TextStyle(
+                                                            color: Colors.black
+                                                                .withOpacity(
+                                                                  0.58,
+                                                                ),
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            fontSize: 12,
+                                                          ),
+                                                        ),
+
+                                                        Text(
+                                                          "€${financeStore.projectedIncomeForOwner(month: projection.month, owner: FinancePaymentOwner.chiara).toStringAsFixed(0)}",
+                                                          style:
+                                                              const TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w900,
+                                                                fontSize: 17,
+                                                              ),
+                                                        ),
+
+                                                        const SizedBox(
+                                                          height: 8,
+                                                        ),
+
+                                                        Text(
+                                                          "Peso",
+                                                          style: TextStyle(
+                                                            color: Colors.black
+                                                                .withOpacity(
+                                                                  0.58,
+                                                                ),
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            fontSize: 12,
+                                                          ),
+                                                        ),
+
+                                                        Text(
+                                                          "€${financeStore.projectedAmountForOwner(month: projection.month, owner: FinancePaymentOwner.chiara).toStringAsFixed(0)}",
+                                                          style:
+                                                              const TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w900,
+                                                                fontSize: 17,
+                                                              ),
+                                                        ),
+
+                                                        const SizedBox(
+                                                          height: 8,
+                                                        ),
+
+                                                        Text(
+                                                          "Margine",
+                                                          style: TextStyle(
+                                                            color: Colors.black
+                                                                .withOpacity(
+                                                                  0.58,
+                                                                ),
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            fontSize: 12,
+                                                          ),
+                                                        ),
+
+                                                        Text(
+                                                          "€${financeStore.projectedMarginForOwner(month: projection.month, owner: FinancePaymentOwner.chiara).toStringAsFixed(0)}",
+                                                          style: TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.w900,
+                                                            fontSize: 17,
+                                                            color:
+                                                                financeStore.projectedMarginForOwner(
+                                                                      month: projection
+                                                                          .month,
+                                                                      owner: FinancePaymentOwner
+                                                                          .chiara,
+                                                                    ) <
+                                                                    0
+                                                                ? const Color(
+                                                                    0xFFE53935,
+                                                                  )
+                                                                : const Color(
+                                                                    0xFF43A047,
+                                                                  ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+
+                                      const SizedBox(height: 18),
+
+                                      Text(
+                                        "Entrate del mese",
+                                        style: TextStyle(
+                                          color: Colors.black.withOpacity(0.78),
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+
+                                      const SizedBox(height: 10),
+
+                                      if (monthIncomeItems.isEmpty)
+                                        Text(
+                                          "Nessuna entrata prevista.",
+                                          style: TextStyle(
+                                            color: Colors.black.withOpacity(
+                                              0.58,
+                                            ),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        )
+                                      else
+                                        ...monthIncomeItems.map((item) {
+                                          return compactRecurringRow(
+                                            item: item,
+                                            projectionMonth: projection.month,
+                                          );
+                                        }),
+
+                                      const SizedBox(height: 16),
+
+                                      Text(
+                                        "Uscite del mese",
+                                        style: TextStyle(
+                                          color: Colors.black.withOpacity(0.78),
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+
+                                      const SizedBox(height: 10),
+
+                                      if (monthExpenseItems.isEmpty)
+                                        Text(
+                                          "Nessuna uscita prevista.",
+                                          style: TextStyle(
+                                            color: Colors.black.withOpacity(
+                                              0.58,
+                                            ),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        )
+                                      else
+                                        ...monthExpenseItems.map((item) {
+                                          return compactRecurringRow(
+                                            item: item,
+                                            projectionMonth: projection.month,
+                                          );
+                                        }),
+                                    ],
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                width: 96,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 14,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: color.withOpacity(0.10),
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color: color.withOpacity(0.24),
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: color.withOpacity(0.08),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      width: 14,
+                                      height: 14,
+                                      decoration: BoxDecoration(
+                                        color: color,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 10),
+
+                                    Text(
+                                      monthName,
+                                      style: TextStyle(
+                                        color: Colors.black.withOpacity(0.78),
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 6),
+
+                                    Text(
+                                      label,
+                                      style: TextStyle(
+                                        color: color,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 8),
+
+                                    Text(
+                                      "€${projection.expectedMargin.toStringAsFixed(0)}",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: color,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
 
               const SizedBox(height: 18),
@@ -3449,6 +4326,124 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _showAddFundTransactionPopup(FinanceFund fund) async {
+    final descriptionController = TextEditingController();
+    final amountController = TextEditingController();
+
+    FundTransactionType selectedType = FundTransactionType.deposit;
+
+    await _showHomeDialog(
+      icon: Icons.swap_vert_rounded,
+      color: const Color(0xFF1E88E5),
+      title: "Movimento fondo",
+      subtitle: fund.name,
+      child: StatefulBuilder(
+        builder: (context, refreshDialog) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              DropdownButtonFormField<FundTransactionType>(
+                value: selectedType,
+                decoration: InputDecoration(
+                  labelText: "Tipo movimento",
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.82),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: FundTransactionType.deposit,
+                    child: Text("Versamento"),
+                  ),
+                  DropdownMenuItem(
+                    value: FundTransactionType.withdraw,
+                    child: Text("Utilizzo"),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value == null) return;
+
+                  refreshDialog(() {
+                    selectedType = value;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 12),
+
+              TextField(
+                controller: descriptionController,
+                decoration: InputDecoration(
+                  labelText: "Descrizione",
+                  hintText: "Es. versamento mensile / gomme auto",
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.82),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              TextField(
+                controller: amountController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: "Importo",
+                  hintText: "Es. 50.00",
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.82),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final raw = amountController.text.trim().replaceAll(
+                      ',',
+                      '.',
+                    );
+                    final value = double.tryParse(raw);
+
+                    if (value == null || value <= 0) {
+                      return;
+                    }
+
+                    await financeStore.addFundTransaction(
+                      fundId: fund.id,
+                      description: descriptionController.text.trim(),
+                      amount: value,
+                      type: selectedType,
+                    );
+
+                    if (mounted) {
+                      setState(() {});
+                    }
+
+                    Navigator.of(context).pop();
+                  },
+                  icon: const Icon(Icons.save_rounded),
+                  label: const Text("Salva movimento"),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Future<void> _showFinanceFundsPopup() async {
     await _showHomeDialog(
       icon: Icons.savings_rounded,
@@ -3480,6 +4475,11 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 14),
 
               ...financeStore.funds.map((fund) {
+                final transactions =
+                    financeStore.fundTransactions
+                        .where((t) => t.fundId == fund.id)
+                        .toList()
+                      ..sort((a, b) => b.date.compareTo(a.date));
                 return Container(
                   width: double.infinity,
                   margin: const EdgeInsets.only(bottom: 12),
@@ -3489,77 +4489,162 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(color: Colors.white.withOpacity(0.38)),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
-                        Icons.account_balance_wallet_rounded,
-                        color: Color(0xFF1E88E5),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.account_balance_wallet_rounded,
+                            color: Color(0xFF1E88E5),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  fund.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  fund.description,
+                                  style: TextStyle(
+                                    color: Colors.black.withOpacity(0.58),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "€${fund.amount.toStringAsFixed(0)}",
+                                  style: TextStyle(
+                                    color: Colors.black.withOpacity(0.72),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (fund.protected)
+                            _financeBadge("PROTETTO", const Color(0xFFE53935)),
+                          IconButton(
+                            tooltip: "Movimento fondo",
+                            onPressed: () async {
+                              await _showAddFundTransactionPopup(fund);
+
+                              if (mounted) {
+                                setState(() {});
+                              }
+
+                              refreshDialog(() {});
+                            },
+                            icon: const Icon(
+                              Icons.swap_vert_rounded,
+                              size: 18,
+                              color: Color(0xFF26A69A),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: "Modifica fondo",
+                            onPressed: () async {
+                              await _showEditFundAmountPopup(
+                                fundId: fund.id,
+                                fundName: fund.name,
+                                currentAmount: fund.amount,
+                              );
+
+                              refreshDialog(() {});
+                            },
+                            icon: const Icon(Icons.edit_rounded, size: 18),
+                          ),
+                          IconButton(
+                            tooltip: "Elimina fondo",
+                            onPressed: () async {
+                              await financeStore.removeFund(fund.id);
+
+                              if (mounted) {
+                                setState(() {});
+                              }
+
+                              refreshDialog(() {});
+                            },
+                            icon: const Icon(
+                              Icons.delete_rounded,
+                              size: 18,
+                              color: Color(0xFFE53935),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              fund.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 16,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              fund.description,
-                              style: TextStyle(
-                                color: Colors.black.withOpacity(0.58),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              "€${fund.amount.toStringAsFixed(0)}",
-                              style: TextStyle(
-                                color: Colors.black.withOpacity(0.72),
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
+
+                      if (transactions.isNotEmpty) ...[
+                        const SizedBox(height: 14),
+
+                        Text(
+                          "Ultimi movimenti",
+                          style: TextStyle(
+                            color: Colors.black.withOpacity(0.72),
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                          ),
                         ),
-                      ),
-                      if (fund.protected)
-                        _financeBadge("PROTETTO", const Color(0xFFE53935)),
-                      IconButton(
-                        tooltip: "Modifica fondo",
-                        onPressed: () async {
-                          await _showEditFundAmountPopup(
-                            fundId: fund.id,
-                            fundName: fund.name,
-                            currentAmount: fund.amount,
+
+                        const SizedBox(height: 8),
+
+                        ...transactions.take(3).map((t) {
+                          final isDeposit =
+                              t.type == FundTransactionType.deposit;
+
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isDeposit
+                                      ? Icons.add_circle_rounded
+                                      : Icons.remove_circle_rounded,
+                                  size: 16,
+                                  color: isDeposit
+                                      ? const Color(0xFF43A047)
+                                      : const Color(0xFFE53935),
+                                ),
+
+                                const SizedBox(width: 8),
+
+                                Expanded(
+                                  child: Text(
+                                    t.description.isEmpty
+                                        ? "Movimento fondo"
+                                        : t.description,
+                                    style: TextStyle(
+                                      color: Colors.black.withOpacity(0.68),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+
+                                Text(
+                                  "${isDeposit ? '+' : '-'}€${t.amount.toStringAsFixed(0)}",
+                                  style: TextStyle(
+                                    color: isDeposit
+                                        ? const Color(0xFF43A047)
+                                        : const Color(0xFFE53935),
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
                           );
-
-                          refreshDialog(() {});
-                        },
-                        icon: const Icon(Icons.edit_rounded, size: 18),
-                      ),
-                      IconButton(
-                        tooltip: "Elimina fondo",
-                        onPressed: () async {
-                          await financeStore.removeFund(fund.id);
-
-                          if (mounted) {
-                            setState(() {});
-                          }
-
-                          refreshDialog(() {});
-                        },
-                        icon: const Icon(
-                          Icons.delete_rounded,
-                          size: 18,
-                          color: Color(0xFFE53935),
-                        ),
-                      ),
+                        }),
+                      ],
                     ],
                   ),
                 );
@@ -4439,6 +5524,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         protectionLevel: isIncome
                             ? FinanceProtectionLevel.protected
                             : FinanceProtectionLevel.none,
+
+                        paymentOwner: FinancePaymentOwner.shared,
 
                         stability: FinanceStability.stable,
 

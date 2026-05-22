@@ -1213,3 +1213,133 @@ Fare prima:
 # FRASE DI RIPARTENZA AGGIORNATA
 
 Ripartiamo da FrodoDesk — Finanze V1 visiva funzionante: Home collegata al FinanceStore, popup navigabili, ricorrenze economiche vive ancora su dati demo. Prossimo passo: sostituire i demo con dati reali Finanze partendo dai saldi Matteo/Chiara, senza toccare IPS, Statistiche o Spese.
+---
+
+# 🔄 AGGIORNAMENTO 22 Maggio 2026
+(BLOCCO FINANZE — Dashboard temporale annuale)
+
+---
+
+# NUOVA FASE UI FINANZE
+
+Il modulo Finanze entra nella fase:
+
+👉 “lettura temporale economica della famiglia”
+
+La dashboard non deve più essere:
+
+❌ lista verticale tecnica  
+❌ semplice elenco card economiche  
+
+ma:
+
+✔ simulazione temporale leggibile  
+✔ visione pressione futura  
+✔ navigazione economica nel tempo  
+
+---
+
+# EVOLUZIONE INTRODOTTA
+
+Sono state introdotte:
+
+✔ card mesi compatte  
+✔ stati mese visivi  
+✔ pressione economica sintetica  
+✔ colori stato economico  
+✔ struttura annuale Gennaio → Dicembre  
+✔ base navigazione anni  
+✔ popup mese più dashboard e meno lista  
+
+---
+
+# STATI MESE
+
+Ogni mese ora può essere:
+
+✔ stabile  
+✔ pressione  
+✔ critico  
+
+con:
+
+- colore dedicato
+- margine economico
+- stato sintetico
+
+---
+
+# OBIETTIVO STRUTTURALE
+
+La dashboard Finanze evolve verso:
+
+✔ timeline economica reale  
+✔ heatmap pressione economica  
+✔ simulazione sostenibilità annuale  
+✔ lettura temporale del rischio familiare  
+✔ pressione futura leggibile nel tempo  
+
+---
+
+# PROBLEMA ATTUALMENTE APERTO
+
+La navigazione anni è stata introdotta ma NON è ancora stabile.
+
+Problemi emersi:
+
+🟡 gestione `selectedYear`
+🟡 builder annuale ancora fragile
+🟡 rischio perdita popup dettaglio mese
+🟡 blocco UI troppo grande per patch sicure
+
+---
+
+# DECISIONE OPERATIVA
+
+❌ NON continuare con patch rapide.
+
+✔ Fare refactor completo e sicuro del blocco:
+`Pressione temporale`
+
+Approccio deciso:
+
+- blocco intero
+- 0 rischio
+- preservazione popup mese
+- preservazione logica economica
+- futura separazione widget/dashboard
+
+---
+
+# STATO REALE ATTUALE
+
+✔ mesi annuali visibili  
+✔ dashboard economica più leggibile  
+✔ popup mese più coerente  
+✔ struttura temporale introdotta  
+
+🟡 navigazione anni ancora instabile
+
+---
+
+# DIREZIONE OPERATIVA
+
+NON fare ancora:
+
+❌ grafici avanzati  
+❌ heatmap completa  
+❌ statistiche economiche evolute  
+❌ IPS economico  
+
+Fare prima:
+
+✔ consolidamento dashboard annuale
+✔ consolidamento navigazione anni
+✔ refactor sicuro UI temporale
+✔ separazione futura widget/dashboard
+
+---
+
+# FRASE DI RIPARTENZA AGGIORNATA
+
+Ripartiamo da FrodoDesk — Dashboard Finanze temporale annuale: mesi Gennaio→Dicembre visibili, stati economici introdotti, popup mese più dashboard. Prossimo passo: refactor sicuro del blocco “Pressione temporale” per stabilizzare la navigazione anni senza perdere popup e logica economica.

@@ -5,6 +5,8 @@ import '../models/finance_recurring_item.dart';
 import '../models/finance_snapshot.dart';
 import 'finance_demo_data.dart';
 import '../logic/persistence_store.dart';
+import '../models/fund_transaction.dart';
+import '../models/finance_month_projection.dart';
 
 class FinanceStore {
   final List<FinancePerson> people = const [
@@ -17,6 +19,7 @@ class FinanceStore {
   final List<FinanceFund> funds = [];
   final List<FinanceRecurringItem> recurringItems = [];
   final List<FinanceSnapshot> snapshots = [];
+  final List<FundTransaction> fundTransactions = [];
 
   double totalBalance() {
     return balances.fold(0.0, (sum, balance) => sum + balance.currentAmount);
@@ -273,6 +276,7 @@ class FinanceStore {
 
     if (loaded) {
       final fundsLoaded = await loadSavedFunds();
+      await loadSavedFundTransactions();
 
       if (!fundsLoaded) {
         funds
@@ -315,6 +319,7 @@ class FinanceStore {
     await saveBalances();
 
     final fundsLoaded = await loadSavedFunds();
+    await loadSavedFundTransactions();
 
     if (!fundsLoaded) {
       funds
@@ -327,6 +332,7 @@ class FinanceStore {
     recurringItems
       ..clear()
       ..addAll(demoRecurringItems);
+    await saveRecurringItems();
   }
 
   Future<void> saveBalances() async {
@@ -359,6 +365,22 @@ class FinanceStore {
     funds
       ..clear()
       ..addAll(jsonList.map(FinanceFund.fromJson));
+
+    return true;
+  }
+
+  Future<bool> loadSavedFundTransactions() async {
+    final jsonList = await PersistenceStore.loadJsonList(
+      'finance_fund_transactions',
+    );
+
+    if (jsonList.isEmpty) {
+      return false;
+    }
+
+    fundTransactions
+      ..clear()
+      ..addAll(jsonList.map(FundTransaction.fromJson));
 
     return true;
   }
@@ -399,10 +421,61 @@ class FinanceStore {
     await saveFunds();
   }
 
+  Future<void> addFundTransaction({
+    required String fundId,
+    required String description,
+    required double amount,
+    required FundTransactionType type,
+  }) async {
+    final fundIndex = funds.indexWhere((f) => f.id == fundId);
+
+    if (fundIndex == -1) {
+      return;
+    }
+
+    final oldFund = funds[fundIndex];
+
+    double newAmount = oldFund.amount;
+
+    if (type == FundTransactionType.deposit) {
+      newAmount += amount;
+    } else {
+      newAmount -= amount;
+    }
+
+    if (newAmount < 0) {
+      newAmount = 0;
+    }
+
+    funds[fundIndex] = FinanceFund(
+      id: oldFund.id,
+      name: oldFund.name,
+      description: oldFund.description,
+      amount: newAmount,
+      protected: oldFund.protected,
+      category: oldFund.category,
+    );
+
+    fundTransactions.add(
+      FundTransaction(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        fundId: fundId,
+        description: description,
+        amount: amount,
+        date: DateTime.now(),
+        type: type,
+      ),
+    );
+
+    await saveFunds();
+    await saveFundTransactions();
+  }
+
   Future<void> removeFund(String fundId) async {
     funds.removeWhere((f) => f.id == fundId);
 
     await saveFunds();
+    await saveFundTransactions();
   }
 
   Future<void> confirmRecurringItem(String itemId, {double? realAmount}) async {
@@ -483,6 +556,12 @@ class FinanceStore {
     final jsonList = funds.map((f) => f.toJson()).toList();
 
     await PersistenceStore.saveJsonList('finance_funds', jsonList);
+  }
+
+  Future<void> saveFundTransactions() async {
+    final jsonList = fundTransactions.map((t) => t.toJson()).toList();
+
+    await PersistenceStore.saveJsonList('finance_fund_transactions', jsonList);
   }
 
   Future<void> saveRecurringItems() async {
@@ -597,6 +676,192 @@ class FinanceStore {
     }
 
     return score;
+  }
+
+  List<FinanceRecurringItem> itemsForProjectionMonth(DateTime month) {
+    return recurringItems.where((item) {
+      final firstDueMonth = DateTime(
+        item.nextDueDate.year,
+        item.nextDueDate.month,
+        1,
+      );
+
+      final currentMonth = DateTime(month.year, month.month, 1);
+
+      if (currentMonth.year < firstDueMonth.year ||
+          (currentMonth.year == firstDueMonth.year &&
+              currentMonth.month < firstDueMonth.month)) {
+        return false;
+      }
+
+      switch (item.recurringType) {
+        case FinanceRecurringType.monthly:
+          return true;
+
+        case FinanceRecurringType.yearly:
+          return currentMonth.month == item.nextDueDate.month &&
+              currentMonth.year >= item.nextDueDate.year;
+
+        case FinanceRecurringType.oneShot:
+          return firstDueMonth.year == currentMonth.year &&
+              firstDueMonth.month == currentMonth.month;
+
+        case FinanceRecurringType.custom:
+          final interval = item.customInterval ?? 1;
+          final unit = item.customIntervalUnit ?? 'months';
+
+          if (unit == 'months') {
+            final monthDiff =
+                (currentMonth.year - firstDueMonth.year) * 12 +
+                (currentMonth.month - firstDueMonth.month);
+
+            return monthDiff >= 0 && monthDiff % interval == 0;
+          }
+
+          if (unit == 'years') {
+            final yearDiff = currentMonth.year - firstDueMonth.year;
+
+            return currentMonth.month == firstDueMonth.month &&
+                yearDiff >= 0 &&
+                yearDiff % interval == 0;
+          }
+
+          return firstDueMonth.year == currentMonth.year &&
+              firstDueMonth.month == currentMonth.month;
+      }
+    }).toList();
+  }
+
+  double projectedAmountForOwner({
+    required DateTime month,
+    required FinancePaymentOwner owner,
+  }) {
+    double total = 0;
+
+    for (final item in itemsForProjectionMonth(month)) {
+      if (item.isIncome) continue;
+
+      if (item.paymentOwner == owner) {
+        total += item.expectedAmount;
+      }
+
+      if (item.paymentOwner == FinancePaymentOwner.shared) {
+        total += item.expectedAmount / 2;
+      }
+    }
+
+    return total;
+  }
+
+  double projectedIncomeForOwner({
+    required DateTime month,
+    required FinancePaymentOwner owner,
+  }) {
+    double total = 0;
+
+    for (final item in itemsForProjectionMonth(month)) {
+      if (!item.isIncome) continue;
+
+      if (item.paymentOwner == owner) {
+        total += item.expectedAmount;
+      }
+
+      if (item.paymentOwner == FinancePaymentOwner.shared) {
+        total += item.expectedAmount / 2;
+      }
+    }
+
+    return total;
+  }
+
+  double projectedMarginForOwner({
+    required DateTime month,
+    required FinancePaymentOwner owner,
+  }) {
+    final income = projectedIncomeForOwner(month: month, owner: owner);
+
+    final expenses = projectedAmountForOwner(month: month, owner: owner);
+
+    return income - expenses;
+  }
+
+  List<FinanceMonthProjection> nextMonthProjections({int months = 12}) {
+    final now = DateTime.now();
+    final result = <FinanceMonthProjection>[];
+
+    for (int i = 0; i < months; i++) {
+      final month = DateTime(now.year, now.month + i, 1);
+
+      double income = 0;
+      double expenses = 0;
+
+      for (final item in itemsForProjectionMonth(month)) {
+        if (item.isIncome) {
+          income += item.expectedAmount;
+        } else {
+          expenses += item.expectedAmount;
+        }
+      }
+
+      final margin = income - expenses;
+
+      double pressure = expenses;
+
+      if (margin < 0) {
+        pressure *= 1.5;
+      }
+
+      result.add(
+        FinanceMonthProjection(
+          month: month,
+          expectedIncome: income,
+          expectedExpenses: expenses,
+          expectedMargin: margin,
+          pressureScore: pressure,
+        ),
+      );
+    }
+
+    return result;
+  }
+
+  List<FinanceMonthProjection> yearProjections(int year) {
+    final result = <FinanceMonthProjection>[];
+
+    for (int monthIndex = 1; monthIndex <= 12; monthIndex++) {
+      final month = DateTime(year, monthIndex, 1);
+
+      double income = 0;
+      double expenses = 0;
+
+      for (final item in itemsForProjectionMonth(month)) {
+        if (item.isIncome) {
+          income += item.expectedAmount;
+        } else {
+          expenses += item.expectedAmount;
+        }
+      }
+
+      final margin = income - expenses;
+
+      double pressure = expenses;
+
+      if (margin < 0) {
+        pressure *= 1.5;
+      }
+
+      result.add(
+        FinanceMonthProjection(
+          month: month,
+          expectedIncome: income,
+          expectedExpenses: expenses,
+          expectedMargin: margin,
+          pressureScore: pressure,
+        ),
+      );
+    }
+
+    return result;
   }
 
   String financeSummaryText() {

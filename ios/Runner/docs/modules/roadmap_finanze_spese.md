@@ -443,3 +443,102 @@ Finanze V1 è:
 ✔ ancora basata su dati demo  
 ✔ senza persistenza reale  
 ✔ pronta per il passaggio ai dati reali
+---
+
+# BLOCCO F4.2 — PRESSIONE TEMPORALE / DASHBOARD ANNUALE
+
+Stato: IN COSTRUZIONE / PARZIALMENTE STABILE
+
+---
+
+## OBIETTIVO
+
+Trasformare la UI Finanze da:
+
+❌ lista verticale di informazioni
+
+verso:
+
+✔ dashboard economica temporale reale.
+
+---
+
+# DIREZIONE INTRODOTTA
+
+La sezione “Pressione temporale” evolve verso:
+
+✔ lettura annuale economica  
+✔ simulazione pressione mesi  
+✔ navigazione temporale  
+✔ visione futura della sostenibilità  
+
+---
+
+# COMPLETATO
+
+☑ card mesi compatte  
+☑ stato mese visivo  
+☑ colori pressione economica  
+☑ mesi Gennaio → Dicembre  
+☑ struttura anni multipli introdotta  
+☑ popup dettaglio mese migliorato  
+☑ riduzione effetto “lista infinita”  
+
+---
+
+# STATI MESE
+
+Ogni mese può ora essere:
+
+✔ stabile  
+✔ pressione  
+✔ critico  
+
+con:
+
+- colore
+- stato visivo
+- margine economico
+
+---
+
+# PROBLEMI APERTI
+
+La nuova navigazione anni NON è ancora stabile.
+
+Problemi emersi:
+
+🟡 gestione selectedYear  
+🟡 refactor incompleto builder annuale  
+🟡 rischio perdita logica popup mese  
+🟡 rischio modifiche veloci su blocchi troppo grandi
+
+---
+
+# DECISIONE OPERATIVA
+
+❌ NON continuare con patch rapide.
+
+✔ Fare refactor sicuro del blocco:
+`Pressione temporale`
+
+con approccio:
+
+- blocco intero
+- 0 rischio
+- preservazione popup mese
+- preservazione logica economica
+- separazione futura widget/dashboard
+
+---
+
+# DIREZIONE FUTURA
+
+La dashboard annuale evolverà verso:
+
+⬜ heatmap pressione economica  
+⬜ timeline economica reale  
+⬜ confronto anni  
+⬜ storico economico  
+⬜ simulazione pressione futura  
+⬜ lettura temporale tipo “motore economico vivo”

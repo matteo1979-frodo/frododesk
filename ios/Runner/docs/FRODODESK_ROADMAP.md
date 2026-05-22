@@ -763,3 +763,115 @@ finché emergerà naturalmente la forma reale finale.
 ⬜ Definizione struttura minima Spese v1  
 ⬜ Dashboard economica minimale v1  
 ⬜ Collegamento futuro Statistiche ↔ Finanze ↔ Spese
+---
+
+# BLOCCO FINANZE — EVOLUZIONE DASHBOARD TEMPORALE
+
+Stato: AVVIATO / IN CONSOLIDAMENTO
+
+---
+
+## SIGNIFICATO
+
+Il modulo Finanze sta passando da:
+
+❌ elenco informazioni economiche
+
+a:
+
+✔ lettura temporale della stabilità familiare.
+
+---
+
+# NUOVA DIREZIONE UI
+
+La dashboard economica evolve verso:
+
+✔ pressione temporale reale  
+✔ visione annuale  
+✔ simulazione sostenibilità mesi  
+✔ lettura economica futura  
+
+---
+
+# EVOLUZIONE INTRODOTTA
+
+Durante questa fase sono stati introdotti:
+
+☑ card mesi compatte  
+☑ stati mese visivi  
+☑ colori pressione economica  
+☑ vista Gennaio → Dicembre  
+☑ struttura multi-anno  
+☑ popup mese più dashboard  
+☑ riduzione effetto lista infinita  
+
+---
+
+# STATI MESE
+
+Ogni mese ora può essere:
+
+✔ stabile  
+✔ pressione  
+✔ critico  
+
+con:
+
+- colore dedicato
+- margine economico
+- stato sintetico
+
+---
+
+# DIREZIONE FUTURA
+
+La dashboard temporale evolverà verso:
+
+⬜ heatmap pressione economica  
+⬜ timeline economica reale  
+⬜ confronto anni  
+⬜ pressione storica  
+⬜ simulazione economica avanzata  
+⬜ motore pressione temporale reale  
+
+---
+
+# PROBLEMA ATTUALMENTE APERTO
+
+La navigazione anni è stata introdotta ma NON è ancora stabile.
+
+Problemi emersi:
+
+🟡 gestione `selectedYear`  
+🟡 refactor incompleto del builder annuale  
+🟡 rischio perdita popup dettaglio mese durante modifiche rapide  
+🟡 blocco UI troppo grande per patch veloci sicure
+
+---
+
+# DECISIONE OPERATIVA
+
+❌ NON continuare con modifiche rapide.
+
+✔ Fare refactor completo e sicuro del blocco:
+`Pressione temporale`
+
+con approccio:
+
+- 0 rischio
+- blocco completo
+- preservazione popup mese
+- preservazione logica economica
+- futura separazione widget/dashboard
+
+---
+
+# STATO REALE ATTUALE
+
+✔ dashboard economica più leggibile  
+✔ mesi annuali visibili  
+✔ popup mese più coerente  
+✔ struttura temporale introdotta  
+
+🟡 navigazione anni ancora instabile

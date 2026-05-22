@@ -54,9 +54,11 @@ final demoRecurringItems = [
     description: 'Entrata principale stipendio Matteo',
     paymentPriority: FinancePaymentPriority.high,
     protectionLevel: FinanceProtectionLevel.protected,
+    paymentOwner: FinancePaymentOwner.matteo,
     stability: FinanceStability.stable,
     suspensionRisk: FinanceSuspensionRisk.low,
   ),
+
   FinanceRecurringItem(
     id: 'salary_chiara',
     name: 'Stipendio Chiara',
@@ -73,9 +75,11 @@ final demoRecurringItems = [
     description: 'Entrata principale stipendio Chiara',
     paymentPriority: FinancePaymentPriority.high,
     protectionLevel: FinanceProtectionLevel.protected,
+    paymentOwner: FinancePaymentOwner.chiara,
     stability: FinanceStability.stable,
     suspensionRisk: FinanceSuspensionRisk.low,
   ),
+
   FinanceRecurringItem(
     id: 'netflix',
     name: 'Netflix',
@@ -92,6 +96,7 @@ final demoRecurringItems = [
     description: 'Abbonamento streaming intrattenimento',
     paymentPriority: FinancePaymentPriority.low,
     protectionLevel: FinanceProtectionLevel.none,
+    paymentOwner: FinancePaymentOwner.shared,
     stability: FinanceStability.stable,
     suspensionRisk: FinanceSuspensionRisk.low,
   ),
