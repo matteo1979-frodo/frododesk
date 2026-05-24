@@ -28,6 +28,8 @@ import '../models/fund_transaction.dart';
 import 'package:intl/intl.dart';
 import '../widgets/finance/finance_year_dashboard.dart';
 import '../widgets/finance/finance_month_detail_dialog.dart';
+import '../widgets/finance/finance_pressure_summary_card.dart';
+import '../widgets/shared/metric_tile.dart';
 
 class HomeScreen extends StatefulWidget {
   final IpsStore ipsStore;
@@ -2437,93 +2439,26 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          Builder(
-            builder: (_) {
-              final pressure = financeStore.economicPressureScore();
-
-              String label;
-              Color color;
-              String description;
-
-              if (pressure < 500) {
-                label = "Pressione economica bassa";
-                description = "Situazione stabile e sostenibile.";
-                color = const Color(0xFF66BB6A);
-              } else if (pressure < 1500) {
-                label = "Pressione economica media";
-                description = "Le uscite iniziano a pesare.";
-                color = const Color(0xFFFFB300);
-              } else if (pressure < 3000) {
-                label = "Pressione economica alta";
-                description = "Serve attenzione sulle prossime spese.";
-                color = const Color(0xFFE57373);
-              } else {
-                label = "Pressione economica critica";
-                description =
-                    "La situazione economica è sotto forte pressione.";
-                color = const Color(0xFFD32F2F);
-              }
-
-              return Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: color.withOpacity(0.28)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.ssid_chart_rounded, color: color),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            label,
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.92),
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            description,
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.65),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
+          FinancePressureSummaryCard(financeStore: financeStore),
           Wrap(
             spacing: 14,
             runSpacing: 14,
             children: [
-              _MetricTile(
+              MetricTile(
                 icon: Icons.notifications_none_rounded,
                 label: "Promemoria",
                 value: promemoriaCount.toString(),
                 color: const Color(0xFF7E57C2),
                 onTap: onPromemoriaTap,
               ),
-              _MetricTile(
+              MetricTile(
                 icon: Icons.event_note_rounded,
                 label: "Eventi",
                 value: eventiCount.toString(),
                 color: const Color(0xFF3F51B5),
                 onTap: onEventiTap,
               ),
-              _MetricTile(
+              MetricTile(
                 icon: Icons.groups_2_rounded,
                 label: "Persone",
                 value: "3",
@@ -2535,7 +2470,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 },
               ),
-              _MetricTile(
+              MetricTile(
                 icon: Icons.upcoming_rounded,
                 label: "Eventi globali",
                 value: prossimiGiorniCount.toString(),
@@ -4990,133 +4925,6 @@ class _DashboardCard extends StatelessWidget {
           child: child,
         ),
       ),
-    );
-  }
-}
-
-class _MetricTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-  final VoidCallback? onTap;
-
-  const _MetricTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final tile = ClipRRect(
-      borderRadius: BorderRadius.circular(22),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          width: 132,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [color.withOpacity(0.28), color.withOpacity(0.12)],
-            ),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: color.withOpacity(0.35)),
-            boxShadow: [
-              BoxShadow(
-                color: color.withOpacity(0.30),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-              BoxShadow(
-                color: Colors.black.withOpacity(0.25),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [color.withOpacity(1), color.withOpacity(0.65)],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withOpacity(0.65),
-                      blurRadius: 22,
-                      spreadRadius: 1,
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.35),
-                      blurRadius: 10,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      top: 6,
-                      left: 8,
-                      right: 8,
-                      child: Container(
-                        height: 10,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.white.withOpacity(0.55),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Center(child: Icon(icon, color: Colors.white, size: 26)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.95),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (onTap == null) return tile;
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(22),
-      onTap: onTap,
-      child: tile,
     );
   }
 }
