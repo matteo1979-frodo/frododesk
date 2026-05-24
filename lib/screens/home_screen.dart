@@ -32,6 +32,7 @@ import '../widgets/finance/finance_pressure_summary_card.dart';
 
 import '../widgets/home/home_overview_metrics.dart';
 import '../widgets/shared/mini_action_chip.dart';
+import '../widgets/home/coverage_quick_actions_box.dart';
 
 class HomeScreen extends StatefulWidget {
   final IpsStore ipsStore;
@@ -1326,125 +1327,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCoverageQuickActionsBox(List<CoverageGapDetail> todayDetails) {
-    final futureIssue = _futureCoverageIssueFromTomorrow();
-
-    if (todayDetails.isEmpty && futureIssue == null) {
-      return const SizedBox.shrink();
-    }
-
-    if (todayDetails.isEmpty && futureIssue != null) {
-      final first = futureIssue.details.first;
-
-      final weekdays = [
-        "lunedì",
-        "martedì",
-        "mercoledì",
-        "giovedì",
-        "venerdì",
-        "sabato",
-        "domenica",
-      ];
-
-      final months = [
-        "gennaio",
-        "febbraio",
-        "marzo",
-        "aprile",
-        "maggio",
-        "giugno",
-        "luglio",
-        "agosto",
-        "settembre",
-        "ottobre",
-        "novembre",
-        "dicembre",
-      ];
-
-      final dayLabel =
-          "${weekdays[futureIssue.day.weekday - 1]} ${futureIssue.day.day} ${months[futureIssue.day.month - 1]}";
-
-      return Container(
-        width: double.infinity,
-        margin: const EdgeInsets.only(top: 14),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.white.withOpacity(0.25)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.warning_amber_rounded, color: Colors.orange),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                first.label.contains(":")
-                    ? "Prossimo problema: $dayLabel • ${first.label} • ${first.lines.isNotEmpty ? first.lines.first : "logistica da completare"}"
-                    : "Prossimo problema copertura: Alice scoperta $dayLabel ${_formatTime(first.start)}–${_formatTime(first.end)}",
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.85),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () => _openCalendarForDay(futureIssue.day),
-              child: const Text("VAI"),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final first = todayDetails.first;
-
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(top: 14),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE57373).withOpacity(0.16),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE57373).withOpacity(0.45)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Problema copertura",
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w900,
-              fontSize: 15,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            todayDetails.length == 1
-                ? "1 buco oggi: ${_formatTime(first.start)}–${_formatTime(first.end)}"
-                : "${todayDetails.length} buchi oggi. Primo: ${_formatTime(first.start)}–${_formatTime(first.end)}",
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.88),
-              fontWeight: FontWeight.w600,
-              height: 1.25,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: _openTodayCoverageActions,
-            icon: const Icon(Icons.bolt_rounded),
-            label: const Text("RISOLVI"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSectionTitle(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -2332,7 +2214,33 @@ class _HomeScreenState extends State<HomeScreen> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                        _buildCoverageQuickActionsBox(todayDetails),
+                        CoverageQuickActionsBox(
+                          todayDetails: todayDetails,
+                          onResolveTap: _openTodayCoverageActions,
+                          onFutureTap: () {
+                            final futureIssue =
+                                _futureCoverageIssueFromTomorrow();
+
+                            if (futureIssue != null) {
+                              _openCalendarForDay(futureIssue.day);
+                            }
+                          },
+                          futureProblemText: () {
+                            final futureIssue =
+                                _futureCoverageIssueFromTomorrow();
+
+                            if (todayDetails.isNotEmpty ||
+                                futureIssue == null) {
+                              return null;
+                            }
+
+                            final first = futureIssue.details.first;
+
+                            return first.label.contains(":")
+                                ? "Prossimo problema: ${first.label}"
+                                : "Prossimo problema copertura: Alice scoperta ${_formatTime(first.start)}–${_formatTime(first.end)}";
+                          }(),
+                        ),
                         if (hasIssue && !hasTodayCoverageIssue) ...[
                           const SizedBox(height: 10),
                           ElevatedButton(
