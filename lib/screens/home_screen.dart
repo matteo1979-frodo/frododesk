@@ -18,7 +18,7 @@ import 'dashboard.dart';
 import 'salute_screen.dart';
 
 import '../logic/coverage_engine.dart';
-import '../logic/day_settings_store.dart';
+
 import 'statistiche_screen.dart';
 import '../widgets/home_people_panel.dart';
 import '../stores/finance_store.dart';
@@ -32,7 +32,8 @@ import '../widgets/finance/finance_pressure_summary_card.dart';
 
 import '../widgets/home/home_overview_metrics.dart';
 import '../widgets/shared/mini_action_chip.dart';
-import '../widgets/home/coverage_quick_actions_box.dart';
+
+import '../widgets/home/system_status_header.dart';
 
 class HomeScreen extends StatefulWidget {
   final IpsStore ipsStore;
@@ -52,7 +53,6 @@ class _HomeScreenState extends State<HomeScreen> {
   CoreStore get coreStore => widget.coreStore;
   SettingsStore get settingsStore => coreStore.settingsStore;
   IpsStore get ipsStore => widget.ipsStore;
-  CoverageEngine get _engine => coreStore.coverageEngine;
 
   final FinanceStore financeStore = FinanceStore();
 
@@ -72,47 +72,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  String _actionLabelFromModule(snap.IpsModule module) {
-    switch (module) {
-      case snap.IpsModule.coverage:
-        return "RISOLVI";
-      case snap.IpsModule.finance:
-        return "Controlla finanze";
-      case snap.IpsModule.health:
-        return "Apri salute";
-      case snap.IpsModule.auto:
-        return "Controlla auto";
-      default:
-        return "Apri dettaglio";
-    }
-  }
-
   String _formatTime(TimeOfDay time) {
     final hh = time.hour.toString().padLeft(2, '0');
     final mm = time.minute.toString().padLeft(2, '0');
     return "$hh:$mm";
-  }
-
-  bool _isSchoolInGapLabel(dynamic label) {
-    final l = label.toString().toLowerCase();
-
-    return l.contains("ingresso") ||
-        l.contains("accompagnamento") ||
-        l.contains("scuola");
-  }
-
-  bool _isSchoolOutGapLabel(dynamic label) {
-    final l = label.toString().toLowerCase();
-
-    return l.contains("uscita") ||
-        l.contains("ritiro") ||
-        l.contains("rientro");
-  }
-
-  bool _isLunchGapLabel(dynamic label) {
-    final l = label.toString().toLowerCase();
-
-    return l.contains("pranzo") || l.contains("uscita anticipata");
   }
 
   List<CoverageGapDetail> _todayCoverageDetails() {
@@ -209,10 +172,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  _HomeCoverageIssue? _relevantCoverageIssueFromNow() {
-    return _todayCoverageIssueFromNow() ?? _futureCoverageIssueFromTomorrow();
-  }
-
   _HomeCoverageIssue? _todayCoverageIssueFromNow() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -236,203 +195,16 @@ class _HomeScreenState extends State<HomeScreen> {
     return _HomeCoverageIssue(day: today, details: details);
   }
 
-  _HomeCoverageIssue? _futureCoverageIssueFromTomorrow() {
+  _HomeCoverageIssue? _nextCoverageIssueIn30Days() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    bool supportCoversRange({
-      required DateTime day,
-      required TimeOfDay start,
-      required TimeOfDay end,
-    }) {
-      final d0 = DateTime(day.year, day.month, day.day);
-
-      final rangeStart = DateTime(
-        d0.year,
-        d0.month,
-        d0.day,
-        start.hour,
-        start.minute,
-      );
-
-      final rangeEnd = DateTime(
-        d0.year,
-        d0.month,
-        d0.day,
-        end.hour,
-        end.minute,
-      );
-
-      for (final person in coreStore.supportNetworkStore.people) {
-        if (!person.enabled) continue;
-
-        final enabledForDay = coreStore.daySettingsStore
-            .isSupportPersonEnabledForDay(d0, person.id);
-
-        if (!enabledForDay) continue;
-
-        final supportStart = DateTime(
-          d0.year,
-          d0.month,
-          d0.day,
-          person.start.hour,
-          person.start.minute,
-        );
-
-        final supportEnd = DateTime(
-          d0.year,
-          d0.month,
-          d0.day,
-          person.end.hour,
-          person.end.minute,
-        );
-
-        final coversFullRange =
-            !supportStart.isAfter(rangeStart) && !supportEnd.isBefore(rangeEnd);
-
-        if (coversFullRange) return true;
-      }
-
-      return false;
-    }
-
     for (int i = 1; i <= 30; i++) {
       final day = today.add(Duration(days: i));
-      final d0 = DateTime(day.year, day.month, day.day);
+      final details = ipsStore.coverage.realGapDetailsForDay(day);
 
-      final uscitaAt = coreStore.daySettingsStore.uscitaAnticipataTimeForDay(
-        d0,
-      );
-
-      final uscita13Eff = uscitaAt != null;
-
-      final cfg = coreStore.schoolStore
-          .activePeriodForDay(d0)
-          ?.weekConfig
-          .forWeekday(d0.weekday);
-
-      final schoolStart = TimeOfDay(
-        hour: (cfg?.entryMinutes ?? 505) ~/ 60,
-        minute: (cfg?.entryMinutes ?? 505) % 60,
-      );
-
-      final ingressoInizio = TimeOfDay(
-        hour: ((schoolStart.hour * 60 + schoolStart.minute - 20) ~/ 60) % 24,
-        minute: (schoolStart.hour * 60 + schoolStart.minute - 20) % 60,
-      );
-
-      final schoolOutStart =
-          coreStore.daySettingsStore.schoolOutStartForDay(d0) ??
-          TimeOfDay(
-            hour: (cfg?.exitRealMinutes ?? 985) ~/ 60,
-            minute: (cfg?.exitRealMinutes ?? 985) % 60,
-          );
-
-      final schoolOutEnd =
-          coreStore.daySettingsStore.schoolOutEndForDay(d0) ??
-          TimeOfDay(
-            hour: (cfg?.returnHomeMinutes ?? 1035) ~/ 60,
-            minute: (cfg?.returnHomeMinutes ?? 1035) % 60,
-          );
-
-      final savedSchoolInCover = coreStore.daySettingsStore.schoolInCoverForDay(
-        d0,
-      );
-
-      final savedSchoolOutCover = coreStore.daySettingsStore
-          .schoolOutCoverForDay(d0);
-
-      final savedLunchCover = coreStore.daySettingsStore.lunchCoverForDay(d0);
-
-      final supportCoversIn = supportCoversRange(
-        day: d0,
-        start: ingressoInizio,
-        end: schoolStart,
-      );
-
-      final supportCoversOut = supportCoversRange(
-        day: d0,
-        start: schoolOutStart,
-        end: schoolOutEnd,
-      );
-
-      final supportCoversLunch =
-          uscitaAt != null &&
-          supportCoversRange(
-            day: d0,
-            start: uscitaAt,
-            end: _engine.sandraPranzoEnd,
-          );
-
-      final schoolInCover = savedSchoolInCover != SchoolCoverChoice.none
-          ? savedSchoolInCover
-          : supportCoversIn
-          ? SchoolCoverChoice.altro
-          : SchoolCoverChoice.none;
-
-      final schoolOutCover = savedSchoolOutCover != SchoolCoverChoice.none
-          ? savedSchoolOutCover
-          : supportCoversOut
-          ? SchoolCoverChoice.altro
-          : SchoolCoverChoice.none;
-
-      final lunchCover = savedLunchCover != SchoolCoverChoice.none
-          ? savedLunchCover
-          : supportCoversLunch
-          ? SchoolCoverChoice.altro
-          : SchoolCoverChoice.none;
-
-      final analysis = _engine.analyzeDay(
-        day: d0,
-        uscita13: uscita13Eff,
-        sandraAvailable:
-            (coreStore.daySettingsStore.sandraMattinaForDay(d0) ?? false) ||
-            (coreStore.daySettingsStore.sandraPranzoForDay(d0) ?? false) ||
-            (coreStore.daySettingsStore.sandraSeraForDay(d0) ?? false),
-        overrides: coreStore.overrideStore.getEffectiveForDay(
-          day: d0,
-          ferieStore: coreStore.feriePeriodStore,
-        ),
-        ferieStore: coreStore.feriePeriodStore,
-        schoolInCover: schoolInCover,
-        schoolOutCover: schoolOutCover,
-        schoolOutStart: schoolOutStart,
-        schoolOutEnd: schoolOutEnd,
-        lunchCover: lunchCover,
-        uscitaAnticipataAt: uscitaAt,
-      );
-
-      final filteredDetails = analysis.details.where((d) {
-        final label = d.label;
-
-        if (schoolInCover != SchoolCoverChoice.none &&
-            _isSchoolInGapLabel(label)) {
-          return false;
-        }
-
-        if (!uscita13Eff &&
-            schoolOutCover != SchoolCoverChoice.none &&
-            _isSchoolOutGapLabel(label)) {
-          return false;
-        }
-
-        if (uscita13Eff &&
-            lunchCover != SchoolCoverChoice.none &&
-            _isLunchGapLabel(label)) {
-          return false;
-        }
-
-        return true;
-      }).toList();
-
-      if (filteredDetails.isNotEmpty) {
-        filteredDetails.sort((a, b) {
-          final aStart = a.start.hour * 60 + a.start.minute;
-          final bStart = b.start.hour * 60 + b.start.minute;
-          return aStart.compareTo(bStart);
-        });
-
-        return _HomeCoverageIssue(day: d0, details: filteredDetails);
+      if (details.isNotEmpty) {
+        return _HomeCoverageIssue(day: day, details: details);
       }
     }
 
@@ -454,38 +226,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     ipsStore.refresh();
     if (mounted) setState(() {});
-  }
-
-  Future<void> _openCalendarForDay(DateTime day) async {
-    final cleanDay = DateTime(day.year, day.month, day.day);
-
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => CalendarioScreenStepAStabile(
-          coreStore: coreStore,
-          initialSelectedDay: cleanDay,
-        ),
-      ),
-    );
-
-    ipsStore.refresh();
-    if (mounted) setState(() {});
-  }
-
-  DateTime _firstCoverageProblemDay() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    for (int i = 0; i < 30; i++) {
-      final day = today.add(Duration(days: i));
-      final details = ipsStore.coverage.realGapDetailsForDay(day);
-
-      if (details.isNotEmpty) {
-        return day;
-      }
-    }
-
-    return today;
   }
 
   List<Promemoria> _buildTodayPromemoria() {
@@ -1234,94 +974,6 @@ class _HomeScreenState extends State<HomeScreen> {
               label: const Text("Vai al calendario"),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _openTodayCoverageActions() async {
-    final issue = _relevantCoverageIssueFromNow();
-    final details = issue?.details ?? [];
-
-    await _showHomeDialog(
-      icon: Icons.front_hand_rounded,
-      color: const Color(0xFFE57373),
-      title: "Problema copertura",
-      subtitle: details.isEmpty
-          ? "Nessun buco attivo o futuro da ora in poi"
-          : "${details.length} problema/i oggi da capire",
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (details.isEmpty)
-            _buildDialogEmptyState(
-              icon: Icons.verified_rounded,
-              title: "Tutto coperto",
-              subtitle: "Da ora in poi non risultano buchi per Alice.",
-            )
-          else
-            ...details.asMap().entries.map((entry) {
-              final index = entry.key + 1;
-              final gap = entry.value;
-
-              final whyText = gap.lines.isNotEmpty
-                  ? gap.lines.join("\n")
-                  : "Perché: il motore non trova nessun adulto o supporto che copra completamente questo intervallo.";
-
-              return Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.72),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withOpacity(0.42)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Problema $index oggi",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      "${_formatTime(gap.start)}–${_formatTime(gap.end)}",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 18,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Alice risulta scoperta in questa fascia.",
-                      style: TextStyle(
-                        color: Colors.black.withOpacity(0.72),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      whyText,
-                      style: TextStyle(
-                        color: Colors.black.withOpacity(0.62),
-                        fontWeight: FontWeight.w600,
-                        height: 1.25,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: _openCalendarToday,
-                      icon: const Icon(Icons.calendar_month_rounded),
-                      label: const Text("Vai al problema"),
-                    ),
-                  ],
-                ),
-              );
-            }),
         ],
       ),
     );
@@ -2122,12 +1774,8 @@ class _HomeScreenState extends State<HomeScreen> {
         final todayDetails = todayIssue?.details ?? [];
 
         final bool hasTodayCoverageIssue = todayIssue != null;
-        final bool hasIpsIssue = false;
-        final bool hasIssue = hasTodayCoverageIssue;
 
-        final color = hasTodayCoverageIssue
-            ? const Color(0xFFE57373)
-            : const Color(0xFF8BC34A);
+        final nextIssue = _nextCoverageIssueIn30Days();
 
         final stateText = hasTodayCoverageIssue
             ? "✋ Problema oggi"
@@ -2141,161 +1789,38 @@ class _HomeScreenState extends State<HomeScreen> {
 
         if (hasTodayCoverageIssue) {
           final first = todayDetails.first;
+
           systemDetail =
               "Copertura: Alice scoperta oggi ${_formatTime(first.start)}–${_formatTime(first.end)}";
+        } else if (nextIssue != null) {
+          final first = nextIssue.details.first;
+
+          final weekday = [
+            "Lun",
+            "Mar",
+            "Mer",
+            "Gio",
+            "Ven",
+            "Sab",
+            "Dom",
+          ][nextIssue.day.weekday - 1];
+
+          systemDetail =
+              "Prossimo problema: $weekday ${nextIssue.day.day}/${nextIssue.day.month} • ${_formatTime(first.start)}–${_formatTime(first.end)}";
         } else {
-          systemDetail = "Nessuna criticità oggi";
+          systemDetail = "Nessuna criticità prevista";
         }
 
         return _DashboardCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 58,
-                    height: 58,
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.18),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withOpacity(0.25)),
-                    ),
-                    child: Center(
-                      child: Text(
-                        hasTodayCoverageIssue
-                            ? "✋"
-                            : ips.level == snap.IpsLevel.green
-                            ? "😌"
-                            : ips.level == snap.IpsLevel.yellow
-                            ? "😐"
-                            : "😨",
-                        style: const TextStyle(fontSize: 30),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          stateText,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          mainSentence,
-                          style: TextStyle(
-                            fontSize: 16,
-                            height: 1.3,
-                            color: const Color(0xFF8BC34A), // verde FrodoDesk
-                            fontWeight: FontWeight.w800,
-                            shadows: [
-                              Shadow(
-                                color: const Color(0xFF8BC34A).withOpacity(0.6),
-                                blurRadius: 12,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        if (hasTodayCoverageIssue || hasIpsIssue)
-                          Text(
-                            systemDetail,
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              height: 1.25,
-                              color: Colors.white.withOpacity(0.75),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        CoverageQuickActionsBox(
-                          todayDetails: todayDetails,
-                          onResolveTap: _openTodayCoverageActions,
-                          onFutureTap: () {
-                            final futureIssue =
-                                _futureCoverageIssueFromTomorrow();
-
-                            if (futureIssue != null) {
-                              _openCalendarForDay(futureIssue.day);
-                            }
-                          },
-                          futureProblemText: () {
-                            final futureIssue =
-                                _futureCoverageIssueFromTomorrow();
-
-                            if (todayDetails.isNotEmpty ||
-                                futureIssue == null) {
-                              return null;
-                            }
-
-                            final first = futureIssue.details.first;
-
-                            return first.label.contains(":")
-                                ? "Prossimo problema: ${first.label}"
-                                : "Prossimo problema copertura: Alice scoperta ${_formatTime(first.start)}–${_formatTime(first.end)}";
-                          }(),
-                        ),
-                        if (hasIssue && !hasTodayCoverageIssue) ...[
-                          const SizedBox(height: 10),
-                          ElevatedButton(
-                            onPressed: () {
-                              switch (ips.dominantModule) {
-                                case snap.IpsModule.coverage:
-                                  final targetDay = _firstCoverageProblemDay();
-
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          CalendarioScreenStepAStabile(
-                                            coreStore: coreStore,
-                                            initialSelectedDay: targetDay,
-                                          ),
-                                    ),
-                                  );
-                                  break;
-
-                                case snap.IpsModule.finance:
-                                  break;
-
-                                case snap.IpsModule.health:
-                                  break;
-
-                                case snap.IpsModule.auto:
-                                  break;
-
-                                default:
-                                  break;
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            child: Text(
-                              _actionLabelFromModule(ips.dominantModule),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
+              SystemStatusHeader(
+                hasTodayCoverageIssue: hasTodayCoverageIssue,
+                ipsLevel: ips.level,
+                stateText: stateText,
+                mainSentence: mainSentence,
+                systemDetail: systemDetail,
               ),
               const SizedBox(height: 18),
               Wrap(
@@ -3350,103 +2875,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           );
         },
-      ),
-    );
-  }
-
-  Future<void> _showSingleFundPopup(FinanceFund fund) async {
-    final controller = TextEditingController(
-      text: fund.amount.toStringAsFixed(2),
-    );
-
-    await _showHomeDialog(
-      icon: Icons.savings_rounded,
-      color: const Color(0xFF1E88E5),
-      title: fund.name,
-      subtitle: "Dettaglio fondo",
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildFinanceInfoCard(
-            title: "Importo disponibile",
-            value: "€${fund.amount.toStringAsFixed(0)}",
-            icon: Icons.account_balance_wallet_rounded,
-            color: const Color(0xFF1E88E5),
-          ),
-
-          const SizedBox(height: 14),
-
-          TextField(
-            controller: controller,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: "Nuovo importo fondo",
-              hintText: "Es. 2500",
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.82),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(18),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 14),
-
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () async {
-                final raw = controller.text.trim().replaceAll(',', '.');
-
-                final value = double.tryParse(raw);
-
-                if (value == null) {
-                  return;
-                }
-
-                await financeStore.updateFundAmount(
-                  fundId: fund.id,
-                  newAmount: value,
-                );
-
-                if (mounted) {
-                  setState(() {});
-                }
-
-                Navigator.of(context).pop();
-
-                await _showSingleFundPopup(
-                  financeStore.funds.firstWhere((f) => f.id == fund.id),
-                );
-              },
-              icon: const Icon(Icons.save_rounded),
-              label: const Text("Salva fondo"),
-            ),
-          ),
-
-          const SizedBox(height: 14),
-
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: fund.protected
-                  ? const Color(0xFFE53935).withOpacity(0.12)
-                  : const Color(0xFF43A047).withOpacity(0.12),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Text(
-              fund.protected
-                  ? "Questo fondo è protetto: rappresenta una sicurezza familiare."
-                  : "Questo fondo è utilizzabile per spese previste o dedicate.",
-              style: TextStyle(
-                color: Colors.black.withOpacity(0.76),
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
