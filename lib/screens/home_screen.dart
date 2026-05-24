@@ -29,7 +29,9 @@ import 'package:intl/intl.dart';
 import '../widgets/finance/finance_year_dashboard.dart';
 import '../widgets/finance/finance_month_detail_dialog.dart';
 import '../widgets/finance/finance_pressure_summary_card.dart';
-import '../widgets/shared/metric_tile.dart';
+
+import '../widgets/home/home_overview_metrics.dart';
+import '../widgets/shared/mini_action_chip.dart';
 
 class HomeScreen extends StatefulWidget {
   final IpsStore ipsStore;
@@ -2392,12 +2394,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 spacing: 12,
                 runSpacing: 12,
                 children: [
-                  _MiniActionChip(
+                  MiniActionChip(
                     icon: Icons.calendar_today_rounded,
                     label: "Apri calendario",
                     onTap: _openCalendarToday,
                   ),
-                  _MiniActionChip(
+                  MiniActionChip(
                     icon: Icons.shield_rounded,
                     label: "Dettaglio copertura",
                     onTap: () {
@@ -2440,44 +2442,19 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 18),
           FinancePressureSummaryCard(financeStore: financeStore),
-          Wrap(
-            spacing: 14,
-            runSpacing: 14,
-            children: [
-              MetricTile(
-                icon: Icons.notifications_none_rounded,
-                label: "Promemoria",
-                value: promemoriaCount.toString(),
-                color: const Color(0xFF7E57C2),
-                onTap: onPromemoriaTap,
-              ),
-              MetricTile(
-                icon: Icons.event_note_rounded,
-                label: "Eventi",
-                value: eventiCount.toString(),
-                color: const Color(0xFF3F51B5),
-                onTap: onEventiTap,
-              ),
-              MetricTile(
-                icon: Icons.groups_2_rounded,
-                label: "Persone",
-                value: "3",
-                color: const Color(0xFF26A69A),
-                onTap: () {
-                  showDialog<void>(
-                    context: context,
-                    builder: (_) => HomePeoplePanel(coreStore: coreStore),
-                  );
-                },
-              ),
-              MetricTile(
-                icon: Icons.upcoming_rounded,
-                label: "Eventi globali",
-                value: prossimiGiorniCount.toString(),
-                color: const Color(0xFFEC407A),
-                onTap: onNext7DaysTap,
-              ),
-            ],
+          HomeOverviewMetrics(
+            promemoriaCount: promemoriaCount,
+            eventiCount: eventiCount,
+            prossimiGiorniCount: prossimiGiorniCount,
+            onPromemoriaTap: onPromemoriaTap,
+            onEventiTap: onEventiTap,
+            onPeopleTap: () {
+              showDialog<void>(
+                context: context,
+                builder: (_) => HomePeoplePanel(coreStore: coreStore),
+              );
+            },
+            onNext7DaysTap: onNext7DaysTap,
           ),
         ],
       ),
@@ -4924,34 +4901,6 @@ class _DashboardCard extends StatelessWidget {
           ),
           child: child,
         ),
-      ),
-    );
-  }
-}
-
-class _MiniActionChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _MiniActionChip({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: onTap,
-      icon: Icon(icon, size: 18, color: Colors.white),
-      label: Text(label),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.white,
-        side: BorderSide(color: Colors.white.withOpacity(0.34)),
-        backgroundColor: Colors.white.withOpacity(0.08),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }
