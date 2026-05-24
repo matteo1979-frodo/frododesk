@@ -35,6 +35,9 @@ import '../widgets/shared/mini_action_chip.dart';
 
 import '../widgets/home/system_status_header.dart';
 import '../widgets/finance/finance_info_card.dart';
+import '../widgets/home/global_event_entry_card.dart';
+import '../widgets/shared/dialog_empty_state.dart';
+import '../widgets/shared/section_title.dart';
 
 class HomeScreen extends StatefulWidget {
   final IpsStore ipsStore;
@@ -765,7 +768,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: _buildGlobalEventEntryCard(
+            child: GlobalEventEntryCard(
               icon: Icons.calendar_month_rounded,
               title: "$year ($count)",
               subtitle: hasEvents
@@ -801,7 +804,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: _buildGlobalEventEntryCard(
+            child: GlobalEventEntryCard(
               icon: Icons.history_rounded,
               title: "$year ($count)",
               subtitle: hasEvents
@@ -858,7 +861,7 @@ class _HomeScreenState extends State<HomeScreen> {
           }
 
           return events.isEmpty
-              ? _buildDialogEmptyState(
+              ? DialogEmptyState(
                   icon: Icons.event_note_rounded,
                   title: "Nessun evento",
                   subtitle: "Non ci sono eventi in questo anno",
@@ -928,7 +931,7 @@ class _HomeScreenState extends State<HomeScreen> {
           }
 
           return events.isEmpty
-              ? _buildDialogEmptyState(
+              ? DialogEmptyState(
                   icon: Icons.event_note_rounded,
                   title: "Nessun evento",
                   subtitle: "Non ci sono eventi in questo mese",
@@ -959,7 +962,7 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (todayEvents.isEmpty)
-            _buildDialogEmptyState(
+            DialogEmptyState(
               icon: Icons.event_note_rounded,
               title: "Nessun evento oggi",
               subtitle: "La giornata è libera 🎉",
@@ -973,59 +976,6 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: _openCalendarToday,
               icon: const Icon(Icons.calendar_month_rounded),
               label: const Text("Vai al calendario"),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionTitle(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontWeight: FontWeight.w800,
-          fontSize: 15,
-          color: Colors.black.withOpacity(0.86),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDialogEmptyState({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 18),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.72),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.45)),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 42, color: Colors.black.withOpacity(0.45)),
-          const SizedBox(height: 10),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Colors.black.withOpacity(0.82),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.black.withOpacity(0.55),
-              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -1366,7 +1316,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required int promemoriaCount,
   }) {
     if (groupedPromemoria.isEmpty && todayEvents.isEmpty) {
-      return _buildDialogEmptyState(
+      return DialogEmptyState(
         icon: Icons.event_available_rounded,
         title: "Nessun evento in programma",
         subtitle: "La tua giornata è libera 🎉",
@@ -1385,7 +1335,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 18),
         if (groupedPromemoria.isNotEmpty) ...[
-          _buildSectionTitle("Da fare oggi"),
+          SectionTitle(text: "Da fare oggi"),
           ...groupedPromemoria.entries.map((entry) {
             final persona = entry.key;
             final list = entry.value;
@@ -1471,7 +1421,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
         if (todayEvents.isNotEmpty) ...[
           if (groupedPromemoria.isNotEmpty) const SizedBox(height: 8),
-          _buildSectionTitle("Succede oggi"),
+          SectionTitle(text: "Succede oggi"),
           ...todayEvents.map(_buildCompactEventTile),
         ],
         const SizedBox(height: 10),
@@ -1501,7 +1451,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        _buildGlobalEventEntryCard(
+        GlobalEventEntryCard(
           icon: Icons.history_rounded,
           title: "Eventi passati",
           subtitle: "Archivio degli anni precedenti",
@@ -1509,7 +1459,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onTap: _showPastYearsPopup,
         ),
         const SizedBox(height: 10),
-        _buildGlobalEventEntryCard(
+        GlobalEventEntryCard(
           icon: Icons.calendar_month_rounded,
           title: "$currentYear",
           subtitle: "Eventi dell’anno corrente",
@@ -1519,7 +1469,7 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
         const SizedBox(height: 10),
-        _buildGlobalEventEntryCard(
+        GlobalEventEntryCard(
           icon: Icons.auto_awesome_motion_rounded,
           title: "Eventi futuri",
           subtitle: "Anni successivi al $currentYear",
@@ -1527,68 +1477,6 @@ class _HomeScreenState extends State<HomeScreen> {
           onTap: _showFutureYearsPopup,
         ),
       ],
-    );
-  }
-
-  Widget _buildGlobalEventEntryCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(18),
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: color.withOpacity(0.28)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.18),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(icon, color: color),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 17,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: Colors.black.withOpacity(0.58),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: Colors.black.withOpacity(0.45),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
