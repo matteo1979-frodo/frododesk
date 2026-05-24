@@ -34,6 +34,7 @@ import '../widgets/home/home_overview_metrics.dart';
 import '../widgets/shared/mini_action_chip.dart';
 
 import '../widgets/home/system_status_header.dart';
+import '../widgets/finance/finance_info_card.dart';
 
 class HomeScreen extends StatefulWidget {
   final IpsStore ipsStore;
@@ -1894,46 +1895,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildFinanceInfoCard({
-    required String title,
-    required String value,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: color.withOpacity(0.28)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: color, size: 26),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: TextStyle(
-              color: Colors.black.withOpacity(0.58),
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.w900,
-              fontSize: 24,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _showFinancePresentPopup() async {
     await _showHomeDialog(
       icon: Icons.today_rounded,
@@ -2072,7 +2033,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         await _showFinanceBalancesPopup();
                         refreshFinancePopup(() {});
                       },
-                      child: _buildFinanceInfoCard(
+                      child: FinanceInfoCard(
                         title: "Saldo totale",
                         value:
                             "€${financeStore.totalBalance().toStringAsFixed(0)}",
@@ -2089,7 +2050,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         await _showFinanceFundsPopup();
                         refreshFinancePopup(() {});
                       },
-                      child: _buildFinanceInfoCard(
+                      child: FinanceInfoCard(
                         title: "Fondi",
                         value:
                             "€${financeStore.totalFunds().toStringAsFixed(0)}",
@@ -2106,7 +2067,7 @@ class _HomeScreenState extends State<HomeScreen> {
               InkWell(
                 borderRadius: BorderRadius.circular(18),
                 onTap: _showFinanceMarginPopup,
-                child: _buildFinanceInfoCard(
+                child: FinanceInfoCard(
                   title: "Margine previsto",
                   value:
                       "€${financeStore.projectedMonthlyMargin().toStringAsFixed(0)}",
@@ -2125,7 +2086,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(18),
                       onTap: _showFinanceIncomePopup,
-                      child: _buildFinanceInfoCard(
+                      child: FinanceInfoCard(
                         icon: Icons.arrow_downward_rounded,
                         title: "Entrate previste",
                         value:
@@ -2139,7 +2100,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(18),
                       onTap: _showFinanceExpensesPopup,
-                      child: _buildFinanceInfoCard(
+                      child: FinanceInfoCard(
                         icon: Icons.arrow_upward_rounded,
                         title: "Uscite previste",
                         value:
@@ -2162,7 +2123,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         await _showFinancePastPopup();
                         refreshFinancePopup(() {});
                       },
-                      child: _buildFinanceInfoCard(
+                      child: FinanceInfoCard(
                         title: "Passato",
                         value:
                             "${pastItems.length} • €${financeStore.totalRecurringAmount(pastItems).toStringAsFixed(0)}",
@@ -2179,7 +2140,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         await _showFinancePresentPopup();
                         refreshFinancePopup(() {});
                       },
-                      child: _buildFinanceInfoCard(
+                      child: FinanceInfoCard(
                         title: "Presente",
                         value:
                             "${presentItems.length} • €${financeStore.totalRecurringAmount(presentItems).toStringAsFixed(0)}",
@@ -2196,7 +2157,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         await _showFinanceFuturePopup();
                         refreshFinancePopup(() {});
                       },
-                      child: _buildFinanceInfoCard(
+                      child: FinanceInfoCard(
                         title: "Futuro",
                         value:
                             "${futureItems.length} • €${financeStore.totalRecurringAmount(futureItems).toStringAsFixed(0)}",
@@ -2947,7 +2908,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     selectedDate = picked;
                   });
                 },
-                child: _buildFinanceInfoCard(
+                child: FinanceInfoCard(
                   title: "Data prevista",
                   value:
                       "${selectedDate.day} ${_getMonthName(selectedDate.month)} ${selectedDate.year}",
@@ -3072,7 +3033,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 14),
 
-          _buildFinanceInfoCard(
+          FinanceInfoCard(
             title: "Importo previsto",
             value: "€${item.expectedAmount.toStringAsFixed(0)}",
             icon: item.isIncome
@@ -3085,7 +3046,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 14),
 
-          _buildFinanceInfoCard(
+          FinanceInfoCard(
             title: "Prossima scadenza",
             value:
                 "${item.nextDueDate.day} ${_getMonthName(item.nextDueDate.month)} ${item.nextDueDate.year}",
@@ -3095,7 +3056,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 14),
 
-          _buildFinanceInfoCard(
+          FinanceInfoCard(
             title: "Ricorrenza",
             value: item.recurringType == FinanceRecurringType.monthly
                 ? "Mensile"
@@ -3114,7 +3075,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 14),
 
-          _buildFinanceInfoCard(
+          FinanceInfoCard(
             title: "Categoria",
             value: item.category == FinanceCategory.salary
                 ? "Stipendio"
@@ -3135,7 +3096,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 14),
 
-          _buildFinanceInfoCard(
+          FinanceInfoCard(
             title: "Conferma manuale",
             value: item.requiresManualConfirmation
                 ? "Richiesta"
@@ -3148,7 +3109,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 14),
 
-          _buildFinanceInfoCard(
+          FinanceInfoCard(
             title: "Obbligatorietà",
             value: item.mandatory ? "Obbligatoria" : "Facoltativa",
             icon: item.mandatory ? Icons.lock_rounded : Icons.lock_open_rounded,
@@ -3159,7 +3120,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 14),
 
-          _buildFinanceInfoCard(
+          FinanceInfoCard(
             title: "Pressione economica",
             value: item.pressureLevel == FinancePressureLevel.low
                 ? "Bassa"
@@ -3178,7 +3139,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 14),
 
-          _buildFinanceInfoCard(
+          FinanceInfoCard(
             title: "Stato reale",
             value: item.confirmed ? "Confermato" : "Previsto",
             icon: item.confirmed
@@ -3192,7 +3153,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 14),
 
           if (item.realAmount != null)
-            _buildFinanceInfoCard(
+            FinanceInfoCard(
               title: "Importo reale",
               value: "€${item.realAmount!.toStringAsFixed(2)}",
               icon: Icons.payments_rounded,
@@ -3201,7 +3162,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 14),
 
-          _buildFinanceInfoCard(
+          FinanceInfoCard(
             title: "Variabilità",
             value: item.variability == FinanceVariability.fixed
                 ? "Fissa"
@@ -3214,7 +3175,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 14),
 
-          _buildFinanceInfoCard(
+          FinanceInfoCard(
             title: "Priorità pagamento",
             value: item.paymentPriority == FinancePaymentPriority.low
                 ? "Bassa"
@@ -3233,7 +3194,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 14),
 
-          _buildFinanceInfoCard(
+          FinanceInfoCard(
             title: "Protezione",
             value: item.protectionLevel == FinanceProtectionLevel.none
                 ? "Nessuna"
@@ -3250,7 +3211,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 14),
 
-          _buildFinanceInfoCard(
+          FinanceInfoCard(
             title: "Stabilità",
             value: item.stability == FinanceStability.stable
                 ? "Stabile"
@@ -3265,7 +3226,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 14),
 
-          _buildFinanceInfoCard(
+          FinanceInfoCard(
             title: "Rischio sospensione",
             value: item.suspensionRisk == FinanceSuspensionRisk.low
                 ? "Basso"
@@ -3459,7 +3420,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     selectedDate = picked;
                   });
                 },
-                child: _buildFinanceInfoCard(
+                child: FinanceInfoCard(
                   title: isIncome
                       ? "Data entrata prevista"
                       : "Data scadenza prevista",
@@ -4012,7 +3973,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildFinanceInfoCard(
+          FinanceInfoCard(
             title: "Entrate previste",
             value: "€${income.toStringAsFixed(0)}",
             icon: Icons.arrow_downward_rounded,
@@ -4021,7 +3982,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 12),
 
-          _buildFinanceInfoCard(
+          FinanceInfoCard(
             title: "Uscite previste",
             value: "€${expenses.toStringAsFixed(0)}",
             icon: Icons.arrow_upward_rounded,
