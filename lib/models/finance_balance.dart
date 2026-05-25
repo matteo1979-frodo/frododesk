@@ -3,9 +3,11 @@ class FinanceBalance {
   final double initialAmount;
   final double currentAmount;
   final DateTime updatedAt;
+  final String balanceId;
 
   const FinanceBalance({
     required this.personId,
+    required this.balanceId,
     required this.initialAmount,
     required this.currentAmount,
     required this.updatedAt,
@@ -22,6 +24,7 @@ class FinanceBalance {
 
   factory FinanceBalance.fromJson(Map<String, dynamic> json) {
     return FinanceBalance(
+      balanceId: json['balanceId'] as String,
       personId: json['personId'] as String,
       initialAmount: (json['initialAmount'] as num).toDouble(),
       currentAmount: (json['currentAmount'] as num).toDouble(),

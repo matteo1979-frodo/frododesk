@@ -1343,3 +1343,361 @@ Fare prima:
 # FRASE DI RIPARTENZA AGGIORNATA
 
 Ripartiamo da FrodoDesk — Dashboard Finanze temporale annuale: mesi Gennaio→Dicembre visibili, stati economici introdotti, popup mese più dashboard. Prossimo passo: refactor sicuro del blocco “Pressione temporale” per stabilizzare la navigazione anni senza perdere popup e logica economica.
+
+---
+
+# 🔄 AGGIORNAMENTO 25 Maggio 2026
+(BLOCCO H — Finanze Reali)
+
+---
+
+# NUOVA FASE UFFICIALE DEL PROGETTO
+
+Decisione ufficiale consolidata:
+
+⚠️ il progetto entra nella fase:
+
+👉 simulazione della stabilità economica familiare reale.
+
+---
+
+# HOME — STATO UFFICIALE
+
+La Home viene considerata:
+
+✔ consolidata strutturalmente.
+
+---
+
+## MODULARIZZAZIONE COMPLETATA
+
+Estratti correttamente:
+
+✔ HomeOverviewMetrics
+✔ MiniActionChip
+✔ SystemStatusHeader
+✔ FinanceInfoCard
+✔ GlobalEventEntryCard
+✔ DialogEmptyState
+✔ SectionTitle
+
+---
+
+## DECISIONE ARCHITETTURALE
+
+STOP modularizzazione aggressiva Home.
+
+Motivo:
+
+Le parti rimaste contengono:
+
+- callback
+- parsing
+- store
+- business logic
+- comportamento reale
+- dialog complessi
+
+Ulteriori estrazioni aumenterebbero il rischio strutturale.
+
+---
+
+# NUOVA PRIORITÀ OPERATIVA
+
+⚠️ NON aprire nuove aree funzionali.
+
+Priorità assoluta:
+
+✔ consolidare Finanze
+✔ costruire pressione economica reale
+✔ costruire simulazione futura reale
+✔ mantenere stabile Calendario durante utilizzo vita reale
+
+---
+
+# BLOCCO H — FINANZE REALI
+
+Stato: AVVIATO UFFICIALMENTE
+
+---
+
+# STATO ATTUALE FINANCESTORE
+
+`FinanceStore` ora possiede:
+
+✔ persone economiche
+✔ saldi
+✔ fondi
+✔ recurring items
+✔ snapshot economici
+✔ proiezioni annuali
+✔ margine previsto
+✔ dashboard temporale
+✔ pressure score iniziale
+✔ supporto owner condivisi
+
+---
+
+# NUOVO CAMBIO CONCETTUALE
+
+Finanze NON deve leggere solo:
+
+- entrate
+- uscite
+- saldo
+
+Deve leggere:
+
+✔ stabilità
+✔ resilienza
+✔ rischio futuro
+✔ pressione reale
+✔ fragilità sistema familiare
+
+---
+
+# PRESSIONE ECONOMICA — NUOVA DEFINIZIONE
+
+La pressione economica NON rappresenta:
+
+❌ soldi rimasti
+
+Rappresenta:
+
+✔ capacità di assorbire imprevisti
+✔ sostenibilità futura
+✔ fragilità del sistema
+✔ resilienza reale
+
+---
+
+# NUOVA DISTINZIONE — PRESSIONE PREVEDIBILE / IMPREVEDIBILE
+
+## PREVEDIBILE
+
+Esempi:
+
+- mutuo
+- bollette
+- assicurazione
+- revisione
+
+Sono:
+
+✔ simulabili
+✔ preparabili
+✔ prevedibili
+
+---
+
+## IMPREVEDIBILE
+
+Esempi:
+
+- dentista
+- fisioterapia
+- guasti
+- visite urgenti
+- spese extra
+
+Misurano:
+
+✔ resilienza reale del sistema familiare.
+
+---
+
+# NUOVA DISTINZIONE — STATICA / DINAMICA
+
+## STATICA
+
+Spese relativamente stabili:
+
+- mutuo
+- rate
+- abbonamenti
+
+## DINAMICA
+
+Spese nate dalla vita reale:
+
+- Sandra
+- mensa Alice
+- sport
+- centro estivo
+- eventi scolastici
+- ripetizioni
+
+La pressione nasce dal comportamento reale della vita.
+
+---
+
+# NUOVO CONCETTO — RESILIENZA
+
+Il sistema NON deve leggere solo:
+
+- saldo
+- margine
+
+Deve leggere:
+
+✔ quanti mesi il sistema può assorbire
+✔ quanto è fragile
+✔ quanto è protetto
+✔ quanto riesce a sopravvivere agli imprevisti
+
+---
+
+# SIMULAZIONE MULTI-MESE
+
+Decisione ufficiale fondamentale:
+
+La pressione economica NON deve leggere solo il mese corrente.
+
+Deve simulare:
+
+✔ 3 mesi
+✔ 6 mesi
+✔ 12 mesi
+
+per capire:
+
+- accumulo pressione
+- rischio futuro
+- conseguenze delle decisioni
+
+---
+
+# ENTITÀ ECONOMICHE VIVE
+
+Nuova direzione strutturale:
+
+Le voci economiche NON devono essere semplici “spese”.
+
+Devono diventare:
+
+👉 entità economiche vive.
+
+Ogni elemento economico deve possedere:
+
+- comportamento
+- prevedibilità
+- variabilità
+- rischio
+- stabilità
+- periodicità
+- protezione
+- collegamenti
+- memoria
+- pressione futura
+
+---
+
+# INSERIMENTO MANUALE OBBLIGATORIO
+
+Decisione IMPORTANTISSIMA:
+
+❌ nessuna base precompilata.
+
+Tutto nasce da inserimento manuale utente.
+
+Flusso ufficiale:
+
+1. utente crea voce economica
+2. sceglie categoria/tipo
+3. il sistema fa domande specifiche
+4. il motore genera il comportamento corretto
+
+---
+
+# ESEMPI CONSOLIDATI
+
+## LUCE
+
+Il sistema dovrà poter leggere:
+
+- quota stimata
+- variabilità
+- fornitore
+- scadenza offerta
+- rinnovo contratto
+
+e generare:
+
+✔ prevenzione economica
+✔ avvisi preventivi
+✔ simulazione futura
+
+---
+
+## SANDRA
+
+Sandra NON è:
+
+❌ spesa fissa
+
+Sandra è:
+
+👉 pressione logistica trasformata in pressione economica.
+
+---
+
+## MENSA ALICE
+
+La mensa NON è totalmente prevedibile.
+
+Dipende da:
+
+- presenza reale Alice
+- gite
+- malattia
+- uscite anticipate
+- eventi scolastici
+
+---
+
+# DIREZIONE OPERATIVA UFFICIALE
+
+NON fare ancora:
+
+❌ IPS economico
+❌ statistiche economiche avanzate
+❌ automazioni pesanti
+❌ mega-refactor
+
+Fare prima:
+
+✔ definizione reale fattori pressione economica
+✔ definizione resilienza
+✔ simulazione multi-mese
+✔ consolidamento motore economico
+✔ mantenimento stabilità calendario reale
+
+---
+
+# STATO REALE ATTUALE
+
+✔ Home consolidata
+✔ Calendario stabile
+✔ PresenceEngine stabile
+✔ Finanze V1 reale attiva
+✔ dashboard economica viva
+✔ recurring items avanzati
+✔ pressure score iniziale presente
+✔ simulazione economica avviata
+
+---
+
+# PROSSIMO PASSO OPERATIVO
+
+NON codice immediato.
+
+Prima:
+
+✔ definizione concetti pressione
+✔ resilienza economica
+✔ comportamento economico reale
+✔ simulazione futura multi-mese
+
+Poi:
+
+👉 evoluzione reale del motore pressione economica.

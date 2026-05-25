@@ -20,6 +20,8 @@ enum FinanceProtectionLevel { none, protected, critical }
 
 enum FinancePaymentOwner { matteo, chiara, shared }
 
+enum FinanceOriginType { manual, contractual, lifeGenerated }
+
 enum FinanceStability { stable, unstable }
 
 enum FinanceSuspensionRisk { low, medium, high, critical }
@@ -46,6 +48,7 @@ class FinanceRecurringItem {
   final FinancePaymentOwner paymentOwner;
   final FinanceStability stability;
   final FinanceSuspensionRisk suspensionRisk;
+  final FinanceOriginType originType;
 
   const FinanceRecurringItem({
     required this.id,
@@ -69,6 +72,7 @@ class FinanceRecurringItem {
     required this.paymentOwner,
     required this.stability,
     required this.suspensionRisk,
+    required this.originType,
   });
 
   FinanceRecurringItem copyWith({
@@ -81,6 +85,8 @@ class FinanceRecurringItem {
     int? customInterval,
     String? customIntervalUnit,
     String? id,
+    FinanceOriginType? originType,
+    FinancePaymentOwner? paymentOwner,
   }) {
     return FinanceRecurringItem(
       id: id ?? this.id,
@@ -103,6 +109,7 @@ class FinanceRecurringItem {
       protectionLevel: protectionLevel,
       stability: stability,
       suspensionRisk: suspensionRisk,
+      originType: originType ?? this.originType,
       paymentOwner: paymentOwner ?? this.paymentOwner,
     );
   }
@@ -130,6 +137,7 @@ class FinanceRecurringItem {
       'paymentOwner': paymentOwner.name,
       'stability': stability.name,
       'suspensionRisk': suspensionRisk.name,
+      'originType': originType.name,
     };
   }
 
@@ -176,6 +184,11 @@ class FinanceRecurringItem {
       suspensionRisk: FinanceSuspensionRisk.values.firstWhere(
         (e) => e.name == json['suspensionRisk'],
       ),
+      originType: json['originType'] == null
+          ? FinanceOriginType.manual
+          : FinanceOriginType.values.firstWhere(
+              (e) => e.name == json['originType'],
+            ),
     );
   }
 }

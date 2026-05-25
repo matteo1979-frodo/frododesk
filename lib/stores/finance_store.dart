@@ -246,6 +246,7 @@ class FinanceStore {
     final old = balances[index];
 
     balances[index] = FinanceBalance(
+      balanceId: old.balanceId,
       personId: old.personId,
       initialAmount: old.initialAmount,
       currentAmount: newAmount,
@@ -303,12 +304,14 @@ class FinanceStore {
       ..clear()
       ..addAll([
         FinanceBalance(
+          balanceId: 'balance_matteo',
           personId: 'matteo',
           initialAmount: 993.32,
           currentAmount: 993.32,
           updatedAt: now,
         ),
         FinanceBalance(
+          balanceId: 'balance_chiara',
           personId: 'chiara',
           initialAmount: 1400,
           currentAmount: 1400,

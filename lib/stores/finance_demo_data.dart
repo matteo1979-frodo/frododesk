@@ -4,12 +4,14 @@ import '../models/finance_recurring_item.dart';
 
 final demoBalances = [
   FinanceBalance(
+    balanceId: 'balance_matteo',
     personId: 'matteo',
     initialAmount: 2500,
     currentAmount: 2100,
     updatedAt: DateTime.now(),
   ),
   FinanceBalance(
+    balanceId: 'balance_chiara',
     personId: 'chiara',
     initialAmount: 1800,
     currentAmount: 1650,
@@ -57,6 +59,7 @@ final demoRecurringItems = [
     paymentOwner: FinancePaymentOwner.matteo,
     stability: FinanceStability.stable,
     suspensionRisk: FinanceSuspensionRisk.low,
+    originType: FinanceOriginType.manual,
   ),
 
   FinanceRecurringItem(
@@ -78,6 +81,7 @@ final demoRecurringItems = [
     paymentOwner: FinancePaymentOwner.chiara,
     stability: FinanceStability.stable,
     suspensionRisk: FinanceSuspensionRisk.low,
+    originType: FinanceOriginType.contractual,
   ),
 
   FinanceRecurringItem(
@@ -99,5 +103,6 @@ final demoRecurringItems = [
     paymentOwner: FinancePaymentOwner.shared,
     stability: FinanceStability.stable,
     suspensionRisk: FinanceSuspensionRisk.low,
+    originType: FinanceOriginType.manual,
   ),
 ];

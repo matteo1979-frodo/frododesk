@@ -875,3 +875,411 @@ con approccio:
 ✔ struttura temporale introdotta  
 
 🟡 navigazione anni ancora instabile
+
+---
+
+# AGGIORNAMENTO STRUTTURALE — MAGGIO 2026
+
+# HOME — CONSOLIDAMENTO COMPLETATO
+
+Decisione ufficiale:
+
+La modularizzazione della Home viene considerata:
+
+✔ sufficientemente consolidata.
+
+---
+
+## COMPLETATO
+
+☑ HomeOverviewMetrics estratto
+
+☑ MiniActionChip estratto
+
+☑ SystemStatusHeader estratto
+
+☑ FinanceInfoCard estratto
+
+☑ GlobalEventEntryCard estratto
+
+☑ DialogEmptyState estratto
+
+☑ SectionTitle estratto
+
+☑ Home alleggerita correttamente
+
+☑ Home trasformata in orchestratore
+
+☑ Ripristino corretto “Prossimo problema”
+
+☑ zero errori rossi
+
+☑ tag Git stabilità creato
+
+---
+
+## DECISIONE ARCHITETTURALE
+
+STOP modularizzazione aggressiva Home.
+
+Motivo:
+
+Le parti rimaste NON sono UI pura.
+
+Contengono:
+
+- callback
+- store
+- parsing
+- business logic
+- dialog complessi
+- comportamento reale
+- gestione eventi
+- stato
+
+Ulteriori estrazioni aumenterebbero il rischio.
+
+---
+
+# NUOVA PRIORITÀ UFFICIALE
+
+⚠️ NON aprire nuove aree funzionali.
+
+Priorità assoluta:
+
+➡️ consolidamento modulo Finanze
+➡️ costruzione pressione economica reale
+➡️ simulazione futura reale
+➡️ mantenimento stabilità calendario vita reale
+
+---
+
+# BLOCCO H — FINANZE REALI
+
+Stato: AVVIATO UFFICIALMENTE
+
+---
+
+## SIGNIFICATO
+
+Finanze NON deve evolvere verso:
+
+❌ semplice contabilità
+❌ semplice tracker spese
+❌ semplice saldo mensile
+
+Finanze deve diventare:
+
+👉 simulazione della stabilità economica familiare.
+
+---
+
+# NUOVI CONCETTI UFFICIALI
+
+## PRESSIONE ECONOMICA
+
+La pressione economica NON rappresenta:
+
+❌ soldi rimasti
+
+Rappresenta:
+
+✔ fragilità sistema
+✔ resilienza
+✔ capacità di assorbire imprevisti
+✔ sostenibilità futura
+
+---
+
+## PRESSIONE PREVEDIBILE
+
+Esempi:
+
+- mutuo
+- bollette
+- assicurazione
+- revisione
+
+Sono:
+
+✔ prevedibili
+✔ simulabili
+✔ preparabili
+
+---
+
+## PRESSIONE IMPREVEDIBILE
+
+Esempi:
+
+- dentista
+- fisioterapia
+- guasti
+- visite urgenti
+- spese extra
+
+Misurano:
+
+✔ resilienza reale
+
+---
+
+## PRESSIONE STATICA vs DINAMICA
+
+### STATICA
+
+- rate
+- mutuo
+- abbonamenti
+
+### DINAMICA
+
+- Sandra
+- mensa Alice
+- sport
+- centro estivo
+- eventi scolastici
+
+La pressione nasce dal comportamento reale della vita.
+
+---
+
+# RESILIENZA ECONOMICA
+
+Nuovo concetto ufficiale:
+
+NON conta solo:
+
+- saldo
+- margine
+
+Conta:
+
+✔ quanti mesi il sistema può assorbire
+✔ quanto è fragile
+✔ quanto è protetto
+✔ quanto riesce a sopravvivere agli imprevisti
+
+---
+
+# SIMULAZIONE FUTURA MULTI-MESE
+
+Decisione ufficiale:
+
+La pressione economica NON deve leggere solo il mese corrente.
+
+Deve simulare:
+
+✔ 3 mesi
+✔ 6 mesi
+✔ 12 mesi
+
+per leggere:
+
+- accumulo pressione
+- rischio futuro
+- conseguenze delle decisioni
+
+---
+
+# ENTITÀ ECONOMICHE VIVE
+
+Nuova direzione ufficiale:
+
+Le voci economiche NON devono essere semplici spese.
+
+Devono diventare:
+
+👉 entità economiche vive.
+
+Ogni elemento economico deve possedere:
+
+- comportamento
+- variabilità
+- prevedibilità
+- rischio
+- stabilità
+- periodicità
+- memoria
+- protezione
+- pressione futura
+
+---
+
+# INSERIMENTO MANUALE OBBLIGATORIO
+
+Decisione strutturale IMPORTANTISSIMA:
+
+❌ nessuna base precompilata.
+
+Tutto nasce da inserimento manuale utente.
+
+Flusso ufficiale:
+
+1. utente crea voce economica
+2. sceglie categoria/tipo
+3. il sistema fa domande specifiche
+4. il motore genera il comportamento corretto
+
+---
+
+# ESEMPI UFFICIALI
+
+## LUCE
+
+Il sistema dovrà poter leggere:
+
+- quota stimata
+- variabilità
+- fornitore
+- scadenza offerta
+- rinnovo contratto
+
+e generare:
+
+✔ prevenzione economica
+✔ avvisi preventivi
+✔ simulazione futura
+
+---
+
+## SANDRA
+
+Sandra NON è:
+
+❌ spesa fissa
+
+Sandra è:
+
+👉 pressione logistica trasformata in pressione economica.
+
+---
+
+## MENSA ALICE
+
+La mensa NON è totalmente prevedibile.
+
+Dipende da:
+
+- presenza reale Alice
+- gite
+- malattia
+- uscite anticipate
+- eventi scolastici
+
+---
+
+# ROADMAP BLOCCO H
+
+☑ FinanceStore reale esistente
+
+☑ recurring items avanzati
+
+☑ fondi
+
+☑ proiezioni annuali
+
+☑ pressure score iniziale
+
+☑ dashboard temporale
+
+☑ snapshot economici
+
+☑ owner condivisi
+
+☑ modularizzazione Home consolidata
+
+---
+
+## H1 — Definizione pressione reale
+
+🟡 IN CORSO
+
+⬜ fattori pressione
+
+⬜ resilienza
+
+⬜ distribuzione pressione
+
+⬜ assorbimento imprevisti
+
+⬜ fragilità sistema
+
+⬜ rischio futuro
+
+⬜ simulazione multi-mese
+
+---
+
+## H2 — Entità economiche vive
+
+⬜ sistema “aggiungi elemento economico”
+
+⬜ popup dinamici per categoria
+
+⬜ comportamento economico per tipo voce
+
+⬜ collegamento fondi
+
+⬜ variabilità reale
+
+⬜ prevenzione rinnovi
+
+---
+
+## H3 — Simulazione futura reale
+
+⬜ simulazione 3/6/12 mesi
+
+⬜ lettura mesi critici
+
+⬜ accumulo pressione
+
+⬜ rischio collasso margine
+
+⬜ rischio fondi insufficienti
+
+---
+
+## H4 — Collegamento vita reale ↔ finanze
+
+⬜ Sandra dinamica
+
+⬜ mensa dinamica
+
+⬜ eventi Alice → pressione economica
+
+⬜ ferie → pressione
+
+⬜ scuola → pressione
+
+⬜ sport/corsi → pressione
+
+---
+
+## H5 — IPS ECONOMICO
+
+⬜ pressione economica globale
+
+⬜ rischio economico familiare
+
+⬜ resilienza economica
+
+⬜ collegamento IPS generale
+
+---
+
+# DIREZIONE OPERATIVA IMMEDIATA
+
+⚠️ NON scrivere codice subito.
+
+Prima:
+
+✔ definizione concetti
+✔ definizione pressione
+✔ definizione resilienza
+✔ definizione comportamento economico reale
+
+Poi:
+
+➡️ implementazione motore.

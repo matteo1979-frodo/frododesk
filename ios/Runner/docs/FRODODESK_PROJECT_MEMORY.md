@@ -1879,3 +1879,319 @@ Ordine corretto:
 ## FRASE DI RIPARTENZA UFFICIALE
 
 Ripartiamo da FrodoDesk — Finanze V1 visiva funzionante: card Home attiva, popup navigabili, ricorrenze economiche vive ancora su dati demo. Prossimo passo: sostituire i demo con dati reali Finanze partendo dai saldi Matteo/Chiara, senza toccare IPS, Statistiche o Spese.
+
+---
+
+# 🔄 AGGIORNAMENTO 25 Maggio 2026
+
+# 💰 FINANZE REALI — CAMBIO DIREZIONE STRUTTURALE
+
+Il progetto entra ufficialmente nella nuova fase:
+
+👉 simulazione della stabilità economica familiare reale.
+
+---
+
+# 🧠 NUOVA DECISIONE UFFICIALE
+
+Finanze NON deve diventare:
+
+❌ semplice contabilità  
+❌ tracker spese  
+❌ Excel evoluto  
+❌ home banking  
+
+Finanze deve diventare:
+
+✔ simulatore di stabilità familiare  
+✔ lettore di pressione economica  
+✔ motore di resilienza  
+✔ sistema preventivo futuro  
+
+---
+
+# 🔥 NUOVO CONCETTO — PRESSIONE ECONOMICA
+
+La pressione economica NON rappresenta:
+
+❌ “soldi rimasti”
+
+Rappresenta:
+
+✔ fragilità del sistema  
+✔ rischio futuro  
+✔ capacità di assorbire imprevisti  
+✔ sostenibilità reale  
+✔ resilienza familiare  
+
+---
+
+# 🔥 NUOVA DISTINZIONE — PRESSIONE PREVEDIBILE / IMPREVEDIBILE
+
+## PREVEDIBILE
+
+Esempi:
+
+- mutuo
+- bollette
+- assicurazione
+- revisione
+- mensa base
+
+Sono:
+
+✔ simulabili  
+✔ preparabili  
+✔ prevedibili  
+
+---
+
+## IMPREVEDIBILE
+
+Esempi:
+
+- dentista
+- fisioterapia
+- guasti
+- visite urgenti
+- spese extra
+
+Queste misurano:
+
+✔ resilienza reale del sistema familiare.
+
+---
+
+# 🔥 NUOVA DISTINZIONE — STATICA / DINAMICA
+
+## STATICA
+
+Spese relativamente stabili:
+
+- mutuo
+- rate
+- abbonamenti
+
+## DINAMICA
+
+Spese nate dalla vita reale:
+
+- Sandra
+- mensa Alice
+- sport
+- centro estivo
+- ripetizioni
+- eventi scolastici
+
+La pressione nasce dal comportamento reale della vita.
+
+---
+
+# 🧠 NUOVO CONCETTO — RESILIENZA
+
+Il sistema NON deve leggere solo:
+
+- saldo
+- margine
+
+Deve leggere:
+
+✔ quanti mesi il sistema può assorbire  
+✔ quanto è fragile  
+✔ quanto è protetto  
+✔ quanto riesce a sopravvivere agli imprevisti  
+
+---
+
+# 🔮 SIMULAZIONE MULTI-MESE
+
+Decisione ufficiale fondamentale:
+
+La pressione economica NON deve leggere solo il mese corrente.
+
+Deve simulare:
+
+✔ 3 mesi  
+✔ 6 mesi  
+✔ 12 mesi  
+
+per capire:
+
+- accumulo pressione
+- rischio futuro
+- conseguenze delle decisioni
+
+Esempio:
+
+👉 una spesa oggi può creare pressione reale fra 8 mesi.
+
+---
+
+# 🧱 ENTITÀ ECONOMICHE VIVE
+
+Nuova direzione strutturale:
+
+Le voci economiche NON devono essere semplici “spese”.
+
+Devono diventare:
+
+👉 entità economiche vive.
+
+Ogni elemento economico deve possedere:
+
+- comportamento
+- prevedibilità
+- variabilità
+- rischio
+- stabilità
+- periodicità
+- protezione
+- collegamenti
+- memoria
+- pressione futura
+
+---
+
+# ⚠️ INSERIMENTO MANUALE OBBLIGATORIO
+
+Decisione IMPORTANTISSIMA:
+
+❌ nessuna base precompilata.
+
+Tutto nasce da inserimento manuale utente.
+
+Flusso ufficiale:
+
+1. utente crea voce economica
+2. sceglie categoria/tipo
+3. il sistema fa domande specifiche
+4. il motore genera il comportamento corretto
+
+---
+
+# 💡 ESEMPI REALI CONSOLIDATI
+
+## LUCE
+
+Il sistema dovrà poter leggere:
+
+- quota stimata
+- variabilità
+- fornitore
+- scadenza offerta
+- rinnovo contratto
+
+e generare:
+
+✔ prevenzione economica  
+✔ avvisi preventivi  
+✔ simulazione futura  
+
+---
+
+## SANDRA
+
+Sandra NON è:
+
+❌ spesa fissa
+
+Sandra è:
+
+👉 pressione logistica trasformata in pressione economica.
+
+Dipende da:
+
+- turni
+- scuola
+- eventi Alice
+- ferie
+- malattie
+- copertura reale
+
+---
+
+## MENSA ALICE
+
+La mensa NON è totalmente prevedibile.
+
+Dipende da:
+
+- presenza reale Alice
+- gite
+- malattie
+- uscite anticipate
+- eventi scolastici
+
+---
+
+# 🧭 DIREZIONE OPERATIVA UFFICIALE
+
+Decisione consolidata:
+
+⚠️ NON uscire dalla fase Finanze.
+
+Priorità assoluta:
+
+✔ costruzione pressione economica reale  
+✔ simulazione futura reale  
+✔ consolidamento motore economico  
+✔ mantenimento stabilità calendario durante utilizzo vita reale  
+
+---
+
+# 🧱 HOME — DECISIONE ARCHITETTURALE
+
+La modularizzazione Home viene considerata:
+
+✔ sufficientemente consolidata.
+
+STOP refactor aggressivi.
+
+Motivo:
+
+Le parti rimaste contengono:
+
+- callback
+- parsing
+- store
+- business logic
+- comportamento reale
+- dialog complessi
+
+Ulteriori estrazioni aumenterebbero il rischio.
+
+---
+
+# 🚀 STATO REALE ATTUALE
+
+✔ Home consolidata  
+✔ Finanze V1 reale attiva  
+✔ dashboard economica viva  
+✔ recurring items avanzati  
+✔ pressure score iniziale presente  
+✔ proiezioni annuali presenti  
+✔ fondi presenti  
+✔ snapshot economici presenti  
+✔ simulazione economica avviata  
+
+---
+
+# 🎯 DIREZIONE FUTURA
+
+Prossimo lavoro corretto:
+
+👉 definizione reale dei fattori della pressione economica.
+
+NON codice immediato.
+
+Prima:
+
+✔ concetti  
+✔ resilienza  
+✔ comportamento economico reale  
+✔ simulazione multi-mese  
+✔ rischio futuro  
+
+Poi:
+
+👉 implementazione motore reale.

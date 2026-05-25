@@ -612,3 +612,263 @@ con approccio:
 ✔ base navigazione anni introdotta  
 
 🟡 navigazione anni ancora instabile
+
+---
+
+# FASE FINANZE REALI — MAGGIO 2026
+
+Nuova decisione strutturale ufficiale:
+
+Finanze NON deve evolvere verso:
+
+❌ semplice tracker spese
+❌ semplice contabilità
+❌ semplice saldo mensile
+
+Finanze deve evolvere verso:
+
+👉 simulazione della stabilità economica familiare reale.
+
+---
+
+# NUOVI CONCETTI UFFICIALI INTRODOTTI
+
+## PRESSIONE ECONOMICA
+
+La pressione economica NON rappresenta:
+
+❌ “quanti soldi restano”
+
+La pressione rappresenta:
+
+✔ fragilità del sistema familiare
+✔ capacità di assorbire imprevisti
+✔ sostenibilità futura
+✔ resilienza reale
+
+---
+
+## PRESSIONE PREVEDIBILE
+
+Esempi:
+
+- mutuo
+- bollette
+- assicurazione
+- revisione
+- mensa base
+
+Sono elementi:
+
+✔ prevedibili
+✔ simulabili
+✔ preparabili
+
+---
+
+## PRESSIONE IMPREVEDIBILE
+
+Esempi:
+
+- dentista
+- fisioterapia
+- guasti
+- visite urgenti
+- spese extra improvvise
+
+Queste misurano:
+
+✔ resilienza reale
+✔ capacità di sopravvivenza economica
+
+---
+
+## PRESSIONE STATICA vs DINAMICA
+
+### STATICA
+
+Spese relativamente stabili:
+
+- mutuo
+- abbonamenti
+- rate
+
+### DINAMICA
+
+Spese che nascono dalla vita reale:
+
+- Sandra
+- mensa Alice
+- centro estivo
+- sport
+- ripetizioni
+- eventi scolastici
+
+La pressione nasce dal comportamento della vita familiare.
+
+---
+
+# RESILIENZA ECONOMICA
+
+Nuovo concetto ufficiale:
+
+Il sistema NON deve leggere solo:
+
+- saldo
+- margine
+
+Deve leggere:
+
+✔ quanto il sistema familiare riesce ad assorbire imprevisti
+✔ quanti mesi riesce a sostenere pressione
+✔ quanto è protetto
+✔ quanto è fragile
+
+---
+
+# SIMULAZIONE MULTI-MESE
+
+Decisione ufficiale:
+
+La pressione economica NON deve leggere solo il mese corrente.
+
+Deve simulare:
+
+✔ 3 mesi
+✔ 6 mesi
+✔ 12 mesi
+
+per capire:
+
+- accumulo pressione
+- rischio futuro
+- conseguenze delle decisioni
+
+Esempio:
+
+✔ una spesa oggi può creare pressione reale fra 8 mesi.
+
+---
+
+# ENTITÀ ECONOMICHE VIVE
+
+Nuova direzione ufficiale:
+
+Le voci economiche NON devono essere semplici “spese”.
+
+Devono diventare:
+
+👉 entità economiche vive.
+
+Ogni elemento economico deve possedere:
+
+- comportamento
+- prevedibilità
+- variabilità
+- rischio
+- stabilità
+- periodicità
+- protezione
+- collegamenti
+- memoria
+- pressione futura
+
+---
+
+# INSERIMENTO MANUALE OBBLIGATORIO
+
+Decisione strutturale IMPORTANTISSIMA:
+
+❌ NON devono esistere voci economiche precompilate.
+
+Tutto deve nascere da inserimento manuale utente.
+
+Flusso ufficiale:
+
+1. utente crea voce economica
+2. sceglie categoria/tipo
+3. il sistema fa domande specifiche
+4. il motore genera il comportamento economico corretto
+
+---
+
+# ESEMPI DIREZIONE FUTURA
+
+## MUTUO
+
+Il sistema dovrà poter leggere:
+
+- rata
+- fisso/variabile
+- rischio aumento
+- scadenza
+- fine mutuo
+- periodicità
+
+---
+
+## LUCE
+
+Il sistema dovrà poter leggere:
+
+- quota stimata
+- variabilità
+- fornitore
+- scadenza offerta
+- rinnovo contratto
+
+e generare:
+
+✔ avvisi preventivi
+✔ prevenzione aumento costi
+✔ simulazione futura
+
+---
+
+## SANDRA
+
+Sandra NON è considerata:
+
+❌ spesa fissa
+
+Sandra è:
+
+👉 pressione logistica trasformata in pressione economica.
+
+Dipende da:
+
+- turni
+- scuola
+- eventi Alice
+- ferie
+- malattie
+- copertura reale
+
+---
+
+## MENSA ALICE
+
+La mensa NON è totalmente prevedibile.
+
+Dipende da:
+
+- presenza reale Alice
+- malattia
+- uscite anticipate
+- gite
+- eventi scolastici
+
+---
+
+# DIREZIONE OPERATIVA UFFICIALE
+
+Decisione ufficiale Maggio 2026:
+
+⚠️ NON espandere nuove aree funzionali.
+
+Priorità assoluta:
+
+➡️ consolidare modulo Finanze
+➡️ costruire pressione economica reale
+➡️ costruire simulazione futura reale
+➡️ mantenere calendario stabile durante utilizzo vita reale
