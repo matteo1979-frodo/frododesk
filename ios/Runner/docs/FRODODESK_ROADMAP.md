@@ -1,894 +1,150 @@
-FRODODESK — ROADMAP
+# FRODODESK — MASTER ROADMAP UNIFICATA V3
 
-Ultimo aggiornamento: 14 Maggio 2026  
-(BLOCCO G — Consolidamento avanzato PresenceEngine)
+Ultimo aggiornamento: 26 Maggio 2026
 
----
+━━━━━━━━━━━━━━━━━━
 
-# OBIETTIVO GENERALE
+# IDENTITÀ DEL PROGETTO
 
-FrodoDesk deve diventare un sistema di controllo familiare che simula la realtà della vita quotidiana per aiutare a prevenire problemi prima che accadano.
+━━━━━━━━━━━━━━━━━━
 
-Lo sviluppo segue filosofia CNC:
+FrodoDesk NON è:
 
-- un passo alla volta
-- blocchi stabili prima di passare al successivo
-- motore prima
-- UI dopo
-- test reale continuo
-- decisione sempre umana
+❌ un calendario semplice
+❌ un gestionale economico
+❌ un Excel evoluto
+❌ un tracker spese
+❌ un home banking
+❌ una semplice app famiglia
 
----
+FrodoDesk È:
+
+➡️ un simulatore della realtà familiare
+➡️ un motore decisionale preventivo
+➡️ un lettore di pressione reale
+➡️ un sistema di stabilità familiare
+➡️ un supporto umano alle decisioni
+➡️ un sistema che prova a leggere la vita reale prima che i problemi esplodano
+
+Principio immutabile:
+
+👉 Il sistema suggerisce
+👉 La decisione resta sempre umana
+
+━━━━━━━━━━━━━━━━━━
+
+# REGOLE OPERATIVE UFFICIALI
+
+━━━━━━━━━━━━━━━━━━
+
+✅ un passo alla volta
+
+✅ niente mega-refactor impulsivi
+
+✅ niente nuove aree funzionali fuori roadmap
+
+✅ stabilità prima dell’espansione
+
+✅ test vita reale continui
+
+✅ calendario priorità assoluta stabilità
+
+✅ Home NON deve tornare mega-file
+
+✅ modularizzare solo UI pura realmente riusabile
+
+✅ evitare dipendenze sporche
+
+✅ ogni decisione strutturale importante aggiorna la roadmap PRIMA del codice
+
+✅ NON uscire dalla fase Finanze finché il motore economico non è stabile
+
+✅ ogni modulo deve poter vivere separato
+
+✅ motore prima della UI
+
+✅ comportamento reale prima dell’estetica
+
+━━━━━━━━━━━━━━━━━━
 
 # STATO GENERALE ATTUALE
 
-🔥 CALENDARIO REALE COMPLETO  
-🔥 COPERTURA REALE STABILE  
-🔥 HOME COERENTE  
-🔥 STATISTICHE AVVIATE  
-🔥 MOTORE PRESENZA REALE ALICE IN CONSOLIDAMENTO AVANZATO
+━━━━━━━━━━━━━━━━━━
 
-Il sistema ha fatto il passaggio da:
+## CALENDARIO
 
-❌ calendario intelligente
+☑ stabile
+☑ utilizzabile nella vita reale
+☑ copertura reale funzionante
+☑ PresenceEngine consolidato
+☑ eventi reali vivi
+☑ eventi Alice vivi
+☑ Home coerente con motore reale
+☑ Sandra modalità reale
+☑ supporto multi-persona
 
-a
-
-✔ simulazione reale della presenza familiare
-
----
-
-# CRITERI DI MATURITÀ DEL CALENDARIO
-
-✔ Persistenza dati completa  
-✔ Eventi reali gestiti correttamente  
-✔ Conflitti gravi rilevati  
-✔ Visione futura reale  
-
-👉 STATO: RAGGIUNTI
-
----
-
-# BLOCCO A — FONDAMENTA SISTEMA
-
-Stato: COMPLETATO
-
----
-
-# BLOCCO B — SPIEGAZIONE REALTÀ
-
-Stato: COMPLETATO
-
----
-
-# BLOCCO C — EVENTI REALI
-
-Stato: COMPLETATO
-
-✔ Eventi reali funzionanti  
-✔ Conflitti funzionanti  
-✔ Permessi operativi  
-✔ Copertura integrata  
-✔ Eventi multi-persona funzionanti  
-
----
-
-# BLOCCO D — CALENDARIO REALE
-
-Stato: COMPLETATO / USO REALE
-
-✔ Sistema utilizzabile nella vita reale  
-✔ Motore stabile  
-✔ Copertura affidabile  
-✔ Home collegata al calendario  
-✔ Navigazione giorno funzionante  
-
----
-
-# BLOCCO E — SCUOLA
-
-Stato: COMPLETATO
-
-✔ SchoolStore funzionante  
-✔ Periodi scuola funzionanti  
-✔ Settimana modificabile  
-✔ Motore collegato  
-✔ Stato Alice corretto  
-✔ Support network verificato  
-✔ Ingresso/uscita reali funzionanti  
-✔ Rientro automatico funzionante  
-
----
-
-# BLOCCO F — COPERTURA REALE
-
-Stato: COMPLETATO / CONSOLIDATO
-
----
-
-## SIGNIFICATO
-
-Alice NON dipende più solo dalle fasce Sandra.
-
-La copertura viene calcolata sulla realtà:
-
-- Alice a casa
-- adulti presenti
-- eventi reali
-- scuola
-- centro estivo
-- supporto
-- accompagnamento
-- rientro a casa
-
----
-
-## REGOLE DEFINITIVE
-
-✔ Alice a casa → serve copertura sempre  
-✔ Nessun adulto/supporto valido → BUCO reale  
-✔ Controllo su tutta la giornata reale  
-✔ Eventi reali influenzano la copertura  
-✔ Supporto integrato nel motore  
-✔ Sandra resta categoria separata dalla rete supporto  
-
----
-
-## RISULTATO
-
-✔ Buchi reali corretti  
-✔ Calendario coerente  
-✔ Home coerente  
-✔ Sistema affidabile nella vita reale  
-
----
-
-# BLOCCO G — MOTORE PRESENZA REALE ALICE
-
-Stato: CONSOLIDAMENTO AVANZATO
-
----
-
-## OBIETTIVO
-
-Centralizzare la domanda fondamentale:
-
-👉 “Dove si trova realmente Alice in questa fascia?”
-
-Il sistema deve distinguere:
-
-- Alice a casa
-- Alice a scuola
-- Alice al centro estivo
-- Alice dentro evento temporizzato
-- Alice dentro evento reale
-- Alice accompagnata
-- Alice coperta da supporto
-- Alice fuori con famiglia
-- futura autonomia
-
----
-
-## COMPONENTI CREATI
-
-✔ `alice_presence_engine.dart`  
-✔ `AlicePresenceState`  
-
----
-
-## STATI PRESENZA ATTUALI
-
-✔ home  
-✔ school  
-✔ timedEvent  
-✔ realEvent  
-✔ summerCamp  
-✔ accompanied  
-✔ support  
-
-Mancano:
-
-⬜ outsideWithFamily  
-⬜ autonomousFuture  
-
----
-
-## COMPLETATI NEL BLOCCO G
-
-☑ creare `alice_presence_engine.dart`  
-☑ creare `AlicePresenceState`  
-☑ centralizzare primo stato presenza Alice  
-☑ collegare CoverageEngine al motore presenza  
-☑ centralizzare evento reale Alice  
-☑ centralizzare evento temporizzato Alice  
-☑ introdurre `AlicePresenceState.accompanied`  
-☑ collegare `AliceCompanionStore`  
-☑ introdurre presenza relazionale  
-☑ introdurre `findCompanionForRange()`  
-☑ CoverageEngine legge `stateForRange()`  
-☑ introdurre `AlicePresenceState.support`  
-☑ collegare `SupportNetworkStore`  
-☑ collegare `DaySettingsStore`  
-☑ distinguere supporto reale attivo sulla fascia  
-☑ scuola resa temporale reale  
-☑ centro estivo reso temporale reale  
-☑ fix centro estivo: uscita 16:30–16:50  
-☑ fix casa dopo centro estivo: buco reale 16:50–21:00  
-☑ buchi coerenti con supporto reale e Sandra  
-☑ centralizzare accesso eventi temporizzati Alice  
-☑ centralizzare copertura rete supporto  
-☑ centralizzare controllo evento reale Alice  
-☑ CoverageEngine ridotto a consumatore progressivo del PresenceEngine  
-
-☑ centralizzare accompagnamento Alice nel PresenceEngine  
-☑ aggiungere `isAliceAccompaniedDuringRange()`  
-☑ aggiungere `aliceCompanionEndForRange()`  
-☑ CoverageEngine non legge più direttamente CompanionStore in `_isFasciaCovered()`  
-☑ CoverageEngine non legge più direttamente CompanionStore in `_uncoveredHomeSegments()`  
-☑ CoverageEngine non legge più direttamente CompanionStore nel filtro finale `analyzeDayV2()`  
-☑ eliminata funzione legacy `_getAliceCompanionEnd()`  
-☑ fix duplicazione buchi legacy con supporto reale parziale  
-☑ supporto reale segmentato funzionante  
-
----
-
-## STEP G2 — MODELLO PRESENZA UNICO
-
-Stato: QUASI COMPLETATO
-
-Attuale:
-
-☑ home  
-☑ school  
-☑ timedEvent  
-☑ realEvent  
-☑ summerCamp  
-☑ accompanied  
-☑ support  
-
-Mancano:
-
-⬜ outsideWithFamily  
-⬜ autonomousFuture  
-
----
-
-## STEP G3 — CoverageEngine guidato dal PresenceEngine
-
-Stato: CONSOLIDAMENTO AVANZATO
-
----
-
-### FATTO
-
-☑ `isAliceAtHomeDay()` passa da PresenceEngine  
-☑ `isAliceSchoolNormalDay()` passa da PresenceEngine  
-☑ `isAliceSummerCampOperationalDay()` passa da PresenceEngine  
-☑ `getAliceEventTypeForDay()` passa da PresenceEngine  
-☑ `getSummerCampPeriodForDay()` passa da PresenceEngine  
-☑ `getSummerCampConfigForDay()` passa da PresenceEngine  
-☑ `getSummerCampSpecialEventForDay()` passa da PresenceEngine  
-☑ `hasSummerCampSpecialEventForDay()` passa da PresenceEngine  
-☑ `enabledTimedEventsForDay()` passa da PresenceEngine  
-☑ `_isCoveredBySupportNetwork()` passa da PresenceEngine  
-☑ `_isAliceInsideRealEvent()` passa da PresenceEngine  
-
-☑ accompagnamento Alice centralizzato  
-☑ overlap accompagnamento centralizzato  
-☑ companion end centralizzato  
-☑ support network reale centralizzato  
-☑ eventi reali Alice centralizzati  
-☑ eventi temporizzati Alice centralizzati  
-
-☑ CoverageEngine non legge più direttamente CompanionStore  
-☑ eliminata funzione legacy `_getAliceCompanionEnd()`  
-
-☑ fix duplicazione buchi legacy con supporto reale segmentato  
-☑ supporto reale parziale funzionante  
-
----
-
-### BUG STRUTTURALE RISOLTO — DUPLICAZIONE BUCHI
-
-Caso reale testato:
-
-- evento reale 21:00–22:30
-- supporto reale 21:00–22:00
-
-Prima:
-
-❌ doppio buco:
-- 21:00–22:30
-- 22:00–22:30
-
-Causa:
-
-CoverageEngine manteneva ancora gap legacy completi dopo la segmentazione reale.
-
-Ora:
-
-✔ viene generato SOLO il residuo reale:
-22:00–22:30
-
----
-
-### SIGNIFICATO STRUTTURALE
-
-Il sistema sta passando da:
-
-❌ fasce statiche legacy  
-❌ blocchi artificiali  
-
-a:
-
-✔ range reali  
-✔ presenza reale  
-✔ segmentazione reale  
-✔ supporto reale parziale  
-✔ accompagnamento reale  
-
----
-
-### RESTA
-
-⬜ eliminare altri doppioni legacy residui  
-⬜ valutare spostamento segmentazione eventi/tagli fascia  
-⬜ verificare logiche presenza Alice ancora dirette dentro `analyzeDayV2()`  
-⬜ ridurre ulteriormente letture dirette store Alice nel CoverageEngine  
-
----
-
-## BUG CENTRO ESTIVO RISOLTO
-
-Caso reale:
-
-- Alice al centro estivo fino a 16:30
-- rientro logistico 16:30–16:50
-- genitori entrambi pomeriggio
-- nessuna copertura fino a sera
-
-Prima:
-
-❌ buco uscita mostrato 16:30–18:00  
-❌ mancava buco reale casa 16:50–21:00  
-
-Ora:
-
-✔ uscita centro estivo 16:30–16:50  
-✔ Alice a casa dopo centro estivo 16:50–21:00  
-✔ fascia Sandra sera 21:00–22:35 separata  
-✔ supporto reale spezza correttamente i buchi  
-
-Checkpoint:
-
-`summer-camp-real-home-gaps`
-
----
-
-# BLOCCO H — HOME GUIDATA DAL PRESENCE ENGINE
-
-Stato: NON ANCORA INIZIATO
-
----
-
-## OBIETTIVO
-
-La Home dovrà leggere la stessa verità del calendario:
-
-👉 PresenceEngine → CoverageEngine → Home
-
-Non deve ricostruire logiche proprie.
-
----
-
-# BLOCCO IPS
-
-Stato: RIMANDATO
-
----
-
-## DECISIONE
-
-IPS NON è più priorità immediata.
-
-Prima serve completare:
-
-1. Motore Presenza Reale Alice
-2. CoverageEngine guidato dal PresenceEngine
-3. Home coerente con la stessa verità
-4. Test presenza reale strutturati
-
-Solo dopo:
-
-👉 riallineamento IPS completo al sistema reale.
-
----
-
-# BLOCCO EVENTI GLOBALI
-
-Stato: IMPLEMENTATO V1
-
-✔ navigazione anno → mesi → eventi → dettaglio  
-✔ memoria evento persistente  
-✔ eventi multi-persona  
-
-Limite attuale:
-
-❌ Eventi Alice non ancora completamente integrati negli Eventi Globali  
-
----
-
-# BLOCCO STATISTICHE
-
-Stato: AVVIATO / BASE STRUTTURALE CONSOLIDATA
-
-Principio:
-
-👉 le statistiche NON devono inventare dati  
-👉 devono leggere solo moduli reali vivi  
-
-Struttura temporale:
-
-✔ Giorno  
-✔ Settimana  
-✔ Mese  
-✔ Anno  
-
-Direzione futura:
-
-- supporto
-- copertura
-- eventi
-- costi
-- IPS
-- salute
-
----
-
-# MODULI FUTURI
-
-FINANZE  
-SPESE  
-SALUTE  
-AUTO  
-STATISTICHE AVANZATE  
-IPS REALE  
-
----
-
-# DIREZIONE OPERATIVA ATTUALE
-
-NON fare:
-
-❌ Home ora  
-❌ IPS ora  
-❌ mega-refactor  
-❌ spostamenti ciechi  
-❌ duplicazioni logiche  
-
-Fare:
-
-✔ completare PresenceEngine  
-✔ ripulire CoverageEngine dai residui legacy  
-✔ un passo alla volta  
-✔ test reale dopo ogni modifica  
-✔ mantenere Sandra separata dalla rete supporto  
-✔ mantenere decisione sempre umana  
-
----
-
-# PROSSIMA RIPARTENZA
-
-Ripartiamo da FrodoDesk — BLOCCO G consolidamento avanzato PresenceEngine.
-
-Stato:
-
-✔ PresenceEngine proprietario progressivo presenza Alice  
-✔ accompagnamento centralizzato  
-✔ supporto reale centralizzato  
-✔ eventi reali Alice centralizzati  
-✔ eventi temporizzati Alice centralizzati  
-✔ CoverageEngine progressivamente semplificato  
-✔ CompanionStore non più letto direttamente nei punti principali  
-✔ fix duplicazione buchi legacy completato  
-✔ supporto reale segmentato funzionante  
-
----
-
-# DIREZIONE REALE ATTUALE
-
-CoverageEngine deve progressivamente:
-
-❌ smettere di interpretare Alice  
-❌ smettere di conoscere CompanionStore  
-❌ smettere di segmentare manualmente la presenza Alice  
-
-e diventare:
-
-✔ consumatore puro del PresenceEngine  
-✔ motore copertura reale  
-✔ interprete buchi  
-✔ NON proprietario presenza Alice  
-
----
-
-# PROSSIMO FRONTE
-
-Continuare la pulizia legacy dentro CoverageEngine.
-
-In particolare:
-
-👉 segmentazione eventi Alice  
-👉 tagli temporali legacy  
-👉 logiche “Alice a casa dopo...”  
-👉 logiche presenza ancora dirette dentro `analyzeDayV2()`  
-
----
-
-# NON FARE ANCORA
-
-❌ Home  
-❌ IPS  
-❌ mega-refactor  
-
----
-
-# FRASE DI RIPARTENZA UFFICIALE
-
-Ripartiamo da FrodoDesk — BLOCCO G consolidamento avanzato: PresenceEngine proprietario progressivo della presenza Alice, CoverageEngine in pulizia legacy. Prossimo passo: eliminare segmentazioni manuali residue dentro analyzeDayV2() senza toccare ancora Home e IPS.
----
-
-# BLOCCO FINANZE / SPESE
-
-Stato: FONDAZIONE CONCETTUALE COMPLETATA
-
----
-
-## SIGNIFICATO
-
-FrodoDesk entra nella simulazione economica familiare reale.
-
-NON come:
-- banca
-- gestionale
-- Excel movimenti
-
-MA come:
-
-👉 sistema di lettura della stabilità economica familiare.
-
----
-
-# PRINCIPIO FONDAMENTALE
-
-# PREVISIONE ≠ REALTÀ
-
-Regola strutturale globale del progetto.
-
-Il sistema deve distinguere sempre:
-
-✔ previsione  
-✔ simulazione  
-✔ ricorrenza  
-
-da:
-
-✔ realtà  
-✔ importo reale  
-✔ evento realmente avvenuto  
-
----
-
-## ESEMPI
-
-### Spese ricorrenti
-
-Netflix 17€/mese
-
-NON genera automaticamente:
-
-✔ spesa reale
-
-Genera:
-
-✔ previsione futura
-
-che può essere:
-
-- confermata
-- modificata
-- saltata
-- annullata
-
----
-
-### Stipendi
-
-Il sistema può:
-
-✔ stimare  
-✔ simulare andamento  
-
-ma:
-
-✔ l’utente inserisce manualmente il valore reale mensile
-
----
-
-# MODULO FINANZE
-
-Stato: DEFINIZIONE FILOSOFICA COMPLETATA
-
----
-
-## OBIETTIVO
-
-Leggere:
-
-👉 “Dove stiamo andando?”
-
----
-
-## FINANZE DOVRÀ GESTIRE
-
-✔ saldi iniziali  
-✔ simulazione futura  
-✔ stipendi  
-✔ fondi  
-✔ ricorrenze  
-✔ pressione economica  
-✔ andamento storico  
-✔ margine reale futuro  
-
----
-
-## PRINCIPIO
-
-Finanze NON rappresenta:
-
-❌ movimenti reali
-
-Rappresenta:
-
-✔ simulazione della sostenibilità futura.
-
----
-
-# MODULO SPESE
-
-Stato: DEFINIZIONE FILOSOFICA COMPLETATA
-
----
-
-## OBIETTIVO
-
-Leggere:
-
-👉 “Cosa è successo davvero?”
-
----
-
-## SPESE DOVRÀ GESTIRE
-
-✔ spese reali  
-✔ categorie  
-✔ persone  
-✔ metodo pagamento  
-✔ note  
-✔ storico reale  
-
----
-
-## ESEMPI
-
-- benzina
-- farmacia
-- supermercato
-- pizza
-- Amazon
-- assicurazione
-- revisione
-- prelievi
-
----
-
-# STRUTTURA PERSONE ECONOMICHE
-
-Decisione ufficiale:
-
-Il sistema deve già conoscere:
-
-✔ Matteo  
-✔ Chiara  
-✔ Alice  
-
-anche se Alice oggi non ha ancora:
-
-- conto
-- spese autonome
-- entrate
-
-👉 struttura già predisposta per evoluzione futura.
-
----
-
-# STATISTICHE — NUOVA DIREZIONE
-
-Statistiche diventa:
-
-👉 lettura globale della vita reale del sistema
-
-e NON semplice modulo grafici.
-
----
-
-## STATISTICHE LEGGERÀ FUTURAMENTE
-
-✔ calendario  
-✔ supporto  
-✔ copertura  
-✔ spese  
-✔ finanze  
-✔ salute  
-✔ IPS  
-
----
-
-# DIREZIONE OPERATIVA
-
-I moduli:
-
-✔ devono crescere insieme  
-✔ restare separati inizialmente  
-✔ collegarsi gradualmente  
-
-👉 “app dentro app dentro app”
-
-finché emergerà naturalmente la forma reale finale.
-
----
-
-# ROADMAP BLOCCO FINANZE / SPESE
-
-☑ Separazione Finanze vs Spese  
-☑ Distinzione previsione vs realtà  
-☑ Filosofia umana consolidata  
-☑ Struttura persone economiche definita  
-☑ Ricorrenze definite come previsione  
-☑ Statistiche riconosciuto come modulo centrale futuro  
-
-⬜ Creazione docs dedicati Finanze  
-⬜ Creazione docs dedicati Spese  
-⬜ Definizione struttura minima Finanze v1  
-⬜ Definizione struttura minima Spese v1  
-⬜ Dashboard economica minimale v1  
-⬜ Collegamento futuro Statistiche ↔ Finanze ↔ Spese
----
-
-# BLOCCO FINANZE — EVOLUZIONE DASHBOARD TEMPORALE
-
-Stato: AVVIATO / IN CONSOLIDAMENTO
-
----
-
-## SIGNIFICATO
-
-Il modulo Finanze sta passando da:
-
-❌ elenco informazioni economiche
-
-a:
-
-✔ lettura temporale della stabilità familiare.
-
----
-
-# NUOVA DIREZIONE UI
-
-La dashboard economica evolve verso:
-
-✔ pressione temporale reale  
-✔ visione annuale  
-✔ simulazione sostenibilità mesi  
-✔ lettura economica futura  
-
 ---
 
-# EVOLUZIONE INTRODOTTA
+## HOME
 
-Durante questa fase sono stati introdotti:
+☑ consolidata
+☑ modularizzazione fermata nel punto corretto
+☑ trasformata in orchestratore
+☑ zero errori rossi
+☑ stabilità preservata
+☑ alleggerita correttamente
 
-☑ card mesi compatte  
-☑ stati mese visivi  
-☑ colori pressione economica  
-☑ vista Gennaio → Dicembre  
-☑ struttura multi-anno  
-☑ popup mese più dashboard  
-☑ riduzione effetto lista infinita  
-
----
-
-# STATI MESE
-
-Ogni mese ora può essere:
-
-✔ stabile  
-✔ pressione  
-✔ critico  
-
-con:
-
-- colore dedicato
-- margine economico
-- stato sintetico
-
----
-
-# DIREZIONE FUTURA
-
-La dashboard temporale evolverà verso:
-
-⬜ heatmap pressione economica  
-⬜ timeline economica reale  
-⬜ confronto anni  
-⬜ pressione storica  
-⬜ simulazione economica avanzata  
-⬜ motore pressione temporale reale  
-
----
-
-# PROBLEMA ATTUALMENTE APERTO
-
-La navigazione anni è stata introdotta ma NON è ancora stabile.
-
-Problemi emersi:
-
-🟡 gestione `selectedYear`  
-🟡 refactor incompleto del builder annuale  
-🟡 rischio perdita popup dettaglio mese durante modifiche rapide  
-🟡 blocco UI troppo grande per patch veloci sicure
-
 ---
 
-# DECISIONE OPERATIVA
+## FINANZE
 
-❌ NON continuare con modifiche rapide.
+🟡 FASE STRUTTURALE PROFONDA IN CORSO
 
-✔ Fare refactor completo e sicuro del blocco:
-`Pressione temporale`
+☑ FinanceStore reale presente
+☑ recurring items avanzati
+☑ fondi
+☑ dashboard temporale
+☑ pressure score iniziale
+☑ snapshot economici
+☑ simulazione annuale base
+☑ owner condivisi
+☑ timeline economica reale
+☑ DNA economico iniziale vivo
 
-con approccio:
+━━━━━━━━━━━━━━━━━━
 
-- 0 rischio
-- blocco completo
-- preservazione popup mese
-- preservazione logica economica
-- futura separazione widget/dashboard
+# DECISIONE STRUTTURALE PRINCIPALE
 
----
+━━━━━━━━━━━━━━━━━━
 
-# STATO REALE ATTUALE
+⚠️ STOP espansione funzionalità casuali.
 
-✔ dashboard economica più leggibile  
-✔ mesi annuali visibili  
-✔ popup mese più coerente  
-✔ struttura temporale introdotta  
+Priorità assoluta:
 
-🟡 navigazione anni ancora instabile
+➡️ costruzione del vero motore economico.
 
----
+NON:
 
-# AGGIORNAMENTO STRUTTURALE — MAGGIO 2026
+❌ nuove aree
+❌ automazioni premature
+❌ grafica avanzata
+❌ IPS economico finale
+❌ modularizzazione cosmetica
 
-# HOME — CONSOLIDAMENTO COMPLETATO
+PRIMA:
 
-Decisione ufficiale:
+✔ comportamento economico reale
+✔ pressione reale
+✔ resilienza
+✔ simulazione futura
+✔ stabilità sistema
+✔ consolidamento vita reale
 
-La modularizzazione della Home viene considerata:
+━━━━━━━━━━━━━━━━━━
 
-✔ sufficientemente consolidata.
+# HOME — STATO UFFICIALE
 
----
+━━━━━━━━━━━━━━━━━━
 
 ## COMPLETATO
 
@@ -906,185 +162,335 @@ La modularizzazione della Home viene considerata:
 
 ☑ SectionTitle estratto
 
-☑ Home alleggerita correttamente
+☑ ripristino corretto “Prossimo problema”
 
-☑ Home trasformata in orchestratore
-
-☑ Ripristino corretto “Prossimo problema”
+☑ zero regressioni
 
 ☑ zero errori rossi
 
-☑ tag Git stabilità creato
+☑ Home alleggerita e più orchestratore
 
 ---
 
-## DECISIONE ARCHITETTURALE
+# DECISIONE ARCHITETTURALE HOME
 
-STOP modularizzazione aggressiva Home.
+STOP modularizzazione aggressiva.
 
-Motivo:
+Si estraggono componenti solo se:
 
-Le parti rimaste NON sono UI pura.
+✔ veramente riusabili
+✔ realmente UI pura
+✔ senza business logic
+✔ senza dipendenze sporche
 
-Contengono:
+Le parti rimaste in Home contengono:
 
-- callback
-- store
-- parsing
-- business logic
-- dialog complessi
-- comportamento reale
-- gestione eventi
-- stato
+* callback
+* store
+* parsing
+* logica
+* dialog complessi
+* gestione eventi
+* stato
 
-Ulteriori estrazioni aumenterebbero il rischio.
+Quindi ulteriori estrazioni ora aumenterebbero il rischio.
 
----
+━━━━━━━━━━━━━━━━━━
 
-# NUOVA PRIORITÀ UFFICIALE
+# ROADMAP CALENDARIO REALE
 
-⚠️ NON aprire nuove aree funzionali.
+━━━━━━━━━━━━━━━━━━
 
-Priorità assoluta:
+## BLOCCO A — Fondamenta Copertura
 
-➡️ consolidamento modulo Finanze
-➡️ costruzione pressione economica reale
-➡️ simulazione futura reale
-➡️ mantenimento stabilità calendario vita reale
+✅ COMPLETATO
 
----
+Comprende:
 
-# BLOCCO H — FINANZE REALI
-
-Stato: AVVIATO UFFICIALMENTE
-
----
-
-## SIGNIFICATO
-
-Finanze NON deve evolvere verso:
-
-❌ semplice contabilità
-❌ semplice tracker spese
-❌ semplice saldo mensile
-
-Finanze deve diventare:
-
-👉 simulazione della stabilità economica familiare.
+* turni
+* viaggio
+* riposo post-notte
+* Sandra
+* override
+* copertura reale
 
 ---
 
-# NUOVI CONCETTI UFFICIALI
+## BLOCCO B — Override Giornalieri
 
-## PRESSIONE ECONOMICA
+✅ COMPLETATO
 
-La pressione economica NON rappresenta:
+Comprende:
+
+* ferie
+* permesso
+* malattia
+* override reali
+* refresh reale UI
+
+---
+
+## BLOCCO D — Eventi Alice Reali
+
+🟡 IN COSTRUZIONE CONTINUA
+
+Completato:
+
+✅ base eventi Alice
+✅ integrazione copertura
+✅ logica accompagnamento
+
+Da fare:
+
+⬜ conflitti avanzati
+⬜ eventi multipli complessi
+⬜ accompagnamento intelligente
+⬜ Alice al seguito
+⬜ autonomia futura Alice
+⬜ comportamento età dinamica
+
+---
+
+## EVENTI GLOBALI
+
+🟡 AVVIATO
+
+Obiettivi:
+
+⬜ timeline reale consolidata
+⬜ eventi familiari complessi
+⬜ eventi economici
+⬜ collegamento eventi ↔ pressione
+⬜ memoria eventi lunga
+⬜ lettura periodi critici
+
+━━━━━━━━━━━━━━━━━━
+
+# MODULO FINANZE — IDENTITÀ UFFICIALE
+
+━━━━━━━━━━━━━━━━━━
+
+Finanze NON rappresenta:
+
+❌ solo denaro
+❌ solo saldo
+❌ solo entrate/uscite
+
+Finanze rappresenta:
+
+✔ stabilità
+✔ fragilità
+✔ resilienza
+✔ pressione
+✔ rischio futuro
+✔ sopravvivenza temporale
+✔ sincronizzazione economica
+✔ salute economica familiare
+
+━━━━━━━━━━━━━━━━━━
+
+# NUOVI ASSI FONDAMENTALI DEL MOTORE
+
+━━━━━━━━━━━━━━━━━━
+
+# 1. PRESSIONE ECONOMICA
+
+La pressione NON è:
 
 ❌ soldi rimasti
 
-Rappresenta:
+La pressione È:
 
-✔ fragilità sistema
+✔ capacità di assorbire la vita reale
+✔ rischio futuro
+✔ fragilità familiare
+✔ sostenibilità reale
 ✔ resilienza
-✔ capacità di assorbire imprevisti
-✔ sostenibilità futura
 
 ---
 
-## PRESSIONE PREVEDIBILE
+# 2. PRESSIONE PREVEDIBILE vs IMPREVEDIBILE
 
-Esempi:
+## PREVEDIBILE
 
-- mutuo
-- bollette
-- assicurazione
-- revisione
+* mutuo
+* bollette
+* assicurazione
+* revisione
+* mensa base
 
 Sono:
 
-✔ prevedibili
 ✔ simulabili
 ✔ preparabili
+✔ prevedibili
 
----
+## IMPREVEDIBILE
 
-## PRESSIONE IMPREVEDIBILE
-
-Esempi:
-
-- dentista
-- fisioterapia
-- guasti
-- visite urgenti
-- spese extra
+* dentista
+* fisioterapia
+* guasti
+* visite urgenti
+* spese extra improvvise
 
 Misurano:
 
 ✔ resilienza reale
+✔ capacità di sopravvivenza economica
 
 ---
 
-## PRESSIONE STATICA vs DINAMICA
+# 3. PRESSIONE STATICA vs DINAMICA
 
-### STATICA
+## STATICA
 
-- rate
-- mutuo
-- abbonamenti
+* mutuo
+* abbonamenti
+* rate
 
-### DINAMICA
+## DINAMICA
 
-- Sandra
-- mensa Alice
-- sport
-- centro estivo
-- eventi scolastici
+* Sandra
+* mensa Alice
+* sport
+* centro estivo
+* eventi scolastici
+* ripetizioni
 
 La pressione nasce dal comportamento reale della vita.
 
 ---
 
-# RESILIENZA ECONOMICA
+# 4. RIGIDITÀ ECONOMICA
 
-Nuovo concetto ufficiale:
+## RIGIDISSIMA
 
-NON conta solo:
+* mutuo
+* assicurazione obbligatoria
+* bollette vitali
+* dentista urgente
 
-- saldo
-- margine
+## MEDIA
 
-Conta:
+* sport
+* pellet
+* manutenzioni rinviabili poco
 
-✔ quanti mesi il sistema può assorbire
-✔ quanto è fragile
-✔ quanto è protetto
-✔ quanto riesce a sopravvivere agli imprevisti
+## ELASTICA
 
----
-
-# SIMULAZIONE FUTURA MULTI-MESE
-
-Decisione ufficiale:
-
-La pressione economica NON deve leggere solo il mese corrente.
-
-Deve simulare:
-
-✔ 3 mesi
-✔ 6 mesi
-✔ 12 mesi
-
-per leggere:
-
-- accumulo pressione
-- rischio futuro
-- conseguenze delle decisioni
+* Netflix
+* hobby
+* acquisti extra
 
 ---
 
-# ENTITÀ ECONOMICHE VIVE
+# 5. MANOVRABILITÀ ECONOMICA
 
-Nuova direzione ufficiale:
+Ogni voce economica deve conoscere:
+
+✔ se può essere rateizzata
+✔ se può essere spostata
+✔ se può essere divisa
+✔ se può essere rimandata
+✔ quanto margine di manovra reale esiste
+
+---
+
+# 6. SACRIFICABILITÀ
+
+Il sistema deve capire:
+
+👉 cosa viene sacrificato per primo durante la pressione.
+
+---
+
+# 7. CONSEGUENZE DEL NON PAGARE
+
+La pressione NON dipende solo dal costo.
+
+Dipende da:
+
+👉 cosa succede se la famiglia non riesce a sostenerla.
+
+---
+
+# 8. VICINANZA TEMPORALE
+
+Concetto ufficiale:
+
+👉 PRESSIONE = IMPATTO × VICINANZA
+
+---
+
+# 9. FLUSSO TEMPORALE ECONOMICO
+
+Il sistema deve leggere:
+
+✔ cosa entra
+✔ cosa esce
+✔ QUANDO
+✔ cosa è confermato
+✔ cosa è previsto
+✔ cosa può slittare
+✔ cosa NON può slittare
+
+---
+
+# 10. LIQUIDITÀ OPERATIVA
+
+Il sistema deve capire:
+
+👉 “la famiglia riesce a sopravvivere fino al prossimo respiro economico?”
+
+---
+
+# 11. AFFIDABILITÀ TEMPORALE
+
+Ogni voce deve avere:
+
+✔ comportamento storico
+✔ affidabilità reale
+✔ rischio ritardo
+✔ comportamento temporale reale
+
+---
+
+# 12. STATO TEMPORALE DELLE VOCI
+
+Ogni voce può essere:
+
+✔ prevista
+✔ attesa
+✔ confermata
+✔ ritardata
+✔ a rischio
+
+---
+
+# 13. PAGAMENTO MANUALE vs AUTOMATICO
+
+## MANUALE
+
+* bollettino
+* bonifico
+* F24
+
+## AUTOMATICO (RID / SDD)
+
+* luce
+* gas
+* mutuo
+* telefono
+
+---
+
+# 14. MEMORIA ECONOMICA EVOLUTIVA
+
+FrodoDesk deve crescere anno dopo anno.
+
+---
+
+# 15. ENTITÀ ECONOMICHE VIVE
 
 Le voci economiche NON devono essere semplici spese.
 
@@ -1092,194 +498,314 @@ Devono diventare:
 
 👉 entità economiche vive.
 
-Ogni elemento economico deve possedere:
-
-- comportamento
-- variabilità
-- prevedibilità
-- rischio
-- stabilità
-- periodicità
-- memoria
-- protezione
-- pressione futura
-
 ---
 
-# INSERIMENTO MANUALE OBBLIGATORIO
+# 16. INSERIMENTO MANUALE OBBLIGATORIO
 
-Decisione strutturale IMPORTANTISSIMA:
+⚠️ IMPORTANTISSIMO
 
 ❌ nessuna base precompilata.
 
 Tutto nasce da inserimento manuale utente.
 
-Flusso ufficiale:
-
-1. utente crea voce economica
-2. sceglie categoria/tipo
-3. il sistema fa domande specifiche
-4. il motore genera il comportamento corretto
-
 ---
 
-# ESEMPI UFFICIALI
+# 17. COMPLETENZA SISTEMA ECONOMICO
 
-## LUCE
+Il sistema deve convivere inizialmente con:
 
-Il sistema dovrà poter leggere:
+✔ simulazione parziale
+✔ uscite mancanti
+✔ micro-spese non registrate
+✔ costi invisibili
 
-- quota stimata
-- variabilità
-- fornitore
-- scadenza offerta
-- rinnovo contratto
+━━━━━━━━━━━━━━━━━━
 
-e generare:
+# ROADMAP OPERATIVA
 
-✔ prevenzione economica
-✔ avvisi preventivi
-✔ simulazione futura
+━━━━━━━━━━━━━━━━━━
 
----
+# BLOCCO H — MOTORE ECONOMICO REALE
 
-## SANDRA
+## H1 — Fondamenta esistenti
 
-Sandra NON è:
-
-❌ spesa fissa
-
-Sandra è:
-
-👉 pressione logistica trasformata in pressione economica.
-
----
-
-## MENSA ALICE
-
-La mensa NON è totalmente prevedibile.
-
-Dipende da:
-
-- presenza reale Alice
-- gite
-- malattia
-- uscite anticipate
-- eventi scolastici
-
----
-
-# ROADMAP BLOCCO H
-
-☑ FinanceStore reale esistente
-
-☑ recurring items avanzati
-
+☑ FinanceStore reale
+☑ recurring items
 ☑ fondi
-
-☑ proiezioni annuali
-
+☑ snapshot
+☑ dashboard annuale
+☑ simulazione base
 ☑ pressure score iniziale
-
-☑ dashboard temporale
-
-☑ snapshot economici
-
+☑ Home consolidata
 ☑ owner condivisi
-
-☑ modularizzazione Home consolidata
-
----
-
-## H1 — Definizione pressione reale
-
-🟡 IN CORSO
-
-⬜ fattori pressione
-
-⬜ resilienza
-
-⬜ distribuzione pressione
-
-⬜ assorbimento imprevisti
-
-⬜ fragilità sistema
-
-⬜ rischio futuro
-
-⬜ simulazione multi-mese
+☑ timeline economica
 
 ---
 
-## H2 — Entità economiche vive
+## H2 — COMPORTAMENTO ECONOMICO REALE
+
+🟡 IN CONSOLIDAMENTO STRUTTURALE
+
+### Concetti consolidati
+
+☑ pressione prevedibile/imprevedibile
+☑ pressione statica/dinamica
+☑ rigidità economica
+☑ manovrabilità
+☑ sacrificabilità
+☑ conseguenze del non pagare
+☑ vicinanza temporale
+☑ liquidità operativa
+☑ affidabilità temporale
+☑ stato temporale voci
+☑ pagamento manuale vs RID
+☑ memoria economica evolutiva
+☑ entità economiche vive
+☑ inserimento manuale obbligatorio
+☑ crescita storica sistema
+☑ saturazione sistema economico
+☑ pressione accumulata
+☑ stanchezza economica sistema
+☑ recupero del sistema
+☑ fattori che restituiscono ossigeno
+☑ differenza sistema stabile vs affaticato
+☑ lettura multi-pressione contemporanea
+☑ pressione ricorsiva
+☑ debito di resilienza
+☑ costo invisibile delle manovre
+☑ usura del sistema economico
+☑ sopravvivenza vs ricostruzione
+☑ salute del sistema economico
+☑ collasso come perdita capacità di recupero
+☑ differenza tra “coperto” e “risolto”
+☑ consumo resilienza futura
+☑ ossigeno economico familiare
+☑ differenza tra denaro disponibile e ossigeno reale
+☑ sistema che sopravvive vs sistema che guarisce
+☑ sincronizzazione della sopravvivenza economica
+☑ vita reale che genera pressione economica
+☑ pressione che genera altra pressione
+☑ lettura evolutiva direzione sistema familiare
+
+### DNA tecnico già implementato
+
+☑ distinzione saldo lordo vs ossigeno reale
+☑ liquidità respirabile
+☑ conti operativi
+☑ FinanceBalanceType
+☑ balanceId separato da personId
+☑ splits economici reali
+☑ supporto quote personalizzate
+☑ operational balance
+☑ warning operativo
+☑ stress operativo
+☑ stress ratio
+☑ vitalityState iniziale
+☑ resilienza base
+☑ recupero economico
+☑ stress persistente
+☑ differenza sistema stabile vs sistema affaticato
+☑ differenza sistema che sopravvive vs sistema che recupera
+☑ differenza tra warning e perdita controllo
+☑ lettura usura economica iniziale
+
+### Da completare
+
+⬜ definizione pesi reali pressione
+⬜ definizione resilienza matematica
+⬜ definizione sincronizzazione economica
+⬜ definizione collasso sistema
+⬜ definizione priorità sopravvivenza
+⬜ definizione soglie saturazione
+⬜ definizione recupero economico reale
+⬜ definizione matematica ossigeno economico
+⬜ definizione usura progressiva sistema
+⬜ definizione salute economica famiglia
+⬜ definizione equilibrio sopravvivenza/ricostruzione
+⬜ utilizzo reale del DNA economico nelle simulazioni
+
+---
+
+## H3 — Architettura voci economiche
 
 ⬜ sistema “aggiungi elemento economico”
-
 ⬜ popup dinamici per categoria
-
-⬜ comportamento economico per tipo voce
-
-⬜ collegamento fondi
-
-⬜ variabilità reale
-
-⬜ prevenzione rinnovi
+⬜ comportamento automatico per tipo voce
+⬜ modalità pagamento
+⬜ gestione conferme
+⬜ gestione ritardi
+⬜ gestione storica
 
 ---
 
-## H3 — Simulazione futura reale
+## H4 — Simulazione futura reale
 
 ⬜ simulazione 3/6/12 mesi
-
-⬜ lettura mesi critici
-
+⬜ rischio pressione futura
 ⬜ accumulo pressione
-
-⬜ rischio collasso margine
-
-⬜ rischio fondi insufficienti
+⬜ sincronizzazione temporale
+⬜ rischio liquidità
+⬜ mesi critici
 
 ---
 
-## H4 — Collegamento vita reale ↔ finanze
+## H5 — Collegamento vita reale ↔ finanze
 
 ⬜ Sandra dinamica
-
-⬜ mensa dinamica
-
-⬜ eventi Alice → pressione economica
-
-⬜ ferie → pressione
-
-⬜ scuola → pressione
-
+⬜ mensa Alice dinamica
+⬜ eventi Alice → pressione
+⬜ scuola → impatto economico
 ⬜ sport/corsi → pressione
+⬜ ferie → pressione
 
 ---
 
-## H5 — IPS ECONOMICO
+## H6 — IPS ECONOMICO
 
 ⬜ pressione economica globale
-
-⬜ rischio economico familiare
-
-⬜ resilienza economica
-
+⬜ resilienza sistema
+⬜ rischio familiare economico
 ⬜ collegamento IPS generale
 
 ---
 
+## H7 — EVOLUZIONI PROFONDE DEL MOTORE ECONOMICO
+
+⚠️ BLOCCO FUTURO — NON PRIORITARIO ORA
+
+Questo blocco NON autorizza espansione immediata.
+
+Serve per NON perdere le evoluzioni profonde emerse durante la costruzione del DNA economico.
+
+Queste evoluzioni dovranno essere affrontate SOLO dopo:
+
+✔ consolidamento H2
+✔ completamento H3
+✔ simulazione reale stabile
+✔ utilizzo reale nella vita quotidiana
+
+### Evoluzioni salvate
+
+⬜ vitalityState evolutivo completo
+⬜ spirale economica evolutiva
+⬜ debito resilienza futura
+⬜ perdita progressiva controllo
+⬜ saturazione resilienza familiare
+⬜ sistema che sopravvive vs sistema che guarisce
+⬜ lettura traiettoria economica familiare
+⬜ deterioramento progressivo
+⬜ consumo resilienza tramite manovre temporanee
+⬜ stress economico cronico
+⬜ lettura salute evolutiva sistema
+
+⬜ differenza tra:
+
+* stable
+* recovering
+* fatigued
+* surviving
+* degrading
+* losingControl
+* drowning
+
+Principio ufficiale:
+
+👉 prima consolidare
+👉 poi espandere
+👉 poi approfondire
+
+━━━━━━━━━━━━━━━━━━
+
+# REGOLA DOCUMENTALE UFFICIALE
+
+━━━━━━━━━━━━━━━━━━
+
+## MASTER ROADMAP UNICA
+
+⚠️ IMPORTANTISSIMO
+
+La MASTER ROADMAP deve esistere come:
+
+✅ UN SOLO documento ufficiale vivo
+
+NON devono esistere:
+
+❌ roadmap duplicate
+❌ patch parallele permanenti
+❌ copie divergenti
+❌ versioni concorrenti
+❌ roadmap spezzate
+
+---
+
+## REGOLA AGGIORNAMENTO ROADMAP
+
+Ogni aggiornamento futuro deve:
+
+✔ aggiornare il documento esistente
+✔ preservare la struttura corretta
+✔ integrare nuove decisioni senza rompere le precedenti
+✔ evitare cancellazioni impulsive
+✔ evitare perdita concetti consolidati
+✔ mantenere coerenza CNC globale
+
+---
+
+## REGOLA EVOLUZIONE STRUTTURALE
+
+Nuove idee NON autorizzano:
+
+❌ espansione immediata
+❌ cambio priorità impulsivo
+❌ creazione nuovi documenti paralleli
+
+Prima bisogna decidere:
+
+1. in quale fase appartiene
+2. quali fondamenta richiede
+3. se aumenta ordine o caos
+4. se è davvero prioritaria
+
+Solo dopo:
+
+👉 viene integrata nella roadmap ufficiale unica.
+
+━━━━━━━━━━━━━━━━━━
+
 # DIREZIONE OPERATIVA IMMEDIATA
 
-⚠️ NON scrivere codice subito.
+━━━━━━━━━━━━━━━━━━
+
+⚠️ NON codice impulsivo.
 
 Prima:
 
 ✔ definizione concetti
-✔ definizione pressione
+✔ definizione comportamento reale
+✔ definizione rischio
 ✔ definizione resilienza
-✔ definizione comportamento economico reale
+✔ definizione sincronizzazione economica
 
 Poi:
 
-➡️ implementazione motore.
+👉 implementazione motore.
+
+━━━━━━━━━━━━━━━━━━
+
+# OBIETTIVO FINALE
+
+━━━━━━━━━━━━━━━━━━
+
+FrodoDesk deve diventare:
+
+➡️ un simulatore di stabilità familiare
+➡️ un lettore di pressione reale
+➡️ un sistema preventivo
+➡️ un supporto decisionale umano
+
+NON:
+
+❌ un gestionale
+❌ un Excel
+❌ un tracker spese
+❌ una semplice app calendario

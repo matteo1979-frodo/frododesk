@@ -7,6 +7,17 @@ class FinanceSnapshot {
   final double projectedMonthlyMargin;
   final bool underPressure;
 
+  final double operationalBalance;
+  final double operationalStressRatio;
+  final String operationalStressLevel;
+  final String vitalityState;
+  final double resilienceRatio;
+  final bool recovering;
+  final bool fatigued;
+  final bool degrading;
+  final bool losingControl;
+  final bool drowning;
+
   const FinanceSnapshot({
     required this.date,
     required this.totalBalance,
@@ -15,5 +26,15 @@ class FinanceSnapshot {
     required this.projectedMonthlyExpenses,
     required this.projectedMonthlyMargin,
     required this.underPressure,
+    required this.operationalBalance,
+    required this.operationalStressRatio,
+    required this.operationalStressLevel,
+    required this.vitalityState,
+    required this.resilienceRatio,
+    required this.recovering,
+    required this.fatigued,
+    required this.degrading,
+    required this.losingControl,
+    required this.drowning,
   });
 }

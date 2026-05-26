@@ -9,6 +9,12 @@ final demoBalances = [
     initialAmount: 2500,
     currentAmount: 2100,
     updatedAt: DateTime.now(),
+    balanceType: FinanceBalanceType.bankAccount,
+    operational: true,
+    reservedAmount: 0,
+    warningThreshold: 200,
+    persistentStressDays: 0,
+    recoveryDays: 0,
   ),
   FinanceBalance(
     balanceId: 'balance_chiara',
@@ -16,6 +22,12 @@ final demoBalances = [
     initialAmount: 1800,
     currentAmount: 1650,
     updatedAt: DateTime.now(),
+    balanceType: FinanceBalanceType.bankAccount,
+    operational: true,
+    reservedAmount: 0,
+    warningThreshold: 200,
+    persistentStressDays: 0,
+    recoveryDays: 0,
   ),
 ];
 
@@ -60,6 +72,7 @@ final demoRecurringItems = [
     stability: FinanceStability.stable,
     suspensionRisk: FinanceSuspensionRisk.low,
     originType: FinanceOriginType.manual,
+    splits: const [],
   ),
 
   FinanceRecurringItem(
@@ -82,6 +95,7 @@ final demoRecurringItems = [
     stability: FinanceStability.stable,
     suspensionRisk: FinanceSuspensionRisk.low,
     originType: FinanceOriginType.contractual,
+    splits: const [],
   ),
 
   FinanceRecurringItem(
@@ -104,5 +118,6 @@ final demoRecurringItems = [
     stability: FinanceStability.stable,
     suspensionRisk: FinanceSuspensionRisk.low,
     originType: FinanceOriginType.manual,
+    splits: const [],
   ),
 ];

@@ -1,3 +1,5 @@
+import 'finance_split.dart';
+
 enum FinanceRecurringType { monthly, yearly, oneShot, custom }
 
 enum FinanceCategory {
@@ -49,6 +51,7 @@ class FinanceRecurringItem {
   final FinanceStability stability;
   final FinanceSuspensionRisk suspensionRisk;
   final FinanceOriginType originType;
+  final List<FinanceSplit> splits;
 
   const FinanceRecurringItem({
     required this.id,
@@ -73,7 +76,10 @@ class FinanceRecurringItem {
     required this.stability,
     required this.suspensionRisk,
     required this.originType,
+    required this.splits,
   });
+
+  bool get hasCustomSplits => splits.isNotEmpty;
 
   FinanceRecurringItem copyWith({
     String? name,
@@ -87,6 +93,7 @@ class FinanceRecurringItem {
     String? id,
     FinanceOriginType? originType,
     FinancePaymentOwner? paymentOwner,
+    List<FinanceSplit>? splits,
   }) {
     return FinanceRecurringItem(
       id: id ?? this.id,
@@ -110,6 +117,7 @@ class FinanceRecurringItem {
       stability: stability,
       suspensionRisk: suspensionRisk,
       originType: originType ?? this.originType,
+      splits: splits ?? this.splits,
       paymentOwner: paymentOwner ?? this.paymentOwner,
     );
   }
@@ -138,6 +146,7 @@ class FinanceRecurringItem {
       'stability': stability.name,
       'suspensionRisk': suspensionRisk.name,
       'originType': originType.name,
+      'splits': splits.map((s) => s.toJson()).toList(),
     };
   }
 
@@ -189,6 +198,11 @@ class FinanceRecurringItem {
           : FinanceOriginType.values.firstWhere(
               (e) => e.name == json['originType'],
             ),
+      splits: json['splits'] == null
+          ? []
+          : (json['splits'] as List)
+                .map((e) => FinanceSplit.fromJson(e))
+                .toList(),
     );
   }
 }

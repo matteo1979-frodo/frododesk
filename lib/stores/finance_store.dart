@@ -22,7 +22,65 @@ class FinanceStore {
   final List<FundTransaction> fundTransactions = [];
 
   double totalBalance() {
+    return balances.fold(0.0, (sum, balance) => sum + balance.availableAmount);
+  }
+
+  double grossTotalBalance() {
     return balances.fold(0.0, (sum, balance) => sum + balance.currentAmount);
+  }
+
+  double operationalBalance() {
+    return balances
+        .where((balance) => balance.operational)
+        .fold(0.0, (sum, balance) => sum + balance.availableAmount);
+  }
+
+  bool hasOperationalWarning() {
+    return balances.any(
+      (balance) => balance.operational && balance.isUnderWarning,
+    );
+  }
+
+  double operationalStressRatio() {
+    final total = operationalBalance();
+
+    if (total <= 0) {
+      return 1;
+    }
+
+    final reserved = balances
+        .where((b) => b.operational)
+        .fold(0.0, (sum, balance) => sum + balance.reservedAmount);
+
+    return reserved / total;
+  }
+
+  String operationalStressLevel() {
+    final ratio = operationalStressRatio();
+
+    if (ratio >= 1.0) {
+      return 'apnea';
+    }
+
+    if (ratio >= 0.75) {
+      return 'critical';
+    }
+
+    if (ratio >= 0.50) {
+      return 'warning';
+    }
+
+    if (ratio >= 0.25) {
+      return 'attention';
+    }
+
+    return 'stable';
+  }
+
+  bool isOperationalStressCritical() {
+    final level = operationalStressLevel();
+
+    return level == 'critical' || level == 'apnea';
   }
 
   double totalFunds() {
@@ -212,6 +270,16 @@ class FinanceStore {
       projectedMonthlyExpenses: projectedMonthlyExpenses(),
       projectedMonthlyMargin: projectedMonthlyMargin(),
       underPressure: isUnderPressure(),
+      operationalBalance: operationalBalance(),
+      operationalStressRatio: operationalStressRatio(),
+      operationalStressLevel: operationalStressLevel(),
+      vitalityState: balances.isEmpty ? 'stable' : balances.first.vitalityState,
+      resilienceRatio: balances.isEmpty ? 1 : balances.first.resilienceRatio,
+      recovering: balances.isNotEmpty && balances.first.isRecovering,
+      fatigued: balances.isNotEmpty && balances.first.isFatigued,
+      degrading: balances.isNotEmpty && balances.first.isDegrading,
+      losingControl: balances.isNotEmpty && balances.first.isLosingControl,
+      drowning: balances.isNotEmpty && balances.first.isDrowning,
     );
   }
 
@@ -222,6 +290,41 @@ class FinanceStore {
   FinanceSnapshot? latestSnapshot() {
     if (snapshots.isEmpty) {
       return null;
+    }
+
+    String economicHealthTrend() {
+      if (snapshots.length < 2) {
+        return 'unknown';
+      }
+
+      final previous = snapshots[snapshots.length - 2];
+      final current = snapshots.last;
+
+      if (current.drowning || current.losingControl) {
+        return 'critical';
+      }
+
+      if (current.degrading && previous.degrading) {
+        return 'worsening';
+      }
+
+      if (current.fatigued && previous.fatigued) {
+        return 'fatigued';
+      }
+
+      if (current.recovering && !previous.recovering) {
+        return 'recovering';
+      }
+
+      if (!current.underPressure && previous.underPressure) {
+        return 'improving';
+      }
+
+      if (!current.underPressure && !previous.underPressure) {
+        return 'stable';
+      }
+
+      return 'watch';
     }
 
     return snapshots.last;
@@ -251,6 +354,12 @@ class FinanceStore {
       initialAmount: old.initialAmount,
       currentAmount: newAmount,
       updatedAt: DateTime.now(),
+      balanceType: FinanceBalanceType.bankAccount,
+      operational: true,
+      reservedAmount: 0,
+      warningThreshold: 200,
+      persistentStressDays: 0,
+      recoveryDays: 0,
     );
 
     await saveBalances();
@@ -309,6 +418,12 @@ class FinanceStore {
           initialAmount: 993.32,
           currentAmount: 993.32,
           updatedAt: now,
+          balanceType: FinanceBalanceType.bankAccount,
+          operational: true,
+          reservedAmount: 0,
+          warningThreshold: 200,
+          persistentStressDays: 0,
+          recoveryDays: 0,
         ),
         FinanceBalance(
           balanceId: 'balance_chiara',
@@ -316,6 +431,12 @@ class FinanceStore {
           initialAmount: 1400,
           currentAmount: 1400,
           updatedAt: now,
+          balanceType: FinanceBalanceType.bankAccount,
+          operational: true,
+          reservedAmount: 0,
+          warningThreshold: 200,
+          persistentStressDays: 0,
+          recoveryDays: 0,
         ),
       ]);
 
@@ -744,6 +865,21 @@ class FinanceStore {
     for (final item in itemsForProjectionMonth(month)) {
       if (item.isIncome) continue;
 
+      if (item.hasCustomSplits) {
+        for (final split in item.splits) {
+          final splitOwner = FinancePaymentOwner.values.firstWhere(
+            (e) => e.name == split.personId,
+            orElse: () => FinancePaymentOwner.shared,
+          );
+
+          if (splitOwner == owner) {
+            total += split.amount;
+          }
+        }
+
+        continue;
+      }
+
       if (item.paymentOwner == owner) {
         total += item.expectedAmount;
       }
@@ -764,6 +900,21 @@ class FinanceStore {
 
     for (final item in itemsForProjectionMonth(month)) {
       if (!item.isIncome) continue;
+
+      if (item.hasCustomSplits) {
+        for (final split in item.splits) {
+          final splitOwner = FinancePaymentOwner.values.firstWhere(
+            (e) => e.name == split.personId,
+            orElse: () => FinancePaymentOwner.shared,
+          );
+
+          if (splitOwner == owner) {
+            total += split.amount;
+          }
+        }
+
+        continue;
+      }
 
       if (item.paymentOwner == owner) {
         total += item.expectedAmount;

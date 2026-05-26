@@ -3508,6 +3508,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ? FinanceSuspensionRisk.low
                             : FinanceSuspensionRisk.medium,
                         originType: FinanceOriginType.manual,
+                        splits: const [],
                       ),
                     );
 
