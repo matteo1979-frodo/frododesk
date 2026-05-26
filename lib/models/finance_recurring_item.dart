@@ -28,6 +28,73 @@ enum FinanceStability { stable, unstable }
 
 enum FinanceSuspensionRisk { low, medium, high, critical }
 
+class FinanceBehaviorProfile {
+  final bool predictable;
+  final bool lifeGenerated;
+  final bool timeSensitive;
+  final bool canBeDelayed;
+  final bool canBeSplit;
+  final bool canBeReduced;
+  final bool affectsResilience;
+  final bool affectsOperationalOxygen;
+  final double rigidityScore;
+  final double maneuverabilityScore;
+  final double recoveryImpactScore;
+
+  const FinanceBehaviorProfile({
+    this.predictable = true,
+    this.lifeGenerated = false,
+    this.timeSensitive = false,
+    this.canBeDelayed = false,
+    this.canBeSplit = false,
+    this.canBeReduced = false,
+    this.affectsResilience = true,
+    this.affectsOperationalOxygen = true,
+    this.rigidityScore = 0.5,
+    this.maneuverabilityScore = 0.5,
+    this.recoveryImpactScore = 0.5,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'predictable': predictable,
+      'lifeGenerated': lifeGenerated,
+      'timeSensitive': timeSensitive,
+      'canBeDelayed': canBeDelayed,
+      'canBeSplit': canBeSplit,
+      'canBeReduced': canBeReduced,
+      'affectsResilience': affectsResilience,
+      'affectsOperationalOxygen': affectsOperationalOxygen,
+      'rigidityScore': rigidityScore,
+      'maneuverabilityScore': maneuverabilityScore,
+      'recoveryImpactScore': recoveryImpactScore,
+    };
+  }
+
+  factory FinanceBehaviorProfile.fromJson(Map<String, dynamic>? json) {
+    if (json == null) {
+      return const FinanceBehaviorProfile();
+    }
+
+    return FinanceBehaviorProfile(
+      predictable: json['predictable'] as bool? ?? true,
+      lifeGenerated: json['lifeGenerated'] as bool? ?? false,
+      timeSensitive: json['timeSensitive'] as bool? ?? false,
+      canBeDelayed: json['canBeDelayed'] as bool? ?? false,
+      canBeSplit: json['canBeSplit'] as bool? ?? false,
+      canBeReduced: json['canBeReduced'] as bool? ?? false,
+      affectsResilience: json['affectsResilience'] as bool? ?? true,
+      affectsOperationalOxygen:
+          json['affectsOperationalOxygen'] as bool? ?? true,
+      rigidityScore: (json['rigidityScore'] as num?)?.toDouble() ?? 0.5,
+      maneuverabilityScore:
+          (json['maneuverabilityScore'] as num?)?.toDouble() ?? 0.5,
+      recoveryImpactScore:
+          (json['recoveryImpactScore'] as num?)?.toDouble() ?? 0.5,
+    );
+  }
+}
+
 class FinanceRecurringItem {
   final String id;
   final String name;
@@ -52,6 +119,7 @@ class FinanceRecurringItem {
   final FinanceSuspensionRisk suspensionRisk;
   final FinanceOriginType originType;
   final List<FinanceSplit> splits;
+  final FinanceBehaviorProfile behaviorProfile;
 
   const FinanceRecurringItem({
     required this.id,
@@ -77,6 +145,7 @@ class FinanceRecurringItem {
     required this.suspensionRisk,
     required this.originType,
     required this.splits,
+    this.behaviorProfile = const FinanceBehaviorProfile(),
   });
 
   bool get hasCustomSplits => splits.isNotEmpty;
@@ -94,6 +163,7 @@ class FinanceRecurringItem {
     FinanceOriginType? originType,
     FinancePaymentOwner? paymentOwner,
     List<FinanceSplit>? splits,
+    FinanceBehaviorProfile? behaviorProfile,
   }) {
     return FinanceRecurringItem(
       id: id ?? this.id,
@@ -119,6 +189,7 @@ class FinanceRecurringItem {
       originType: originType ?? this.originType,
       splits: splits ?? this.splits,
       paymentOwner: paymentOwner ?? this.paymentOwner,
+      behaviorProfile: behaviorProfile ?? this.behaviorProfile,
     );
   }
 
@@ -147,6 +218,7 @@ class FinanceRecurringItem {
       'suspensionRisk': suspensionRisk.name,
       'originType': originType.name,
       'splits': splits.map((s) => s.toJson()).toList(),
+      'behaviorProfile': behaviorProfile.toJson(),
     };
   }
 
@@ -203,6 +275,9 @@ class FinanceRecurringItem {
           : (json['splits'] as List)
                 .map((e) => FinanceSplit.fromJson(e))
                 .toList(),
+      behaviorProfile: FinanceBehaviorProfile.fromJson(
+        json['behaviorProfile'] as Map<String, dynamic>?,
+      ),
     );
   }
 }

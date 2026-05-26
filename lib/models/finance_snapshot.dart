@@ -11,6 +11,7 @@ class FinanceSnapshot {
   final double operationalStressRatio;
   final String operationalStressLevel;
   final String vitalityState;
+  final String economicTrend;
   final double resilienceRatio;
   final bool recovering;
   final bool fatigued;
@@ -30,6 +31,7 @@ class FinanceSnapshot {
     required this.operationalStressRatio,
     required this.operationalStressLevel,
     required this.vitalityState,
+    required this.economicTrend,
     required this.resilienceRatio,
     required this.recovering,
     required this.fatigued,

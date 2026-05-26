@@ -274,6 +274,7 @@ class FinanceStore {
       operationalStressRatio: operationalStressRatio(),
       operationalStressLevel: operationalStressLevel(),
       vitalityState: balances.isEmpty ? 'stable' : balances.first.vitalityState,
+      economicTrend: economicHealthTrend(),
       resilienceRatio: balances.isEmpty ? 1 : balances.first.resilienceRatio,
       recovering: balances.isNotEmpty && balances.first.isRecovering,
       fatigued: balances.isNotEmpty && balances.first.isFatigued,
@@ -292,42 +293,55 @@ class FinanceStore {
       return null;
     }
 
-    String economicHealthTrend() {
-      if (snapshots.length < 2) {
-        return 'unknown';
-      }
+    return snapshots.last;
+  }
 
-      final previous = snapshots[snapshots.length - 2];
-      final current = snapshots.last;
-
-      if (current.drowning || current.losingControl) {
-        return 'critical';
-      }
-
-      if (current.degrading && previous.degrading) {
-        return 'worsening';
-      }
-
-      if (current.fatigued && previous.fatigued) {
-        return 'fatigued';
-      }
-
-      if (current.recovering && !previous.recovering) {
-        return 'recovering';
-      }
-
-      if (!current.underPressure && previous.underPressure) {
-        return 'improving';
-      }
-
-      if (!current.underPressure && !previous.underPressure) {
-        return 'stable';
-      }
-
-      return 'watch';
+  String economicHealthTrend() {
+    if (snapshots.length < 3) {
+      return 'unknown';
     }
 
-    return snapshots.last;
+    final recent = snapshots.sublist(snapshots.length - 3);
+
+    final criticalCount = recent
+        .where((snapshot) => snapshot.drowning || snapshot.losingControl)
+        .length;
+
+    if (criticalCount >= 1) {
+      return 'critical';
+    }
+
+    final degradingCount = recent
+        .where((snapshot) => snapshot.degrading)
+        .length;
+
+    if (degradingCount >= 2) {
+      return 'worsening';
+    }
+
+    final fatiguedCount = recent.where((snapshot) => snapshot.fatigued).length;
+
+    if (fatiguedCount >= 2) {
+      return 'fatigued';
+    }
+
+    final recoveringCount = recent
+        .where((snapshot) => snapshot.recovering)
+        .length;
+
+    if (recoveringCount >= 2) {
+      return 'recovering';
+    }
+
+    final pressureCount = recent
+        .where((snapshot) => snapshot.underPressure)
+        .length;
+
+    if (pressureCount == 0) {
+      return 'stable';
+    }
+
+    return 'watch';
   }
 
   double balanceForPerson(String personId) {
