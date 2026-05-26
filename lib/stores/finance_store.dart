@@ -973,6 +973,26 @@ class FinanceStore {
     return income - expenses;
   }
 
+  FinanceMonthSaturation _monthSaturation({
+    required double margin,
+    required double pressureDensity,
+    required int pressureItemCount,
+  }) {
+    if (margin < 0 && pressureDensity > 800) {
+      return FinanceMonthSaturation.critical;
+    }
+
+    if (margin < 200 && pressureItemCount >= 8) {
+      return FinanceMonthSaturation.high;
+    }
+
+    if (pressureDensity > 400 || pressureItemCount >= 5) {
+      return FinanceMonthSaturation.medium;
+    }
+
+    return FinanceMonthSaturation.low;
+  }
+
   List<FinanceMonthProjection> nextMonthProjections({int months = 12}) {
     final now = DateTime.now();
     final result = <FinanceMonthProjection>[];
@@ -1016,6 +1036,11 @@ class FinanceStore {
           pressureScore: pressure,
           pressureItemCount: pressureItemCount,
           pressureDensity: pressureDensity,
+          saturation: _monthSaturation(
+            margin: margin,
+            pressureDensity: pressureDensity,
+            pressureItemCount: pressureItemCount,
+          ),
         ),
       );
     }
@@ -1065,6 +1090,11 @@ class FinanceStore {
           pressureScore: pressure,
           pressureItemCount: pressureItemCount,
           pressureDensity: pressureDensity,
+          saturation: _monthSaturation(
+            margin: margin,
+            pressureDensity: pressureDensity,
+            pressureItemCount: pressureItemCount,
+          ),
         ),
       );
     }

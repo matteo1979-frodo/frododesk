@@ -1,3 +1,5 @@
+enum FinanceMonthSaturation { low, medium, high, critical }
+
 class FinanceMonthProjection {
   final DateTime month;
 
@@ -8,6 +10,7 @@ class FinanceMonthProjection {
   final double pressureScore;
   final int pressureItemCount;
   final double pressureDensity;
+  final FinanceMonthSaturation saturation;
 
   const FinanceMonthProjection({
     required this.month,
@@ -17,5 +20,6 @@ class FinanceMonthProjection {
     required this.pressureScore,
     required this.pressureItemCount,
     required this.pressureDensity,
+    required this.saturation,
   });
 }
