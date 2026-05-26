@@ -6,6 +6,8 @@ class FinanceMonthProjection {
   final double expectedMargin;
 
   final double pressureScore;
+  final int pressureItemCount;
+  final double pressureDensity;
 
   const FinanceMonthProjection({
     required this.month,
@@ -13,5 +15,7 @@ class FinanceMonthProjection {
     required this.expectedExpenses,
     required this.expectedMargin,
     required this.pressureScore,
+    required this.pressureItemCount,
+    required this.pressureDensity,
   });
 }

@@ -722,6 +722,27 @@ class FinanceStore {
 
       double weight = item.expectedAmount;
 
+      final behavior = item.behaviorProfile;
+
+      weight *= 1 + behavior.rigidityScore;
+      weight *= 1 + (1 - behavior.maneuverabilityScore);
+
+      if (behavior.lifeGenerated) {
+        weight *= 1.15;
+      }
+
+      if (behavior.timeSensitive) {
+        weight *= 1.20;
+      }
+
+      if (!behavior.affectsResilience) {
+        weight *= 0.85;
+      }
+
+      if (!behavior.affectsOperationalOxygen) {
+        weight *= 0.90;
+      }
+
       final matchingProtectedFundsAmount = funds
           .where((fund) {
             if (!fund.protected) return false;
@@ -947,7 +968,6 @@ class FinanceStore {
     required FinancePaymentOwner owner,
   }) {
     final income = projectedIncomeForOwner(month: month, owner: owner);
-
     final expenses = projectedAmountForOwner(month: month, owner: owner);
 
     return income - expenses;
@@ -963,7 +983,9 @@ class FinanceStore {
       double income = 0;
       double expenses = 0;
 
-      for (final item in itemsForProjectionMonth(month)) {
+      final monthItems = itemsForProjectionMonth(month);
+
+      for (final item in monthItems) {
         if (item.isIncome) {
           income += item.expectedAmount;
         } else {
@@ -979,6 +1001,12 @@ class FinanceStore {
         pressure *= 1.5;
       }
 
+      final pressureItems = monthItems.where((item) => !item.isIncome).toList();
+      final pressureItemCount = pressureItems.length;
+      final pressureDensity = pressureItemCount == 0
+          ? 0.0
+          : pressure / pressureItemCount;
+
       result.add(
         FinanceMonthProjection(
           month: month,
@@ -986,6 +1014,8 @@ class FinanceStore {
           expectedExpenses: expenses,
           expectedMargin: margin,
           pressureScore: pressure,
+          pressureItemCount: pressureItemCount,
+          pressureDensity: pressureDensity,
         ),
       );
     }
@@ -1002,7 +1032,9 @@ class FinanceStore {
       double income = 0;
       double expenses = 0;
 
-      for (final item in itemsForProjectionMonth(month)) {
+      final monthItems = itemsForProjectionMonth(month);
+
+      for (final item in monthItems) {
         if (item.isIncome) {
           income += item.expectedAmount;
         } else {
@@ -1018,6 +1050,12 @@ class FinanceStore {
         pressure *= 1.5;
       }
 
+      final pressureItems = monthItems.where((item) => !item.isIncome).toList();
+      final pressureItemCount = pressureItems.length;
+      final pressureDensity = pressureItemCount == 0
+          ? 0.0
+          : pressure / pressureItemCount;
+
       result.add(
         FinanceMonthProjection(
           month: month,
@@ -1025,6 +1063,8 @@ class FinanceStore {
           expectedExpenses: expenses,
           expectedMargin: margin,
           pressureScore: pressure,
+          pressureItemCount: pressureItemCount,
+          pressureDensity: pressureDensity,
         ),
       );
     }
