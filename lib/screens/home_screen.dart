@@ -38,6 +38,8 @@ import '../widgets/finance/finance_info_card.dart';
 import '../widgets/home/global_event_entry_card.dart';
 import '../widgets/shared/dialog_empty_state.dart';
 import '../widgets/shared/section_title.dart';
+import '../models/finance_category_template.dart';
+import '../models/finance_split.dart';
 
 class HomeScreen extends StatefulWidget {
   final IpsStore ipsStore;
@@ -69,7 +71,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadFinanceData() async {
     await financeStore.loadInitialRealData();
 
+    await financeStore.saveBalances();
+    await financeStore.saveFunds();
+    await financeStore.saveRecurringItems();
+
     financeStore.saveSnapshot(DateTime.now());
+
+    debugPrint('FINANCE balances: ${financeStore.balances.length}');
+    debugPrint('FINANCE funds: ${financeStore.funds.length}');
+    debugPrint('FINANCE recurring: ${financeStore.recurringItems.length}');
+    debugPrint('FINANCE total: ${financeStore.totalBalance()}');
 
     if (mounted) {
       setState(() {});
@@ -3240,12 +3251,23 @@ class _HomeScreenState extends State<HomeScreen> {
     final amountController = TextEditingController();
     final descriptionController = TextEditingController();
 
+    final matteoPercentController = TextEditingController(text: '50');
+    final chiaraPercentController = TextEditingController(text: '50');
+
     DateTime selectedDate = DateTime.now();
 
     FinanceRecurringType selectedRecurringType = FinanceRecurringType.monthly;
     final customIntervalController = TextEditingController(text: '1');
 
     String selectedCustomUnit = 'months';
+    String selectedPaymentMode = 'shared';
+    String? selectedBalanceId;
+
+    FinancePaymentMethod selectedPaymentMethod = FinancePaymentMethod.manual;
+
+    FinanceSmartTemplateType selectedTemplate = isIncome
+        ? FinanceSmartTemplateType.salary
+        : FinanceSmartTemplateType.generic;
 
     await _showHomeDialog(
       icon: isIncome
@@ -3259,11 +3281,187 @@ class _HomeScreenState extends State<HomeScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              DropdownButtonFormField<FinanceSmartTemplateType>(
+                value: selectedTemplate,
+                decoration: InputDecoration(
+                  labelText: "Tipo voce",
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.82),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+                items: financeSmartTemplates.map((template) {
+                  return DropdownMenuItem(
+                    value: template.type,
+                    child: Text(template.label),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  refreshDialog(() {
+                    selectedTemplate = value;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 14),
+
+              DropdownButtonFormField<String>(
+                value: selectedPaymentMode,
+                decoration: InputDecoration(
+                  labelText: isIncome ? "Chi riceve" : "Chi paga",
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.82),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'matteo', child: Text("Matteo")),
+                  DropdownMenuItem(value: 'chiara', child: Text("Chiara")),
+                  DropdownMenuItem(
+                    value: 'shared',
+                    child: Text("Condivisa 50/50"),
+                  ),
+                  DropdownMenuItem(
+                    value: 'custom',
+                    child: Text("Personalizzata"),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value == null) return;
+                  refreshDialog(() {
+                    selectedPaymentMode = value;
+                  });
+                },
+              ),
+
+              if (selectedPaymentMode == 'custom') ...[
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: matteoPercentController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: "Matteo %",
+                          hintText: "80",
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.82),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: chiaraPercentController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: "Chiara %",
+                          hintText: "20",
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.82),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+
+              const SizedBox(height: 14),
+
+              DropdownButtonFormField<String>(
+                value: selectedBalanceId,
+                decoration: InputDecoration(
+                  labelText: "Da quale conto?",
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.82),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+                items: financeStore.balances.where((b) => b.active).map((
+                  balance,
+                ) {
+                  return DropdownMenuItem(
+                    value: balance.balanceId,
+                    child: Text(
+                      balance.name == balance.balanceId
+                          ? balance.personId == 'matteo'
+                                ? 'Conto principale Matteo'
+                                : balance.personId == 'chiara'
+                                ? 'Conto principale Chiara'
+                                : balance.name
+                          : balance.name,
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  refreshDialog(() {
+                    selectedBalanceId = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 14),
+
+              DropdownButtonFormField<FinancePaymentMethod>(
+                value: selectedPaymentMethod,
+                decoration: InputDecoration(
+                  labelText: "Metodo pagamento",
+                  filled: true,
+                  fillColor: Colors.white.withOpacity(0.82),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: FinancePaymentMethod.manual,
+                    child: Text("Manuale"),
+                  ),
+                  DropdownMenuItem(
+                    value: FinancePaymentMethod.rid,
+                    child: Text("RID bancario"),
+                  ),
+                  DropdownMenuItem(
+                    value: FinancePaymentMethod.bankTransfer,
+                    child: Text("Bonifico"),
+                  ),
+                  DropdownMenuItem(
+                    value: FinancePaymentMethod.card,
+                    child: Text("Carta"),
+                  ),
+                  DropdownMenuItem(
+                    value: FinancePaymentMethod.cash,
+                    child: Text("Contanti"),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value == null) return;
+
+                  refreshDialog(() {
+                    selectedPaymentMethod = value;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 14),
+
               TextField(
                 controller: nameController,
                 decoration: InputDecoration(
                   labelText: "Nome",
-                  hintText: isIncome ? "Es. Stipendio" : "Es. Bolletta luce",
+                  hintText: isIncome
+                      ? "Es. Stipendio"
+                      : "Es. Disney+, IMU, Bolletta luce",
                   filled: true,
                   fillColor: Colors.white.withOpacity(0.82),
                   border: OutlineInputBorder(
@@ -3418,14 +3616,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              const SizedBox(height: 14),
+              const SizedBox(height: 18),
 
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: () async {
                     final name = nameController.text.trim();
-
                     final description = descriptionController.text.trim();
 
                     final rawAmount = amountController.text.trim().replaceAll(
@@ -3439,32 +3636,141 @@ class _HomeScreenState extends State<HomeScreen> {
                       return;
                     }
 
+                    FinanceCategory category = FinanceCategory.generic;
+                    FinancePressureLevel pressure = FinancePressureLevel.medium;
+                    FinancePaymentPriority priority =
+                        FinancePaymentPriority.normal;
+                    FinanceProtectionLevel protection =
+                        FinanceProtectionLevel.none;
+                    FinanceBehaviorProfile behavior =
+                        const FinanceBehaviorProfile();
+
+                    switch (selectedTemplate) {
+                      case FinanceSmartTemplateType.subscription:
+                        category = FinanceCategory.entertainment;
+                        pressure = FinancePressureLevel.low;
+                        priority = FinancePaymentPriority.low;
+                        behavior = const FinanceBehaviorProfile(
+                          predictable: true,
+                          canBeReduced: true,
+                          canBeDelayed: true,
+                          affectsResilience: false,
+                          affectsOperationalOxygen: false,
+                          rigidityScore: 0.2,
+                          maneuverabilityScore: 0.9,
+                          recoveryImpactScore: 0.1,
+                        );
+
+                      case FinanceSmartTemplateType.utilityBill:
+                        category = FinanceCategory.house;
+                        pressure = FinancePressureLevel.high;
+                        priority = FinancePaymentPriority.high;
+                        behavior = const FinanceBehaviorProfile(
+                          predictable: true,
+                          affectsResilience: true,
+                          affectsOperationalOxygen: true,
+                          rigidityScore: 0.8,
+                          maneuverabilityScore: 0.2,
+                          recoveryImpactScore: 0.7,
+                        );
+
+                      case FinanceSmartTemplateType.insurance:
+                        category = FinanceCategory.auto;
+                        pressure = FinancePressureLevel.high;
+                        priority = FinancePaymentPriority.high;
+                        protection = FinanceProtectionLevel.protected;
+                        behavior = const FinanceBehaviorProfile(
+                          predictable: true,
+                          timeSensitive: true,
+                          affectsResilience: true,
+                          rigidityScore: 0.85,
+                          maneuverabilityScore: 0.1,
+                          recoveryImpactScore: 0.8,
+                        );
+
+                      case FinanceSmartTemplateType.salary:
+                        category = FinanceCategory.salary;
+                        pressure = FinancePressureLevel.low;
+                        priority = FinancePaymentPriority.critical;
+                        protection = FinanceProtectionLevel.protected;
+
+                      case FinanceSmartTemplateType.car:
+                        category = FinanceCategory.auto;
+
+                      case FinanceSmartTemplateType.school:
+                        category = FinanceCategory.school;
+
+                      case FinanceSmartTemplateType.health:
+                        category = FinanceCategory.health;
+
+                      case FinanceSmartTemplateType.mortgage:
+                      case FinanceSmartTemplateType.rent:
+                      case FinanceSmartTemplateType.generic:
+                        break;
+                    }
+
+                    FinancePaymentOwner paymentOwner =
+                        FinancePaymentOwner.shared;
+                    List<FinanceSplit> splits = const [];
+
+                    if (selectedPaymentMode == 'matteo') {
+                      paymentOwner = FinancePaymentOwner.matteo;
+                    } else if (selectedPaymentMode == 'chiara') {
+                      paymentOwner = FinancePaymentOwner.chiara;
+                    } else if (selectedPaymentMode == 'custom') {
+                      final matteoPercent =
+                          double.tryParse(
+                            matteoPercentController.text.trim().replaceAll(
+                              ',',
+                              '.',
+                            ),
+                          ) ??
+                          50;
+
+                      final chiaraPercent =
+                          double.tryParse(
+                            chiaraPercentController.text.trim().replaceAll(
+                              ',',
+                              '.',
+                            ),
+                          ) ??
+                          50;
+
+                      final totalPercent = matteoPercent + chiaraPercent;
+
+                      if (totalPercent > 0) {
+                        splits = [
+                          FinanceSplit(
+                            personId: 'matteo',
+                            amount: amount * (matteoPercent / totalPercent),
+                          ),
+                          FinanceSplit(
+                            personId: 'chiara',
+                            amount: amount * (chiaraPercent / totalPercent),
+                          ),
+                        ];
+                      }
+                    }
+
                     final now = DateTime.now();
 
                     await financeStore.addRecurringItem(
                       FinanceRecurringItem(
                         id: 'recurring_${now.microsecondsSinceEpoch}',
-
                         name: name,
-
                         description: description.isEmpty
                             ? (isIncome
                                   ? "Entrata inserita manualmente"
                                   : "Uscita inserita manualmente")
                             : description,
-
                         expectedAmount: amount,
-
                         nextDueDate: DateTime(
                           selectedDate.year,
                           selectedDate.month,
                           selectedDate.day,
                         ),
-
                         isIncome: isIncome,
-
                         recurringType: selectedRecurringType,
-
                         customInterval:
                             selectedRecurringType == FinanceRecurringType.custom
                             ? int.tryParse(customIntervalController.text.trim())
@@ -3473,42 +3779,23 @@ class _HomeScreenState extends State<HomeScreen> {
                             selectedRecurringType == FinanceRecurringType.custom
                             ? selectedCustomUnit
                             : null,
-
-                        category: isIncome
-                            ? FinanceCategory.salary
-                            : FinanceCategory.generic,
-
+                        category: category,
                         requiresManualConfirmation: true,
-
                         mandatory: !isIncome,
-
-                        pressureLevel: isIncome
-                            ? FinancePressureLevel.low
-                            : FinancePressureLevel.medium,
-
+                        pressureLevel: pressure,
                         confirmed: false,
-
                         realAmount: null,
-
                         variability: FinanceVariability.fixed,
-
-                        paymentPriority: isIncome
-                            ? FinancePaymentPriority.high
-                            : FinancePaymentPriority.normal,
-
-                        protectionLevel: isIncome
-                            ? FinanceProtectionLevel.protected
-                            : FinanceProtectionLevel.none,
-
-                        paymentOwner: FinancePaymentOwner.shared,
-
+                        paymentPriority: priority,
+                        protectionLevel: protection,
+                        paymentOwner: paymentOwner,
+                        balanceId: selectedBalanceId,
+                        paymentMethod: selectedPaymentMethod,
                         stability: FinanceStability.stable,
-
-                        suspensionRisk: isIncome
-                            ? FinanceSuspensionRisk.low
-                            : FinanceSuspensionRisk.medium,
+                        suspensionRisk: FinanceSuspensionRisk.medium,
                         originType: FinanceOriginType.manual,
-                        splits: const [],
+                        splits: splits,
+                        behaviorProfile: behavior,
                       ),
                     );
 

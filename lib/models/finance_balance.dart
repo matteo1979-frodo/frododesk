@@ -1,26 +1,37 @@
-enum FinanceBalanceType { bankAccount, cash, prepaidCard, sharedAccount }
+enum FinanceBalanceType {
+  bankAccount,
+  cash,
+  prepaidCard,
+  debitCard,
+  creditCard,
+  sharedAccount,
+}
 
 class FinanceBalance {
   final String personId;
+  final String balanceId;
+  final String name;
   final double initialAmount;
   final double currentAmount;
   final DateTime updatedAt;
   final FinanceBalanceType balanceType;
   final bool operational;
+  final bool active;
   final double reservedAmount;
   final double warningThreshold;
   final int persistentStressDays;
   final int recoveryDays;
-  final String balanceId;
 
   const FinanceBalance({
     required this.personId,
     required this.balanceId,
+    required this.name,
     required this.initialAmount,
     required this.currentAmount,
     required this.updatedAt,
     required this.balanceType,
     required this.operational,
+    required this.active,
     required this.reservedAmount,
     required this.warningThreshold,
     required this.persistentStressDays,
@@ -28,14 +39,19 @@ class FinanceBalance {
   });
 
   double get availableAmount => currentAmount - reservedAmount;
+
   bool get isUnderWarning => availableAmount <= warningThreshold;
+
   bool get isRecovering => recoveryDays > persistentStressDays;
+
   bool get isFatigued =>
       persistentStressDays > 7 && !isUnderWarning && !isRecovering;
+
   bool get isLosingControl =>
       isUnderWarning &&
       persistentStressDays > 14 &&
       recoveryDays < persistentStressDays / 2;
+
   bool get isBorrowingFromFuture =>
       reservedAmount > availableAmount && persistentStressDays > 21;
 
@@ -48,8 +64,11 @@ class FinanceBalance {
   }
 
   bool get isResilient => resilienceRatio >= 1 && !isUnderWarning;
+
   bool get isSurviving => persistentStressDays > 0 && resilienceRatio < 1;
+
   bool get isDegrading => isUnderWarning && persistentStressDays > recoveryDays;
+
   bool get isDrowning => availableAmount <= 0 && persistentStressDays > 30;
 
   String get vitalityState {
@@ -88,11 +107,13 @@ class FinanceBalance {
     return {
       'personId': personId,
       'balanceId': balanceId,
+      'name': name,
       'initialAmount': initialAmount,
       'currentAmount': currentAmount,
       'updatedAt': updatedAt.toIso8601String(),
       'balanceType': balanceType.name,
       'operational': operational,
+      'active': active,
       'reservedAmount': reservedAmount,
       'warningThreshold': warningThreshold,
       'persistentStressDays': persistentStressDays,
@@ -104,6 +125,7 @@ class FinanceBalance {
     return FinanceBalance(
       balanceId: json['balanceId'] as String,
       personId: json['personId'] as String,
+      name: json['name'] as String? ?? json['balanceId'] as String,
       initialAmount: (json['initialAmount'] as num).toDouble(),
       currentAmount: (json['currentAmount'] as num).toDouble(),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
@@ -113,6 +135,7 @@ class FinanceBalance {
               (e) => e.name == json['balanceType'],
             ),
       operational: json['operational'] as bool? ?? true,
+      active: json['active'] as bool? ?? true,
       reservedAmount: (json['reservedAmount'] as num?)?.toDouble() ?? 0,
       warningThreshold: (json['warningThreshold'] as num?)?.toDouble() ?? 200,
       persistentStressDays: (json['persistentStressDays'] as int?) ?? 0,

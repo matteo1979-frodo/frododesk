@@ -1,4 +1,5 @@
 import 'finance_split.dart';
+import 'finance_category_template.dart';
 
 enum FinanceRecurringType { monthly, yearly, oneShot, custom }
 
@@ -115,6 +116,8 @@ class FinanceRecurringItem {
   final FinancePaymentPriority paymentPriority;
   final FinanceProtectionLevel protectionLevel;
   final FinancePaymentOwner paymentOwner;
+  final String? balanceId;
+  final FinancePaymentMethod paymentMethod;
   final FinanceStability stability;
   final FinanceSuspensionRisk suspensionRisk;
   final FinanceOriginType originType;
@@ -141,6 +144,8 @@ class FinanceRecurringItem {
     required this.paymentPriority,
     required this.protectionLevel,
     required this.paymentOwner,
+    this.balanceId,
+    required this.paymentMethod,
     required this.stability,
     required this.suspensionRisk,
     required this.originType,
@@ -164,6 +169,8 @@ class FinanceRecurringItem {
     FinancePaymentOwner? paymentOwner,
     List<FinanceSplit>? splits,
     FinanceBehaviorProfile? behaviorProfile,
+    String? balanceId,
+    FinancePaymentMethod? paymentMethod,
   }) {
     return FinanceRecurringItem(
       id: id ?? this.id,
@@ -189,6 +196,8 @@ class FinanceRecurringItem {
       originType: originType ?? this.originType,
       splits: splits ?? this.splits,
       paymentOwner: paymentOwner ?? this.paymentOwner,
+      balanceId: balanceId ?? this.balanceId,
+      paymentMethod: paymentMethod ?? this.paymentMethod,
       behaviorProfile: behaviorProfile ?? this.behaviorProfile,
     );
   }
@@ -214,6 +223,7 @@ class FinanceRecurringItem {
       'paymentPriority': paymentPriority.name,
       'protectionLevel': protectionLevel.name,
       'paymentOwner': paymentOwner.name,
+      'balanceId': balanceId,
       'stability': stability.name,
       'suspensionRisk': suspensionRisk.name,
       'originType': originType.name,
@@ -258,6 +268,12 @@ class FinanceRecurringItem {
           ? FinancePaymentOwner.shared
           : FinancePaymentOwner.values.firstWhere(
               (e) => e.name == json['paymentOwner'],
+            ),
+      balanceId: json['balanceId'] as String?,
+      paymentMethod: json['paymentMethod'] == null
+          ? FinancePaymentMethod.manual
+          : FinancePaymentMethod.values.firstWhere(
+              (e) => e.name == json['paymentMethod'],
             ),
       stability: FinanceStability.values.firstWhere(
         (e) => e.name == json['stability'],

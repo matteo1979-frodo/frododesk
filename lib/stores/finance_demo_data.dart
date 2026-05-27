@@ -1,11 +1,14 @@
 import '../models/finance_balance.dart';
 import '../models/finance_fund.dart';
 import '../models/finance_recurring_item.dart';
+import '../models/finance_category_template.dart';
 
 final demoBalances = [
   FinanceBalance(
     balanceId: 'balance_matteo',
     personId: 'matteo',
+    name: 'Conto principale Matteo',
+    active: true,
     initialAmount: 2500,
     currentAmount: 2100,
     updatedAt: DateTime.now(),
@@ -19,6 +22,8 @@ final demoBalances = [
   FinanceBalance(
     balanceId: 'balance_chiara',
     personId: 'chiara',
+    name: 'Conto principale Chiara',
+    active: true,
     initialAmount: 1800,
     currentAmount: 1650,
     updatedAt: DateTime.now(),
@@ -69,6 +74,7 @@ final demoRecurringItems = [
     paymentPriority: FinancePaymentPriority.high,
     protectionLevel: FinanceProtectionLevel.protected,
     paymentOwner: FinancePaymentOwner.matteo,
+    paymentMethod: FinancePaymentMethod.bankTransfer,
     stability: FinanceStability.stable,
     suspensionRisk: FinanceSuspensionRisk.low,
     originType: FinanceOriginType.manual,
@@ -92,6 +98,7 @@ final demoRecurringItems = [
     paymentPriority: FinancePaymentPriority.high,
     protectionLevel: FinanceProtectionLevel.protected,
     paymentOwner: FinancePaymentOwner.chiara,
+    paymentMethod: FinancePaymentMethod.bankTransfer,
     stability: FinanceStability.stable,
     suspensionRisk: FinanceSuspensionRisk.low,
     originType: FinanceOriginType.contractual,
@@ -115,6 +122,7 @@ final demoRecurringItems = [
     paymentPriority: FinancePaymentPriority.low,
     protectionLevel: FinanceProtectionLevel.none,
     paymentOwner: FinancePaymentOwner.shared,
+    paymentMethod: FinancePaymentMethod.rid,
     stability: FinanceStability.stable,
     suspensionRisk: FinanceSuspensionRisk.low,
     originType: FinanceOriginType.manual,

@@ -365,6 +365,8 @@ class FinanceStore {
     balances[index] = FinanceBalance(
       balanceId: old.balanceId,
       personId: old.personId,
+      name: old.name,
+      active: old.active,
       initialAmount: old.initialAmount,
       currentAmount: newAmount,
       updatedAt: DateTime.now(),
@@ -399,28 +401,59 @@ class FinanceStore {
     final loaded = await loadSavedBalances();
 
     if (loaded) {
-      final fundsLoaded = await loadSavedFunds();
-      await loadSavedFundTransactions();
+      final allBalancesZero = balances.every((b) => b.currentAmount == 0);
 
-      if (!fundsLoaded) {
-        funds
-          ..clear()
-          ..addAll(demoFunds);
+      if (!allBalancesZero) {
+        final fundsLoaded = await loadSavedFunds();
+        await loadSavedFundTransactions();
 
-        await saveFunds();
+        if (!fundsLoaded) {
+          funds
+            ..clear()
+            ..addAll(demoFunds);
+
+          await saveFunds();
+        }
+
+        final recurringItemsLoaded = await loadSavedRecurringItems();
+
+        if (!recurringItemsLoaded) {
+          recurringItems
+            ..clear()
+            ..addAll(demoRecurringItems);
+
+          await saveRecurringItems();
+        }
+
+        return;
+      }
+      for (int i = 0; i < balances.length; i++) {
+        final old = balances[i];
+
+        if (old.name == old.balanceId) {
+          balances[i] = FinanceBalance(
+            balanceId: old.balanceId,
+            personId: old.personId,
+            name: old.personId == 'matteo'
+                ? 'Conto principale Matteo'
+                : old.personId == 'chiara'
+                ? 'Conto principale Chiara'
+                : old.name,
+            initialAmount: old.initialAmount,
+            currentAmount: old.currentAmount,
+            updatedAt: old.updatedAt,
+            balanceType: old.balanceType,
+            operational: old.operational,
+            active: old.active,
+            reservedAmount: old.reservedAmount,
+            warningThreshold: old.warningThreshold,
+            persistentStressDays: old.persistentStressDays,
+            recoveryDays: old.recoveryDays,
+          );
+        }
       }
 
-      final recurringItemsLoaded = await loadSavedRecurringItems();
-
-      if (!recurringItemsLoaded) {
-        recurringItems
-          ..clear()
-          ..addAll(demoRecurringItems);
-
-        await saveRecurringItems();
-      }
-
-      return;
+      await saveBalances();
     }
 
     balances
@@ -429,6 +462,8 @@ class FinanceStore {
         FinanceBalance(
           balanceId: 'balance_matteo',
           personId: 'matteo',
+          name: 'Conto principale Matteo',
+          active: true,
           initialAmount: 993.32,
           currentAmount: 993.32,
           updatedAt: now,
@@ -442,6 +477,8 @@ class FinanceStore {
         FinanceBalance(
           balanceId: 'balance_chiara',
           personId: 'chiara',
+          name: 'Conto principale Chiara',
+          active: true,
           initialAmount: 1400,
           currentAmount: 1400,
           updatedAt: now,

@@ -106,23 +106,25 @@ class _FinanceYearDashboardState extends State<FinanceYearDashboard> {
                 'it_IT',
               ).format(projection.month);
 
-              final isNegative = projection.expectedMargin < 0;
-              final isMedium =
-                  projection.expectedExpenses >
-                  projection.expectedIncome * 0.75;
-
               late final Color color;
               late final String label;
 
-              if (isNegative) {
-                color = const Color(0xFFE53935);
-                label = "Critico";
-              } else if (isMedium) {
-                color = const Color(0xFFFFB300);
-                label = "Pressione";
-              } else {
-                color = const Color(0xFF43A047);
-                label = "Stabile";
+              switch (projection.saturation) {
+                case FinanceMonthSaturation.low:
+                  color = const Color(0xFF43A047);
+                  label = "Respira";
+
+                case FinanceMonthSaturation.medium:
+                  color = const Color(0xFFFFB300);
+                  label = "Denso";
+
+                case FinanceMonthSaturation.high:
+                  color = const Color(0xFFFB8C00);
+                  label = "Saturo";
+
+                case FinanceMonthSaturation.critical:
+                  color = const Color(0xFFE53935);
+                  label = "Critico";
               }
 
               return InkWell(
