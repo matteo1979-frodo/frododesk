@@ -22,7 +22,9 @@ class FinanceStore {
   final List<FundTransaction> fundTransactions = [];
 
   double totalBalance() {
-    return balances.fold(0.0, (sum, balance) => sum + balance.availableAmount);
+    return balances
+        .where((balance) => balance.active)
+        .fold(0.0, (sum, balance) => sum + balance.availableAmount);
   }
 
   double grossTotalBalance() {

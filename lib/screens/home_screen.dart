@@ -40,6 +40,7 @@ import '../widgets/shared/dialog_empty_state.dart';
 import '../widgets/shared/section_title.dart';
 import '../models/finance_category_template.dart';
 import '../models/finance_split.dart';
+import '../widgets/finance/finance_accounts_panel.dart';
 
 class HomeScreen extends StatefulWidget {
   final IpsStore ipsStore;
@@ -1959,6 +1960,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ],
+              ),
+
+              const SizedBox(height: 14),
+
+              FinanceAccountsPanel(
+                financeStore: financeStore,
+                onChanged: () {
+                  refreshFinancePopup(() {});
+                },
               ),
 
               const SizedBox(height: 14),
