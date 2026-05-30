@@ -41,6 +41,7 @@ import '../widgets/shared/section_title.dart';
 import '../models/finance_category_template.dart';
 import '../models/finance_split.dart';
 import '../widgets/finance/finance_accounts_panel.dart';
+import '../models/finance_transaction.dart';
 
 class HomeScreen extends StatefulWidget {
   final IpsStore ipsStore;
@@ -1795,7 +1796,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _showFinancePresentPopup() async {
+  Future<void> _showFinancePresentPopup({VoidCallback? onParentChanged}) async {
     await _showHomeDialog(
       icon: Icons.today_rounded,
       color: const Color(0xFFE53935),
@@ -1812,6 +1813,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 item,
                 onChanged: () {
                   refreshDialog(() {});
+                  onParentChanged?.call();
                 },
               );
             }).toList(),
@@ -1821,7 +1823,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _showFinancePastPopup() async {
+  Future<void> _showFinancePastPopup({VoidCallback? onParentChanged}) async {
     await _showHomeDialog(
       icon: Icons.history_rounded,
       color: const Color(0xFF8D6E63),
@@ -1838,6 +1840,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 item,
                 onChanged: () {
                   refreshDialog(() {});
+                  onParentChanged?.call();
                 },
               );
             }).toList(),
@@ -1847,7 +1850,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _showFinanceFuturePopup() async {
+  Future<void> _showFinanceFuturePopup({VoidCallback? onParentChanged}) async {
     await _showHomeDialog(
       icon: Icons.event_available_rounded,
       color: const Color(0xFF1E88E5),
@@ -1864,6 +1867,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 item,
                 onChanged: () {
                   refreshDialog(() {});
+                  onParentChanged?.call();
                 },
               );
             }).toList(),
@@ -1888,6 +1892,8 @@ class _HomeScreenState extends State<HomeScreen> {
       onConfirm: () async {
         await financeStore.confirmRecurringItem(item.id);
 
+        onChanged?.call();
+
         if (mounted) {
           setState(() {});
         }
@@ -1895,12 +1901,16 @@ class _HomeScreenState extends State<HomeScreen> {
       onEdit: () async {
         await _showEditRecurringItemPopup(item);
 
+        onChanged?.call();
+
         if (mounted) {
           setState(() {});
         }
       },
       onDelete: () async {
         await financeStore.removeRecurringItem(item.id);
+
+        onChanged?.call();
 
         if (mounted) {
           setState(() {});
@@ -1917,6 +1927,13 @@ class _HomeScreenState extends State<HomeScreen> {
       subtitle: "Riepilogo economico familiare",
       child: StatefulBuilder(
         builder: (context, refreshFinancePopup) {
+          void refreshFinance() {
+            refreshFinancePopup(() {});
+            if (mounted) {
+              setState(() {});
+            }
+          }
+
           final pastItems = financeStore.pastRecurringItems();
           final presentItems = financeStore.presentRecurringItems();
           final futureItems = financeStore.futureRecurringItems();
@@ -1931,7 +1948,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(18),
                       onTap: () async {
                         await _showFinanceBalancesPopup();
-                        refreshFinancePopup(() {});
+                        refreshFinance();
                       },
                       child: FinanceInfoCard(
                         title: "Saldo totale",
@@ -1948,7 +1965,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(18),
                       onTap: () async {
                         await _showFinanceFundsPopup();
-                        refreshFinancePopup(() {});
+                        refreshFinance();
                       },
                       child: FinanceInfoCard(
                         title: "Fondi",
@@ -1966,9 +1983,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               FinanceAccountsPanel(
                 financeStore: financeStore,
-                onChanged: () {
-                  refreshFinancePopup(() {});
-                },
+                onChanged: refreshFinance,
               ),
 
               const SizedBox(height: 14),
@@ -2029,8 +2044,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(18),
                       onTap: () async {
-                        await _showFinancePastPopup();
-                        refreshFinancePopup(() {});
+                        await _showFinancePastPopup(
+                          onParentChanged: refreshFinance,
+                        );
+                        refreshFinance();
                       },
                       child: FinanceInfoCard(
                         title: "Passato",
@@ -2046,8 +2063,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(18),
                       onTap: () async {
-                        await _showFinancePresentPopup();
-                        refreshFinancePopup(() {});
+                        await _showFinancePresentPopup(
+                          onParentChanged: refreshFinance,
+                        );
+                        refreshFinance();
                       },
                       child: FinanceInfoCard(
                         title: "Presente",
@@ -2063,8 +2082,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(18),
                       onTap: () async {
-                        await _showFinanceFuturePopup();
-                        refreshFinancePopup(() {});
+                        await _showFinanceFuturePopup(
+                          onParentChanged: refreshFinance,
+                        );
+                        refreshFinance();
                       },
                       child: FinanceInfoCard(
                         title: "Futuro",
@@ -2114,6 +2135,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       monthExpenseItems: monthExpenseItems,
                     ),
                   );
+
+                  refreshFinance();
                 },
               ),
 
@@ -4008,7 +4031,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showEditBalancePopup({
-    required String personId,
+    required String balanceId,
     required String personName,
     required double currentAmount,
   }) async {
@@ -4050,7 +4073,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 }
 
                 await financeStore.updateBalance(
-                  personId: personId,
+                  balanceId: balanceId,
                   newAmount: value,
                 );
 
@@ -4074,20 +4097,233 @@ class _HomeScreenState extends State<HomeScreen> {
       icon: Icons.account_balance_wallet_rounded,
       color: const Color(0xFF43A047),
       title: "Saldo totale",
-      subtitle: "Saldi economici della famiglia",
+      subtitle: "Quadro rapido dei soldi familiari",
       child: StatefulBuilder(
         builder: (context, refreshDialog) {
+          final activeBalances = financeStore.balances
+              .where((balance) => balance.active)
+              .toList();
+
+          final transactions = financeStore.transactions.reversed
+              .take(3)
+              .toList();
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: financeStore.balances.map((balance) {
-              final person = financeStore.people.firstWhere(
-                (p) => p.id == balance.personId,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: FinanceInfoCard(
+                      title: "Saldo familiare",
+                      value:
+                          "€${financeStore.totalBalance().toStringAsFixed(0)}",
+                      icon: Icons.account_balance_wallet_rounded,
+                      color: const Color(0xFF43A047),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FinanceInfoCard(
+                      title: "Conti attivi",
+                      value: "${activeBalances.length}",
+                      icon: Icons.account_balance_rounded,
+                      color: const Color(0xFF1E88E5),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FinanceInfoCard(
+                      title: "Movimenti",
+                      value: "${financeStore.transactions.length}",
+                      icon: Icons.history_rounded,
+                      color: const Color(0xFF8D6E63),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 18),
+
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    await _showFinanceTransactionsPopup();
+                  },
+                  icon: const Icon(Icons.history_rounded),
+                  label: const Text("Apri storico"),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              const Text(
+                "Ultimi movimenti",
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+              ),
+
+              const SizedBox(height: 12),
+
+              if (transactions.isEmpty)
+                Text(
+                  "Nessun movimento registrato",
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black.withOpacity(0.60),
+                  ),
+                )
+              else
+                ...transactions.map((transaction) {
+                  final balance = activeBalances.firstWhere(
+                    (b) => b.balanceId == transaction.balanceId,
+                    orElse: () => activeBalances.first,
+                  );
+
+                  final color = transaction.isIncome
+                      ? const Color(0xFF43A047)
+                      : const Color(0xFFE53935);
+
+                  final icon =
+                      transaction.type == FinanceTransactionType.transfer
+                      ? Icons.swap_horiz_rounded
+                      : transaction.isIncome
+                      ? Icons.arrow_downward_rounded
+                      : Icons.arrow_upward_rounded;
+
+                  final typeLabel =
+                      transaction.type == FinanceTransactionType.transfer
+                      ? "Trasferimento"
+                      : transaction.isIncome
+                      ? "Entrata"
+                      : "Uscita";
+
+                  final sign = transaction.isIncome ? "+" : "-";
+
+                  return Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.72),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.white.withOpacity(0.38)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(icon, color: color),
+
+                        const SizedBox(width: 12),
+
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                transaction.description.isNotEmpty
+                                    ? transaction.description
+                                    : typeLabel,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 14,
+                                ),
+                              ),
+
+                              const SizedBox(height: 4),
+
+                              Text(
+                                balance.name,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                  color: Colors.black.withOpacity(0.65),
+                                ),
+                              ),
+
+                              const SizedBox(height: 2),
+
+                              Text(
+                                "${transaction.date.day}/${transaction.date.month}/${transaction.date.year}",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 11,
+                                  color: Colors.black.withOpacity(0.50),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        Text(
+                          "$sign€${transaction.amount.toStringAsFixed(2)}",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 15,
+                            color: color,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _showFinanceTransactionsPopup() async {
+    await _showHomeDialog(
+      icon: Icons.history_rounded,
+      color: const Color(0xFF8D6E63),
+      title: "Storico movimenti",
+      subtitle: "Ultimi movimenti registrati",
+      child: StatefulBuilder(
+        builder: (context, refreshDialog) {
+          final transactions = financeStore.transactions.reversed
+              .take(50)
+              .toList();
+
+          final activeBalances = financeStore.balances
+              .where((b) => b.active)
+              .toList();
+
+          if (transactions.isEmpty) {
+            return const Center(child: Text("Nessun movimento registrato"));
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: transactions.map((transaction) {
+              final balance = activeBalances.firstWhere(
+                (b) => b.balanceId == transaction.balanceId,
+                orElse: () => activeBalances.first,
               );
+
+              final color = transaction.isIncome
+                  ? const Color(0xFF43A047)
+                  : const Color(0xFFE53935);
+
+              final icon = transaction.type == FinanceTransactionType.transfer
+                  ? Icons.swap_horiz_rounded
+                  : transaction.isIncome
+                  ? Icons.arrow_downward_rounded
+                  : Icons.arrow_upward_rounded;
+
+              final typeLabel =
+                  transaction.type == FinanceTransactionType.transfer
+                  ? "Trasferimento"
+                  : transaction.isIncome
+                  ? "Entrata"
+                  : "Uscita";
+
+              final sign = transaction.isIncome ? "+" : "-";
 
               return Container(
                 width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.72),
                   borderRadius: BorderRadius.circular(18),
@@ -4095,47 +4331,56 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.person_rounded, color: Color(0xFF43A047)),
+                    Icon(icon, color: color),
 
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 12),
 
                     Expanded(
-                      child: Text(
-                        person.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            transaction.description.isNotEmpty
+                                ? transaction.description
+                                : typeLabel,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 14,
+                            ),
+                          ),
+
+                          const SizedBox(height: 4),
+
+                          Text(
+                            balance.name,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                              color: Colors.black.withOpacity(0.65),
+                            ),
+                          ),
+
+                          const SizedBox(height: 2),
+
+                          Text(
+                            "${transaction.date.day}/${transaction.date.month}/${transaction.date.year}",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
+                              color: Colors.black.withOpacity(0.50),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
 
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          "€${balance.currentAmount.toStringAsFixed(0)}",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 16,
-                          ),
-                        ),
-
-                        const SizedBox(width: 8),
-
-                        IconButton(
-                          tooltip: "Modifica saldo",
-                          onPressed: () async {
-                            await _showEditBalancePopup(
-                              personId: balance.personId,
-                              personName: person.name,
-                              currentAmount: balance.currentAmount,
-                            );
-
-                            refreshDialog(() {});
-                          },
-                          icon: const Icon(Icons.edit_rounded, size: 18),
-                        ),
-                      ],
+                    Text(
+                      "$sign€${transaction.amount.toStringAsFixed(2)}",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 15,
+                        color: color,
+                      ),
                     ),
                   ],
                 ),

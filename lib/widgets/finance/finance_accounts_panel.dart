@@ -198,6 +198,146 @@ class _FinanceAccountsPanelState extends State<FinanceAccountsPanel> {
     );
   }
 
+  Future<void> _showTransferDialog() async {
+    final activeBalances = widget.financeStore.balances
+        .where((b) => b.active)
+        .toList();
+
+    if (activeBalances.length < 2) {
+      return;
+    }
+
+    String fromBalanceId = activeBalances.first.balanceId;
+    String toBalanceId = activeBalances[1].balanceId;
+    final amountController = TextEditingController();
+    final descriptionController = TextEditingController(text: 'Trasferimento');
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, refreshDialog) {
+            return AlertDialog(
+              title: const Text('Trasferimento tra conti'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: fromBalanceId,
+                      decoration: const InputDecoration(labelText: 'Da conto'),
+                      items: widget.financeStore.balances
+                          .where((b) => b.active)
+                          .map(
+                            (balance) => DropdownMenuItem(
+                              value: balance.balanceId,
+                              child: Text(balance.name),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+
+                        refreshDialog(() {
+                          fromBalanceId = value;
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    DropdownButtonFormField<String>(
+                      value: toBalanceId,
+                      decoration: const InputDecoration(labelText: 'A conto'),
+                      items: widget.financeStore.balances
+                          .where((b) => b.active)
+                          .map(
+                            (balance) => DropdownMenuItem(
+                              value: balance.balanceId,
+                              child: Text(balance.name),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+
+                        refreshDialog(() {
+                          toBalanceId = value;
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    TextField(
+                      controller: amountController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: const InputDecoration(
+                        labelText: 'Importo',
+                        hintText: 'Es. 100.00',
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    TextField(
+                      controller: descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: 'Descrizione',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Annulla'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final amount = double.tryParse(
+                      amountController.text.trim().replaceAll(',', '.'),
+                    );
+
+                    if (amount == null || amount <= 0) {
+                      return;
+                    }
+
+                    if (fromBalanceId == toBalanceId) {
+                      return;
+                    }
+
+                    await widget.financeStore.transferBetweenBalances(
+                      fromBalanceId: fromBalanceId,
+                      toBalanceId: toBalanceId,
+                      amount: amount,
+                      description: descriptionController.text.trim(),
+                    );
+
+                    if (mounted) {
+                      setState(() {});
+                    }
+
+                    widget.onChanged?.call();
+
+                    Navigator.of(context).pop();
+                  },
+                  icon: const Icon(Icons.swap_horiz_rounded),
+                  label: const Text('Trasferisci'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final balances = widget.financeStore.balances
@@ -230,10 +370,20 @@ class _FinanceAccountsPanelState extends State<FinanceAccountsPanel> {
                   ),
                 ),
               ),
-              IconButton(
-                tooltip: 'Nuovo conto',
-                onPressed: _showAddAccountDialog,
-                icon: const Icon(Icons.add_circle_rounded),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    tooltip: 'Trasferisci',
+                    onPressed: _showTransferDialog,
+                    icon: const Icon(Icons.swap_horiz_rounded),
+                  ),
+                  IconButton(
+                    tooltip: 'Nuovo conto',
+                    onPressed: _showAddAccountDialog,
+                    icon: const Icon(Icons.add_circle_rounded),
+                  ),
+                ],
               ),
             ],
           ),
@@ -437,6 +587,12 @@ class _FinanceAccountsPanelState extends State<FinanceAccountsPanel> {
                                                 .financeStore
                                                 .balances[index];
 
+                                            final oldAmount =
+                                                current.currentAmount;
+
+                                            final difference =
+                                                amount - oldAmount;
+
                                             widget
                                                     .financeStore
                                                     .balances[index] =
@@ -447,7 +603,7 @@ class _FinanceAccountsPanelState extends State<FinanceAccountsPanel> {
                                                       .trim(),
                                                   initialAmount:
                                                       current.initialAmount,
-                                                  currentAmount: amount,
+                                                  currentAmount: oldAmount,
                                                   updatedAt: DateTime.now(),
                                                   balanceType: selectedType,
                                                   operational:
@@ -463,8 +619,17 @@ class _FinanceAccountsPanelState extends State<FinanceAccountsPanel> {
                                                       current.recoveryDays,
                                                 );
 
-                                            await widget.financeStore
-                                                .saveBalances();
+                                            if (difference != 0) {
+                                              await widget.financeStore
+                                                  .updateBalance(
+                                                    balanceId:
+                                                        current.balanceId,
+                                                    newAmount: amount,
+                                                  );
+                                            } else {
+                                              await widget.financeStore
+                                                  .saveBalances();
+                                            }
 
                                             if (mounted) {
                                               setState(() {});

@@ -9,9 +9,9 @@ class FinanceTimeItemCard extends StatelessWidget {
 
   final VoidCallback? onTap;
   final VoidCallback? onChanged;
-  final VoidCallback? onEdit;
-  final VoidCallback? onDelete;
-  final VoidCallback? onConfirm;
+  final Future<void> Function()? onEdit;
+  final Future<void> Function()? onDelete;
+  final Future<void> Function()? onConfirm;
 
   final String Function(int month) getMonthName;
 
@@ -197,17 +197,17 @@ class FinanceTimeItemCard extends StatelessWidget {
                         ),
                         onSelected: (value) async {
                           if (value == 'confirm') {
-                            onConfirm?.call();
+                            await onConfirm?.call();
                             onChanged?.call();
                           }
 
                           if (value == 'edit') {
-                            onEdit?.call();
+                            await onEdit?.call();
                             onChanged?.call();
                           }
 
                           if (value == 'delete') {
-                            onDelete?.call();
+                            await onDelete?.call();
                             onChanged?.call();
                           }
                         },

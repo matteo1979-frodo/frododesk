@@ -7,6 +7,7 @@ import 'finance_demo_data.dart';
 import '../logic/persistence_store.dart';
 import '../models/fund_transaction.dart';
 import '../models/finance_month_projection.dart';
+import '../models/finance_transaction.dart';
 
 class FinanceStore {
   final List<FinancePerson> people = const [
@@ -20,6 +21,7 @@ class FinanceStore {
   final List<FinanceRecurringItem> recurringItems = [];
   final List<FinanceSnapshot> snapshots = [];
   final List<FundTransaction> fundTransactions = [];
+  final List<FinanceTransaction> transactions = [];
 
   double totalBalance() {
     return balances
@@ -353,16 +355,17 @@ class FinanceStore {
   }
 
   Future<void> updateBalance({
-    required String personId,
+    required String balanceId,
     required double newAmount,
   }) async {
-    final index = balances.indexWhere((b) => b.personId == personId);
+    final index = balances.indexWhere((b) => b.balanceId == balanceId);
 
     if (index == -1) {
       return;
     }
 
     final old = balances[index];
+    final difference = newAmount - old.currentAmount;
 
     balances[index] = FinanceBalance(
       balanceId: old.balanceId,
@@ -372,15 +375,117 @@ class FinanceStore {
       initialAmount: old.initialAmount,
       currentAmount: newAmount,
       updatedAt: DateTime.now(),
-      balanceType: FinanceBalanceType.bankAccount,
-      operational: true,
-      reservedAmount: 0,
-      warningThreshold: 200,
-      persistentStressDays: 0,
-      recoveryDays: 0,
+      balanceType: old.balanceType,
+      operational: old.operational,
+      reservedAmount: old.reservedAmount,
+      warningThreshold: old.warningThreshold,
+      persistentStressDays: old.persistentStressDays,
+      recoveryDays: old.recoveryDays,
+    );
+
+    if (difference != 0) {
+      transactions.add(
+        FinanceTransaction(
+          id: 'adjustment_${DateTime.now().microsecondsSinceEpoch}',
+          balanceId: old.balanceId,
+          amount: difference.abs(),
+          date: DateTime.now(),
+          isIncome: difference > 0,
+          description: 'Correzione saldo ${old.name}',
+          type: difference > 0
+              ? FinanceTransactionType.income
+              : FinanceTransactionType.expense,
+          origin: FinanceTransactionOrigin.adjustment,
+          notes: 'Saldo modificato manualmente',
+        ),
+      );
+    }
+
+    await saveBalances();
+    await saveTransactions();
+  }
+
+  Future<void> transferBetweenBalances({
+    required String fromBalanceId,
+    required String toBalanceId,
+    required double amount,
+    String description = 'Trasferimento',
+  }) async {
+    final fromIndex = balances.indexWhere((b) => b.balanceId == fromBalanceId);
+
+    final toIndex = balances.indexWhere((b) => b.balanceId == toBalanceId);
+
+    if (fromIndex == -1 || toIndex == -1) {
+      return;
+    }
+
+    final fromBalance = balances[fromIndex];
+    final toBalance = balances[toIndex];
+
+    balances[fromIndex] = FinanceBalance(
+      balanceId: fromBalance.balanceId,
+      personId: fromBalance.personId,
+      name: fromBalance.name,
+      active: fromBalance.active,
+      initialAmount: fromBalance.initialAmount,
+      currentAmount: fromBalance.currentAmount - amount,
+      updatedAt: DateTime.now(),
+      balanceType: fromBalance.balanceType,
+      operational: fromBalance.operational,
+      reservedAmount: fromBalance.reservedAmount,
+      warningThreshold: fromBalance.warningThreshold,
+      persistentStressDays: fromBalance.persistentStressDays,
+      recoveryDays: fromBalance.recoveryDays,
+    );
+
+    balances[toIndex] = FinanceBalance(
+      balanceId: toBalance.balanceId,
+      personId: toBalance.personId,
+      name: toBalance.name,
+      active: toBalance.active,
+      initialAmount: toBalance.initialAmount,
+      currentAmount: toBalance.currentAmount + amount,
+      updatedAt: DateTime.now(),
+      balanceType: toBalance.balanceType,
+      operational: toBalance.operational,
+      reservedAmount: toBalance.reservedAmount,
+      warningThreshold: toBalance.warningThreshold,
+      persistentStressDays: toBalance.persistentStressDays,
+      recoveryDays: toBalance.recoveryDays,
+    );
+
+    final transferId = DateTime.now().microsecondsSinceEpoch.toString();
+
+    transactions.add(
+      FinanceTransaction(
+        id: 'transfer_out_$transferId',
+        balanceId: fromBalance.balanceId,
+        amount: amount,
+        date: DateTime.now(),
+        isIncome: false,
+        description: description,
+        type: FinanceTransactionType.transfer,
+        origin: FinanceTransactionOrigin.manual,
+        notes: 'Trasferimento verso ${toBalance.name}',
+      ),
+    );
+
+    transactions.add(
+      FinanceTransaction(
+        id: 'transfer_in_$transferId',
+        balanceId: toBalance.balanceId,
+        amount: amount,
+        date: DateTime.now(),
+        isIncome: true,
+        description: description,
+        type: FinanceTransactionType.transfer,
+        origin: FinanceTransactionOrigin.manual,
+        notes: 'Trasferimento da ${fromBalance.name}',
+      ),
     );
 
     await saveBalances();
+    await saveTransactions();
   }
 
   void loadDemoData() {
@@ -408,6 +513,7 @@ class FinanceStore {
       if (!allBalancesZero) {
         final fundsLoaded = await loadSavedFunds();
         await loadSavedFundTransactions();
+        await loadSavedTransactions();
 
         if (!fundsLoaded) {
           funds
@@ -497,6 +603,7 @@ class FinanceStore {
 
     final fundsLoaded = await loadSavedFunds();
     await loadSavedFundTransactions();
+    await loadSavedTransactions();
 
     if (!fundsLoaded) {
       funds
@@ -558,6 +665,28 @@ class FinanceStore {
     fundTransactions
       ..clear()
       ..addAll(jsonList.map(FundTransaction.fromJson));
+
+    return true;
+  }
+
+  Future<void> saveTransactions() async {
+    final jsonList = transactions.map((t) => t.toJson()).toList();
+
+    await PersistenceStore.saveJsonList('finance_transactions', jsonList);
+  }
+
+  Future<bool> loadSavedTransactions() async {
+    final jsonList = await PersistenceStore.loadJsonList(
+      'finance_transactions',
+    );
+
+    if (jsonList.isEmpty) {
+      return false;
+    }
+
+    transactions
+      ..clear()
+      ..addAll(jsonList.map(FinanceTransaction.fromJson));
 
     return true;
   }
@@ -663,11 +792,59 @@ class FinanceStore {
     }
 
     final item = recurringItems[index];
+    final amount = realAmount ?? item.expectedAmount;
 
-    recurringItems[index] = item.copyWith(
-      confirmed: true,
-      realAmount: realAmount ?? item.expectedAmount,
-    );
+    if (item.balanceId != null) {
+      final balanceIndex = balances.indexWhere(
+        (balance) => balance.balanceId == item.balanceId,
+      );
+
+      if (balanceIndex != -1) {
+        final oldBalance = balances[balanceIndex];
+
+        final newAmount = item.isIncome
+            ? oldBalance.currentAmount + amount
+            : oldBalance.currentAmount - amount;
+
+        balances[balanceIndex] = FinanceBalance(
+          balanceId: oldBalance.balanceId,
+          personId: oldBalance.personId,
+          name: oldBalance.name,
+          initialAmount: oldBalance.initialAmount,
+          currentAmount: newAmount,
+          updatedAt: DateTime.now(),
+          balanceType: oldBalance.balanceType,
+          operational: oldBalance.operational,
+          active: oldBalance.active,
+          reservedAmount: oldBalance.reservedAmount,
+          warningThreshold: oldBalance.warningThreshold,
+          persistentStressDays: oldBalance.persistentStressDays,
+          recoveryDays: oldBalance.recoveryDays,
+        );
+
+        transactions.add(
+          FinanceTransaction(
+            id: 'transaction_${DateTime.now().microsecondsSinceEpoch}',
+            balanceId: oldBalance.balanceId,
+            amount: amount,
+            date: DateTime.now(),
+            isIncome: item.isIncome,
+            description: item.name,
+            type: item.isIncome
+                ? FinanceTransactionType.income
+                : FinanceTransactionType.expense,
+            origin: FinanceTransactionOrigin.recurringItem,
+            recurringItemId: item.id,
+            notes: item.description,
+          ),
+        );
+
+        await saveBalances();
+        await saveTransactions();
+      }
+    }
+
+    recurringItems[index] = item.copyWith(confirmed: true, realAmount: amount);
 
     if (item.recurringType != FinanceRecurringType.oneShot) {
       final nextDate = nextDueDateAfterConfirmation(item);
@@ -694,8 +871,56 @@ class FinanceStore {
   }
 
   Future<void> removeRecurringItem(String itemId) async {
-    recurringItems.removeWhere((item) => item.id == itemId);
+    final itemIndex = recurringItems.indexWhere((item) => item.id == itemId);
 
+    if (itemIndex == -1) {
+      return;
+    }
+
+    final item = recurringItems[itemIndex];
+
+    final linkedTransactions = transactions
+        .where((transaction) => transaction.recurringItemId == item.id)
+        .toList();
+
+    for (final transaction in linkedTransactions) {
+      final balanceIndex = balances.indexWhere(
+        (balance) => balance.balanceId == transaction.balanceId,
+      );
+
+      if (balanceIndex == -1) continue;
+
+      final oldBalance = balances[balanceIndex];
+
+      final restoredAmount = transaction.isIncome
+          ? oldBalance.currentAmount - transaction.amount
+          : oldBalance.currentAmount + transaction.amount;
+
+      balances[balanceIndex] = FinanceBalance(
+        balanceId: oldBalance.balanceId,
+        personId: oldBalance.personId,
+        name: oldBalance.name,
+        initialAmount: oldBalance.initialAmount,
+        currentAmount: restoredAmount,
+        updatedAt: DateTime.now(),
+        balanceType: oldBalance.balanceType,
+        operational: oldBalance.operational,
+        active: oldBalance.active,
+        reservedAmount: oldBalance.reservedAmount,
+        warningThreshold: oldBalance.warningThreshold,
+        persistentStressDays: oldBalance.persistentStressDays,
+        recoveryDays: oldBalance.recoveryDays,
+      );
+    }
+
+    transactions.removeWhere(
+      (transaction) => transaction.recurringItemId == item.id,
+    );
+
+    recurringItems.removeAt(itemIndex);
+
+    await saveBalances();
+    await saveTransactions();
     await saveRecurringItems();
   }
 
