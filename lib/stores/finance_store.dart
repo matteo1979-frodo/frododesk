@@ -762,9 +762,11 @@ class FinanceStore {
       category: oldFund.category,
     );
 
+    final transactionId = DateTime.now().millisecondsSinceEpoch.toString();
+
     fundTransactions.add(
       FundTransaction(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id: transactionId,
         fundId: fundId,
         description: description,
         amount: amount,
@@ -773,8 +775,25 @@ class FinanceStore {
       ),
     );
 
+    transactions.add(
+      FinanceTransaction(
+        id: 'fund_$transactionId',
+        balanceId: fundId,
+        amount: amount,
+        date: DateTime.now(),
+        isIncome: type == FundTransactionType.deposit,
+        description: description.isEmpty ? oldFund.name : description,
+        type: type == FundTransactionType.deposit
+            ? FinanceTransactionType.income
+            : FinanceTransactionType.expense,
+        origin: FinanceTransactionOrigin.manual,
+        notes: 'Movimento fondo: ${oldFund.name}',
+      ),
+    );
+
     await saveFunds();
     await saveFundTransactions();
+    await saveTransactions();
   }
 
   Future<void> removeFund(String fundId) async {
