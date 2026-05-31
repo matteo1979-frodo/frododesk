@@ -288,8 +288,24 @@ class FinanceStore {
     );
   }
 
-  void saveSnapshot(DateTime date) {
-    snapshots.add(createSnapshot(date));
+  Future<void> saveSnapshot(DateTime date) async {
+    final day = DateTime(date.year, date.month, date.day);
+
+    final snapshot = createSnapshot(day);
+
+    final existingIndex = snapshots.indexWhere((s) {
+      final existingDay = DateTime(s.date.year, s.date.month, s.date.day);
+
+      return existingDay == day;
+    });
+
+    if (existingIndex == -1) {
+      snapshots.add(snapshot);
+    } else {
+      snapshots[existingIndex] = snapshot;
+    }
+
+    await saveSnapshots();
   }
 
   FinanceSnapshot? latestSnapshot() {
@@ -514,6 +530,7 @@ class FinanceStore {
         final fundsLoaded = await loadSavedFunds();
         await loadSavedFundTransactions();
         await loadSavedTransactions();
+        await loadSavedSnapshots();
 
         if (!fundsLoaded) {
           funds
@@ -604,6 +621,7 @@ class FinanceStore {
     final fundsLoaded = await loadSavedFunds();
     await loadSavedFundTransactions();
     await loadSavedTransactions();
+    await loadSavedSnapshots();
 
     if (!fundsLoaded) {
       funds
@@ -675,6 +693,12 @@ class FinanceStore {
     await PersistenceStore.saveJsonList('finance_transactions', jsonList);
   }
 
+  Future<void> saveSnapshots() async {
+    final jsonList = snapshots.map((s) => s.toJson()).toList();
+
+    await PersistenceStore.saveJsonList('finance_snapshots', jsonList);
+  }
+
   Future<bool> loadSavedTransactions() async {
     final jsonList = await PersistenceStore.loadJsonList(
       'finance_transactions',
@@ -687,6 +711,20 @@ class FinanceStore {
     transactions
       ..clear()
       ..addAll(jsonList.map(FinanceTransaction.fromJson));
+
+    return true;
+  }
+
+  Future<bool> loadSavedSnapshots() async {
+    final jsonList = await PersistenceStore.loadJsonList('finance_snapshots');
+
+    if (jsonList.isEmpty) {
+      return false;
+    }
+
+    snapshots
+      ..clear()
+      ..addAll(jsonList.map(FinanceSnapshot.fromJson));
 
     return true;
   }
