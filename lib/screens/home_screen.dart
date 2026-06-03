@@ -20,6 +20,7 @@ import 'salute_screen.dart';
 import '../logic/coverage_engine.dart';
 
 import 'statistiche_screen.dart';
+import 'finance_screen.dart';
 import '../widgets/home_people_panel.dart';
 import '../stores/finance_store.dart';
 
@@ -4544,7 +4545,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   badgeColor: const Color(0xFFB08D57),
                   startColor: const Color(0xFF8D6E63),
                   endColor: const Color(0xFFBCAAA4),
-                  onTap: _showFinancePopup,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            FinanceScreen(financeStore: financeStore),
+                      ),
+                    );
+                  },
                 ),
                 _DashboardModuleCard(
                   icon: Icons.receipt_long_rounded,

@@ -8,6 +8,7 @@ import '../logic/persistence_store.dart';
 import '../models/fund_transaction.dart';
 import '../models/finance_month_projection.dart';
 import '../models/finance_transaction.dart';
+import '../models/finance_account_linked_item.dart';
 
 class FinanceStore {
   final List<FinancePerson> people = const [
@@ -22,6 +23,7 @@ class FinanceStore {
   final List<FinanceSnapshot> snapshots = [];
   final List<FundTransaction> fundTransactions = [];
   final List<FinanceTransaction> transactions = [];
+  final List<FinanceAccountLinkedItem> linkedItems = [];
 
   double totalBalance() {
     return balances
@@ -531,6 +533,7 @@ class FinanceStore {
         await loadSavedFundTransactions();
         await loadSavedTransactions();
         await loadSavedSnapshots();
+        await loadSavedLinkedItems();
 
         if (!fundsLoaded) {
           funds
@@ -622,6 +625,7 @@ class FinanceStore {
     await loadSavedFundTransactions();
     await loadSavedTransactions();
     await loadSavedSnapshots();
+    await loadSavedLinkedItems();
 
     if (!fundsLoaded) {
       funds
@@ -642,6 +646,7 @@ class FinanceStore {
 
     await PersistenceStore.saveJsonList('finance_balances', jsonList);
   }
+  
 
   Future<bool> loadSavedBalances() async {
     final jsonList = await PersistenceStore.loadJsonList('finance_balances');
@@ -691,6 +696,31 @@ class FinanceStore {
     final jsonList = transactions.map((t) => t.toJson()).toList();
 
     await PersistenceStore.saveJsonList('finance_transactions', jsonList);
+  }
+
+  Future<void> saveLinkedItems() async {
+    final jsonList = linkedItems.map((item) => item.toJson()).toList();
+
+    await PersistenceStore.saveJsonList(
+      'finance_account_linked_items',
+      jsonList,
+    );
+  }
+
+  Future<bool> loadSavedLinkedItems() async {
+    final jsonList = await PersistenceStore.loadJsonList(
+      'finance_account_linked_items',
+    );
+
+    if (jsonList.isEmpty) {
+      return false;
+    }
+
+    linkedItems
+      ..clear()
+      ..addAll(jsonList.map(FinanceAccountLinkedItem.fromJson));
+
+    return true;
   }
 
   Future<void> saveSnapshots() async {

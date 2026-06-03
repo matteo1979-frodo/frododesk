@@ -423,6 +423,118 @@ Concetti ormai consolidati:
 
 ---
 
+## LEGGI COMPORTAMENTALI CONSOLIDATE (RIUNIONE H2)
+
+Durante il consolidamento H2 è emersa una distinzione fondamentale tra:
+
+- denaro
+- ossigeno economico
+- resilienza
+- protezione
+- direzione del sistema
+
+Questi concetti NON sono ancora formule matematiche definitive.
+
+Rappresentano il comportamento reale che il motore economico dovrà interpretare.
+
+### LEGGE 1 — PRESSIONE REALE
+
+Una spesa non genera pressione in base al suo importo.
+
+Genera pressione in base a quanto il sistema era preparato ad assorbirla.
+
+---
+
+### LEGGE 2 — DANNO RESIDUO
+
+La pressione non misura il costo dell'evento.
+
+Misura quanto l'evento ha indebolito la capacità futura della famiglia di assorbire la vita.
+
+---
+
+### LEGGE 3 — CONSUMO DI RESILIENZA
+
+Un fondo utilizzato non genera necessariamente pressione immediata.
+
+Riduce però la resilienza futura del sistema.
+
+---
+
+### LEGGE 4 — RESILIENZA STRUTTURATA
+
+Non tutta la liquidità ha lo stesso valore.
+
+Una liquidità organizzata in protezioni dedicate aumenta la capacità di assorbire eventi reali.
+
+---
+
+### LEGGE 5 — VULNERABILITÀ ACQUISITA
+
+Quando una protezione viene consumata il sistema non diventa automaticamente instabile.
+
+Diventa però più vulnerabile a quella specifica categoria di eventi futuri.
+
+---
+
+### LEGGE 6 — DIREZIONE DEL SISTEMA
+
+Lo stato della famiglia non dipende solo dalle risorse disponibili.
+
+Dipende anche dalla direzione in cui il sistema si sta muovendo.
+
+Differenza strutturale:
+
+✔ sistema che sopravvive
+
+vs
+
+✔ sistema che guarisce
+
+---
+
+## DISTINZIONI UFFICIALI
+
+### DENARO
+
+Risponde alla domanda:
+
+👉 Quanto possiedo oggi?
+
+---
+
+### OSSIGENO ECONOMICO
+
+Risponde alla domanda:
+
+👉 Quanto posso ancora assorbire la vita senza entrare in sofferenza strutturale?
+
+---
+
+### RESILIENZA
+
+Risponde alla domanda:
+
+👉 Quanto sono preparato al prossimo colpo?
+
+---
+
+### PROTEZIONE
+
+Risponde alla domanda:
+
+👉 Quali categorie di rischio risultano già coperte?
+
+---
+
+### DIREZIONE
+
+Risponde alla domanda:
+
+👉 Sto guarendo oppure sto semplicemente sopravvivendo?
+
+---
+
 ## DNA tecnico introdotto
 
 ✔ FinanceBalanceType  

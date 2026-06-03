@@ -872,3 +872,193 @@ Priorità assoluta:
 ➡️ costruire pressione economica reale
 ➡️ costruire simulazione futura reale
 ➡️ mantenere calendario stabile durante utilizzo vita reale
+
+---
+
+# DNA ECONOMICO — LEGGI COMPORTAMENTALI H2
+
+Questa sezione consolida le decisioni emerse durante la fase H2 del motore economico reale.
+
+Le seguenti leggi NON rappresentano ancora formule matematiche definitive.
+
+Rappresentano il comportamento reale che il motore dovrà leggere e simulare.
+
+---
+
+## OSSIGENO ECONOMICO
+
+L’ossigeno economico NON rappresenta:
+
+❌ il saldo disponibile
+
+❌ il denaro totale posseduto
+
+❌ la semplice differenza tra entrate e uscite
+
+L’ossigeno economico rappresenta:
+
+👉 la capacità della famiglia di assorbire la vita reale senza entrare in sofferenza strutturale.
+
+Due famiglie con lo stesso denaro possono avere livelli di ossigeno completamente diversi.
+
+Dipende da:
+
+- pressione presente
+- pressione futura
+- protezioni disponibili
+- resilienza
+- vulnerabilità
+- sincronizzazione economica
+
+---
+
+## LEGGE 1 — PRESSIONE REALE
+
+Una spesa non genera pressione in base al suo importo.
+
+Genera pressione in base a quanto il sistema era preparato ad assorbirla.
+
+Esempio:
+
+- assicurazione prevista → pressione limitata
+- guasto improvviso → pressione elevata
+
+anche con importo identico.
+
+---
+
+## LEGGE 2 — DANNO RESIDUO
+
+La pressione non misura il costo dell’evento.
+
+Misura quanto l’evento ha indebolito la capacità futura della famiglia di assorbire la vita.
+
+Due spese uguali possono produrre danni completamente diversi.
+
+---
+
+## LEGGE 3 — CONSUMO DI RESILIENZA
+
+Un fondo utilizzato non genera necessariamente pressione immediata.
+
+Riduce però la resilienza futura del sistema.
+
+L’utilizzo di una protezione NON è mai completamente gratuito.
+
+---
+
+## LEGGE 4 — RESILIENZA STRUTTURATA
+
+Non tutta la liquidità ha lo stesso valore.
+
+Una liquidità organizzata in protezioni dedicate:
+
+- aumenta la capacità di assorbire eventi
+- aumenta la resilienza
+- riduce la pressione futura
+
+Fondi e protezioni hanno un valore sistemico superiore alla semplice liquidità non organizzata.
+
+---
+
+## LEGGE 5 — VULNERABILITÀ ACQUISITA
+
+Quando una protezione viene consumata:
+
+il sistema non diventa automaticamente instabile.
+
+Diventa però più vulnerabile a una specifica categoria di eventi futuri.
+
+Esempio:
+
+Fondo Auto svuotato.
+
+La famiglia può essere ancora stabile oggi.
+
+Ma il prossimo evento Auto avrà un impatto potenzialmente molto maggiore.
+
+---
+
+## LEGGE 6 — DIREZIONE DEL SISTEMA
+
+Lo stato della famiglia non dipende solo dalle risorse disponibili.
+
+Dipende anche dalla direzione in cui il sistema si sta muovendo.
+
+Differenza fondamentale:
+
+### Sistema che sopravvive
+
+- resiste
+- non peggiora
+- non recupera
+
+### Sistema che guarisce
+
+- ricostruisce protezioni
+- recupera resilienza
+- migliora progressivamente la propria stabilità
+
+La traiettoria del sistema è importante quanto il suo stato attuale.
+
+---
+
+## DISTINZIONE UFFICIALE
+
+### DENARO
+
+Risponde alla domanda:
+
+👉 Quanto possiedo oggi?
+
+---
+
+### OSSIGENO
+
+Risponde alla domanda:
+
+👉 Quanto posso ancora assorbire la vita senza entrare in sofferenza?
+
+---
+
+### RESILIENZA
+
+Risponde alla domanda:
+
+👉 Quanto sono preparato al prossimo colpo?
+
+---
+
+### PROTEZIONE
+
+Risponde alla domanda:
+
+👉 Quali categorie di rischio sono già coperte?
+
+---
+
+### DIREZIONE
+
+Risponde alla domanda:
+
+👉 Sto guarendo oppure sto semplicemente sopravvivendo?
+
+---
+
+Decisione ufficiale H2:
+
+Il motore economico di FrodoDesk NON deve leggere solo il denaro.
+
+Deve leggere:
+
+✔ denaro
+
+✔ ossigeno
+
+✔ resilienza
+
+✔ protezioni
+
+✔ vulnerabilità
+
+✔ direzione del sistema

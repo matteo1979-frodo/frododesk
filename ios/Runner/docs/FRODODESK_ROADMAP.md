@@ -587,6 +587,50 @@ Il sistema deve convivere inizialmente con:
 ☑ pressione che genera altra pressione
 ☑ lettura evolutiva direzione sistema familiare
 
+### Riunione fondativa H2 — Giugno 2026
+
+Decisione strutturale consolidata:
+
+Durante il consolidamento H2 sono state definite le prime leggi comportamentali del motore economico.
+
+Queste leggi NON rappresentano ancora formule matematiche definitive.
+
+Rappresentano il comportamento reale che il motore dovrà interpretare.
+
+✔ Legge 1 — Pressione reale
+
+✔ Legge 2 — Danno residuo
+
+✔ Legge 3 — Consumo di resilienza
+
+✔ Legge 4 — Resilienza strutturata
+
+✔ Legge 5 — Vulnerabilità acquisita
+
+✔ Legge 6 — Direzione del sistema
+
+Distinzioni consolidate:
+
+✔ Denaro
+
+✔ Ossigeno economico
+
+✔ Resilienza
+
+✔ Protezione
+
+✔ Direzione del sistema
+
+Significato storico:
+
+Questa riunione ha consolidato il passaggio da:
+
+❌ lettura del denaro
+
+a
+
+✔ lettura della salute economica familiare.
+
 ### DNA tecnico già implementato
 
 ☑ distinzione saldo lordo vs ossigeno reale
