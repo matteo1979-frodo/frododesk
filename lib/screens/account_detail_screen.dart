@@ -79,7 +79,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
 
                 const SizedBox(height: 18),
 
-                _sectionTitle("Prossime uscite collegate"),
+                _sectionTitle("Da confermare"),
                 const SizedBox(height: 10),
                 _futureItems(),
 

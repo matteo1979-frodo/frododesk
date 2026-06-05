@@ -1070,3 +1070,95 @@ Questo per permettere:
 ✔ crescita futura
 ✔ statistiche evolutive
 ✔ coerenza sistema
+
+# 🔴 NUOVA REGOLA STRUTTURALE — CONSOLIDAMENTO VITA REALE
+
+## PRINCIPIO
+
+Prima di espandere il sistema con nuove funzionalità, il comportamento reale del motore deve essere verificato nella vita quotidiana.
+
+Il progetto segue quindi questa gerarchia:
+
+✔ costruzione
+
+✔ consolidamento
+
+✔ utilizzo reale
+
+✔ espansione
+
+---
+
+## REGOLA SALDO ↔ PREVISIONE
+
+Il sistema deve mantenere sempre separate:
+
+### Saldo reale
+
+Rappresenta esclusivamente il denaro realmente disponibile.
+
+### Simulazione futura
+
+Rappresenta la pressione economica prevista.
+
+Una previsione NON deve modificare automaticamente il saldo reale.
+
+---
+
+## REGOLA CONFERMA MANUALE
+
+Le ricorrenze economiche sono considerate previsioni.
+
+Solo la conferma manuale dell'utente trasforma una previsione in un evento economico reale.
+
+Comportamento obbligatorio:
+
+✔ ricorrenza creata → saldo invariato
+
+✔ conferma → saldo aggiornato
+
+✔ annullamento conferma → saldo ripristinato
+
+---
+
+## REGOLA VERITÀ UNICA
+
+La Home, il Centro Controllo Economico e le schermate Persona devono leggere la stessa identica realtà economica.
+
+Non possono esistere saldi differenti derivanti da logiche diverse.
+
+La fonte di verità resta il motore economico centrale.
+
+---
+
+## REGOLA COLLAUDO REALE
+
+Ogni nuova funzione economica importante deve essere verificata tramite casi reali prima di considerarla consolidata.
+
+Il principio diventa:
+
+👉 prima verificare nella vita reale,
+
+👉 poi costruire sopra quella certezza.
+
+---
+
+## DIREZIONE OPERATIVA
+
+Finché la fase H3.5 — Consolidamento Vita Reale non sarà conclusa, sono da evitare:
+
+❌ espansioni premature
+
+❌ automazioni avanzate
+
+❌ IPS economico finale
+
+❌ nuove aree funzionali scollegate
+
+Priorità assoluta:
+
+✔ stabilità
+
+✔ coerenza
+
+✔ affidabilità del comportamento reale.

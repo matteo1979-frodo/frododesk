@@ -368,7 +368,7 @@ class FinanceStore {
 
   double balanceForPerson(String personId) {
     return balances
-        .where((balance) => balance.personId == personId)
+        .where((balance) => balance.personId == personId && balance.active)
         .fold(0.0, (sum, balance) => sum + balance.currentAmount);
   }
 
@@ -646,7 +646,6 @@ class FinanceStore {
 
     await PersistenceStore.saveJsonList('finance_balances', jsonList);
   }
-  
 
   Future<bool> loadSavedBalances() async {
     final jsonList = await PersistenceStore.loadJsonList('finance_balances');

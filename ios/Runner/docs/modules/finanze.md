@@ -1062,3 +1062,241 @@ Deve leggere:
 ✔ vulnerabilità
 
 ✔ direzione del sistema
+
+# CONSOLIDAMENTO VITA REALE — GIUGNO 2026
+
+Durante la fase di consolidamento del motore economico reale, il modulo Finanze ha completato la transizione da semplice popup della Home a vero e proprio Centro Controllo Economico.
+
+---
+
+## NUOVA DIREZIONE UI
+
+La gestione Finanze non vive più come semplice finestra modale.
+
+Diventa una schermata dedicata, mantenendo però tutta la filosofia originaria del modulo.
+
+Decisione ufficiale:
+
+👉 la UI deve facilitare la lettura della situazione economica reale della famiglia.
+
+---
+
+## CENTRO CONTROLLO ECONOMICO
+
+La schermata Finanze assume ufficialmente il ruolo di:
+
+✔ lettura dei conti reali
+
+✔ lettura delle ricorrenze
+
+✔ lettura della pressione temporale
+
+✔ lettura dei fondi
+
+✔ simulazione economica futura
+
+senza trasformarsi in un home banking.
+
+---
+
+## DISTINZIONE SALDO / PREVISIONE
+
+Viene consolidata e verificata la regola fondamentale del modulo.
+
+### Saldo reale
+
+Rappresenta esclusivamente il denaro realmente disponibile.
+
+Non deve essere influenzato dalle ricorrenze non ancora confermate.
+
+---
+
+### Pressione futura
+
+Rappresenta la previsione economica della famiglia.
+
+Può considerare:
+
+* ricorrenze
+* stipendi previsti
+* fondi
+* simulazioni
+
+senza modificare il saldo reale.
+
+---
+
+## CONFERMA MANUALE
+
+Le ricorrenze continuano ad essere considerate:
+
+👉 previsione.
+
+Solo la conferma manuale dell'utente trasforma una previsione in evento economico reale.
+
+Regole consolidate:
+
+✔ ricorrenza creata → saldo invariato
+
+✔ conferma ricorrenza → saldo aggiornato
+
+✔ annullamento conferma → saldo ripristinato
+
+---
+
+## COERENZA CONTI REALI
+
+Decisione strutturale ufficiale:
+
+Home e schermate dettaglio devono leggere lo stesso insieme di conti attivi.
+
+I conti disattivati o eliminati NON devono contribuire ai saldi aggregati.
+
+---
+
+## COLLAUDO VITA REALE
+
+Il motore è stato verificato con test pratici.
+
+Scenario testato:
+
+* creazione uscita di prova
+* conferma manuale
+* aggiornamento saldo
+* eliminazione conferma
+* ripristino saldo
+
+Esito:
+
+✔ comportamento corretto.
+
+---
+
+## NUOVA FASE OPERATIVA
+
+Il modulo Finanze entra ufficialmente nella fase:
+
+### H3.5 — Consolidamento Vita Reale
+
+Obiettivo:
+
+verificare che il comportamento del sistema coincida con il comportamento della vita reale prima di espandere ulteriormente il motore economico.
+
+# CONSOLIDAMENTO VITA REALE — GIUGNO 2026
+
+Durante la fase di consolidamento del motore economico reale, il modulo Finanze ha completato la transizione da semplice popup della Home a vero e proprio Centro Controllo Economico.
+
+---
+
+## NUOVA DIREZIONE UI
+
+La gestione Finanze non vive più come semplice finestra modale.
+
+Diventa una schermata dedicata, mantenendo però tutta la filosofia originaria del modulo.
+
+Decisione ufficiale:
+
+👉 la UI deve facilitare la lettura della situazione economica reale della famiglia.
+
+---
+
+## CENTRO CONTROLLO ECONOMICO
+
+La schermata Finanze assume ufficialmente il ruolo di:
+
+✔ lettura dei conti reali
+
+✔ lettura delle ricorrenze
+
+✔ lettura della pressione temporale
+
+✔ lettura dei fondi
+
+✔ simulazione economica futura
+
+senza trasformarsi in un home banking.
+
+---
+
+## DISTINZIONE SALDO / PREVISIONE
+
+Viene consolidata e verificata la regola fondamentale del modulo.
+
+### Saldo reale
+
+Rappresenta esclusivamente il denaro realmente disponibile.
+
+Non deve essere influenzato dalle ricorrenze non ancora confermate.
+
+---
+
+### Pressione futura
+
+Rappresenta la previsione economica della famiglia.
+
+Può considerare:
+
+* ricorrenze
+* stipendi previsti
+* fondi
+* simulazioni
+
+senza modificare il saldo reale.
+
+---
+
+## CONFERMA MANUALE
+
+Le ricorrenze continuano ad essere considerate:
+
+👉 previsione.
+
+Solo la conferma manuale dell'utente trasforma una previsione in evento economico reale.
+
+Regole consolidate:
+
+✔ ricorrenza creata → saldo invariato
+
+✔ conferma ricorrenza → saldo aggiornato
+
+✔ annullamento conferma → saldo ripristinato
+
+---
+
+## COERENZA CONTI REALI
+
+Decisione strutturale ufficiale:
+
+Home e schermate dettaglio devono leggere lo stesso insieme di conti attivi.
+
+I conti disattivati o eliminati NON devono contribuire ai saldi aggregati.
+
+---
+
+## COLLAUDO VITA REALE
+
+Il motore è stato verificato con test pratici.
+
+Scenario testato:
+
+* creazione uscita di prova
+* conferma manuale
+* aggiornamento saldo
+* eliminazione conferma
+* ripristino saldo
+
+Esito:
+
+✔ comportamento corretto.
+
+---
+
+## NUOVA FASE OPERATIVA
+
+Il modulo Finanze entra ufficialmente nella fase:
+
+### H3.5 — Consolidamento Vita Reale
+
+Obiettivo:
+
+verificare che il comportamento del sistema coincida con il comportamento della vita reale prima di espandere ulteriormente il motore economico.

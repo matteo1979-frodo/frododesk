@@ -1,6 +1,6 @@
-# FRODODESK — MASTER ROADMAP UNIFICATA V3
+# FRODODESK — MASTER ROADMAP UNIFICATA V4
 
-Ultimo aggiornamento: 26 Maggio 2026
+Ultimo aggiornamento: 5 Giugno 2026
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -88,28 +88,78 @@ Principio immutabile:
 ## HOME
 
 ☑ consolidata
+
 ☑ modularizzazione fermata nel punto corretto
+
 ☑ trasformata in orchestratore
+
 ☑ zero errori rossi
+
 ☑ stabilità preservata
+
 ☑ alleggerita correttamente
 
 ---
 
 ## FINANZE
 
-🟡 FASE STRUTTURALE PROFONDA IN CORSO
+🟢 MOTORE ECONOMICO FONDATIVO COMPLETATO
+
+🟡 FASE ATTUALE:
+
+H3.5 — CONSOLIDAMENTO VITA REALE
 
 ☑ FinanceStore reale presente
+
 ☑ recurring items avanzati
+
 ☑ fondi
+
 ☑ dashboard temporale
+
 ☑ pressure score iniziale
+
 ☑ snapshot economici
+
 ☑ simulazione annuale base
+
 ☑ owner condivisi
+
 ☑ timeline economica reale
+
 ☑ DNA economico iniziale vivo
+
+☑ schermata Finanze dedicata
+
+☑ Centro Controllo Economico
+
+☑ conti bancari multipli
+
+☑ gestione prepagate
+
+☑ rapporti collegati
+
+☑ trasferimenti tra conti
+
+☑ aggiunta/modifica/eliminazione conti
+
+☑ aggiunta/modifica/eliminazione ricorrenze
+
+☑ conferma ricorrenze
+
+☑ annullamento conferme
+
+☑ storico movimenti
+
+☑ dettaglio mesi ripristinato
+
+☑ saldo reale separato dalla pressione futura
+
+☑ Home e Conti Persona sincronizzati
+
+☑ saldo basato solo sui conti attivi
+
+☑ test vita reale superati
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -121,403 +171,65 @@ Principio immutabile:
 
 Priorità assoluta:
 
-➡️ costruzione del vero motore economico.
+➡️ consolidamento del comportamento reale.
 
 NON:
 
 ❌ nuove aree
+
 ❌ automazioni premature
+
 ❌ grafica avanzata
+
 ❌ IPS economico finale
+
 ❌ modularizzazione cosmetica
 
 PRIMA:
 
 ✔ comportamento economico reale
+
 ✔ pressione reale
+
 ✔ resilienza
+
 ✔ simulazione futura
+
 ✔ stabilità sistema
+
 ✔ consolidamento vita reale
 
 ━━━━━━━━━━━━━━━━━━
 
-# HOME — STATO UFFICIALE
+# DIREZIONE OPERATIVA IMMEDIATA
 
 ━━━━━━━━━━━━━━━━━━
 
-## COMPLETATO
+⚠️ NON codice impulsivo.
 
-☑ HomeOverviewMetrics estratto
+FASE ATTUALE:
 
-☑ MiniActionChip estratto
+🟡 H3.5 — CONSOLIDAMENTO VITA REALE
 
-☑ SystemStatusHeader estratto
+Obiettivo:
 
-☑ FinanceInfoCard estratto
+✔ verificare il comportamento reale dei conti
 
-☑ GlobalEventEntryCard estratto
+✔ verificare il comportamento reale delle ricorrenze
 
-☑ DialogEmptyState estratto
+✔ verificare la coerenza Home ↔ Finanze
 
-☑ SectionTitle estratto
+✔ verificare i trasferimenti reali
 
-☑ ripristino corretto “Prossimo problema”
+✔ verificare conferme e annullamenti
 
-☑ zero regressioni
+✔ verificare il comportamento dei fondi
 
-☑ zero errori rossi
+✔ eliminare incoerenze UI prima di nuove funzioni
 
-☑ Home alleggerita e più orchestratore
+Solo dopo:
 
----
-
-# DECISIONE ARCHITETTURALE HOME
-
-STOP modularizzazione aggressiva.
-
-Si estraggono componenti solo se:
-
-✔ veramente riusabili
-✔ realmente UI pura
-✔ senza business logic
-✔ senza dipendenze sporche
-
-Le parti rimaste in Home contengono:
-
-* callback
-* store
-* parsing
-* logica
-* dialog complessi
-* gestione eventi
-* stato
-
-Quindi ulteriori estrazioni ora aumenterebbero il rischio.
-
-━━━━━━━━━━━━━━━━━━
-
-# ROADMAP CALENDARIO REALE
-
-━━━━━━━━━━━━━━━━━━
-
-## BLOCCO A — Fondamenta Copertura
-
-✅ COMPLETATO
-
-Comprende:
-
-* turni
-* viaggio
-* riposo post-notte
-* Sandra
-* override
-* copertura reale
-
----
-
-## BLOCCO B — Override Giornalieri
-
-✅ COMPLETATO
-
-Comprende:
-
-* ferie
-* permesso
-* malattia
-* override reali
-* refresh reale UI
-
----
-
-## BLOCCO D — Eventi Alice Reali
-
-🟡 IN COSTRUZIONE CONTINUA
-
-Completato:
-
-✅ base eventi Alice
-✅ integrazione copertura
-✅ logica accompagnamento
-
-Da fare:
-
-⬜ conflitti avanzati
-⬜ eventi multipli complessi
-⬜ accompagnamento intelligente
-⬜ Alice al seguito
-⬜ autonomia futura Alice
-⬜ comportamento età dinamica
-
----
-
-## EVENTI GLOBALI
-
-🟡 AVVIATO
-
-Obiettivi:
-
-⬜ timeline reale consolidata
-⬜ eventi familiari complessi
-⬜ eventi economici
-⬜ collegamento eventi ↔ pressione
-⬜ memoria eventi lunga
-⬜ lettura periodi critici
-
-━━━━━━━━━━━━━━━━━━
-
-# MODULO FINANZE — IDENTITÀ UFFICIALE
-
-━━━━━━━━━━━━━━━━━━
-
-Finanze NON rappresenta:
-
-❌ solo denaro
-❌ solo saldo
-❌ solo entrate/uscite
-
-Finanze rappresenta:
-
-✔ stabilità
-✔ fragilità
-✔ resilienza
-✔ pressione
-✔ rischio futuro
-✔ sopravvivenza temporale
-✔ sincronizzazione economica
-✔ salute economica familiare
-
-━━━━━━━━━━━━━━━━━━
-
-# NUOVI ASSI FONDAMENTALI DEL MOTORE
-
-━━━━━━━━━━━━━━━━━━
-
-# 1. PRESSIONE ECONOMICA
-
-La pressione NON è:
-
-❌ soldi rimasti
-
-La pressione È:
-
-✔ capacità di assorbire la vita reale
-✔ rischio futuro
-✔ fragilità familiare
-✔ sostenibilità reale
-✔ resilienza
-
----
-
-# 2. PRESSIONE PREVEDIBILE vs IMPREVEDIBILE
-
-## PREVEDIBILE
-
-* mutuo
-* bollette
-* assicurazione
-* revisione
-* mensa base
-
-Sono:
-
-✔ simulabili
-✔ preparabili
-✔ prevedibili
-
-## IMPREVEDIBILE
-
-* dentista
-* fisioterapia
-* guasti
-* visite urgenti
-* spese extra improvvise
-
-Misurano:
-
-✔ resilienza reale
-✔ capacità di sopravvivenza economica
-
----
-
-# 3. PRESSIONE STATICA vs DINAMICA
-
-## STATICA
-
-* mutuo
-* abbonamenti
-* rate
-
-## DINAMICA
-
-* Sandra
-* mensa Alice
-* sport
-* centro estivo
-* eventi scolastici
-* ripetizioni
-
-La pressione nasce dal comportamento reale della vita.
-
----
-
-# 4. RIGIDITÀ ECONOMICA
-
-## RIGIDISSIMA
-
-* mutuo
-* assicurazione obbligatoria
-* bollette vitali
-* dentista urgente
-
-## MEDIA
-
-* sport
-* pellet
-* manutenzioni rinviabili poco
-
-## ELASTICA
-
-* Netflix
-* hobby
-* acquisti extra
-
----
-
-# 5. MANOVRABILITÀ ECONOMICA
-
-Ogni voce economica deve conoscere:
-
-✔ se può essere rateizzata
-✔ se può essere spostata
-✔ se può essere divisa
-✔ se può essere rimandata
-✔ quanto margine di manovra reale esiste
-
----
-
-# 6. SACRIFICABILITÀ
-
-Il sistema deve capire:
-
-👉 cosa viene sacrificato per primo durante la pressione.
-
----
-
-# 7. CONSEGUENZE DEL NON PAGARE
-
-La pressione NON dipende solo dal costo.
-
-Dipende da:
-
-👉 cosa succede se la famiglia non riesce a sostenerla.
-
----
-
-# 8. VICINANZA TEMPORALE
-
-Concetto ufficiale:
-
-👉 PRESSIONE = IMPATTO × VICINANZA
-
----
-
-# 9. FLUSSO TEMPORALE ECONOMICO
-
-Il sistema deve leggere:
-
-✔ cosa entra
-✔ cosa esce
-✔ QUANDO
-✔ cosa è confermato
-✔ cosa è previsto
-✔ cosa può slittare
-✔ cosa NON può slittare
-
----
-
-# 10. LIQUIDITÀ OPERATIVA
-
-Il sistema deve capire:
-
-👉 “la famiglia riesce a sopravvivere fino al prossimo respiro economico?”
-
----
-
-# 11. AFFIDABILITÀ TEMPORALE
-
-Ogni voce deve avere:
-
-✔ comportamento storico
-✔ affidabilità reale
-✔ rischio ritardo
-✔ comportamento temporale reale
-
----
-
-# 12. STATO TEMPORALE DELLE VOCI
-
-Ogni voce può essere:
-
-✔ prevista
-✔ attesa
-✔ confermata
-✔ ritardata
-✔ a rischio
-
----
-
-# 13. PAGAMENTO MANUALE vs AUTOMATICO
-
-## MANUALE
-
-* bollettino
-* bonifico
-* F24
-
-## AUTOMATICO (RID / SDD)
-
-* luce
-* gas
-* mutuo
-* telefono
-
----
-
-# 14. MEMORIA ECONOMICA EVOLUTIVA
-
-FrodoDesk deve crescere anno dopo anno.
-
----
-
-# 15. ENTITÀ ECONOMICHE VIVE
-
-Le voci economiche NON devono essere semplici spese.
-
-Devono diventare:
-
-👉 entità economiche vive.
-
----
-
-# 16. INSERIMENTO MANUALE OBBLIGATORIO
-
-⚠️ IMPORTANTISSIMO
-
-❌ nessuna base precompilata.
-
-Tutto nasce da inserimento manuale utente.
-
----
-
-# 17. COMPLETENZA SISTEMA ECONOMICO
-
-Il sistema deve convivere inizialmente con:
-
-✔ simulazione parziale
-✔ uscite mancanti
-✔ micro-spese non registrate
-✔ costi invisibili
+➡️ H4 — Simulazione futura reale
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -530,21 +242,52 @@ Il sistema deve convivere inizialmente con:
 ## H1 — Fondamenta esistenti
 
 ☑ FinanceStore reale
+
 ☑ recurring items
+
 ☑ fondi
+
 ☑ snapshot
+
 ☑ dashboard annuale
+
 ☑ simulazione base
+
 ☑ pressure score iniziale
+
 ☑ Home consolidata
+
 ☑ owner condivisi
+
 ☑ timeline economica
+
+☑ conti bancari reali
+
+☑ prepagate
+
+☑ rapporti collegati
+
+☑ trasferimenti
+
+☑ storico transazioni
+
+☑ conferma ricorrenze
+
+☑ annullamento conferme
+
+☑ gestione saldi reali
+
+☑ Centro Controllo Economico
+
+☑ saldo reale separato dalla pressione futura
+
+☑ sincronizzazione Home ↔ Conti Persona
 
 ---
 
 ## H2 — COMPORTAMENTO ECONOMICO REALE
 
-🟡 IN CONSOLIDAMENTO STRUTTURALE
+🟡 IN CONSOLIDAMENTO
 
 ### Concetti consolidati
 
@@ -577,7 +320,7 @@ Il sistema deve convivere inizialmente con:
 ☑ sopravvivenza vs ricostruzione
 ☑ salute del sistema economico
 ☑ collasso come perdita capacità di recupero
-☑ differenza tra “coperto” e “risolto”
+☑ differenza tra "coperto" e "risolto"
 ☑ consumo resilienza futura
 ☑ ossigeno economico familiare
 ☑ differenza tra denaro disponibile e ossigeno reale
@@ -587,175 +330,322 @@ Il sistema deve convivere inizialmente con:
 ☑ pressione che genera altra pressione
 ☑ lettura evolutiva direzione sistema familiare
 
-### Riunione fondativa H2 — Giugno 2026
-
-Decisione strutturale consolidata:
-
-Durante il consolidamento H2 sono state definite le prime leggi comportamentali del motore economico.
-
-Queste leggi NON rappresentano ancora formule matematiche definitive.
-
-Rappresentano il comportamento reale che il motore dovrà interpretare.
-
-✔ Legge 1 — Pressione reale
-
-✔ Legge 2 — Danno residuo
-
-✔ Legge 3 — Consumo di resilienza
-
-✔ Legge 4 — Resilienza strutturata
-
-✔ Legge 5 — Vulnerabilità acquisita
-
-✔ Legge 6 — Direzione del sistema
-
-Distinzioni consolidate:
-
-✔ Denaro
-
-✔ Ossigeno economico
-
-✔ Resilienza
-
-✔ Protezione
-
-✔ Direzione del sistema
-
-Significato storico:
-
-Questa riunione ha consolidato il passaggio da:
-
-❌ lettura del denaro
-
-a
-
-✔ lettura della salute economica familiare.
+---
 
 ### DNA tecnico già implementato
 
 ☑ distinzione saldo lordo vs ossigeno reale
+
 ☑ liquidità respirabile
+
 ☑ conti operativi
+
 ☑ FinanceBalanceType
+
 ☑ balanceId separato da personId
+
 ☑ splits economici reali
+
 ☑ supporto quote personalizzate
+
 ☑ operational balance
+
 ☑ warning operativo
+
 ☑ stress operativo
+
 ☑ stress ratio
+
 ☑ vitalityState iniziale
+
 ☑ resilienza base
+
 ☑ recupero economico
+
 ☑ stress persistente
+
 ☑ differenza sistema stabile vs sistema affaticato
+
 ☑ differenza sistema che sopravvive vs sistema che recupera
+
 ☑ differenza tra warning e perdita controllo
+
 ☑ lettura usura economica iniziale
+
+☑ saldo reale separato dalle ricorrenze future
+
+☑ conferma ricorrenza modifica il saldo
+
+☑ annullamento conferma ripristina il saldo
+
+☑ trasferimenti reali tra conti
+
+☑ coerenza Home ↔ Conti Persona
+
+☑ esclusione automatica conti disattivati
+
+---
 
 ### Da completare
 
 ⬜ definizione pesi reali pressione
+
 ⬜ definizione resilienza matematica
+
 ⬜ definizione sincronizzazione economica
+
 ⬜ definizione collasso sistema
+
 ⬜ definizione priorità sopravvivenza
+
 ⬜ definizione soglie saturazione
+
 ⬜ definizione recupero economico reale
+
 ⬜ definizione matematica ossigeno economico
+
 ⬜ definizione usura progressiva sistema
+
 ⬜ definizione salute economica famiglia
+
 ⬜ definizione equilibrio sopravvivenza/ricostruzione
+
 ⬜ utilizzo reale del DNA economico nelle simulazioni
 
 ---
 
-## H3 — Architettura voci economiche
+## H3 — ARCHITETTURA VOCI ECONOMICHE
 
-⬜ sistema “aggiungi elemento economico”
-⬜ popup dinamici per categoria
-⬜ comportamento automatico per tipo voce
-⬜ modalità pagamento
-⬜ gestione conferme
+☑ sistema "aggiungi elemento economico"
+
+☑ gestione conti reali
+
+☑ gestione prepagate
+
+☑ gestione rapporti collegati
+
+☑ modalità pagamento
+
+☑ gestione conferme
+
+☑ gestione storico
+
+☑ modifica importi reali in conferma
+
+☑ gestione split economici
+
+☑ associazione conto di pagamento
+
+🟡 popup dinamici per categoria
+
+🟡 comportamento automatico per tipo voce
+
 ⬜ gestione ritardi
-⬜ gestione storica
 
 ---
 
-## H4 — Simulazione futura reale
+## H3.5 — CONSOLIDAMENTO VITA REALE
 
-⬜ simulazione 3/6/12 mesi
+⚠️ NUOVA FASE UFFICIALE
+
+Obiettivo:
+
+Trasformare il motore economico in uno strumento utilizzabile nella vita quotidiana senza incoerenze.
+
+### Completato
+
+☑ nuova schermata Finanze
+
+☑ Centro Controllo Economico
+
+☑ dettaglio mesi ripristinato
+
+☑ gestione conti reali
+
+☑ trasferimenti reali
+
+☑ conferma ricorrenze
+
+☑ annullamento conferme
+
+☑ saldo reale separato dalle previsioni
+
+☑ Home sincronizzata con i conti reali
+
+☑ esclusione conti disattivati
+
+☑ test pratico uscita → conferma → ripristino superato
+
+### Da verificare nella vita reale
+
+⬜ bollette reali
+
+⬜ stipendi reali
+
+⬜ fondi reali
+
+⬜ utilizzo continuativo quotidiano
+
+⬜ casi limite
+
+---
+
+## H4 — SIMULAZIONE FUTURA REALE
+
+⬜ simulazione 3 mesi
+
+⬜ simulazione 6 mesi
+
+⬜ simulazione 12 mesi
+
 ⬜ rischio pressione futura
+
 ⬜ accumulo pressione
+
 ⬜ sincronizzazione temporale
+
 ⬜ rischio liquidità
+
 ⬜ mesi critici
 
 ---
 
-## H5 — Collegamento vita reale ↔ finanze
+## H5 — COLLEGAMENTO VITA REALE ↔ FINANZE
+
+🟡 FASE SUCCESSIVA
+
+Obiettivo:
+
+La vita reale deve generare automaticamente pressione economica.
+
+NON si tratta di creare spese.
+
+Si tratta di capire come gli eventi familiari modificano la stabilità economica.
+
+### Collegamenti previsti
 
 ⬜ Sandra dinamica
+
 ⬜ mensa Alice dinamica
+
 ⬜ eventi Alice → pressione
+
 ⬜ scuola → impatto economico
-⬜ sport/corsi → pressione
+
+⬜ sport e corsi → pressione
+
 ⬜ ferie → pressione
+
+⬜ malattie → pressione
+
+⬜ eventi familiari → pressione
+
+⬜ supporto familiare → costo reale
+
+⬜ accompagnamenti → impatto economico
+
+Principio:
+
+👉 La vita genera economia.
+👉 L'economia modifica la resilienza.
+👉 La resilienza modifica la stabilità familiare.
 
 ---
 
 ## H6 — IPS ECONOMICO
 
+⚠️ NON PRIORITARIO ORA
+
+Quando H5 sarà stabile, il motore economico entrerà nell'IPS generale.
+
+Obiettivi:
+
 ⬜ pressione economica globale
+
 ⬜ resilienza sistema
+
 ⬜ rischio familiare economico
+
 ⬜ collegamento IPS generale
+
+⬜ lettura stato economico della famiglia
+
+⬜ direzione futura del sistema
 
 ---
 
 ## H7 — EVOLUZIONI PROFONDE DEL MOTORE ECONOMICO
 
-⚠️ BLOCCO FUTURO — NON PRIORITARIO ORA
+⚠️ BLOCCO FUTURO
 
-Questo blocco NON autorizza espansione immediata.
+NON autorizza sviluppo immediato.
 
-Serve per NON perdere le evoluzioni profonde emerse durante la costruzione del DNA economico.
+Serve esclusivamente a conservare le idee strutturali emerse durante la costruzione del DNA economico.
 
-Queste evoluzioni dovranno essere affrontate SOLO dopo:
+Si affronterà solo dopo:
 
-✔ consolidamento H2
-✔ completamento H3
-✔ simulazione reale stabile
-✔ utilizzo reale nella vita quotidiana
+☑ consolidamento H2
+
+☑ consolidamento H3
+
+☑ completamento H3.5
+
+☑ simulazione reale stabile
+
+☑ utilizzo quotidiano nella vita reale
+
+---
 
 ### Evoluzioni salvate
 
 ⬜ vitalityState evolutivo completo
+
 ⬜ spirale economica evolutiva
+
 ⬜ debito resilienza futura
+
 ⬜ perdita progressiva controllo
+
 ⬜ saturazione resilienza familiare
+
 ⬜ sistema che sopravvive vs sistema che guarisce
+
 ⬜ lettura traiettoria economica familiare
+
 ⬜ deterioramento progressivo
+
 ⬜ consumo resilienza tramite manovre temporanee
+
 ⬜ stress economico cronico
+
 ⬜ lettura salute evolutiva sistema
+
+---
 
 ⬜ differenza tra:
 
-* stable
-* recovering
-* fatigued
-* surviving
-* degrading
-* losingControl
-* drowning
+stable
+
+recovering
+
+fatigued
+
+surviving
+
+degrading
+
+losingControl
+
+drowning
+
+---
 
 Principio ufficiale:
 
 👉 prima consolidare
+
 👉 poi espandere
+
 👉 poi approfondire
 
 ━━━━━━━━━━━━━━━━━━
@@ -775,9 +665,13 @@ La MASTER ROADMAP deve esistere come:
 NON devono esistere:
 
 ❌ roadmap duplicate
+
 ❌ patch parallele permanenti
+
 ❌ copie divergenti
+
 ❌ versioni concorrenti
+
 ❌ roadmap spezzate
 
 ---
@@ -787,10 +681,15 @@ NON devono esistere:
 Ogni aggiornamento futuro deve:
 
 ✔ aggiornare il documento esistente
+
 ✔ preservare la struttura corretta
+
 ✔ integrare nuove decisioni senza rompere le precedenti
+
 ✔ evitare cancellazioni impulsive
+
 ✔ evitare perdita concetti consolidati
+
 ✔ mantenere coerenza CNC globale
 
 ---
@@ -800,14 +699,19 @@ Ogni aggiornamento futuro deve:
 Nuove idee NON autorizzano:
 
 ❌ espansione immediata
+
 ❌ cambio priorità impulsivo
+
 ❌ creazione nuovi documenti paralleli
 
 Prima bisogna decidere:
 
 1. in quale fase appartiene
+
 2. quali fondamenta richiede
+
 3. se aumenta ordine o caos
+
 4. se è davvero prioritaria
 
 Solo dopo:
@@ -822,17 +726,29 @@ Solo dopo:
 
 ⚠️ NON codice impulsivo.
 
+FASE ATTUALE:
+
+🟡 H3.5 — CONSOLIDAMENTO VITA REALE
+
 Prima:
 
-✔ definizione concetti
 ✔ definizione comportamento reale
-✔ definizione rischio
-✔ definizione resilienza
-✔ definizione sincronizzazione economica
+
+✔ verifica vita reale
+
+✔ verifica coerenza conti
+
+✔ verifica ricorrenze
+
+✔ verifica fondi
+
+✔ eliminazione incoerenze UI
+
+✔ stabilizzazione utilizzo quotidiano
 
 Poi:
 
-👉 implementazione motore.
+👉 H4 — Simulazione futura reale.
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -843,13 +759,43 @@ Poi:
 FrodoDesk deve diventare:
 
 ➡️ un simulatore di stabilità familiare
+
 ➡️ un lettore di pressione reale
+
 ➡️ un sistema preventivo
+
 ➡️ un supporto decisionale umano
+
+➡️ un interprete della vita reale
 
 NON:
 
 ❌ un gestionale
+
 ❌ un Excel
+
 ❌ un tracker spese
+
 ❌ una semplice app calendario
+
+❌ un home banking
+
+---
+
+# STATO UFFICIALE DEL PROGETTO
+
+(5 Giugno 2026)
+
+🟢 Calendario consolidato.
+
+🟢 Home consolidata.
+
+🟢 Motore economico fondativo completato.
+
+🟡 Fase attuale:
+
+H3.5 — Consolidamento Vita Reale.
+
+Obiettivo operativo:
+
+👉 verificare che il sistema si comporti esattamente come la vita reale, prima di espandere ulteriormente FrodoDesk.

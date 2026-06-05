@@ -1,7 +1,7 @@
 # FRODODESK — SYSTEM STATE
 
-Ultimo aggiornamento: 26 Maggio 2026  
-(Consolidamento documentale + H2 economico reale)
+Ultimo aggiornamento: 5 Giugno 2026
+(Consolidamento Vita Reale + H3.5 Economico)
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -17,22 +17,24 @@ FrodoDesk è entrato nella fase:
 
 Il sistema NON è più:
 
-❌ prototipo calendario  
-❌ semplice planner turni  
-❌ semplice esperimento UI  
+❌ prototipo calendario
+❌ semplice planner turni
+❌ semplice esperimento UI
+❌ semplice simulatore economico
 
 Il sistema è ormai composto da:
 
-✔ calendario reale vivo  
-✔ motore copertura reale  
-✔ PresenceEngine  
-✔ Home operativa  
-✔ Eventi Globali  
-✔ Eventi Alice  
-✔ rete supporto reale  
-✔ simulazione economica iniziale  
-✔ pressione economica iniziale  
-✔ modularizzazione stabile  
+✔ calendario reale vivo
+✔ motore copertura reale
+✔ PresenceEngine
+✔ Home operativa
+✔ Eventi Globali
+✔ Eventi Alice
+✔ rete supporto reale
+✔ Centro Controllo Economico
+✔ simulazione economica reale
+✔ pressione economica reale
+✔ modularizzazione stabile
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -42,27 +44,41 @@ Il sistema è ormai composto da:
 
 ## STABILE
 
-✔ copertura reale funzionante  
-✔ SchoolStore consolidato  
-✔ override reali funzionanti  
-✔ supporto temporale reale  
-✔ gestione ferie/malattia  
-✔ rete supporto separata da Sandra  
-✔ Home coerente col calendario  
-✔ refresh reale UI  
-✔ post-notte corretto  
-✔ presenza Alice segmentata temporalmente  
+✔ copertura reale funzionante
+
+✔ SchoolStore consolidato
+
+✔ override reali funzionanti
+
+✔ supporto temporale reale
+
+✔ gestione ferie/malattia
+
+✔ rete supporto separata da Sandra
+
+✔ Home coerente col calendario
+
+✔ refresh reale UI
+
+✔ post-notte corretto
+
+✔ presenza Alice segmentata temporalmente
 
 ---
 
 ## REGOLE REALI ATTIVE
 
-✔ viaggio lavoro  
-✔ post-notte fino 14:30  
-✔ copertura completa obbligatoria  
-✔ Alice non interpretata implicitamente  
-✔ supporto valido solo se copre tutto il gap  
-✔ Home e calendario leggono la stessa verità  
+✔ viaggio lavoro
+
+✔ post-notte fino 14:30
+
+✔ copertura completa obbligatoria
+
+✔ Alice non interpretata implicitamente
+
+✔ supporto valido solo se copre tutto il gap
+
+✔ Home e calendario leggono la stessa verità
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -78,10 +94,14 @@ File strutturale principale:
 
 Responsabilità attive:
 
-✔ determinare posizione reale Alice  
-✔ determinare presenza reale  
-✔ distinguere stati presenza  
+✔ determinare posizione reale Alice
+
+✔ determinare presenza reale
+
+✔ distinguere stati presenza
+
 ✔ fornire una sola verità a:
+
 - CoverageEngine
 - Home
 - Calendario
@@ -91,13 +111,19 @@ Responsabilità attive:
 
 ## STATI ATTUALI
 
-✔ home  
-✔ school  
-✔ timedEvent  
-✔ realEvent  
-✔ summerCamp  
-✔ accompanied  
-✔ support  
+✔ home
+
+✔ school
+
+✔ timedEvent
+
+✔ realEvent
+
+✔ summerCamp
+
+✔ accompanied
+
+✔ support
 
 ---
 
@@ -107,12 +133,13 @@ Responsabilità attive:
 
 CoverageEngine deve diventare:
 
-✔ motore copertura puro  
-✔ consumatore PresenceEngine  
+✔ motore copertura puro
+
+✔ consumatore PresenceEngine
 
 NON:
 
-❌ interprete diretto Alice  
+❌ interprete diretto Alice
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -122,32 +149,45 @@ NON:
 
 ## CONSOLIDATO
 
-✔ rilevazione buchi reale  
-✔ supporti completi  
-✔ spiegazione reale buchi  
-✔ Home coerente  
-✔ popup coerenti  
-✔ eventi Alice integrati  
-✔ eventi reali integrati  
+✔ rilevazione buchi reale
+
+✔ supporti completi
+
+✔ spiegazione reale buchi
+
+✔ Home coerente
+
+✔ popup coerenti
+
+✔ eventi Alice integrati
+
+✔ eventi reali integrati
 
 ---
 
 ## BUG STRUTTURALI RISOLTI
 
-✔ falso buco durante eventi reali  
-✔ falso buco Home  
-✔ doppie segmentazioni Alice  
-✔ supporti parziali invalidi  
-✔ incoerenza Home ↔ Calendario  
-✔ bug post centro estivo  
+✔ falso buco durante eventi reali
+
+✔ falso buco Home
+
+✔ doppie segmentazioni Alice
+
+✔ supporti parziali invalidi
+
+✔ incoerenza Home ↔ Calendario
+
+✔ bug post centro estivo
 
 ---
 
 ## DIREZIONE
 
-✔ cleanup progressivo legacy  
-✔ centralizzazione totale presenza Alice  
-✔ eliminazione logiche duplicate  
+✔ cleanup progressivo legacy
+
+✔ centralizzazione totale presenza Alice
+
+✔ eliminazione logiche duplicate
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -159,22 +199,31 @@ NON:
 
 Home è stata stabilizzata come:
 
-✔ orchestratore  
-✔ hub operativo  
-✔ lettura problemi reali  
-✔ accesso rapido sistema  
+✔ orchestratore
+
+✔ hub operativo
+
+✔ lettura problemi reali
+
+✔ accesso rapido sistema
 
 ---
 
 ## COMPONENTI ESTRATTI
 
-✔ HomeOverviewMetrics  
-✔ MiniActionChip  
-✔ SystemStatusHeader  
-✔ FinanceInfoCard  
-✔ GlobalEventEntryCard  
-✔ DialogEmptyState  
-✔ SectionTitle  
+✔ HomeOverviewMetrics
+
+✔ MiniActionChip
+
+✔ SystemStatusHeader
+
+✔ FinanceInfoCard
+
+✔ GlobalEventEntryCard
+
+✔ DialogEmptyState
+
+✔ SectionTitle
 
 ---
 
@@ -201,20 +250,27 @@ Ulteriori estrazioni aumenterebbero il rischio.
 
 ## ATTIVI
 
-✔ timeline anno → mesi → eventi  
-✔ dettaglio evento  
-✔ memoria eventi  
-✔ eventi multi-persona  
-✔ navigazione reale  
+✔ timeline anno → mesi → eventi
+
+✔ dettaglio evento
+
+✔ memoria evento
+
+✔ eventi multi-persona
+
+✔ navigazione reale
 
 ---
 
 ## DIREZIONE
 
-⬜ collegamento pressione economica  
-⬜ lettura periodi critici  
-⬜ collegamento finanze future  
-⬜ evoluzione memoria storica familiare  
+⬜ collegamento pressione economica
+
+⬜ lettura periodi critici
+
+⬜ collegamento finanze future
+
+⬜ evoluzione memoria storica familiare
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -224,21 +280,29 @@ Ulteriori estrazioni aumenterebbero il rischio.
 
 ## ATTIVI
 
-✔ eventi comportamentali  
-✔ accompagnamento  
-✔ integrazione copertura  
-✔ segmentazione reale presenza  
-✔ supporto eventi reali  
+✔ eventi comportamentali
+
+✔ accompagnamento
+
+✔ integrazione copertura
+
+✔ segmentazione reale presenza
+
+✔ supporto eventi reali
 
 ---
 
 ## DIREZIONE
 
-⬜ Alice al seguito  
-⬜ conflitti avanzati  
-⬜ autonomia futura  
-⬜ età dinamica  
-⬜ comportamento evolutivo Alice  
+⬜ Alice al seguito
+
+⬜ conflitti avanzati
+
+⬜ autonomia futura
+
+⬜ età dinamica
+
+⬜ comportamento evolutivo Alice
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -258,11 +322,15 @@ Principio consolidato:
 
 ## DIREZIONE
 
-⬜ trend familiari  
-⬜ pressione evolutiva  
-⬜ statistiche economiche  
-⬜ lettura storica sistema  
-⬜ confronto temporale reale  
+⬜ trend familiari
+
+⬜ pressione evolutiva
+
+⬜ statistiche economiche
+
+⬜ lettura storica sistema
+
+⬜ confronto temporale reale
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -272,83 +340,179 @@ Principio consolidato:
 
 ## ATTIVO
 
-✔ FinanceStore reale  
-✔ fondi  
-✔ recurring items  
-✔ snapshot economici  
-✔ dashboard annuale  
-✔ simulazione base  
-✔ owner condivisi  
-✔ timeline economica  
-✔ pressure score iniziale  
+✔ FinanceStore reale
+
+✔ fondi
+
+✔ recurring items
+
+✔ snapshot economici
+
+✔ dashboard annuale
+
+✔ simulazione base
+
+✔ owner condivisi
+
+✔ timeline economica
+
+✔ pressure score iniziale
+
+✔ Centro Controllo Economico
+
+✔ schermata Finanze dedicata
+
+✔ conti bancari multipli
+
+✔ gestione prepagate
+
+✔ rapporti collegati
+
+✔ trasferimenti tra conti
+
+✔ gestione conferme
+
+✔ storico movimenti
+
+✔ dettaglio mesi
+
+✔ saldo reale separato dalla pressione futura
+
+✔ Home e Conti Persona sincronizzati
+
+✔ esclusione conti disattivati
 
 ---
 
 ## H2 — STATO REALE
 
-🟡 CONSOLIDAMENTO STRUTTURALE IN CORSO
+🟢 CONCETTUALMENTE CONSOLIDATO
+
+---
+
+## H3.5 — FASE ATTUALE
+
+🟡 CONSOLIDAMENTO VITA REALE
+
+Obiettivo:
+
+✔ verificare comportamento reale conti
+
+✔ verificare comportamento reale ricorrenze
+
+✔ verificare comportamento reale fondi
+
+✔ verificare sincronizzazione Home ↔ Finanze
+
+✔ verificare utilizzo quotidiano
 
 ---
 
 ## CONCETTI CONSOLIDATI
 
-✔ pressione prevedibile/imprevedibile  
-✔ pressione statica/dinamica  
-✔ rigidità economica  
-✔ manovrabilità  
-✔ sacrificabilità  
-✔ conseguenze del non pagare  
-✔ vicinanza temporale  
-✔ liquidità operativa  
-✔ affidabilità temporale  
-✔ stato temporale voci  
-✔ memoria economica evolutiva  
-✔ ossigeno economico  
-✔ resilienza  
-✔ stress economico  
-✔ debito resilienza  
-✔ consumo resilienza futura  
-✔ sistema stabile vs affaticato  
-✔ sistema che sopravvive vs sistema che guarisce  
+✔ pressione prevedibile/imprevedibile
+
+✔ pressione statica/dinamica
+
+✔ rigidità economica
+
+✔ manovrabilità
+
+✔ sacrificabilità
+
+✔ conseguenze del non pagare
+
+✔ vicinanza temporale
+
+✔ liquidità operativa
+
+✔ affidabilità temporale
+
+✔ stato temporale voci
+
+✔ memoria economica evolutiva
+
+✔ ossigeno economico
+
+✔ resilienza
+
+✔ stress economico
+
+✔ debito resilienza
+
+✔ consumo resilienza futura
+
+✔ sistema stabile vs affaticato
+
+✔ sistema che sopravvive vs sistema che guarisce
+
+✔ saldo reale ≠ pressione futura
+
+✔ previsione ≠ realtà
 
 ---
 
 ## DNA TECNICO GIÀ INTRODOTTO
 
-✔ FinanceBalanceType  
-✔ balanceId separato da personId  
-✔ operational balance  
-✔ warning operativo  
-✔ stress operativo  
-✔ stress ratio  
-✔ vitalityState iniziale  
-✔ resilienza base  
-✔ recupero economico  
-✔ stress persistente  
-✔ splits economici reali  
-✔ supporto quote personalizzate  
-✔ liquidità respirabile  
+✔ FinanceBalanceType
+
+✔ balanceId separato da personId
+
+✔ operational balance
+
+✔ warning operativo
+
+✔ stress operativo
+
+✔ stress ratio
+
+✔ vitalityState iniziale
+
+✔ resilienza base
+
+✔ recupero economico
+
+✔ stress persistente
+
+✔ splits economici reali
+
+✔ supporto quote personalizzate
+
+✔ liquidità respirabile
+
+✔ conferma ricorrenze
+
+✔ annullamento conferme
+
+✔ trasferimenti reali
+
+✔ conti multipli
+
+✔ saldo reale verificato
 
 ---
 
-## DIREZIONE H2
+## DIREZIONE H3.5
 
 ⚠️ NON espandere prematuramente.
 
 PRIMA:
 
-✔ consolidamento matematico  
-✔ resilienza reale  
-✔ sincronizzazione economica  
-✔ salute sistema  
-✔ definizione collasso  
-✔ definizione ossigeno economico  
+✔ verifiche vita reale
+
+✔ consolidamento comportamento
+
+✔ collaudi pratici
+
+✔ affidabilità sistema
 
 DOPO:
 
-➡️ simulazione avanzata  
-➡️ IPS economico  
-➡️ automazioni future  
+➡️ H4 simulazione futura reale
+
+➡️ IPS economico
+
+➡️ automazioni future
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -358,19 +522,25 @@ DOPO:
 
 ## H1
 
-✅ consolidato
+🟢 consolidato
 
 ---
 
 ## H2
 
-🟡 consolidamento profondo attivo
+🟢 consolidato concettualmente
 
 ---
 
 ## H3
 
-⬜ architettura voci economiche
+🟢 architettura economica consolidata
+
+---
+
+## H3.5
+
+🟡 consolidamento vita reale attivo
 
 ---
 
@@ -406,10 +576,13 @@ DOPO:
 
 Separazione responsabilità documenti:
 
-✔ ROADMAP = direzione viva  
-✔ PROJECT_MEMORY = memoria evolutiva  
-✔ SYSTEM_STATE = stato tecnico reale  
-✔ RULES = sistema operativo filosofico/operativo  
+✔ ROADMAP = direzione viva
+
+✔ PROJECT_MEMORY = memoria evolutiva
+
+✔ SYSTEM_STATE = stato tecnico reale
+
+✔ RULES = sistema operativo filosofico/operativo
 
 ---
 
@@ -421,9 +594,11 @@ MASTER ROADMAP:
 
 Sono vietati:
 
-❌ duplicati  
-❌ patch parallele permanenti  
-❌ roadmap divergenti  
+❌ duplicati
+
+❌ patch parallele permanenti
+
+❌ roadmap divergenti
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -433,19 +608,31 @@ Sono vietati:
 
 NON fare:
 
-❌ mega-refactor  
-❌ nuove aree casuali  
-❌ automazioni premature  
-❌ IPS finale  
-❌ modularizzazione aggressiva  
+❌ mega-refactor
+
+❌ nuove aree casuali
+
+❌ automazioni premature
+
+❌ IPS finale
+
+❌ modularizzazione aggressiva
+
+❌ espansioni economiche premature
 
 Fare:
 
-✔ consolidamento H2  
-✔ consolidamento economico reale  
-✔ cleanup legacy PresenceEngine/Coverage  
-✔ test reali continui  
-✔ simulazione realistica  
+✔ consolidamento H3.5
+
+✔ consolidamento economico reale
+
+✔ test pratici continui
+
+✔ verifica comportamento reale
+
+✔ eliminazione incoerenze UI
+
+✔ simulazione sempre più aderente alla vita
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -453,19 +640,60 @@ Fare:
 
 ━━━━━━━━━━━━━━━━━━
 
-✔ Calendario stabile  
-✔ PresenceEngine attivo  
-✔ CoverageEngine stabile  
-✔ Home consolidata  
-✔ Eventi Globali vivi  
-✔ Eventi Alice vivi  
-✔ Finanze V1 vive  
-✔ H2 economico consolidato concettualmente  
-✔ roadmap unificata consolidata  
-✔ struttura documentale consolidata  
+✔ Calendario stabile
+
+✔ PresenceEngine attivo
+
+✔ CoverageEngine stabile
+
+✔ Home consolidata
+
+✔ Eventi Globali vivi
+
+✔ Eventi Alice vivi
+
+✔ Statistiche strutturalmente avviate
+
+✔ Centro Controllo Economico attivo
+
+✔ Motore economico fondativo completato
+
+✔ H2 economico consolidato concettualmente
+
+✔ H3 architettura economica consolidata
+
+✔ H3.5 consolidamento vita reale avviato
+
+✔ roadmap unificata consolidata
+
+✔ struttura documentale consolidata
 
 ━━━━━━━━━━━━━━━━━━
 
 # FRASE DI RIPARTENZA UFFICIALE
 
-Ripartiamo da FrodoDesk — consolidamento H2 del motore economico reale e cleanup finale della centralizzazione presenza Alice tra PresenceEngine e CoverageEngine.
+Ripartiamo da FrodoDesk — H3.5 Consolidamento Vita Reale.
+
+Priorità assoluta:
+
+verificare che il comportamento del motore economico coincida con il comportamento della vita quotidiana.
+
+Prima:
+
+✔ conti reali
+
+✔ ricorrenze reali
+
+✔ fondi reali
+
+✔ sincronizzazione Home ↔ Finanze
+
+✔ collaudi pratici
+
+Solo dopo:
+
+➡️ H4 — simulazione futura reale
+
+➡️ H5 — collegamento vita reale ↔ finanze
+
+➡️ H6 — IPS economico

@@ -677,4 +677,89 @@ PRIMA:
 
 # FRASE DI RIPARTENZA UFFICIALE
 
-Ripartiamo da FrodoDesk — consolidamento H2 del motore economico reale: resilienza, pressione reale, ossigeno economico e comportamento economico familiare. Priorità: consolidare il DNA economico prima di IPS economico, automazioni o espansioni premature.
+Ripartiamo da FrodoDesk — consolidamento H2 del motore economico reale: resilienza, pressione reale, ossigeno economico e comportamento economico familiare. Priorità: consolidare il DNA economico prima di IPS economico, automazioni o espansioni premature.# CONSOLIDAMENTO VITA REALE — GIUGNO 2026
+
+Durante il consolidamento del motore economico, il progetto ha raggiunto una nuova fase evolutiva.
+
+Il modulo Finanze non viene più interpretato come semplice simulatore economico, ma come rappresentazione della relazione tra vita reale, resilienza e stabilità familiare.
+
+---
+
+## EVOLUZIONE DEL MODULO FINANZE
+
+Passaggio strutturale:
+
+❌ popup economico della Home
+
+➡️ Centro Controllo Economico dedicato
+
+Il modulo acquisisce una propria identità visiva e funzionale, pur rimanendo integrato con il resto del sistema.
+
+---
+
+## VERIFICA DEL PRINCIPIO "PREVISIONE ≠ REALTÀ"
+
+Durante questa fase viene effettuato un collaudo pratico completo.
+
+Scenario reale verificato:
+
+* creazione ricorrenza futura
+* saldo invariato
+* conferma manuale
+* aggiornamento saldo
+* annullamento conferma
+* ripristino saldo
+
+La prova conferma che il comportamento implementato coincide con il modello concettuale definito durante H2.
+
+---
+
+## DISTINZIONE CONSOLIDATA
+
+### Saldo reale
+
+Risponde alla domanda:
+
+👉 "Quanti soldi possiedo realmente oggi?"
+
+---
+
+### Pressione futura
+
+Risponde alla domanda:
+
+👉 "Come potrebbe evolvere la mia situazione economica?"
+
+Le due grandezze devono restare sempre separate.
+
+---
+
+## COERENZA DELLA VERITÀ ECONOMICA
+
+Viene introdotta una nuova regola strutturale:
+
+La Home, il Centro Controllo Economico e le schermate Persona devono leggere la stessa identica realtà economica.
+
+Non possono esistere saldi differenti derivanti da interpretazioni diverse.
+
+La fonte di verità resta il motore economico centrale.
+
+---
+
+## NUOVA FASE EVOLUTIVA
+
+Il progetto entra ufficialmente nella fase:
+
+### H3.5 — Consolidamento Vita Reale
+
+Obiettivo della fase:
+
+verificare che il comportamento del sistema coincida con il comportamento della vita quotidiana prima di introdurre simulazioni più profonde, IPS economico o automazioni avanzate.
+
+Il principio guida diventa:
+
+👉 prima consolidare la realtà,
+👉 poi espandere il modello.
+
+
+

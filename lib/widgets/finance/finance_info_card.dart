@@ -19,9 +19,9 @@ class FinanceInfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withOpacity(0.18),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: color.withOpacity(0.28)),
+        border: Border.all(color: color.withOpacity(0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,7 +31,7 @@ class FinanceInfoCard extends StatelessWidget {
           Text(
             title,
             style: TextStyle(
-              color: Colors.black.withOpacity(0.58),
+              color: Colors.white.withOpacity(0.78),
               fontWeight: FontWeight.w700,
               fontSize: 13,
             ),
@@ -40,7 +40,7 @@ class FinanceInfoCard extends StatelessWidget {
           Text(
             value,
             style: const TextStyle(
-              color: Colors.black,
+              color: Colors.white,
               fontWeight: FontWeight.w900,
               fontSize: 24,
             ),
