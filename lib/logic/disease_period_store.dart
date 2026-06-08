@@ -75,7 +75,7 @@ class DiseasePeriodStore {
 
   /// Aggiunge un periodo di malattia
   /// Non permette sovrapposizioni per la stessa persona
-  void addPeriod(DiseasePeriod period) {
+  Future<void> addPeriod(DiseasePeriod period) async {
     for (final existing in _periods) {
       if (existing.personId != period.personId) continue;
 
@@ -89,13 +89,13 @@ class DiseasePeriodStore {
     }
 
     _periods.add(period);
-    _save();
+    await _save();
   }
 
   /// Rimuove un periodo
-  void removePeriod(DiseasePeriod period) {
+  Future<void> removePeriod(DiseasePeriod period) async {
     _periods.remove(period);
-    _save();
+    await _save();
   }
 
   /// Ritorna il periodo attivo in un giorno (se esiste)

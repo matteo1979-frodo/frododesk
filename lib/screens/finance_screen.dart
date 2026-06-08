@@ -184,6 +184,15 @@ class _FinanceScreenState extends State<FinanceScreen> {
             color: const Color(0xFF1E88E5),
           ),
         ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: FinanceInfoCard(
+            title: "Disponibile mese",
+            value: "€${financeStore.availableThisMonth().toStringAsFixed(0)}",
+            icon: Icons.calendar_month_rounded,
+            color: const Color(0xFFFB8C00),
+          ),
+        ),
       ],
     );
   }
@@ -418,6 +427,9 @@ class _FinanceScreenState extends State<FinanceScreen> {
                 child: _PersonBalanceCard(
                   name: "Matteo",
                   amount: financeStore.balanceForPerson("matteo"),
+                  availableThisMonth: financeStore.availableThisMonthForOwner(
+                    FinancePaymentOwner.matteo,
+                  ),
                   onTap: () async {
                     await Navigator.of(context).push(
                       MaterialPageRoute(
@@ -438,6 +450,9 @@ class _FinanceScreenState extends State<FinanceScreen> {
                 child: _PersonBalanceCard(
                   name: "Chiara",
                   amount: financeStore.balanceForPerson("chiara"),
+                  availableThisMonth: financeStore.availableThisMonthForOwner(
+                    FinancePaymentOwner.chiara,
+                  ),
                   onTap: () async {
                     await Navigator.of(context).push(
                       MaterialPageRoute(
@@ -1610,11 +1625,13 @@ class _FinanceGlassCard extends StatelessWidget {
 class _PersonBalanceCard extends StatelessWidget {
   final String name;
   final double amount;
+  final double availableThisMonth;
   final VoidCallback onTap;
 
   const _PersonBalanceCard({
     required this.name,
     required this.amount,
+    required this.availableThisMonth,
     required this.onTap,
   });
 
@@ -1659,9 +1676,18 @@ class _PersonBalanceCard extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
+              "Previsione fine mese: €${availableThisMonth.toStringAsFixed(0)}",
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.72),
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
               "Apri conti",
               style: TextStyle(
-                color: Colors.white.withOpacity(0.70),
+                color: Colors.white.withOpacity(0.60),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),

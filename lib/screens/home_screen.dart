@@ -13,7 +13,7 @@ import '../models/finance_fund.dart';
 import '../models/finance_recurring_item.dart';
 import 'calendario_screen_stepa.dart';
 import 'copertura_screen.dart';
-import 'dashboard.dart';
+import 'spese_page.dart';
 
 import 'salute_screen.dart';
 
@@ -4564,7 +4564,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   endColor: const Color(0xFF7FDBFF),
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const SpesePage()),
+                      MaterialPageRoute(
+                        builder: (_) => SpesePage(financeStore: financeStore),
+                      ),
                     );
                   },
                 ),

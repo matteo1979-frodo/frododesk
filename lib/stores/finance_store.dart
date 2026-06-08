@@ -109,6 +109,59 @@ class FinanceStore {
     return projectedMonthlyIncome() - projectedMonthlyExpenses();
   }
 
+  double availableThisMonth() {
+    final monthItems = itemsForProjectionMonth(DateTime.now());
+
+    double income = 0;
+    double expenses = 0;
+
+    for (final item in monthItems) {
+      if (item.isIncome) {
+        income += item.expectedAmount;
+      } else {
+        expenses += item.expectedAmount;
+      }
+    }
+
+    return income - expenses;
+  }
+
+  double availableThisMonthForOwner(FinancePaymentOwner owner) {
+    final monthItems = itemsForProjectionMonth(DateTime.now());
+
+    final personId = owner.name;
+
+    double forecast = balanceForPerson(personId);
+
+    for (final item in monthItems) {
+      if (item.confirmed) continue;
+
+      double amount = 0;
+
+      if (item.hasCustomSplits) {
+        for (final split in item.splits) {
+          if (split.personId == personId) {
+            amount += split.amount;
+          }
+        }
+      } else {
+        if (item.paymentOwner == owner) {
+          amount = item.expectedAmount;
+        } else if (item.paymentOwner == FinancePaymentOwner.shared) {
+          amount = item.expectedAmount / 2;
+        }
+      }
+
+      if (item.isIncome) {
+        forecast += amount;
+      } else {
+        forecast -= amount;
+      }
+    }
+
+    return forecast;
+  }
+
   bool isRecurringItemDueToday(FinanceRecurringItem item) {
     final now = DateTime.now();
 
@@ -418,6 +471,54 @@ class FinanceStore {
         ),
       );
     }
+
+    await saveBalances();
+    await saveTransactions();
+  }
+
+  Future<void> registerRealExpense({
+    required String balanceId,
+    required double amount,
+    required String description,
+    String? notes,
+  }) async {
+    final index = balances.indexWhere((b) => b.balanceId == balanceId);
+
+    if (index == -1) {
+      return;
+    }
+
+    final old = balances[index];
+
+    balances[index] = FinanceBalance(
+      balanceId: old.balanceId,
+      personId: old.personId,
+      name: old.name,
+      active: old.active,
+      initialAmount: old.initialAmount,
+      currentAmount: old.currentAmount - amount,
+      updatedAt: DateTime.now(),
+      balanceType: old.balanceType,
+      operational: old.operational,
+      reservedAmount: old.reservedAmount,
+      warningThreshold: old.warningThreshold,
+      persistentStressDays: old.persistentStressDays,
+      recoveryDays: old.recoveryDays,
+    );
+
+    transactions.add(
+      FinanceTransaction(
+        id: 'real_expense_${DateTime.now().microsecondsSinceEpoch}',
+        balanceId: old.balanceId,
+        amount: amount,
+        date: DateTime.now(),
+        isIncome: false,
+        description: description,
+        type: FinanceTransactionType.expense,
+        origin: FinanceTransactionOrigin.manual,
+        notes: notes,
+      ),
+    );
 
     await saveBalances();
     await saveTransactions();

@@ -2520,16 +2520,18 @@ class _CalendarioScreenStepAStabileState
       _onlyDate(day),
     );
 
-    final matteoBedSick =
+    final matteoSick =
+        ov.matteo?.status == OverrideStatus.malattiaLeggera ||
         ov.matteo?.status == OverrideStatus.malattiaALetto ||
-        matteoDisease?.type == DiseaseType.bed;
+        matteoDisease != null;
 
-    final chiaraBedSick =
+    final chiaraSick =
+        ov.chiara?.status == OverrideStatus.malattiaLeggera ||
         ov.chiara?.status == OverrideStatus.malattiaALetto ||
-        chiaraDisease?.type == DiseaseType.bed;
+        chiaraDisease != null;
 
-    if (matteoBedSick) matteoBusy = true;
-    if (chiaraBedSick) chiaraBusy = true;
+    if (matteoSick) matteoBusy = false;
+    if (chiaraSick) chiaraBusy = false;
 
     final matteoPlan = _turns.turnPlanForPersonDay(
       person: TurnPerson.matteo,
@@ -3765,7 +3767,9 @@ class _CalendarioScreenStepAStabileState
 
     final String matteoNowLabel;
 
-    if (matteoBedSick) {
+    if (matteoDisease?.type == DiseaseType.mild) {
+      matteoNowLabel = "malattia leggera";
+    } else if (matteoBedSick) {
       matteoNowLabel = "occupato • malattia a letto";
     } else if (matteoOnHoliday) {
       matteoNowLabel = "libero • ferie";
@@ -3836,16 +3840,19 @@ class _CalendarioScreenStepAStabileState
         chiaraBedSick || chiaraBusyForTurn || chiaraBusyForEventNow;
 
     final String chiaraNowLabel;
-    if (chiaraBedSick) {
-      chiaraNowLabel = "occupata • malattia a letto";
+
+    if (chiaraDisease?.type == DiseaseType.mild) {
+      chiaraNowLabel = "malattia leggera";
+    } else if (chiaraBedSick) {
+      chiaraNowLabel = "occupato • malattia a letto";
     } else if (chiaraOnHoliday) {
-      chiaraNowLabel = "libera • ferie";
+      chiaraNowLabel = "libero • ferie";
     } else if (chiaraBusyForEventNow) {
-      chiaraNowLabel = "occupata • evento";
+      chiaraNowLabel = "occupato • evento";
     } else if (chiaraBusyForTurn) {
-      chiaraNowLabel = "occupata • turno";
+      chiaraNowLabel = "occupato • turno";
     } else {
-      chiaraNowLabel = "libera";
+      chiaraNowLabel = "libero";
     }
 
     final alicePeriodNow = coreStore.aliceEventStore.getEventForDay(nowDay);
@@ -4252,7 +4259,9 @@ class _CalendarioScreenStepAStabileState
 
     final String matteoNowLabel;
 
-    if (matteoBedSick) {
+    if (matteoDisease?.type == DiseaseType.mild) {
+      matteoNowLabel = "malattia leggera";
+    } else if (matteoBedSick) {
       matteoNowLabel = "occupato • malattia a letto";
     } else if (matteoOnHoliday) {
       matteoNowLabel = "libero • ferie";
@@ -4323,16 +4332,19 @@ class _CalendarioScreenStepAStabileState
         chiaraBedSick || chiaraBusyForTurn || chiaraBusyForEventNow;
 
     final String chiaraNowLabel;
-    if (chiaraBedSick) {
-      chiaraNowLabel = "occupata • malattia a letto";
+
+    if (chiaraDisease?.type == DiseaseType.mild) {
+      chiaraNowLabel = "malattia leggera";
+    } else if (chiaraBedSick) {
+      chiaraNowLabel = "occupato • malattia a letto";
     } else if (chiaraOnHoliday) {
-      chiaraNowLabel = "libera • ferie";
+      chiaraNowLabel = "libero • ferie";
     } else if (chiaraBusyForEventNow) {
-      chiaraNowLabel = "occupata • evento";
+      chiaraNowLabel = "occupato • evento";
     } else if (chiaraBusyForTurn) {
-      chiaraNowLabel = "occupata • turno";
+      chiaraNowLabel = "occupato • turno";
     } else {
-      chiaraNowLabel = "libera";
+      chiaraNowLabel = "libero";
     }
 
     final alicePeriodNow = coreStore.aliceEventStore.getEventForDay(nowDay);
