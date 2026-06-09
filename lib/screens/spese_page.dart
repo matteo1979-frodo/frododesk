@@ -17,21 +17,96 @@ class SpesePage extends StatefulWidget {
 
 class _SpesePageState extends State<SpesePage> {
   final ExpenseStore expenseStore = ExpenseStore();
-
   final ExpenseCategoryStore categoryStore = ExpenseCategoryStore();
 
   @override
   void initState() {
     super.initState();
-    expenseStore.load().then((_) {
-      if (mounted) {
-        setState(() {});
-      }
-    });
+    _loadStores();
+  }
+
+  Future<void> _loadStores() async {
+    await expenseStore.load();
+    await categoryStore.load();
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  String _monthName(int month) {
+    const months = [
+      "Gennaio",
+      "Febbraio",
+      "Marzo",
+      "Aprile",
+      "Maggio",
+      "Giugno",
+      "Luglio",
+      "Agosto",
+      "Settembre",
+      "Ottobre",
+      "Novembre",
+      "Dicembre",
+    ];
+
+    return months[month - 1];
   }
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final monthTitle = "${_monthName(now.month)} ${now.year}";
+
+    final currentMonthExpenses = expenseStore.all.where((expense) {
+      return expense.date.year == now.year && expense.date.month == now.month;
+    }).toList()..sort((a, b) => b.date.compareTo(a.date));
+
+    final last7DaysTotal = expenseStore.all
+        .where(
+          (expense) =>
+              expense.date.isAfter(now.subtract(const Duration(days: 7))),
+        )
+        .fold<double>(0, (sum, expense) => sum + expense.amount);
+
+    final currentMonthTotal = currentMonthExpenses.fold<double>(
+      0,
+      (sum, expense) => sum + expense.amount,
+    );
+
+    String monthSummary;
+
+    if (currentMonthExpenses.isEmpty) {
+      monthSummary =
+          "Nessun movimento registrato. Quando inizierai a inserire spese reali, qui FrodoDesk ti aiuterà a capire dove stanno andando i soldi.";
+    } else {
+      monthSummary =
+          "Hai registrato ${currentMonthExpenses.length} movimenti per un totale di €${currentMonthTotal.toStringAsFixed(0)}.";
+    }
+
+    final categoryTotals = <String, double>{};
+
+    for (final expense in currentMonthExpenses) {
+      categoryTotals[expense.category] =
+          (categoryTotals[expense.category] ?? 0) + expense.amount;
+    }
+
+    String mainCategory = "-";
+
+    if (categoryTotals.isNotEmpty) {
+      final sortedCategories = categoryTotals.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
+
+      final topValue = sortedCategories.first.value;
+
+      final topCategories = sortedCategories
+          .where((entry) => entry.value == topValue)
+          .map((entry) => entry.key)
+          .toList();
+
+      mainCategory = topCategories.take(3).join(" / ");
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF101820),
       appBar: AppBar(
@@ -55,22 +130,36 @@ class _SpesePageState extends State<SpesePage> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 90),
                   children: [
-                    const _SpeseHeroCard(),
+                    _SpeseHeroCard(currentMonthTotal: currentMonthTotal),
                     const SizedBox(height: 16),
-                    const _SpeseMainGrid(),
+                    _SpeseMainGrid(
+                      movementCount: currentMonthExpenses.length,
+                      last7DaysTotal: last7DaysTotal,
+                      mainCategory: mainCategory,
+                      currentMonthTotal: currentMonthTotal,
+                    ),
                     const SizedBox(height: 16),
-                    const _SpeseMonthStatusCard(),
+                    _SpeseMonthStatusCard(summary: monthSummary),
                     const SizedBox(height: 18),
                     const Text(
-                      "Ultimi movimenti",
+                      "Movimenti del mese corrente",
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
+                    const SizedBox(height: 6),
+                    Text(
+                      monthTitle,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const SizedBox(height: 10),
-                    ...expenseStore.all
+                    ...currentMonthExpenses
                         .take(3)
                         .map(
                           (expense) => Padding(
@@ -121,6 +210,25 @@ class _SpesePageState extends State<SpesePage> {
                             ),
                           ),
                         ),
+                    const SizedBox(height: 6),
+                    if (currentMonthExpenses.isNotEmpty)
+                      _MovementChoiceTile(
+                        icon: Icons.history_rounded,
+                        title: "Vedi storico mese",
+                        subtitle:
+                            "${currentMonthExpenses.length} movimenti registrati",
+                        color: const Color(0xFFFFB74D),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => _ExpenseMonthHistoryPage(
+                                expenses: currentMonthExpenses,
+                                monthTitle: monthTitle,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                   ],
                 ),
               ),
@@ -437,11 +545,15 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
 
                             controller.dispose();
 
-                            if (newCategory == null || newCategory.isEmpty)
+                            if (newCategory == null || newCategory.isEmpty) {
                               return;
+                            }
+
+                            await widget.categoryStore.addCategory(newCategory);
+
+                            if (!mounted) return;
 
                             setState(() {
-                              widget.categoryStore.addCategory(newCategory);
                               selectedCategory = newCategory;
                             });
 
@@ -573,7 +685,9 @@ class _SpeseBackground extends StatelessWidget {
 }
 
 class _SpeseHeroCard extends StatelessWidget {
-  const _SpeseHeroCard();
+  final double currentMonthTotal;
+
+  const _SpeseHeroCard({required this.currentMonthTotal});
 
   @override
   Widget build(BuildContext context) {
@@ -601,9 +715,9 @@ class _SpeseHeroCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 18),
-          const Text(
-            "€0",
-            style: TextStyle(
+          Text(
+            "€${currentMonthTotal.toStringAsFixed(0)}",
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 42,
               fontWeight: FontWeight.w900,
@@ -630,12 +744,22 @@ class _SpeseHeroCard extends StatelessWidget {
 }
 
 class _SpeseMainGrid extends StatelessWidget {
-  const _SpeseMainGrid();
+  final int movementCount;
+  final double last7DaysTotal;
+  final String mainCategory;
+  final double currentMonthTotal;
+
+  const _SpeseMainGrid({
+    required this.movementCount,
+    required this.last7DaysTotal,
+    required this.mainCategory,
+    required this.currentMonthTotal,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: const [
+      children: [
         Row(
           children: [
             Expanded(
@@ -650,7 +774,7 @@ class _SpeseMainGrid extends StatelessWidget {
             Expanded(
               child: _MiniSpeseCard(
                 title: "Categoria principale",
-                value: "-",
+                value: mainCategory,
                 icon: Icons.emoji_events_rounded,
                 color: Color(0xFF42A5F5),
               ),
@@ -663,7 +787,7 @@ class _SpeseMainGrid extends StatelessWidget {
             Expanded(
               child: _MiniSpeseCard(
                 title: "Ultimi 7 giorni",
-                value: "€0",
+                value: "€${last7DaysTotal.toStringAsFixed(0)}",
                 icon: Icons.calendar_month_rounded,
                 color: Color(0xFFAB47BC),
               ),
@@ -672,7 +796,7 @@ class _SpeseMainGrid extends StatelessWidget {
             Expanded(
               child: _MiniSpeseCard(
                 title: "Movimenti",
-                value: "0",
+                value: movementCount.toString(),
                 icon: Icons.receipt_long_rounded,
                 color: Color(0xFFFF7043),
               ),
@@ -685,14 +809,16 @@ class _SpeseMainGrid extends StatelessWidget {
 }
 
 class _SpeseMonthStatusCard extends StatelessWidget {
-  const _SpeseMonthStatusCard();
+  final String summary;
+
+  const _SpeseMonthStatusCard({required this.summary});
 
   @override
   Widget build(BuildContext context) {
     return _SpeseGlassCard(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
+        children: [
           _SpeseIconBox(
             icon: Icons.psychology_alt_rounded,
             color: Color(0xFFFFD54F),
@@ -712,8 +838,8 @@ class _SpeseMonthStatusCard extends StatelessWidget {
                 ),
                 SizedBox(height: 7),
                 Text(
-                  "Nessun movimento registrato. Quando inizierai a inserire spese reali, qui FrodoDesk ti aiuterà a capire dove stanno andando i soldi.",
-                  style: TextStyle(
+                  summary,
+                  style: const TextStyle(
                     color: Colors.white70,
                     height: 1.35,
                     fontSize: 14,
@@ -935,6 +1061,107 @@ class _MovementChoiceTile extends StatelessWidget {
             ),
             const Icon(Icons.chevron_right_rounded, color: Colors.white70),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ExpenseMonthHistoryPage extends StatelessWidget {
+  final List<RealExpense> expenses;
+  final String monthTitle;
+
+  const _ExpenseMonthHistoryPage({
+    required this.expenses,
+    required this.monthTitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF101820),
+      appBar: AppBar(
+        title: const Text("Storico mese"),
+        backgroundColor: Colors.black.withOpacity(0.08),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
+      body: _SpeseBackground(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: ListView(
+              padding: const EdgeInsets.all(18),
+              children: [
+                const Text(
+                  "Movimenti del mese",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  monthTitle,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                ...expenses.map(
+                  (expense) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _SpeseGlassCard(
+                      child: Row(
+                        children: [
+                          const _SpeseIconBox(
+                            icon: Icons.receipt_long_rounded,
+                            color: Color(0xFFFF7043),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  expense.description,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "${expense.category} • ${expense.balanceName}",
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            expense.displayAmount,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
