@@ -524,6 +524,53 @@ class FinanceStore {
     await saveTransactions();
   }
 
+  Future<void> restoreRealExpense({
+    required String balanceId,
+    required double amount,
+    required String description,
+  }) async {
+    final index = balances.indexWhere((b) => b.balanceId == balanceId);
+
+    if (index == -1) {
+      return;
+    }
+
+    final old = balances[index];
+
+    balances[index] = FinanceBalance(
+      balanceId: old.balanceId,
+      personId: old.personId,
+      name: old.name,
+      active: old.active,
+      initialAmount: old.initialAmount,
+      currentAmount: old.currentAmount + amount,
+      updatedAt: DateTime.now(),
+      balanceType: old.balanceType,
+      operational: old.operational,
+      reservedAmount: old.reservedAmount,
+      warningThreshold: old.warningThreshold,
+      persistentStressDays: old.persistentStressDays,
+      recoveryDays: old.recoveryDays,
+    );
+
+    transactions.add(
+      FinanceTransaction(
+        id: 'restore_expense_${DateTime.now().microsecondsSinceEpoch}',
+        balanceId: old.balanceId,
+        amount: amount,
+        date: DateTime.now(),
+        isIncome: true,
+        description: "Annullamento $description",
+        type: FinanceTransactionType.income,
+        origin: FinanceTransactionOrigin.manual,
+        notes: 'Ripristino movimento eliminato',
+      ),
+    );
+
+    await saveBalances();
+    await saveTransactions();
+  }
+
   Future<void> transferBetweenBalances({
     required String fromBalanceId,
     required String toBalanceId,

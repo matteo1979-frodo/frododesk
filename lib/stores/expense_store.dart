@@ -26,4 +26,17 @@ class ExpenseStore {
     expenses.add(expense);
     await save();
   }
+
+  Future<void> removeExpense(String expenseId) async {
+    expenses.removeWhere((expense) => expense.id == expenseId);
+    await save();
+  }
+
+  RealExpense? findById(String expenseId) {
+    try {
+      return expenses.firstWhere((expense) => expense.id == expenseId);
+    } catch (_) {
+      return null;
+    }
+  }
 }

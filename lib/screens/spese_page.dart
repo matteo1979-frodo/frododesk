@@ -5,6 +5,7 @@ import '../stores/finance_store.dart';
 import '../stores/expense_store.dart';
 import '../models/real_expense.dart';
 import '../stores/expense_category_store.dart';
+import '../stores/cash_wallet_store.dart';
 
 class SpesePage extends StatefulWidget {
   final FinanceStore financeStore;
@@ -18,6 +19,7 @@ class SpesePage extends StatefulWidget {
 class _SpesePageState extends State<SpesePage> {
   final ExpenseStore expenseStore = ExpenseStore();
   final ExpenseCategoryStore categoryStore = ExpenseCategoryStore();
+  final CashWalletStore cashWalletStore = CashWalletStore();
 
   @override
   void initState() {
@@ -28,6 +30,7 @@ class _SpesePageState extends State<SpesePage> {
   Future<void> _loadStores() async {
     await expenseStore.load();
     await categoryStore.load();
+    await cashWalletStore.load();
 
     if (mounted) {
       setState(() {});
@@ -73,6 +76,10 @@ class _SpesePageState extends State<SpesePage> {
       0,
       (sum, expense) => sum + expense.amount,
     );
+
+    final cashWalletTotal = cashWalletStore.all
+        .where((wallet) => wallet.active)
+        .fold<double>(0, (sum, wallet) => sum + wallet.currentAmount);
 
     String monthSummary;
 
@@ -137,6 +144,7 @@ class _SpesePageState extends State<SpesePage> {
                       last7DaysTotal: last7DaysTotal,
                       mainCategory: mainCategory,
                       currentMonthTotal: currentMonthTotal,
+                      cashWalletTotal: cashWalletTotal,
                     ),
                     const SizedBox(height: 16),
                     _SpeseMonthStatusCard(summary: monthSummary),
@@ -218,15 +226,21 @@ class _SpesePageState extends State<SpesePage> {
                         subtitle:
                             "${currentMonthExpenses.length} movimenti registrati",
                         color: const Color(0xFFFFB74D),
-                        onTap: () {
-                          Navigator.of(context).push(
+                        onTap: () async {
+                          await Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) => _ExpenseMonthHistoryPage(
                                 expenses: currentMonthExpenses,
                                 monthTitle: monthTitle,
+                                financeStore: widget.financeStore,
+                                expenseStore: expenseStore,
+                                categoryStore: categoryStore,
+                                cashWalletStore: cashWalletStore,
                               ),
                             ),
                           );
+
+                          if (mounted) setState(() {});
                         },
                       ),
                   ],
@@ -273,9 +287,24 @@ class _SpesePageState extends State<SpesePage> {
                       const SizedBox(height: 10),
                       _MovementChoiceTile(
                         icon: Icons.payments_rounded,
-                        title: "Prelievo / non tracciato",
-                        subtitle: "Soldi usciti dal conto e non dettagliati",
+                        title: "Prelievo contanti",
+                        subtitle: "Scala un conto e carica un portafoglio",
                         color: const Color(0xFF66BB6A),
+                        onTap: () async {
+                          Navigator.of(context).pop();
+
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => _CashWithdrawalAccountPage(
+                                financeStore: widget.financeStore,
+                                expenseStore: expenseStore,
+                                cashWalletStore: cashWalletStore,
+                              ),
+                            ),
+                          );
+
+                          if (mounted) setState(() {});
+                        },
                       ),
                       const SizedBox(height: 10),
                       _MovementChoiceTile(
@@ -395,6 +424,7 @@ class _RealExpenseFormPage extends StatefulWidget {
   final FinanceStore financeStore;
   final ExpenseStore expenseStore;
   final ExpenseCategoryStore categoryStore;
+  final RealExpense? editingExpense;
 
   const _RealExpenseFormPage({
     required this.balanceId,
@@ -403,6 +433,7 @@ class _RealExpenseFormPage extends StatefulWidget {
     required this.financeStore,
     required this.expenseStore,
     required this.categoryStore,
+    this.editingExpense,
   });
 
   @override
@@ -414,6 +445,19 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
   final descriptionController = TextEditingController();
 
   String? selectedCategory;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final editingExpense = widget.editingExpense;
+
+    if (editingExpense != null) {
+      amountController.text = editingExpense.amount.toStringAsFixed(2);
+      descriptionController.text = editingExpense.description;
+      selectedCategory = editingExpense.category;
+    }
+  }
 
   @override
   void dispose() {
@@ -748,12 +792,14 @@ class _SpeseMainGrid extends StatelessWidget {
   final double last7DaysTotal;
   final String mainCategory;
   final double currentMonthTotal;
+  final double cashWalletTotal;
 
   const _SpeseMainGrid({
     required this.movementCount,
     required this.last7DaysTotal,
     required this.mainCategory,
     required this.currentMonthTotal,
+    required this.cashWalletTotal,
   });
 
   @override
@@ -764,8 +810,8 @@ class _SpeseMainGrid extends StatelessWidget {
           children: [
             Expanded(
               child: _MiniSpeseCard(
-                title: "Contanti / non tracciato",
-                value: "€0",
+                title: "Portafogli contanti",
+                value: "€${cashWalletTotal.toStringAsFixed(0)}",
                 icon: Icons.payments_rounded,
                 color: Color(0xFF66BB6A),
               ),
@@ -1070,10 +1116,18 @@ class _MovementChoiceTile extends StatelessWidget {
 class _ExpenseMonthHistoryPage extends StatelessWidget {
   final List<RealExpense> expenses;
   final String monthTitle;
+  final FinanceStore financeStore;
+  final ExpenseStore expenseStore;
+  final ExpenseCategoryStore categoryStore;
+  final CashWalletStore cashWalletStore;
 
   const _ExpenseMonthHistoryPage({
     required this.expenses,
     required this.monthTitle,
+    required this.financeStore,
+    required this.expenseStore,
+    required this.categoryStore,
+    required this.cashWalletStore,
   });
 
   @override
@@ -1114,49 +1168,541 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                 ...expenses.map(
                   (expense) => Padding(
                     padding: const EdgeInsets.only(bottom: 10),
-                    child: _SpeseGlassCard(
-                      child: Row(
-                        children: [
-                          const _SpeseIconBox(
-                            icon: Icons.receipt_long_rounded,
-                            color: Color(0xFFFF7043),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  expense.description,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w900,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(24),
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (dialogContext) {
+                            return AlertDialog(
+                              title: const Text("Dettaglio movimento"),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    expense.description,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
+                                  const SizedBox(height: 8),
+                                  Text("Importo: ${expense.displayAmount}"),
+                                  Text("Categoria: ${expense.category}"),
+                                  Text("Conto: ${expense.balanceName}"),
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(dialogContext).pop();
+                                  },
+                                  child: const Text("Chiudi"),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  "${expense.category} • ${expense.balanceName}",
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                                ElevatedButton.icon(
+                                  onPressed: () async {
+                                    Navigator.of(dialogContext).pop();
+
+                                    if (expense.isCashWithdrawal) {
+                                      await financeStore.restoreRealExpense(
+                                        balanceId: expense.balanceId,
+                                        amount: expense.amount,
+                                        description: expense.description,
+                                      );
+
+                                      if (expense.cashWalletId != null) {
+                                        await cashWalletStore.removeCash(
+                                          walletId: expense.cashWalletId!,
+                                          amount: expense.amount,
+                                        );
+                                      }
+
+                                      await expenseStore.removeExpense(
+                                        expense.id,
+                                      );
+
+                                      if (!context.mounted) return;
+
+                                      Navigator.of(context).pop();
+
+                                      await Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              _CashWithdrawalFormPage(
+                                                balanceId: expense.balanceId,
+                                                balanceName:
+                                                    expense.balanceName,
+                                                balanceAmount: 0,
+                                                balancePersonId:
+                                                    expense.cashWalletId ==
+                                                        'wallet_chiara'
+                                                    ? 'chiara'
+                                                    : 'matteo',
+                                                financeStore: financeStore,
+                                                expenseStore: expenseStore,
+                                                cashWalletStore:
+                                                    cashWalletStore,
+                                                editingExpense: expense,
+                                              ),
+                                        ),
+                                      );
+
+                                      return;
+                                    }
+
+                                    showDialog(
+                                      context: context,
+                                      builder: (modifyContext) {
+                                        return AlertDialog(
+                                          title: const Text(
+                                            "Modifica movimento",
+                                          ),
+                                          content: const Text(
+                                            "Per modificare una spesa, FrodoDesk annullerà il movimento attuale e ti permetterà di crearne uno nuovo.",
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.of(
+                                                  modifyContext,
+                                                ).pop();
+                                              },
+                                              child: const Text("Annulla"),
+                                            ),
+                                            ElevatedButton(
+                                              onPressed: () async {
+                                                Navigator.of(
+                                                  modifyContext,
+                                                ).pop();
+
+                                                await financeStore
+                                                    .restoreRealExpense(
+                                                      balanceId:
+                                                          expense.balanceId,
+                                                      amount: expense.amount,
+                                                      description:
+                                                          expense.description,
+                                                    );
+
+                                                if (expense.isCashWithdrawal &&
+                                                    expense.cashWalletId !=
+                                                        null) {
+                                                  await cashWalletStore
+                                                      .removeCash(
+                                                        walletId: expense
+                                                            .cashWalletId!,
+                                                        amount: expense.amount,
+                                                      );
+                                                }
+
+                                                await expenseStore
+                                                    .removeExpense(expense.id);
+
+                                                if (!context.mounted) return;
+
+                                                Navigator.of(context).pop();
+
+                                                await Navigator.of(
+                                                  context,
+                                                ).push(
+                                                  MaterialPageRoute(
+                                                    builder: (_) =>
+                                                        _RealExpenseFormPage(
+                                                          balanceId:
+                                                              expense.balanceId,
+                                                          balanceName: expense
+                                                              .balanceName,
+                                                          balanceAmount: 0,
+                                                          financeStore:
+                                                              financeStore,
+                                                          expenseStore:
+                                                              expenseStore,
+                                                          categoryStore:
+                                                              categoryStore,
+                                                          editingExpense:
+                                                              expense,
+                                                        ),
+                                                  ),
+                                                );
+                                              },
+                                              child: const Text("Continua"),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                  icon: const Icon(Icons.edit_outlined),
+                                  label: const Text("Modifica"),
+                                ),
+                                ElevatedButton.icon(
+                                  onPressed: () async {
+                                    Navigator.of(dialogContext).pop();
+
+                                    await financeStore.restoreRealExpense(
+                                      balanceId: expense.balanceId,
+                                      amount: expense.amount,
+                                      description: expense.description,
+                                    );
+
+                                    if (expense.isCashWithdrawal &&
+                                        expense.cashWalletId != null) {
+                                      await cashWalletStore.removeCash(
+                                        walletId: expense.cashWalletId!,
+                                        amount: expense.amount,
+                                      );
+                                    }
+
+                                    await expenseStore.removeExpense(
+                                      expense.id,
+                                    );
+
+                                    if (!context.mounted) return;
+
+                                    Navigator.of(context).pop();
+
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text("Movimento eliminato."),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.delete_outline),
+                                  label: const Text("Elimina"),
                                 ),
                               ],
+                            );
+                          },
+                        );
+                      },
+                      child: _SpeseGlassCard(
+                        child: Row(
+                          children: [
+                            const _SpeseIconBox(
+                              icon: Icons.receipt_long_rounded,
+                              color: Color(0xFFFF7043),
                             ),
-                          ),
-                          Text(
-                            expense.displayAmount,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    expense.description,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "${expense.category} • ${expense.balanceName}",
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                            Text(
+                              expense.displayAmount,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CashWithdrawalAccountPage extends StatelessWidget {
+  final FinanceStore financeStore;
+  final ExpenseStore expenseStore;
+  final CashWalletStore cashWalletStore;
+
+  const _CashWithdrawalAccountPage({
+    required this.financeStore,
+    required this.expenseStore,
+    required this.cashWalletStore,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final activeBalances = financeStore.balances
+        .where((balance) => balance.active)
+        .toList();
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF101820),
+      appBar: AppBar(
+        title: const Text("Prelievo contanti"),
+        backgroundColor: Colors.black.withOpacity(0.08),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
+      body: _SpeseBackground(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: ListView(
+              padding: const EdgeInsets.all(18),
+              children: [
+                const Text(
+                  "Da quale conto prelevi?",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                if (activeBalances.isEmpty)
+                  const _SpeseGlassCard(
+                    child: Text(
+                      "Nessun conto attivo trovato.",
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  )
+                else
+                  ...activeBalances.map(
+                    (balance) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _MovementChoiceTile(
+                        icon: Icons.account_balance_wallet_rounded,
+                        title: balance.name,
+                        subtitle:
+                            "Saldo: €${balance.availableAmount.toStringAsFixed(2)}",
+                        color: const Color(0xFF66BB6A),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => _CashWithdrawalFormPage(
+                                balanceId: balance.balanceId,
+                                balanceName: balance.name,
+                                balanceAmount: balance.availableAmount,
+                                balancePersonId: balance.personId,
+                                financeStore: financeStore,
+                                expenseStore: expenseStore,
+                                cashWalletStore: cashWalletStore,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CashWithdrawalFormPage extends StatefulWidget {
+  final String balanceId;
+  final String balanceName;
+  final double balanceAmount;
+  final String balancePersonId;
+  final FinanceStore financeStore;
+  final ExpenseStore expenseStore;
+  final CashWalletStore cashWalletStore;
+  final RealExpense? editingExpense;
+
+  const _CashWithdrawalFormPage({
+    required this.balanceId,
+    required this.balanceName,
+    required this.balanceAmount,
+    required this.balancePersonId,
+    required this.financeStore,
+    required this.expenseStore,
+    required this.cashWalletStore,
+    this.editingExpense,
+  });
+
+  @override
+  State<_CashWithdrawalFormPage> createState() =>
+      _CashWithdrawalFormPageState();
+}
+
+class _CashWithdrawalFormPageState extends State<_CashWithdrawalFormPage> {
+  final amountController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+
+    final editingExpense = widget.editingExpense;
+
+    if (editingExpense != null) {
+      amountController.text = editingExpense.amount.toStringAsFixed(2);
+    }
+  }
+
+  @override
+  void dispose() {
+    amountController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF101820),
+      appBar: AppBar(
+        title: const Text("Importo prelievo"),
+        backgroundColor: Colors.black.withOpacity(0.08),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
+      body: _SpeseBackground(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: ListView(
+              padding: const EdgeInsets.all(18),
+              children: [
+                Text(
+                  "Conto scelto: ${widget.balanceName}",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "Saldo attuale: €${widget.balanceAmount.toStringAsFixed(2)}",
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _SpeseGlassCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Quanto hai prelevato?",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: amountController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: "Importo",
+                          hintText: "Es. 40.00",
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.86),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            final amount =
+                                double.tryParse(
+                                  amountController.text.replaceAll(",", "."),
+                                ) ??
+                                0;
+
+                            if (amount <= 0) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Inserisci un importo valido."),
+                                ),
+                              );
+                              return;
+                            }
+
+                            final walletId = 'wallet_${widget.balancePersonId}';
+                            final wallet = widget.cashWalletStore.findById(
+                              walletId,
+                            );
+
+                            if (wallet == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    "Portafoglio contanti non trovato.",
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+
+                            await widget.financeStore.registerRealExpense(
+                              balanceId: widget.balanceId,
+                              amount: amount,
+                              description: "Prelievo contanti",
+                              notes: wallet.name,
+                            );
+
+                            await widget.expenseStore.addExpense(
+                              RealExpense(
+                                id: DateTime.now().millisecondsSinceEpoch
+                                    .toString(),
+                                balanceId: widget.balanceId,
+                                balanceName: widget.balanceName,
+                                amount: amount,
+                                description: "Prelievo contanti",
+                                category: "Portafoglio contanti",
+                                date: DateTime.now(),
+                                isCashWithdrawal: true,
+                                cashWalletId: wallet.id,
+                              ),
+                            );
+
+                            if (!context.mounted) return;
+
+                            Navigator.of(context).pop();
+                            Navigator.of(context).pop();
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  "Prelievo registrato in ${wallet.name}.",
+                                ),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.check_rounded),
+                          label: const Text("Conferma prelievo"),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

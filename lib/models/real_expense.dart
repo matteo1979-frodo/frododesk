@@ -12,6 +12,14 @@ class RealExpense {
   final DateTime date;
   final bool nonTrackedCash;
 
+  /// True quando questo movimento rappresenta un prelievo contanti
+  /// dal conto verso un portafoglio.
+  final bool isCashWithdrawal;
+
+  /// Id del portafoglio collegato al prelievo contanti.
+  /// Esempio: wallet_matteo, wallet_chiara.
+  final String? cashWalletId;
+
   const RealExpense({
     required this.id,
     required this.balanceId,
@@ -21,6 +29,8 @@ class RealExpense {
     required this.category,
     required this.date,
     this.nonTrackedCash = false,
+    this.isCashWithdrawal = false,
+    this.cashWalletId,
   });
 
   String get displayAmount => "€${amount.toStringAsFixed(2)}";
@@ -35,6 +45,8 @@ class RealExpense {
       'category': category,
       'date': date.toIso8601String(),
       'nonTrackedCash': nonTrackedCash,
+      'isCashWithdrawal': isCashWithdrawal,
+      'cashWalletId': cashWalletId,
     };
   }
 
@@ -48,6 +60,8 @@ class RealExpense {
       category: json['category'] as String? ?? 'Senza categoria',
       date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
       nonTrackedCash: json['nonTrackedCash'] as bool? ?? false,
+      isCashWithdrawal: json['isCashWithdrawal'] as bool? ?? false,
+      cashWalletId: json['cashWalletId'] as String?,
     );
   }
 }
