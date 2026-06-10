@@ -16,6 +16,8 @@ class RealExpense {
   /// dal conto verso un portafoglio.
   final bool isCashWithdrawal;
 
+  final bool isIncome;
+
   /// Id del portafoglio collegato al prelievo contanti.
   /// Esempio: wallet_matteo, wallet_chiara.
   final String? cashWalletId;
@@ -30,6 +32,7 @@ class RealExpense {
     required this.date,
     this.nonTrackedCash = false,
     this.isCashWithdrawal = false,
+    this.isIncome = false,
     this.cashWalletId,
   });
 
@@ -47,6 +50,7 @@ class RealExpense {
       'nonTrackedCash': nonTrackedCash,
       'isCashWithdrawal': isCashWithdrawal,
       'cashWalletId': cashWalletId,
+      'isIncome': isIncome,
     };
   }
 
@@ -62,6 +66,7 @@ class RealExpense {
       nonTrackedCash: json['nonTrackedCash'] as bool? ?? false,
       isCashWithdrawal: json['isCashWithdrawal'] as bool? ?? false,
       cashWalletId: json['cashWalletId'] as String?,
+      isIncome: json['isIncome'] as bool? ?? false,
     );
   }
 }

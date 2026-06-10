@@ -175,9 +175,18 @@ class _SpesePageState extends State<SpesePage> {
                             child: _SpeseGlassCard(
                               child: Row(
                                 children: [
-                                  const _SpeseIconBox(
-                                    icon: Icons.receipt_long_rounded,
-                                    color: Color(0xFFFF7043),
+                                  _SpeseIconBox(
+                                    icon: expense.isIncome
+                                        ? Icons.add_card_rounded
+                                        : (expense.isCashWithdrawal
+                                              ? Icons
+                                                    .account_balance_wallet_rounded
+                                              : Icons.receipt_long_rounded),
+                                    color: expense.isIncome
+                                        ? const Color(0xFF42A5F5)
+                                        : (expense.isCashWithdrawal
+                                              ? const Color(0xFF66BB6A)
+                                              : const Color(0xFFFF7043)),
                                   ),
                                   const SizedBox(width: 14),
                                   Expanded(
@@ -194,13 +203,28 @@ class _SpesePageState extends State<SpesePage> {
                                           ),
                                         ),
                                         const SizedBox(height: 4),
-                                        Text(
-                                          "${expense.category} • ${expense.balanceName}",
-                                          style: const TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w700,
-                                          ),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "${expense.category} • ${expense.balanceName}",
+                                              style: const TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              _formatMovementDate(expense.date),
+                                              style: const TextStyle(
+                                                color: Colors.white54,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
@@ -313,6 +337,20 @@ class _SpesePageState extends State<SpesePage> {
                         subtitle:
                             "Rimborso, regalo, vendita, entrata occasionale",
                         color: const Color(0xFF42A5F5),
+                        onTap: () async {
+                          Navigator.of(context).pop();
+
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => _ExtraIncomeAccountPage(
+                                financeStore: widget.financeStore,
+                                expenseStore: expenseStore,
+                              ),
+                            ),
+                          );
+
+                          if (mounted) setState(() {});
+                        },
                       ),
                     ],
                   ),
@@ -1113,6 +1151,16 @@ class _MovementChoiceTile extends StatelessWidget {
   }
 }
 
+String _formatMovementDate(DateTime date) {
+  final day = date.day.toString().padLeft(2, '0');
+  final month = date.month.toString().padLeft(2, '0');
+  final year = date.year.toString();
+  final hour = date.hour.toString().padLeft(2, '0');
+  final minute = date.minute.toString().padLeft(2, '0');
+
+  return "$day/$month/$year $hour:$minute";
+}
+
 class _ExpenseMonthHistoryPage extends StatelessWidget {
   final List<RealExpense> expenses;
   final String monthTitle;
@@ -1250,6 +1298,37 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                       return;
                                     }
 
+                                    if (expense.isIncome) {
+                                      await financeStore.removeExtraIncome(
+                                        balanceId: expense.balanceId,
+                                        amount: expense.amount,
+                                        description: expense.description,
+                                      );
+
+                                      await expenseStore.removeExpense(
+                                        expense.id,
+                                      );
+
+                                      if (!context.mounted) return;
+
+                                      Navigator.of(context).pop();
+
+                                      await Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => _ExtraIncomeFormPage(
+                                            balanceId: expense.balanceId,
+                                            balanceName: expense.balanceName,
+                                            balanceAmount: 0,
+                                            financeStore: financeStore,
+                                            expenseStore: expenseStore,
+                                            editingExpense: expense,
+                                          ),
+                                        ),
+                                      );
+
+                                      return;
+                                    }
+
                                     showDialog(
                                       context: context,
                                       builder: (modifyContext) {
@@ -1339,11 +1418,19 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                   onPressed: () async {
                                     Navigator.of(dialogContext).pop();
 
-                                    await financeStore.restoreRealExpense(
-                                      balanceId: expense.balanceId,
-                                      amount: expense.amount,
-                                      description: expense.description,
-                                    );
+                                    if (expense.isIncome) {
+                                      await financeStore.removeExtraIncome(
+                                        balanceId: expense.balanceId,
+                                        amount: expense.amount,
+                                        description: expense.description,
+                                      );
+                                    } else {
+                                      await financeStore.restoreRealExpense(
+                                        balanceId: expense.balanceId,
+                                        amount: expense.amount,
+                                        description: expense.description,
+                                      );
+                                    }
 
                                     if (expense.isCashWithdrawal &&
                                         expense.cashWalletId != null) {
@@ -1378,9 +1465,17 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                       child: _SpeseGlassCard(
                         child: Row(
                           children: [
-                            const _SpeseIconBox(
-                              icon: Icons.receipt_long_rounded,
-                              color: Color(0xFFFF7043),
+                            _SpeseIconBox(
+                              icon: expense.isIncome
+                                  ? Icons.add_card_rounded
+                                  : (expense.isCashWithdrawal
+                                        ? Icons.account_balance_wallet_rounded
+                                        : Icons.receipt_long_rounded),
+                              color: expense.isIncome
+                                  ? const Color(0xFF42A5F5)
+                                  : (expense.isCashWithdrawal
+                                        ? const Color(0xFF66BB6A)
+                                        : const Color(0xFFFF7043)),
                             ),
                             const SizedBox(width: 14),
                             Expanded(
@@ -1396,19 +1491,36 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  Text(
-                                    "${expense.category} • ${expense.balanceName}",
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "${expense.category} • ${expense.balanceName}",
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        _formatMovementDate(expense.date),
+                                        style: const TextStyle(
+                                          color: Colors.white54,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
                             ),
                             Text(
-                              expense.displayAmount,
+                              expense.isIncome
+                                  ? "+${expense.displayAmount}"
+                                  : expense.displayAmount,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -1670,6 +1782,11 @@ class _CashWithdrawalFormPageState extends State<_CashWithdrawalFormPage> {
                               notes: wallet.name,
                             );
 
+                            await widget.cashWalletStore.addCash(
+                              walletId: wallet.id,
+                              amount: amount,
+                            );
+
                             await widget.expenseStore.addExpense(
                               RealExpense(
                                 id: DateTime.now().millisecondsSinceEpoch
@@ -1700,6 +1817,286 @@ class _CashWithdrawalFormPageState extends State<_CashWithdrawalFormPage> {
                           },
                           icon: const Icon(Icons.check_rounded),
                           label: const Text("Conferma prelievo"),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExtraIncomeAccountPage extends StatelessWidget {
+  final FinanceStore financeStore;
+  final ExpenseStore expenseStore;
+
+  const _ExtraIncomeAccountPage({
+    required this.financeStore,
+    required this.expenseStore,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final activeBalances = financeStore.balances
+        .where((balance) => balance.active)
+        .toList();
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF101820),
+      appBar: AppBar(
+        title: const Text("Entrata extra"),
+        backgroundColor: Colors.black.withOpacity(0.08),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
+      body: _SpeseBackground(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: ListView(
+              padding: const EdgeInsets.all(18),
+              children: [
+                const Text(
+                  "Su quale conto entra?",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                if (activeBalances.isEmpty)
+                  const _SpeseGlassCard(
+                    child: Text(
+                      "Nessun conto attivo trovato.",
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  )
+                else
+                  ...activeBalances.map(
+                    (balance) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _MovementChoiceTile(
+                        icon: Icons.account_balance_wallet_rounded,
+                        title: balance.name,
+                        subtitle:
+                            "Saldo: €${balance.availableAmount.toStringAsFixed(2)}",
+                        color: const Color(0xFF42A5F5),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => _ExtraIncomeFormPage(
+                                balanceId: balance.balanceId,
+                                balanceName: balance.name,
+                                balanceAmount: balance.availableAmount,
+                                financeStore: financeStore,
+                                expenseStore: expenseStore,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExtraIncomeFormPage extends StatefulWidget {
+  final String balanceId;
+  final String balanceName;
+  final double balanceAmount;
+  final FinanceStore financeStore;
+  final ExpenseStore expenseStore;
+  final RealExpense? editingExpense;
+
+  const _ExtraIncomeFormPage({
+    required this.balanceId,
+    required this.balanceName,
+    required this.balanceAmount,
+    required this.financeStore,
+    required this.expenseStore,
+    this.editingExpense,
+  });
+
+  @override
+  State<_ExtraIncomeFormPage> createState() => _ExtraIncomeFormPageState();
+}
+
+class _ExtraIncomeFormPageState extends State<_ExtraIncomeFormPage> {
+  final amountController = TextEditingController();
+  final descriptionController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+
+    final editingExpense = widget.editingExpense;
+
+    if (editingExpense != null) {
+      amountController.text = editingExpense.amount.toStringAsFixed(2);
+      descriptionController.text = editingExpense.description;
+    }
+  }
+
+  @override
+  void dispose() {
+    amountController.dispose();
+    descriptionController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF101820),
+      appBar: AppBar(
+        title: const Text("Importo entrata"),
+        backgroundColor: Colors.black.withOpacity(0.08),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
+      body: _SpeseBackground(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: ListView(
+              padding: const EdgeInsets.all(18),
+              children: [
+                Text(
+                  "Conto scelto: ${widget.balanceName}",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "Saldo attuale: €${widget.balanceAmount.toStringAsFixed(2)}",
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _SpeseGlassCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Quanto è entrato?",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: amountController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: "Importo",
+                          hintText: "Es. 50.00",
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.86),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: descriptionController,
+                        decoration: InputDecoration(
+                          labelText: "Descrizione",
+                          hintText: "Es. Rimborso, regalo, vendita...",
+                          filled: true,
+                          fillColor: Colors.white.withOpacity(0.86),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            final amount =
+                                double.tryParse(
+                                  amountController.text.replaceAll(",", "."),
+                                ) ??
+                                0;
+
+                            if (amount <= 0) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Inserisci un importo valido."),
+                                ),
+                              );
+                              return;
+                            }
+
+                            if (descriptionController.text.trim().isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Inserisci una descrizione."),
+                                ),
+                              );
+                              return;
+                            }
+
+                            await widget.financeStore.registerExtraIncome(
+                              balanceId: widget.balanceId,
+                              amount: amount,
+                              description: descriptionController.text.trim(),
+                            );
+
+                            await widget.expenseStore.addExpense(
+                              RealExpense(
+                                id: DateTime.now().millisecondsSinceEpoch
+                                    .toString(),
+                                balanceId: widget.balanceId,
+                                balanceName: widget.balanceName,
+                                amount: amount,
+                                description: descriptionController.text.trim(),
+                                category: "Entrata extra",
+                                date: DateTime.now(),
+                                isIncome: true,
+                              ),
+                            );
+
+                            if (!context.mounted) return;
+
+                            Navigator.of(context).pop();
+                            Navigator.of(context).pop();
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Entrata extra registrata."),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.check_rounded),
+                          label: const Text("Conferma entrata"),
                         ),
                       ),
                     ],
