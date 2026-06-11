@@ -237,3 +237,91 @@ Ma:
 - dei costi
 - del tempo
 - dell’evoluzione della famiglia
+
+---
+
+# 📌 AGGIORNAMENTO MODULO SPESE → STATISTICHE (GIUGNO 2026)
+
+## PRINCIPIO CONSOLIDATO
+
+Con l'introduzione del sistema dei movimenti reali, il modulo Statistiche ottiene una nuova sorgente dati strutturale.
+
+Il modulo Spese non è più una semplice lista di movimenti, ma una cronologia economica reale e persistente della vita familiare.
+
+---
+
+# 💰 NUOVA SORGENTE DATI: MOVIMENTI REALI
+
+Le statistiche economiche future dovranno leggere direttamente i dati provenienti dal modulo Spese.
+
+Attualmente il sistema registra tre tipologie distinte di movimento:
+
+✔ Spesa reale
+✔ Prelievo contanti
+✔ Entrata extra
+
+Ogni movimento contiene almeno:
+
+* importo;
+* descrizione;
+* categoria;
+* conto coinvolto;
+* data e ora reali;
+* tipologia del movimento.
+
+---
+
+# 📅 IMPORTANZA DELLA DATA REALE
+
+La data del movimento rappresenta il momento in cui l'evento economico è realmente avvenuto, non quello in cui è stato inserito nel sistema.
+
+L'utente può modificare data e ora anche successivamente, e lo storico viene automaticamente riordinato.
+
+Le future statistiche dovranno quindi basarsi sempre sulla data reale registrata nel movimento.
+
+---
+
+# 📊 EVOLUZIONI FUTURE PREVISTE
+
+Grazie alla struttura attuale, il modulo Statistiche potrà leggere automaticamente:
+
+* distribuzione spese per categoria;
+* andamento entrate extra;
+* andamento prelievi contanti;
+* confronto mesi reali;
+* confronto anni reali;
+* andamento delle abitudini economiche familiari;
+* peso percentuale delle categorie;
+* differenza tra denaro previsto e denaro realmente speso.
+
+---
+
+# 🧠 PRINCIPIO ARCHITETTURALE CONSOLIDATO
+
+Le statistiche NON dovranno mai mantenere una copia propria dei dati economici.
+
+La sorgente di verità rimane il modulo Spese.
+
+Il modulo Statistiche dovrà limitarsi a:
+
+✔ leggere;
+✔ aggregare;
+✔ confrontare;
+✔ rappresentare visivamente.
+
+Questo conferma il principio fondativo di FrodoDesk:
+
+👉 **una sola verità, molte letture.**
+
+---
+
+# 🚀 STATO DELLA FONDAZIONE
+
+Con il completamento del sistema:
+
+* CRUD movimenti reali;
+* modifica controllata dei movimenti;
+* gestione della data e ora reali;
+* storico cronologico persistente;
+
+si considera completata la fondazione tecnica necessaria per lo sviluppo futuro delle Statistiche Economiche.

@@ -484,11 +484,14 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
 
   String? selectedCategory;
 
+  DateTime selectedDate = DateTime.now();
+
   @override
   void initState() {
     super.initState();
 
     final editingExpense = widget.editingExpense;
+    selectedDate = editingExpense?.date ?? DateTime.now();
 
     if (editingExpense != null) {
       amountController.text = editingExpense.amount.toStringAsFixed(2);
@@ -569,6 +572,15 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
                           label: "Descrizione",
                           hint: "Es. McDonald's, Sandra, benzina...",
                         ),
+                      ),
+                      const SizedBox(height: 12),
+                      _MovementDateSelector(
+                        selectedDate: selectedDate,
+                        onChanged: (newDate) {
+                          setState(() {
+                            selectedDate = newDate;
+                          });
+                        },
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
@@ -701,7 +713,7 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
                                 amount: amount,
                                 description: descriptionController.text.trim(),
                                 category: selectedCategory!,
-                                date: DateTime.now(),
+                                date: selectedDate,
                               ),
                             );
 
@@ -717,7 +729,11 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
                             );
                           },
                           icon: const Icon(Icons.check_rounded),
-                          label: const Text("Conferma spesa"),
+                          label: Text(
+                            widget.editingExpense == null
+                                ? "Conferma spesa"
+                                : "Salva modifiche",
+                          ),
                         ),
                       ),
                     ],
@@ -1337,7 +1353,7 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                             "Modifica movimento",
                                           ),
                                           content: const Text(
-                                            "Per modificare una spesa, FrodoDesk annullerà il movimento attuale e ti permetterà di crearne uno nuovo.",
+                                            "FrodoDesk preparerà la modifica di questa spesa mantenendo importo, descrizione, categoria e data già compilati.",
                                           ),
                                           actions: [
                                             TextButton(
@@ -1658,12 +1674,15 @@ class _CashWithdrawalFormPage extends StatefulWidget {
 
 class _CashWithdrawalFormPageState extends State<_CashWithdrawalFormPage> {
   final amountController = TextEditingController();
+  DateTime selectedDate = DateTime.now();
 
   @override
   void initState() {
     super.initState();
 
     final editingExpense = widget.editingExpense;
+
+    selectedDate = editingExpense?.date ?? DateTime.now();
 
     if (editingExpense != null) {
       amountController.text = editingExpense.amount.toStringAsFixed(2);
@@ -1739,6 +1758,15 @@ class _CashWithdrawalFormPageState extends State<_CashWithdrawalFormPage> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 12),
+                      _MovementDateSelector(
+                        selectedDate: selectedDate,
+                        onChanged: (newDate) {
+                          setState(() {
+                            selectedDate = newDate;
+                          });
+                        },
+                      ),
                       const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
@@ -1796,7 +1824,7 @@ class _CashWithdrawalFormPageState extends State<_CashWithdrawalFormPage> {
                                 amount: amount,
                                 description: "Prelievo contanti",
                                 category: "Portafoglio contanti",
-                                date: DateTime.now(),
+                                date: selectedDate,
                                 isCashWithdrawal: true,
                                 cashWalletId: wallet.id,
                               ),
@@ -1816,7 +1844,11 @@ class _CashWithdrawalFormPageState extends State<_CashWithdrawalFormPage> {
                             );
                           },
                           icon: const Icon(Icons.check_rounded),
-                          label: const Text("Conferma prelievo"),
+                          label: Text(
+                            widget.editingExpense == null
+                                ? "Conferma prelievo"
+                                : "Salva modifiche",
+                          ),
                         ),
                       ),
                     ],
@@ -1824,6 +1856,75 @@ class _CashWithdrawalFormPageState extends State<_CashWithdrawalFormPage> {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MovementDateSelector extends StatelessWidget {
+  final DateTime selectedDate;
+  final ValueChanged<DateTime> onChanged;
+
+  const _MovementDateSelector({
+    required this.selectedDate,
+    required this.onChanged,
+  });
+
+  String _format(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year.toString();
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+
+    return "$day/$month/$year $hour:$minute";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: () async {
+        final pickedDate = await showDatePicker(
+          context: context,
+          initialDate: selectedDate,
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2100),
+        );
+
+        if (pickedDate == null) return;
+
+        final pickedTime = await showTimePicker(
+          context: context,
+          initialTime: TimeOfDay.fromDateTime(selectedDate),
+        );
+
+        if (pickedTime == null) return;
+
+        onChanged(
+          DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          ),
+        );
+      },
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: "Data operazione",
+          filled: true,
+          fillColor: Colors.white.withOpacity(0.86),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
+        ),
+        child: Text(
+          _format(selectedDate),
+          style: const TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -1939,12 +2040,14 @@ class _ExtraIncomeFormPage extends StatefulWidget {
 class _ExtraIncomeFormPageState extends State<_ExtraIncomeFormPage> {
   final amountController = TextEditingController();
   final descriptionController = TextEditingController();
+  DateTime selectedDate = DateTime.now();
 
   @override
   void initState() {
     super.initState();
 
     final editingExpense = widget.editingExpense;
+    selectedDate = editingExpense?.date ?? DateTime.now();
 
     if (editingExpense != null) {
       amountController.text = editingExpense.amount.toStringAsFixed(2);
@@ -2035,6 +2138,15 @@ class _ExtraIncomeFormPageState extends State<_ExtraIncomeFormPage> {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 12),
+                      _MovementDateSelector(
+                        selectedDate: selectedDate,
+                        onChanged: (newDate) {
+                          setState(() {
+                            selectedDate = newDate;
+                          });
+                        },
+                      ),
                       const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
@@ -2079,7 +2191,7 @@ class _ExtraIncomeFormPageState extends State<_ExtraIncomeFormPage> {
                                 amount: amount,
                                 description: descriptionController.text.trim(),
                                 category: "Entrata extra",
-                                date: DateTime.now(),
+                                date: selectedDate,
                                 isIncome: true,
                               ),
                             );
@@ -2096,7 +2208,11 @@ class _ExtraIncomeFormPageState extends State<_ExtraIncomeFormPage> {
                             );
                           },
                           icon: const Icon(Icons.check_rounded),
-                          label: const Text("Conferma entrata"),
+                          label: Text(
+                            widget.editingExpense == null
+                                ? "Conferma entrata"
+                                : "Salva modifiche",
+                          ),
                         ),
                       ),
                     ],

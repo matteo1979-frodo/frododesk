@@ -761,5 +761,104 @@ Il principio guida diventa:
 👉 prima consolidare la realtà,
 👉 poi espandere il modello.
 
+---
+
+# CONSOLIDAMENTO MODULO SPESE REALE — GIUGNO 2026
+
+Durante il consolidamento del motore economico reale, il modulo Spese ha raggiunto la sua prima versione pienamente operativa nella vita quotidiana.
+
+Il sistema non è più limitato alla simulazione economica o alla sola previsione: inizia a costruire una memoria reale persistente del denaro vissuto dalla famiglia.
+
+---
+
+## EVOLUZIONE DEL LAYER ECONOMICO
+
+Passaggio strutturale:
+
+❌ semplici movimenti dimostrativi
+
+➡️ registro reale dei movimenti economici vissuti.
+
+Il sistema supporta ora tre tipologie distinte di evento economico:
+
+* Spesa reale;
+* Prelievo contanti;
+* Entrata extra.
+
+Ogni evento viene memorizzato con la propria identità, il conto coinvolto e la propria collocazione temporale reale.
+
+---
+
+## CONSOLIDAMENTO DEL PRINCIPIO "PREVISIONE ≠ REALTÀ"
+
+Viene verificata e confermata una delle regole fondative del progetto.
+
+Le ricorrenze e le simulazioni economiche continuano a vivere nel modulo Finanze.
+
+Il modulo Spese registra invece esclusivamente eventi realmente avvenuti e confermati dall'utente.
+
+Distinzione strutturale confermata:
+
+✔ Finanze = "Dove stiamo andando?"
+✔ Spese = "Che cosa è successo davvero?"
+
+---
+
+## TEMPO REALE COME MEMORIA
+
+Ogni movimento economico possiede una propria data e ora reali.
+
+L'utente può:
+
+* registrare un evento nel momento in cui avviene;
+* inserire oggi un movimento avvenuto in passato;
+* correggere successivamente la data di un movimento già esistente.
+
+Lo storico viene automaticamente riordinato utilizzando la data reale del movimento e non quella dell'inserimento.
+
+Questa decisione introduce nel sistema il concetto di **memoria economica cronologica reale**.
+
+---
+
+## FILOSOFIA DELLA MODIFICA CONTROLLATA
+
+La modifica di un movimento non è una semplice sovrascrittura.
+
+FrodoDesk mantiene la coerenza del sistema economico:
+
+* ripristina il saldo precedente;
+* apre il movimento già compilato;
+* permette la correzione dei dati;
+* registra il nuovo stato reale.
+
+L'utente percepisce una modifica semplice, mentre il motore preserva l'integrità di conti, portafogli e storico.
+
+---
+
+## NUOVA PIETRA MILIARE DEL PROGETTO
+
+Con il completamento di:
+
+* CRUD completo Spese;
+* CRUD completo Prelievi;
+* CRUD completo Entrate extra;
+* gestione della data reale;
+* storico persistente e cronologico;
+
+FrodoDesk acquisisce una nuova capacità strutturale:
+
+👉 non solo simulare il futuro, ma ricordare fedelmente il passato.
+
+Questa memoria reale costituirà una delle sorgenti principali per l'evoluzione futura delle Statistiche Economiche e della lettura comportamentale della famiglia.
+
+---
+
+## PRINCIPIO CONSOLIDATO
+
+Il progetto continua a evolvere secondo la regola:
+
+**una sola verità, molte letture.**
+
+I dati economici reali vengono generati dal modulo Spese e potranno essere interpretati, aggregati e confrontati dagli altri moduli senza duplicare la fonte della verità.
 
 

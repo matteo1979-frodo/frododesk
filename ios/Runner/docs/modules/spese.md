@@ -255,3 +255,107 @@ Il modulo deve nascere:
 ⬜ Prima dashboard minimale  
 ⬜ Inserimento spesa reale v1  
 ⬜ Collegamento futuro con Statistiche
+
+---
+
+# AGGIORNAMENTO OPERATIVO — GIUGNO 2026
+
+## STATO ATTUALE IMPLEMENTAZIONE
+
+Il modulo Spese è entrato nella fase di utilizzo reale quotidiano.
+
+Non è più soltanto una struttura concettuale: è diventato il registro operativo dei movimenti economici realmente avvenuti.
+
+Attualmente il sistema supporta tre tipologie di movimento reale:
+
+### Spesa reale
+
+Esempi:
+
+* supermercato
+* benzina
+* ferramenta
+* Sandra
+* farmacia
+* acquisti quotidiani
+
+### Prelievo contanti
+
+Movimento speciale che:
+
+* scala automaticamente il conto di origine;
+* carica il portafoglio contanti collegato;
+* viene registrato nello storico reale.
+
+### Entrata extra
+
+Movimento dedicato a:
+
+* rimborsi;
+* regali;
+* vendite;
+* entrate occasionali;
+* qualsiasi somma non prevista dalle ricorrenze standard.
+
+---
+
+## GESTIONE MOVIMENTI
+
+Ogni movimento reale può essere:
+
+✔ creato
+✔ modificato
+✔ eliminato
+
+La modifica avviene tramite un flusso controllato: FrodoDesk ripristina il saldo del movimento precedente e apre un form già compilato per permettere la correzione dei dati, mantenendo la coerenza del sistema.
+
+---
+
+## DATA E ORA REALE
+
+Ogni movimento conserva la propria data e ora effettiva.
+
+L'utente può:
+
+* inserire una data personalizzata durante la creazione;
+* modificare successivamente data e ora di un movimento già esistente.
+
+Il sistema utilizza la data reale del movimento per ordinare automaticamente lo storico.
+
+Questo permette, ad esempio, di registrare oggi una spesa avvenuta ieri senza alterare la cronologia.
+
+---
+
+## STORICO REALE
+
+Lo storico del mese rappresenta la memoria economica della famiglia.
+
+Ogni movimento mostra:
+
+* descrizione;
+* categoria;
+* conto coinvolto;
+* importo;
+* data e ora reali;
+* icona dedicata in base al tipo di movimento.
+
+La schermata principale mostra inoltre i movimenti più recenti del mese corrente con la stessa logica di ordinamento.
+
+---
+
+## FILOSOFIA ARCHITETTURALE CONSOLIDATA
+
+Il modulo Spese continua a rispondere alla domanda:
+
+👉 "Che cosa è successo davvero?"
+
+Il modulo non genera automaticamente movimenti previsti o simulati.
+
+La previsione economica appartiene al modulo Finanze; il modulo Spese registra esclusivamente eventi realmente avvenuti e confermati dall'utente.
+
+In questo modo FrodoDesk mantiene separati:
+
+* il mondo delle previsioni;
+* il mondo della realtà vissuta.
+
+Questa distinzione costituisce uno dei principi architetturali fondamentali dell'intero sistema.

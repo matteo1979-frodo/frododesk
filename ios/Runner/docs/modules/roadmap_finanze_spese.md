@@ -542,3 +542,100 @@ La dashboard annuale evolverà verso:
 ⬜ storico economico  
 ⬜ simulazione pressione futura  
 ⬜ lettura temporale tipo “motore economico vivo”
+
+
+---
+
+# AGGIORNAMENTO ROADMAP — GIUGNO 2026
+
+# BLOCCO F3 — STRUTTURA DATI MINIMA SPESE
+
+Stato: COMPLETATO / V1 OPERATIVA
+
+## OBIETTIVO RAGGIUNTO
+
+Il modulo Spese è passato dalla sola definizione concettuale ad una implementazione realmente utilizzabile nella vita quotidiana.
+
+La struttura dati reale supporta ora la registrazione e la gestione completa dei movimenti economici vissuti.
+
+## COMPLETATO
+
+☑ modello `RealExpense` consolidato
+☑ persistenza reale dei movimenti
+☑ gestione storico movimenti
+☑ inserimento Spesa reale
+☑ inserimento Prelievo contanti
+☑ inserimento Entrata extra
+☑ modifica movimenti esistenti
+☑ eliminazione movimenti esistenti
+☑ data e ora reale personalizzabili
+☑ riordinamento automatico cronologico dello storico
+☑ categorie dinamiche per le spese
+☑ collegamento ai conti reali di Finanze
+☑ collegamento ai Portafogli contanti
+☑ sincronizzazione automatica con saldi e disponibilità
+
+---
+
+# BLOCCO F5 — DASHBOARD MINIMALE SPESE
+
+Stato: COMPLETATO / V1 OPERATIVA
+
+## COMPLETATO
+
+☑ card principale Spese
+☑ riepilogo mese corrente
+☑ conteggio movimenti del mese
+☑ totale economico del mese
+☑ categoria principale del mese
+☑ riepilogo ultimi 7 giorni
+☑ visualizzazione portafogli contanti
+☑ lista "Movimenti del mese corrente"
+☑ storico completo del mese
+☑ popup dettaglio movimento
+☑ icone dedicate per:
+
+* spesa reale;
+* prelievo contanti;
+* entrata extra.
+
+---
+
+# BLOCCO F5.1 — GESTIONE MOVIMENTI REALI
+
+Stato: COMPLETATO
+
+## FILOSOFIA
+
+Ogni movimento reale rappresenta un fatto economico realmente avvenuto e deve poter essere corretto senza compromettere la coerenza del sistema.
+
+Per questo motivo FrodoDesk utilizza un flusso di modifica controllato:
+
+* ripristino del saldo precedente;
+* apertura del form già compilato;
+* modifica dei dati;
+* registrazione del nuovo movimento aggiornato.
+
+L'utente percepisce una semplice modifica, mentre il motore mantiene la consistenza di conti, portafogli e storico.
+
+---
+
+# DIREZIONE FUTURA AGGIORNATA
+
+Consolidata la V1 operativa del modulo Spese, i prossimi sviluppi non riguardano più l'inserimento base dei movimenti ma l'evoluzione del sistema verso:
+
+⬜ metodi di pagamento evoluti
+⬜ collegamento con modulo Statistiche
+⬜ analisi delle categorie nel tempo
+⬜ confronto previsione ↔ realtà
+⬜ dashboard economica integrata Finanze + Spese
+⬜ lettura comportamentale della spesa familiare
+
+## NOTA ARCHITETTURALE
+
+Il principio fondativo rimane invariato:
+
+* **Finanze** = simulazione e previsione.
+* **Spese** = memoria del denaro realmente vissuto.
+
+La separazione tra previsione e realtà è confermata come regola strutturale dell'intero ecosistema FrodoDesk.

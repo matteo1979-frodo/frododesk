@@ -1300,3 +1300,101 @@ Il modulo Finanze entra ufficialmente nella fase:
 Obiettivo:
 
 verificare che il comportamento del sistema coincida con il comportamento della vita reale prima di espandere ulteriormente il motore economico.
+
+---
+
+# CONSOLIDAMENTO MODULO SPESE REALE — GIUGNO 2026
+
+Durante la fase H3.5 di Consolidamento Vita Reale viene completata la prima implementazione operativa del modulo Spese.
+
+Questa fase conferma e rafforza il principio strutturale fondamentale:
+
+## PREVISIONE ≠ REALTÀ
+
+Il modulo Finanze continua a rappresentare:
+
+✔ simulazione futura
+✔ pressione economica
+✔ sostenibilità familiare
+✔ resilienza economica
+
+Il modulo Spese rappresenta invece:
+
+✔ denaro realmente mosso
+✔ eventi economici realmente avvenuti
+✔ memoria economica storica della famiglia.
+
+---
+
+## NUOVA DISTINZIONE CONSOLIDATA
+
+### FINANZE
+
+Risponde alla domanda:
+
+👉 "Dove stiamo andando?"
+
+Lavora su:
+
+* ricorrenze;
+* simulazioni;
+* pressione futura;
+* scenari economici.
+
+### SPESE
+
+Risponde alla domanda:
+
+👉 "Che cosa è successo davvero?"
+
+Lavora su:
+
+* spese reali;
+* prelievi contanti;
+* entrate extra;
+* cronologia economica vissuta.
+
+---
+
+## INTEGRAZIONE TRA I MODULI
+
+Il modulo Spese non sostituisce Finanze e Finanze non sostituisce Spese.
+
+I due sistemi evolvono separatamente e comunicano attraverso dati reali.
+
+Regola consolidata:
+
+* Finanze NON crea movimenti reali.
+* Spese NON modifica simulazioni future.
+
+---
+
+## NUOVA FONTE DI VERITÀ ECONOMICA
+
+Con il completamento del CRUD dei movimenti reali, il modulo Spese diventa la sorgente ufficiale dei dati economici storici.
+
+Ogni movimento reale può essere:
+
+✔ creato;
+✔ modificato;
+✔ eliminato;
+✔ registrato con data e ora effettive.
+
+La cronologia economica viene costruita utilizzando il momento reale dell'evento e non quello dell'inserimento.
+
+---
+
+## DIREZIONE FUTURA
+
+Il consolidamento del modulo Spese autorizza la futura costruzione del collegamento:
+
+**Spese → Statistiche Economiche**
+
+senza rompere la separazione strutturale tra:
+
+* memoria del passato;
+* simulazione del futuro.
+
+Principio confermato:
+
+👉 una sola verità economica reale, molte letture e interpretazioni del sistema.

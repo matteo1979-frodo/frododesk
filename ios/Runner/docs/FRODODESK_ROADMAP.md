@@ -799,3 +799,107 @@ H3.5 — Consolidamento Vita Reale.
 Obiettivo operativo:
 
 👉 verificare che il sistema si comporti esattamente come la vita reale, prima di espandere ulteriormente FrodoDesk.
+
+---
+
+# AGGIORNAMENTO ROADMAP — CONSOLIDAMENTO MODULO SPESE REALE (GIUGNO 2026)
+
+## DECISIONE STRUTTURALE
+
+Durante la fase H3.5 (Consolidamento Vita Reale) viene aperto e consolidato il primo ramo operativo del modulo Spese.
+
+La costruzione del modulo Spese NON rappresenta una deviazione dalla roadmap economica.
+
+Al contrario, costituisce una verifica pratica del principio fondativo:
+
+👉 **PREVISIONE ≠ REALTÀ**
+
+Il modulo Finanze continua a simulare il futuro.
+
+Il modulo Spese registra invece esclusivamente ciò che è realmente accaduto.
+
+---
+
+## BLOCCO S1 — MEMORIA ECONOMICA REALE
+
+🟢 COMPLETATO — V1 OPERATIVA
+
+### Obiettivo
+
+Costruire una memoria persistente del denaro realmente vissuto dalla famiglia.
+
+### Completato
+
+☑ struttura `RealExpense` consolidata
+
+☑ CRUD completo Spese reali
+
+☑ CRUD completo Prelievi contanti
+
+☑ CRUD completo Entrate extra
+
+☑ collegamento ai conti reali
+
+☑ collegamento ai portafogli contanti
+
+☑ storico persistente
+
+☑ data e ora reali personalizzabili
+
+☑ modifica dei movimenti esistenti
+
+☑ ordinamento cronologico automatico
+
+☑ sincronizzazione automatica dei saldi
+
+☑ aggiornamento immediato della UI
+
+---
+
+## SIGNIFICATO ARCHITETTURALE
+
+Per la prima volta FrodoDesk possiede contemporaneamente:
+
+✔ una simulazione economica del futuro;
+
+✔ una memoria persistente del passato.
+
+Il sistema inizia quindi a leggere il tempo economico in entrambe le direzioni.
+
+---
+
+## PROSSIMA EVOLUZIONE AUTORIZZATA
+
+⚠️ NON aggiungere subito nuove funzionalità al modulo Spese.
+
+La priorità resta il collaudo reale prolungato.
+
+Obiettivi della fase:
+
+⬜ verificare utilizzo quotidiano
+
+⬜ verificare coerenza Spese ↔ Finanze
+
+⬜ verificare casi limite
+
+⬜ consolidare il comportamento reale
+
+Solo dopo sarà autorizzato il collegamento progressivo con:
+
+* Statistiche Economiche;
+* confronto previsione ↔ realtà;
+* lettura comportamentale della spesa familiare.
+
+---
+
+## REGOLA DI ROADMAP CONSOLIDATA
+
+Il modulo Spese viene ufficialmente riconosciuto come **sorgente di verità economica storica**.
+
+Il modulo Finanze rimane invece il **motore di previsione e simulazione**.
+
+Entrambi i moduli devono evolvere separatamente e collegarsi solo attraverso interfacce e dati reali, senza duplicare responsabilità.
+
+Principio confermato:
+
+👉 **una sola verità, molte letture.**

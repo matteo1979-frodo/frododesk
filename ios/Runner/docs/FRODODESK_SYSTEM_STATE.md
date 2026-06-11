@@ -697,3 +697,111 @@ Solo dopo:
 ➡️ H5 — collegamento vita reale ↔ finanze
 
 ➡️ H6 — IPS economico
+
+---
+
+# MODULO SPESE — STATO ATTUALE
+
+━━━━━━━━━━━━━━━━━━
+
+## ATTIVO
+
+✔ modulo Spese operativo nella vita reale
+
+✔ CRUD completo Spese reali
+
+✔ CRUD completo Prelievi contanti
+
+✔ CRUD completo Entrate extra
+
+✔ storico persistente dei movimenti
+
+✔ collegamento stabile con FinanceStore
+
+✔ collegamento stabile con Portafogli contanti
+
+✔ sincronizzazione automatica dei saldi
+
+✔ sincronizzazione automatica dei prelievi
+
+✔ aggiornamento immediato UI
+
+---
+
+## FUNZIONALITÀ CONSOLIDATE
+
+Ogni movimento economico reale può essere:
+
+✔ creato
+
+✔ modificato
+
+✔ eliminato
+
+La modifica mantiene la coerenza del sistema attraverso il ripristino dello stato precedente e la ricostruzione del movimento aggiornato.
+
+---
+
+## GESTIONE TEMPORALE REALE
+
+✔ data reale personalizzabile
+
+✔ ora reale personalizzabile
+
+✔ modifica della data anche su movimenti esistenti
+
+✔ ordinamento cronologico automatico
+
+✔ storico basato sulla data reale dell'evento
+
+Principio consolidato:
+
+👉 il sistema registra quando l'evento è realmente accaduto, non quando è stato inserito.
+
+---
+
+## INTERFACCIA UTENTE
+
+✔ popup dettaglio movimento
+
+✔ modifica diretta dal dettaglio
+
+✔ conferma modifica con form precompilato
+
+✔ pulsante "Salva modifiche" nei movimenti esistenti
+
+✔ icone dedicate per:
+
+* Spesa reale;
+* Prelievo contanti;
+* Entrata extra.
+
+✔ data e ora visualizzate nello Storico
+
+✔ data e ora visualizzate nei "Movimenti del mese corrente"
+
+---
+
+## DIREZIONE FUTURA
+
+Il modulo Spese viene considerato strutturalmente stabile e pronto a diventare una sorgente dati ufficiale per:
+
+⬜ Statistiche Economiche
+
+⬜ confronto previsione ↔ realtà
+
+⬜ analisi categorie
+
+⬜ analisi comportamenti economici
+
+⬜ lettura storica della vita familiare
+
+---
+
+## STATO DI MATURITÀ
+
+🟢 V1 OPERATIVA CONSOLIDATA
+
+Il modulo è considerato utilizzabile nella vita quotidiana e idoneo al collaudo reale prolungato.
+
+La priorità non è aggiungere nuove funzionalità, ma verificarne il comportamento nell'uso reale e consolidare la coerenza tra Spese, Finanze, Home e Statistiche future.

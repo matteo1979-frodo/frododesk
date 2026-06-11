@@ -1162,3 +1162,124 @@ Priorità assoluta:
 ✔ coerenza
 
 ✔ affidabilità del comportamento reale.
+
+---
+
+# 🔴 NUOVA REGOLA OPERATIVA — FILE REALI E MODIFICHE MIRATE
+
+## PRINCIPIO
+
+Quando una funzionalità esiste già nel progetto e richiede correzioni, estensioni o rifiniture:
+
+👉 la fonte di lavoro deve essere sempre il file reale attuale.
+
+---
+
+## COMPORTAMENTO OPERATIVO
+
+Flusso corretto:
+
+1. Matteo invia il file reale completo attualmente presente nel progetto.
+2. Frodo analizza quel file specifico.
+3. Frodo individua il punto preciso da modificare.
+4. La modifica viene eseguita con micro-step CNC.
+5. Ogni passaggio viene verificato nell'app reale.
+
+---
+
+## OBIETTIVO
+
+Evitare:
+
+❌ ricostruzioni a memoria
+❌ sostituzioni massive non necessarie
+❌ differenze tra codice reale e codice suggerito
+
+Principio:
+
+👉 il file reale è sempre la verità tecnica.
+
+---
+
+# 🔴 NUOVA REGOLA STRUTTURALE — FUNZIONALITÀ COMPLETE
+
+Quando viene introdotta una nuova entità reale persistente (movimento economico, evento, persona, ecc.), la progettazione deve considerare fin dall'inizio il ciclo di vita completo.
+
+Una funzionalità NON è considerata veramente completata se permette solo l'inserimento.
+
+---
+
+## CICLO DI VITA MINIMO OBBLIGATORIO
+
+Ogni nuova entità deve poter essere, quando tecnicamente sensato:
+
+✔ creata
+
+✔ modificata
+
+✔ eliminata
+
+✔ collocata temporalmente tramite data reale
+
+✔ ricollocata temporalmente modificando la data successivamente.
+
+---
+
+## PRINCIPIO
+
+Il sistema deve rappresentare la vita reale.
+
+Nella vita reale le persone:
+
+* inseriscono informazioni;
+* si accorgono di errori;
+* correggono dati;
+* spostano eventi nel tempo.
+
+FrodoDesk deve supportare questo comportamento in modo naturale.
+
+---
+
+# 🔴 NUOVA REGOLA — TEMPO REALE DELLE INFORMAZIONI
+
+La data di inserimento e la data reale dell'evento sono concetti distinti.
+
+La fonte di verità temporale deve essere sempre:
+
+👉 il momento in cui l'evento è realmente accaduto.
+
+L'utente deve poter registrare oggi un evento avvenuto ieri o correggere successivamente la sua collocazione temporale.
+
+Le future statistiche e gli storici devono utilizzare la data reale dell'evento.
+
+---
+
+# 🔴 NUOVA REGOLA OPERATIVA — CONSOLIDAMENTO PRIMA DI ESPANSIONE
+
+Quando una nuova area del sistema raggiunge una prima versione utilizzabile nella vita reale:
+
+❌ non aggiungere immediatamente nuove funzionalità.
+
+Occorre prima:
+
+✔ verificarne l'uso quotidiano;
+
+✔ correggere incoerenze e piccoli bug;
+
+✔ rifinire l'esperienza utente;
+
+✔ consolidare il comportamento reale.
+
+Solo dopo il consolidamento il sistema può espandersi verso nuove funzionalità.
+
+---
+
+# 🔴 NUOVA REGOLA METODOLOGICA — ANALISI PRIMA DELL'AZIONE
+
+Se una modifica coinvolge una sezione complessa del progetto, Frodo deve prima analizzare il file reale completo e solo dopo proporre il primo micro-passo operativo.
+
+È preferibile investire alcuni minuti nell'analisi preventiva piuttosto che introdurre modifiche rapide con rischio di incoerenza.
+
+Principio operativo:
+
+👉 prima capire, poi modificare.
