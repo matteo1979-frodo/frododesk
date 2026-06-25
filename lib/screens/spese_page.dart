@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../stores/finance_store.dart';
 import '../stores/expense_store.dart';
 import '../models/real_expense.dart';
+import '../models/finance_recurring_item.dart';
 import '../stores/expense_category_store.dart';
 import '../stores/cash_wallet_store.dart';
 
@@ -207,13 +208,37 @@ class _SpesePageState extends State<SpesePage> {
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            Text(
-                                              "${expense.category} • ${expense.balanceName}",
-                                              style: const TextStyle(
-                                                color: Colors.white70,
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w700,
-                                              ),
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  "${expense.category} • ${expense.balanceName}",
+                                                  style: const TextStyle(
+                                                    color: Colors.white70,
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  switch (expense.subject) {
+                                                    FinanceSubject.matteo =>
+                                                      "👨 Matteo",
+                                                    FinanceSubject.chiara =>
+                                                      "👩 Chiara",
+                                                    FinanceSubject.alice =>
+                                                      "👧 Alice",
+                                                    FinanceSubject.shared =>
+                                                      "👨‍👩‍👧 Condiviso",
+                                                  },
+                                                  style: const TextStyle(
+                                                    color: Colors.white54,
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                             const SizedBox(height: 2),
                                             Text(
@@ -483,6 +508,7 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
   final descriptionController = TextEditingController();
 
   String? selectedCategory;
+  FinanceSubject selectedSubject = FinanceSubject.shared;
 
   DateTime selectedDate = DateTime.now();
 
@@ -659,6 +685,42 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
                           });
                         },
                       ),
+
+                      const SizedBox(height: 12),
+
+                      DropdownButtonFormField<FinanceSubject>(
+                        value: selectedSubject,
+                        decoration: _inputDecoration(
+                          label: "Di chi è",
+                          hint: "",
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: FinanceSubject.matteo,
+                            child: Text("👨 Matteo"),
+                          ),
+                          DropdownMenuItem(
+                            value: FinanceSubject.chiara,
+                            child: Text("👩 Chiara"),
+                          ),
+                          DropdownMenuItem(
+                            value: FinanceSubject.alice,
+                            child: Text("👧 Alice"),
+                          ),
+                          DropdownMenuItem(
+                            value: FinanceSubject.shared,
+                            child: Text("👨‍👩‍👧 Condiviso"),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value == null) return;
+
+                          setState(() {
+                            selectedSubject = value;
+                          });
+                        },
+                      ),
+
                       const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
@@ -714,6 +776,7 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
                                 description: descriptionController.text.trim(),
                                 category: selectedCategory!,
                                 date: selectedDate,
+                                subject: selectedSubject,
                               ),
                             );
 
@@ -1511,13 +1574,37 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        "${expense.category} • ${expense.balanceName}",
-                                        style: const TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w700,
-                                        ),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "${expense.category} • ${expense.balanceName}",
+                                            style: const TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            switch (expense.subject) {
+                                              FinanceSubject.matteo =>
+                                                "👨 Matteo",
+                                              FinanceSubject.chiara =>
+                                                "👩 Chiara",
+                                              FinanceSubject.alice =>
+                                                "👧 Alice",
+                                              FinanceSubject.shared =>
+                                                "👨‍👩‍👧 Condiviso",
+                                            },
+                                            style: const TextStyle(
+                                              color: Colors.white54,
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                       const SizedBox(height: 2),
                                       Text(

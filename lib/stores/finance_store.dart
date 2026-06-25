@@ -462,6 +462,7 @@ class FinanceStore {
           amount: difference.abs(),
           date: DateTime.now(),
           isIncome: difference > 0,
+          subject: _subjectForPersonId(old.personId),
           description: 'Correzione saldo ${old.name}',
           type: difference > 0
               ? FinanceTransactionType.income
@@ -513,6 +514,7 @@ class FinanceStore {
         amount: amount,
         date: DateTime.now(),
         isIncome: false,
+        subject: _subjectForPersonId(old.personId),
         description: description,
         type: FinanceTransactionType.expense,
         origin: FinanceTransactionOrigin.manual,
@@ -561,6 +563,7 @@ class FinanceStore {
         amount: amount,
         date: DateTime.now(),
         isIncome: true,
+        subject: _subjectForPersonId(old.personId),
         description: description,
         type: FinanceTransactionType.income,
         origin: FinanceTransactionOrigin.manual,
@@ -608,6 +611,7 @@ class FinanceStore {
         amount: amount,
         date: DateTime.now(),
         isIncome: false,
+        subject: _subjectForPersonId(old.personId),
         description: "Annullamento $description",
         type: FinanceTransactionType.expense,
         origin: FinanceTransactionOrigin.manual,
@@ -655,6 +659,7 @@ class FinanceStore {
         amount: amount,
         date: DateTime.now(),
         isIncome: true,
+        subject: _subjectForPersonId(old.personId),
         description: "Annullamento $description",
         type: FinanceTransactionType.income,
         origin: FinanceTransactionOrigin.manual,
@@ -724,6 +729,7 @@ class FinanceStore {
         amount: amount,
         date: DateTime.now(),
         isIncome: false,
+        subject: _subjectForPersonId(fromBalance.personId),
         description: description,
         type: FinanceTransactionType.transfer,
         origin: FinanceTransactionOrigin.manual,
@@ -738,6 +744,7 @@ class FinanceStore {
         amount: amount,
         date: DateTime.now(),
         isIncome: true,
+        subject: _subjectForPersonId(toBalance.personId),
         description: description,
         type: FinanceTransactionType.transfer,
         origin: FinanceTransactionOrigin.manual,
@@ -1092,6 +1099,7 @@ class FinanceStore {
         amount: amount,
         date: DateTime.now(),
         isIncome: type == FundTransactionType.deposit,
+        subject: FinanceSubject.shared,
         description: description.isEmpty ? oldFund.name : description,
         type: type == FundTransactionType.deposit
             ? FinanceTransactionType.income
@@ -1158,6 +1166,7 @@ class FinanceStore {
             amount: amount,
             date: DateTime.now(),
             isIncome: item.isIncome,
+            subject: item.subject,
             description: item.name,
             type: item.isIncome
                 ? FinanceTransactionType.income
@@ -1439,7 +1448,7 @@ class FinanceStore {
       );
 
       final currentMonth = DateTime(month.year, month.month, 1);
-      
+
       if (item.confirmed) {
         return firstDueMonth.year == currentMonth.year &&
             firstDueMonth.month == currentMonth.month;
@@ -1715,5 +1724,18 @@ Pressione: ${isUnderPressure() ? 'SI' : 'NO'}
     loadDemoData();
     saveSnapshot(DateTime.now());
     return financeSummaryText();
+  }
+
+  FinanceSubject _subjectForPersonId(String personId) {
+    switch (personId) {
+      case 'matteo':
+        return FinanceSubject.matteo;
+      case 'chiara':
+        return FinanceSubject.chiara;
+      case 'alice':
+        return FinanceSubject.alice;
+      default:
+        return FinanceSubject.shared;
+    }
   }
 }

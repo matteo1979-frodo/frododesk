@@ -1,3 +1,5 @@
+import 'finance_recurring_item.dart';
+
 class RealExpense {
   final String id;
   final String balanceId;
@@ -17,6 +19,7 @@ class RealExpense {
   final bool isCashWithdrawal;
 
   final bool isIncome;
+  final FinanceSubject subject;
 
   /// Id del portafoglio collegato al prelievo contanti.
   /// Esempio: wallet_matteo, wallet_chiara.
@@ -33,6 +36,7 @@ class RealExpense {
     this.nonTrackedCash = false,
     this.isCashWithdrawal = false,
     this.isIncome = false,
+    this.subject = FinanceSubject.shared,
     this.cashWalletId,
   });
 
@@ -51,6 +55,7 @@ class RealExpense {
       'isCashWithdrawal': isCashWithdrawal,
       'cashWalletId': cashWalletId,
       'isIncome': isIncome,
+      'subject': subject.name,
     };
   }
 
@@ -67,6 +72,9 @@ class RealExpense {
       isCashWithdrawal: json['isCashWithdrawal'] as bool? ?? false,
       cashWalletId: json['cashWalletId'] as String?,
       isIncome: json['isIncome'] as bool? ?? false,
+      subject: json['subject'] == null
+          ? FinanceSubject.shared
+          : FinanceSubject.values.firstWhere((e) => e.name == json['subject']),
     );
   }
 }

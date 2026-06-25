@@ -1,3 +1,5 @@
+import 'finance_recurring_item.dart';
+
 enum FinanceTransactionType { income, expense, transfer }
 
 enum FinanceTransactionOrigin { recurringItem, manual, fund, adjustment }
@@ -12,6 +14,8 @@ class FinanceTransaction {
   final DateTime date;
 
   final bool isIncome;
+
+  final FinanceSubject subject;
 
   final String description;
 
@@ -29,6 +33,7 @@ class FinanceTransaction {
     required this.amount,
     required this.date,
     required this.isIncome,
+    required this.subject,
     required this.description,
     required this.type,
     required this.origin,
@@ -43,6 +48,7 @@ class FinanceTransaction {
       'amount': amount,
       'date': date.toIso8601String(),
       'isIncome': isIncome,
+      'subject': subject.name,
       'description': description,
       'type': type.name,
       'origin': origin.name,
@@ -58,6 +64,9 @@ class FinanceTransaction {
       amount: (json['amount'] as num).toDouble(),
       date: DateTime.parse(json['date'] as String),
       isIncome: json['isIncome'] as bool,
+      subject: json['subject'] == null
+          ? FinanceSubject.shared
+          : FinanceSubject.values.firstWhere((e) => e.name == json['subject']),
       description: json['description'] as String,
       type: FinanceTransactionType.values.firstWhere(
         (e) => e.name == json['type'],
