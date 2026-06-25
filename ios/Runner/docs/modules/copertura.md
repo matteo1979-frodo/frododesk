@@ -833,6 +833,76 @@ e diventare:
 
 ---
 
+---
+
+# 🌍 EVOLUZIONE STRUTTURALE FUTURA — MULTI FAMIGLIA
+
+## PRINCIPIO
+
+Il modulo Copertura NON deve restare legato a persone specifiche.
+
+I nomi:
+
+- Matteo
+- Chiara
+- Alice
+- Sandra
+
+devono essere considerati esempi della famiglia attuale.
+
+In futuro il motore dovrà funzionare per qualsiasi famiglia.
+
+Esempio:
+
+- Figlio 1
+- Figlio 2
+- Figlio 3
+- Supporto esterno
+- Babysitter
+- Nonno
+- Zio
+
+senza modifiche al motore.
+
+---
+
+## DIREZIONE
+
+CoverageEngine deve ragionare su:
+
+✔ Persone
+✔ Ruoli
+✔ Disponibilità
+✔ Presenza reale
+
+e NON sui nomi delle persone.
+
+---
+
+## OBIETTIVO FUTURO
+
+Permettere a qualsiasi nuova famiglia di:
+
+- creare i propri membri
+- definire i propri supporti
+- usare il motore copertura senza configurazioni tecniche
+
+Il motore deve essere universale.
+
+---
+
+## NOTA
+
+Questa evoluzione NON è prioritaria nella fase attuale.
+
+Priorità attuale:
+
+✔ completamento calendario reale
+✔ stabilizzazione copertura
+✔ test vita reale
+
+La trasformazione multi-famiglia verrà affrontata in una fase successiva.
+
 # PROSSIMO STEP
 
 Continuare consolidamento STEP G3.

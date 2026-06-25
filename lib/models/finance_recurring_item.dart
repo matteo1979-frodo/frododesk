@@ -23,6 +23,8 @@ enum FinanceProtectionLevel { none, protected, critical }
 
 enum FinancePaymentOwner { matteo, chiara, shared }
 
+enum FinanceSubject { matteo, chiara, alice, shared }
+
 enum FinanceOriginType { manual, contractual, lifeGenerated }
 
 enum FinanceStability { stable, unstable }
@@ -116,6 +118,7 @@ class FinanceRecurringItem {
   final FinancePaymentPriority paymentPriority;
   final FinanceProtectionLevel protectionLevel;
   final FinancePaymentOwner paymentOwner;
+  final FinanceSubject subject;
   final String? balanceId;
   final FinancePaymentMethod paymentMethod;
   final FinanceStability stability;
@@ -144,6 +147,7 @@ class FinanceRecurringItem {
     required this.paymentPriority,
     required this.protectionLevel,
     required this.paymentOwner,
+    this.subject = FinanceSubject.shared,
     this.balanceId,
     required this.paymentMethod,
     required this.stability,
@@ -167,6 +171,7 @@ class FinanceRecurringItem {
     String? id,
     FinanceOriginType? originType,
     FinancePaymentOwner? paymentOwner,
+    FinanceSubject? subject,
     List<FinanceSplit>? splits,
     FinanceBehaviorProfile? behaviorProfile,
     String? balanceId,
@@ -196,6 +201,7 @@ class FinanceRecurringItem {
       originType: originType ?? this.originType,
       splits: splits ?? this.splits,
       paymentOwner: paymentOwner ?? this.paymentOwner,
+      subject: subject ?? this.subject,
       balanceId: balanceId ?? this.balanceId,
       paymentMethod: paymentMethod ?? this.paymentMethod,
       behaviorProfile: behaviorProfile ?? this.behaviorProfile,
@@ -223,6 +229,7 @@ class FinanceRecurringItem {
       'paymentPriority': paymentPriority.name,
       'protectionLevel': protectionLevel.name,
       'paymentOwner': paymentOwner.name,
+      'subject': subject.name,
       'balanceId': balanceId,
       'stability': stability.name,
       'suspensionRisk': suspensionRisk.name,
@@ -269,6 +276,9 @@ class FinanceRecurringItem {
           : FinancePaymentOwner.values.firstWhere(
               (e) => e.name == json['paymentOwner'],
             ),
+      subject: json['subject'] == null
+          ? FinanceSubject.shared
+          : FinanceSubject.values.firstWhere((e) => e.name == json['subject']),
       balanceId: json['balanceId'] as String?,
       paymentMethod: json['paymentMethod'] == null
           ? FinancePaymentMethod.manual

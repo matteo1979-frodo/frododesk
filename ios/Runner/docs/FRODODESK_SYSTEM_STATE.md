@@ -805,3 +805,216 @@ Il modulo Spese viene considerato strutturalmente stabile e pronto a diventare u
 Il modulo è considerato utilizzabile nella vita quotidiana e idoneo al collaudo reale prolungato.
 
 La priorità non è aggiungere nuove funzionalità, ma verificarne il comportamento nell'uso reale e consolidare la coerenza tra Spese, Finanze, Home e Statistiche future.
+
+━━━━━━━━━━━━━━━━━━
+
+# EVOLUZIONE STRUTTURALE — MULTI FAMIGLIA
+
+━━━━━━━━━━━━━━━━━━
+
+## DECISIONE STRATEGICA CONSOLIDATA
+
+Durante le riunioni di Giugno 2026 è stata fissata una nuova direzione strutturale del progetto.
+
+FrodoDesk non deve evolvere come sistema costruito attorno alla famiglia Matteo.
+
+La famiglia Matteo resta la famiglia laboratorio utilizzata per sviluppare e validare il motore.
+
+L'obiettivo reale diventa:
+
+👉 permettere a qualsiasi famiglia di creare il proprio ecosistema FrodoDesk.
+
+---
+
+## NUOVA IDENTITÀ FUTURA
+
+Ogni installazione dovrà poter:
+
+✔ creare una famiglia
+
+✔ creare le proprie persone
+
+✔ creare i propri conti
+
+✔ creare i propri eventi
+
+✔ creare le proprie regole operative
+
+senza modifiche al codice.
+
+---
+
+## CONCETTO DI FAMIGLIA
+
+La famiglia diventa una nuova entità strutturale del sistema.
+
+Esempio:
+
+Famiglia Rossi
+
+- Marco
+- Sara
+- Luca
+
+Famiglia Bianchi
+
+- Paolo
+- Elena
+- Giulia
+
+Ogni famiglia possiede:
+
+✔ dati
+
+✔ calendario
+
+✔ finanze
+
+✔ coperture
+
+✔ notifiche
+
+✔ autorizzazioni
+
+indipendenti dalle altre.
+
+---
+
+## MULTI DISPOSITIVO
+
+Decisione consolidata.
+
+L'attuale sincronizzazione tramite export/import JSON viene considerata una fase temporanea di sviluppo.
+
+La direzione ufficiale diventa:
+
+✔ una sola verità dati
+
+✔ sincronizzazione automatica
+
+✔ aggiornamento immediato tra dispositivi
+
+---
+
+## OBIETTIVO FUTURO
+
+Una modifica effettuata da:
+
+- PC
+- telefono
+- tablet
+
+deve comparire automaticamente sugli altri dispositivi autorizzati.
+
+---
+
+## SISTEMA INVITI
+
+Direzione approvata.
+
+Una famiglia deve poter invitare altre persone.
+
+Esempi:
+
+- compagno
+- compagna
+- figli
+- babysitter
+- nonni
+- allenatori
+- collaboratori esterni
+
+---
+
+## RUOLI FUTURI
+
+Ruoli previsti:
+
+✔ amministratore
+
+✔ adulto
+
+✔ figlio
+
+✔ supporto
+
+✔ collaboratore esterno
+
+---
+
+## ACCESSI PARZIALI
+
+Una persona esterna non deve vedere automaticamente tutto il sistema.
+
+L'amministratore decide:
+
+✔ cosa può vedere
+
+✔ cosa può modificare
+
+✔ quali notifiche riceve
+
+---
+
+## ESEMPIO STRUTTURALE
+
+Sandra può:
+
+✔ avere la propria famiglia FrodoDesk
+
+✔ accedere alla famiglia Matteo
+
+✔ vedere soltanto le informazioni autorizzate
+
+✔ gestire soltanto le aree abilitate
+
+---
+
+## EVENTI ESTERNI
+
+Direzione futura approvata.
+
+Soggetti esterni autorizzati potranno proporre eventi.
+
+Esempi:
+
+- scuole
+- allenatori
+- associazioni
+- babysitter
+
+L'evento resta sempre sotto controllo della famiglia.
+
+---
+
+## STATO ATTUALE
+
+⚠️ Nessuna implementazione tecnica ancora iniziata.
+
+Questa sezione rappresenta una decisione strategica ufficiale che dovrà guidare l'evoluzione futura di:
+
+- Calendario
+- Persone
+- Eventi
+- Finanze
+- Notifiche
+- Sistema autorizzazioni
+- Cloud sincronizzato
+
+---
+
+## PRIORITÀ ATTUALE
+
+Questa evoluzione NON sostituisce le priorità correnti.
+
+Restano prioritarie:
+
+✔ consolidamento calendario reale
+
+✔ utilizzo quotidiano reale
+
+✔ consolidamento motore economico
+
+✔ correzione comportamenti reali
+
+Solo dopo verrà avviata la trasformazione verso il modello multi-famiglia.

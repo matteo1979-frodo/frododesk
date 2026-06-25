@@ -359,3 +359,136 @@ In questo modo FrodoDesk mantiene separati:
 * il mondo della realtà vissuta.
 
 Questa distinzione costituisce uno dei principi architetturali fondamentali dell'intero sistema.
+
+---
+
+# 🌍 EVOLUZIONE STRUTTURALE — SPESE MULTI FAMIGLIA
+
+## DECISIONE UFFICIALE (GIUGNO 2026)
+
+Il modulo Spese nasce oggi dalla realtà della famiglia:
+
+- Matteo
+- Chiara
+- Alice
+
+ma dovrà evolvere verso una struttura universale.
+
+---
+
+## PRINCIPIO
+
+Le persone attualmente presenti nel sistema rappresentano un caso reale di utilizzo.
+
+In futuro il modulo dovrà funzionare per:
+
+✔ qualsiasi famiglia
+
+✔ qualsiasi numero di persone
+
+✔ qualsiasi composizione familiare
+
+senza modifiche tecniche.
+
+---
+
+## PERSONE DINAMICHE
+
+La struttura futura non dovrà dipendere da nomi fissi.
+
+Esempi:
+
+- Figlio 1
+- Figlio 2
+- Nonno
+- Babysitter
+- Partner
+- Caregiver
+
+dovranno poter essere gestiti come normali persone del sistema.
+
+---
+
+## CLOUD
+
+Le spese dovranno essere disponibili in tempo reale su:
+
+- PC
+- telefono
+- tablet
+
+utilizzando una sorgente dati condivisa.
+
+L'obiettivo è eliminare completamente procedure manuali di esportazione/importazione.
+
+---
+
+## COLLABORAZIONE
+
+I membri autorizzati della famiglia dovranno poter:
+
+✔ inserire spese
+
+✔ inserire entrate
+
+✔ registrare movimenti reali
+
+in base ai permessi assegnati.
+
+---
+
+## PERMESSI
+
+Esempio futuro:
+
+### Amministratore
+
+✔ gestione completa
+
+✔ gestione struttura economica
+
+✔ gestione utenti
+
+### Adulto
+
+✔ inserimento movimenti
+
+✔ modifica propri movimenti
+
+✔ consultazione autorizzata
+
+### Accesso limitato
+
+✔ sola visualizzazione
+
+oppure
+
+✔ accesso a specifiche aree autorizzate
+
+---
+
+## FILOSOFIA
+
+La crescita verso il cloud non modifica la regola fondamentale del modulo.
+
+Le Spese continueranno sempre a rappresentare:
+
+👉 denaro realmente vissuto
+
+indipendentemente dal numero di utenti o dispositivi collegati.
+
+---
+
+## NOTA
+
+Questa evoluzione NON è una priorità immediata.
+
+Priorità attuale:
+
+✔ consolidamento utilizzo reale
+
+✔ test quotidiano del modulo
+
+✔ miglioramento esperienza d'uso
+
+La trasformazione cloud e multi-famiglia verrà affrontata in una fase successiva.

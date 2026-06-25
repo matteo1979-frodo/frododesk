@@ -861,4 +861,143 @@ Il progetto continua a evolvere secondo la regola:
 
 I dati economici reali vengono generati dal modulo Spese e potranno essere interpretati, aggregati e confrontati dagli altri moduli senza duplicare la fonte della verità.
 
+━━━━━━━━━━━━━━━━━━
 
+# EVOLUZIONE MULTI-FAMIGLIA — GIUGNO 2026
+
+━━━━━━━━━━━━━━━━━━
+
+Durante le riunioni di Giugno 2026 è emersa una nuova direzione strategica del progetto.
+
+FrodoDesk non viene più visto soltanto come sistema per la famiglia Matteo-Chiara-Alice.
+
+Questa famiglia resta il primo laboratorio reale di sviluppo e collaudo.
+
+La direzione futura diventa:
+
+➡️ piattaforma di coordinamento della vita reale.
+
+---
+
+## PRINCIPIO
+
+Ogni famiglia deve poter:
+
+- creare il proprio spazio
+- creare le proprie persone
+- configurare le proprie regole
+- mantenere privati i propri dati
+
+Nessuna famiglia deve vedere i dati delle altre.
+
+---
+
+## FAMIGLIA COME UNITÀ LOGICA
+
+In futuro il sistema dovrà permettere:
+
+- creazione famiglia
+- inviti
+- ruoli
+- permessi
+- accessi differenziati
+
+Esempio:
+
+Famiglia Rossi
+Famiglia Bianchi
+Famiglia Verdi
+
+vivono nello stesso sistema ma restano indipendenti.
+
+---
+
+## RUOLI FUTURI
+
+Possibili ruoli:
+
+- Amministratore
+- Adulto
+- Figlio
+- Supporto
+- Collaboratore esterno
+
+Ogni ruolo potrà avere permessi differenti.
+
+---
+
+## ACCESSI INCROCIATI
+
+Una persona potrà appartenere a più contesti.
+
+Esempio reale:
+
+Sandra
+
+potrà avere:
+
+- la propria famiglia FrodoDesk
+- accesso limitato alla famiglia Matteo
+
+senza duplicare account.
+
+---
+
+## PRINCIPIO ACCESSI
+
+Una persona esterna non riceve automaticamente accesso.
+
+Serve:
+
+- richiesta
+- autorizzazione
+- assegnazione permessi
+
+da parte dell'amministratore della famiglia.
+
+---
+
+## EVENTI CONDIVISI
+
+In futuro il sistema potrà permettere:
+
+- allenatori
+- insegnanti
+- babysitter
+- associazioni
+- gruppi sportivi
+
+di proporre eventi.
+
+La famiglia riceve:
+
+- notifica
+- valutazione impatto
+- controllo conflitti
+- decisione finale
+
+---
+
+## FILOSOFIA
+
+FrodoDesk continua a mantenere il principio:
+
+👉 il sistema suggerisce
+
+👉 la decisione resta umana
+
+Anche nella collaborazione tra famiglie e persone esterne.
+
+---
+
+## DIREZIONE STRATEGICA
+
+La visione futura del progetto evolve da:
+
+❌ simulatore della singola famiglia
+
+a
+
+✔ ecosistema di coordinamento della vita reale
+
+mantenendo privacy, autonomia e controllo delle decisioni.

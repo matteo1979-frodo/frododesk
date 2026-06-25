@@ -102,3 +102,63 @@ Questo file serve solo per:
 - avvio rapido delle chat  
 - mantenimento metodo CNC  
 - evitare errori operativi
+
+---
+
+# 🌍 DIREZIONE STRATEGICA DEL PROGETTO
+
+Prima di iniziare qualsiasi sviluppo, ricordare sempre che FrodoDesk NON è più progettato come applicazione locale per una singola famiglia.
+
+La direzione ufficiale del progetto è:
+
+✔ multi-dispositivo
+
+✔ sincronizzazione cloud
+
+✔ famiglia proprietaria del sistema
+
+✔ gestione ruoli e permessi
+
+✔ inviti familiari
+
+✔ accessi esterni controllati
+
+✔ supporto a più famiglie indipendenti
+
+---
+
+## PRINCIPIO FONDAMENTALE
+
+Ogni nuova funzione dovrebbe essere valutata chiedendosi:
+
+"Funzionerebbe ancora se esistessero 1000 famiglie diverse che usano FrodoDesk?"
+
+Se la risposta è no:
+
+la soluzione deve essere ripensata prima di essere consolidata.
+
+---
+
+## ESEMPIO
+
+Modello attuale:
+
+Matteo
+Chiara
+Alice
+
+Modello futuro corretto:
+
+Famiglia
+↓
+Persone
+↓
+Ruoli
+↓
+Permessi
+↓
+Funzioni abilitate
+
+---
+
+Questa direzione strategica ha priorità sulle future evoluzioni del sistema.

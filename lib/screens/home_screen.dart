@@ -43,6 +43,9 @@ import '../models/finance_category_template.dart';
 import '../models/finance_split.dart';
 import '../widgets/finance/finance_accounts_panel.dart';
 import '../models/finance_transaction.dart';
+import 'package:flutter/services.dart';
+
+import '../logic/persistence_store.dart';
 
 class HomeScreen extends StatefulWidget {
   final IpsStore ipsStore;
@@ -88,6 +91,65 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  Future<void> _showDataTransferDialog() async {
+    final controller = TextEditingController();
+
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Trasferimento dati FrodoDesk"),
+        content: SizedBox(
+          width: 700,
+          child: TextField(
+            controller: controller,
+            maxLines: 12,
+            decoration: const InputDecoration(
+              hintText:
+                  "Qui comparirà il JSON da copiare, oppure incolla qui il JSON da importare",
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              final json =
+                  await PersistenceStore.exportAllFrodoDeskDataAsJson();
+              controller.text = json;
+              await Clipboard.setData(ClipboardData(text: json));
+            },
+            child: const Text("Esporta e copia"),
+          ),
+          TextButton(
+            onPressed: () async {
+              final imported =
+                  await PersistenceStore.importAllFrodoDeskDataFromJson(
+                    controller.text,
+                  );
+
+              if (!mounted) return;
+
+              Navigator.of(context).pop();
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    "Import completato: $imported chiavi importate. Riavvia FrodoDesk.",
+                  ),
+                ),
+              );
+            },
+            child: const Text("Importa"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("Chiudi"),
+          ),
+        ],
+      ),
+    );
   }
 
   String _formatTime(TimeOfDay time) {
@@ -1519,6 +1581,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ).showSnackBar(const SnackBar(content: Text("Home aggiornata")));
             },
             icon: const Icon(Icons.refresh),
+          ),
+          IconButton(
+            tooltip: "Trasferimento dati",
+            onPressed: () {
+              _showDataTransferDialog();
+            },
+            icon: const Icon(Icons.import_export),
           ),
         ],
       ),
@@ -4508,7 +4577,9 @@ class _HomeScreenState extends State<HomeScreen> {
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: 18,
               crossAxisSpacing: 18,
-              childAspectRatio: constraints.maxWidth >= 1100 ? 0.86 : 0.95,
+              childAspectRatio: constraints.maxWidth < 600
+                  ? 0.82
+                  : (constraints.maxWidth >= 1100 ? 0.86 : 0.95),
               children: [
                 _DashboardModuleCard(
                   icon: Icons.calendar_month_rounded,

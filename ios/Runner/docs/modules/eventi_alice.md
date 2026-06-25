@@ -573,3 +573,77 @@ RESTA:
 ⬜ Home completamente guidata dal PresenceEngine  
 ⬜ test strutturati presenza reale  
 ⬜ riallineamento IPS futuro  
+
+# 🌍 EVOLUZIONE STRUTTURALE FUTURA — EVENTI FIGLI
+
+## PRINCIPIO
+
+Il modulo "Eventi Alice" rappresenta oggi il primo caso reale di gestione eventi di un figlio.
+
+In futuro il sistema dovrà evolvere verso un modello generico:
+
+- Figlio 1
+- Figlio 2
+- Figlio 3
+- altri membri familiari
+
+senza dipendere dal nome Alice.
+
+---
+
+## DIREZIONE
+
+Gli Eventi Alice devono essere considerati il prototipo del futuro modulo:
+
+👉 Eventi Persona
+
+dove ogni persona della famiglia può avere:
+
+- eventi
+- attività
+- visite
+- sport
+- scuola
+- impegni
+
+con lo stesso motore.
+
+---
+
+## OBIETTIVO FUTURO
+
+Passare gradualmente da:
+
+Eventi Alice
+
+a:
+
+Eventi Persona
+
+mantenendo compatibilità con il sistema attuale.
+
+---
+
+## ESEMPI FUTURI
+
+- Alice → danza
+- Alice → scuola
+- Figlio 2 → calcio
+- Matteo → visita medica
+- Chiara → corso formazione
+
+Tutti gestiti tramite la stessa architettura.
+
+---
+
+## NOTA
+
+Questa NON è una priorità della fase attuale.
+
+Priorità attuale:
+
+✔ completamento calendario reale
+✔ consolidamento PresenceEngine
+✔ test vita reale
+
+La generalizzazione del modulo verrà affrontata in una fase successiva.

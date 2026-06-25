@@ -903,3 +903,152 @@ Entrambi i moduli devono evolvere separatamente e collegarsi solo attraverso int
 Principio confermato:
 
 👉 **una sola verità, molte letture.**
+
+━━━━━━━━━━━━━━━━━━
+
+# BLOCCO Z — ECOSISTEMA FRODODESK
+
+⚠️ VISIONE FUTURA — NON PRIORITARIA
+
+NON autorizza sviluppo immediato.
+
+NON modifica le priorità attuali.
+
+Serve a conservare la direzione strategica emersa durante le riunioni di Giugno 2026.
+
+---
+
+## OBIETTIVO
+
+Evolvere FrodoDesk da:
+
+❌ sistema della singola famiglia
+
+a
+
+✔ piattaforma multi-famiglia
+
+---
+
+## PRINCIPIO
+
+Ogni famiglia deve poter:
+
+- creare il proprio spazio
+- creare le proprie persone
+- creare i propri conti
+- creare i propri eventi
+- mantenere privati i propri dati
+
+---
+
+## MULTI-DEVICE
+
+Visione futura:
+
+Una modifica effettuata su:
+
+- PC
+- telefono
+- tablet
+
+deve sincronizzarsi automaticamente su tutti i dispositivi autorizzati.
+
+Obiettivo:
+
+✔ una sola verità
+✔ sincronizzazione automatica
+
+---
+
+## ACCOUNT FAMIGLIA
+
+Ogni famiglia avrà:
+
+- amministratore
+- membri
+- ruoli
+- permessi
+
+Esempio:
+
+Famiglia Rossi
+Famiglia Bianchi
+Famiglia Verdi
+
+indipendenti tra loro.
+
+---
+
+## RUOLI FUTURI
+
+Possibili ruoli:
+
+- Amministratore
+- Adulto
+- Figlio
+- Supporto
+- Collaboratore esterno
+
+---
+
+## ACCESSI INCROCIATI
+
+Una persona potrà appartenere a più contesti.
+
+Esempio:
+
+Sandra
+
+potrà:
+
+- gestire la propria famiglia
+- collaborare con la famiglia Matteo
+
+senza creare account multipli.
+
+---
+
+## EVENTI CONDIVISI
+
+In futuro il sistema potrà supportare:
+
+- scuole
+- sport
+- associazioni
+- babysitter
+- allenatori
+
+che propongono eventi alle famiglie autorizzate.
+
+---
+
+## PRINCIPIO DECISIONALE
+
+Anche nell'ecosistema esteso resta valida la regola:
+
+👉 il sistema suggerisce
+
+👉 la decisione resta umana
+
+---
+
+## POSIZIONE IN ROADMAP
+
+Questo blocco NON è autorizzato prima di:
+
+☑ consolidamento Calendario
+
+☑ consolidamento Finanze
+
+☑ consolidamento Vita Reale
+
+☑ sincronizzazione multi-dispositivo
+
+☑ identità utenti
+
+☑ architettura cloud
+
+Prima si consolida il laboratorio reale della famiglia.
+
+Solo dopo si valuta l'espansione all'ecosistema.

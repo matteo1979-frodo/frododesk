@@ -118,4 +118,84 @@ class PersistenceStore {
       }
     }
   }
+
+  static Future<String> exportAllFrodoDeskDataAsJson() async {
+    final prefs = await SharedPreferences.getInstance();
+    final allKeys = prefs.getKeys();
+
+    final Map<String, dynamic> data = {};
+
+    for (final key in allKeys) {
+      if (!key.startsWith(_prefix)) continue;
+
+      final value = prefs.get(key);
+
+      if (value is String ||
+          value is bool ||
+          value is int ||
+          value is double ||
+          value is List<String>) {
+        data[key] = value;
+      }
+    }
+
+    final export = {
+      'version': 1,
+      'exportedAt': DateTime.now().toIso8601String(),
+      'data': data,
+    };
+
+    return const JsonEncoder.withIndent('  ').convert(export);
+  }
+
+  static Future<int> importAllFrodoDeskDataFromJson(
+    String rawJson, {
+    bool clearBeforeImport = true,
+  }) async {
+    final decoded = jsonDecode(rawJson);
+
+    if (decoded is! Map) {
+      throw FormatException('Formato importazione non valido');
+    }
+
+    final rawData = decoded['data'];
+
+    if (rawData is! Map) {
+      throw FormatException('Dati FrodoDesk mancanti');
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+
+    if (clearBeforeImport) {
+      await clearAllFrodoDeskData();
+    }
+
+    int imported = 0;
+
+    for (final entry in rawData.entries) {
+      final key = entry.key;
+      final value = entry.value;
+
+      if (key is! String || !key.startsWith(_prefix)) continue;
+
+      if (value is String) {
+        await prefs.setString(key, value);
+        imported++;
+      } else if (value is bool) {
+        await prefs.setBool(key, value);
+        imported++;
+      } else if (value is int) {
+        await prefs.setInt(key, value);
+        imported++;
+      } else if (value is double) {
+        await prefs.setDouble(key, value);
+        imported++;
+      } else if (value is List) {
+        await prefs.setStringList(key, value.map((e) => e.toString()).toList());
+        imported++;
+      }
+    }
+
+    return imported;
+  }
 }

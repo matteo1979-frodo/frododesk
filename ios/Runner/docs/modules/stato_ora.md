@@ -260,3 +260,102 @@ RESTA:
 ⬜ Home completamente guidata dal PresenceEngine  
 ⬜ test presenza reale complessi  
 ⬜ riallineamento IPS futuro  
+
+---
+
+# 🌍 EVOLUZIONE STRUTTURALE — STATO ORA UNIVERSALE
+
+## DECISIONE UFFICIALE (GIUGNO 2026)
+
+Lo Stato Ora rappresenta oggi la situazione reale della famiglia attuale.
+
+In futuro dovrà rappresentare la situazione reale di qualsiasi famiglia.
+
+---
+
+## PRINCIPIO
+
+Lo Stato Ora non deve dipendere da:
+
+- Matteo
+- Chiara
+- Alice
+
+ma dalle persone realmente presenti nel sistema.
+
+---
+
+## DIREZIONE FUTURA
+
+L'obiettivo è passare gradualmente da:
+
+- Stato Matteo
+- Stato Chiara
+- Stato Alice
+
+a:
+
+👉 Stato Persona
+
+dove ogni persona possiede:
+
+- presenza reale
+- disponibilità reale
+- eventi reali
+- stato reale
+
+indipendentemente dal ruolo familiare.
+
+---
+
+## ESEMPI FUTURI
+
+Lo Stato Ora dovrà poter rappresentare:
+
+- Figlio 1
+- Figlio 2
+- Nonno
+- Babysitter
+- Caregiver
+- Allenatore collegato
+- Supporto esterno
+
+utilizzando la stessa architettura.
+
+---
+
+## CLOUD
+
+Lo Stato Ora dovrà leggere dati sincronizzati provenienti da:
+
+- PC
+- telefono
+- tablet
+
+mostrando sempre la stessa situazione reale.
+
+---
+
+## FILOSOFIA
+
+La domanda fondamentale resterà invariata:
+
+👉 "Qual è la situazione reale in questo preciso istante?"
+
+Cambieranno le persone coinvolte.
+
+Non cambierà il principio.
+
+---
+
+## NOTA
+
+Questa evoluzione NON è una priorità immediata.
+
+Priorità attuale:
+
+✔ consolidamento PresenceEngine
+✔ completamento calendario reale
+✔ test vita reale
+
+La generalizzazione del sistema verrà affrontata successivamente.

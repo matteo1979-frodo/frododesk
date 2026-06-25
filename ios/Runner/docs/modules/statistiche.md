@@ -325,3 +325,106 @@ Con il completamento del sistema:
 * storico cronologico persistente;
 
 si considera completata la fondazione tecnica necessaria per lo sviluppo futuro delle Statistiche Economiche.
+
+---
+
+# 🌍 EVOLUZIONE STRUTTURALE — STATISTICHE MULTI FAMIGLIA
+
+## DECISIONE UFFICIALE (GIUGNO 2026)
+
+Il modulo Statistiche dovrà evolvere insieme all'intero ecosistema FrodoDesk.
+
+L'obiettivo futuro non è leggere solamente la famiglia attuale.
+
+L'obiettivo è leggere qualsiasi famiglia che utilizza il sistema.
+
+---
+
+## PRINCIPIO
+
+Le statistiche non devono conoscere:
+
+- Matteo
+- Chiara
+- Alice
+
+ma devono leggere:
+
+👉 le persone realmente presenti nella famiglia.
+
+---
+
+## ESEMPI FUTURI
+
+Le statistiche dovranno poter funzionare per:
+
+- coppie senza figli
+- famiglie numerose
+- famiglie con anziani
+- famiglie con caregiver
+- famiglie con supporti esterni
+
+senza modifiche architetturali.
+
+---
+
+## CLOUD
+
+Le statistiche dovranno leggere dati sincronizzati provenienti da:
+
+- PC
+- telefono
+- tablet
+
+utilizzando una sorgente dati condivisa.
+
+---
+
+## ACCESSI E PERMESSI
+
+Le statistiche dovranno rispettare i permessi della famiglia.
+
+Esempi:
+
+### Amministratore
+
+✔ accesso completo
+
+### Adulto
+
+✔ accesso alle statistiche autorizzate
+
+### Accesso limitato
+
+✔ accesso solo a specifici moduli statistici
+
+---
+
+## FILOSOFIA FUTURA
+
+Le statistiche dovranno evolvere da:
+
+"lettura della famiglia attuale"
+
+a:
+
+"lettura della vita reale di qualsiasi famiglia"
+
+mantenendo sempre il principio:
+
+👉 una sola verità, molte letture.
+
+---
+
+## NOTA
+
+Questa evoluzione NON modifica le priorità attuali.
+
+Priorità attuale:
+
+✔ consolidamento moduli reali
+✔ utilizzo quotidiano
+✔ raccolta dati reali
+✔ test vita reale
+
+La trasformazione cloud e multi-famiglia verrà affrontata successivamente.

@@ -357,14 +357,57 @@ class FinanceMonthDetailDialog extends StatelessWidget {
                     fontSize: 14,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  dateText,
-                  style: TextStyle(
-                    color: Colors.black.withOpacity(0.52),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11,
-                  ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(
+                      _subjectIcon(item.subject),
+                      size: 14,
+                      color: Colors.black.withOpacity(0.52),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _subjectLabel(item.subject),
+                      style: TextStyle(
+                        color: Colors.black.withOpacity(0.52),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                      ),
+                    ),
+                    if (!item.isIncome &&
+                        item.subject.name != item.paymentOwner.name) ...[
+                      const SizedBox(width: 10),
+                      Icon(
+                        _ownerIcon(item.paymentOwner),
+                        size: 14,
+                        color: Colors.black.withOpacity(0.46),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        "Paga: ${_ownerLabel(item.paymentOwner)}",
+                        style: TextStyle(
+                          color: Colors.black.withOpacity(0.48),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                    const Spacer(),
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 14,
+                      color: Colors.black.withOpacity(0.46),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      dateText,
+                      style: TextStyle(
+                        color: Colors.black.withOpacity(0.52),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -404,6 +447,54 @@ class FinanceMonthDetailDialog extends StatelessWidget {
       case FinanceRecurringType.oneShot:
       case FinanceRecurringType.custom:
         return item.nextDueDate;
+    }
+  }
+
+  String _ownerLabel(FinancePaymentOwner owner) {
+    switch (owner) {
+      case FinancePaymentOwner.matteo:
+        return "Matteo";
+      case FinancePaymentOwner.chiara:
+        return "Chiara";
+      case FinancePaymentOwner.shared:
+        return "Condivisa";
+    }
+  }
+
+  String _subjectLabel(FinanceSubject subject) {
+    switch (subject) {
+      case FinanceSubject.matteo:
+        return "Matteo";
+      case FinanceSubject.chiara:
+        return "Chiara";
+      case FinanceSubject.alice:
+        return "Alice";
+      case FinanceSubject.shared:
+        return "Condivisa";
+    }
+  }
+
+  IconData _ownerIcon(FinancePaymentOwner owner) {
+    switch (owner) {
+      case FinancePaymentOwner.matteo:
+        return Icons.man_rounded;
+      case FinancePaymentOwner.chiara:
+        return Icons.woman_rounded;
+      case FinancePaymentOwner.shared:
+        return Icons.people_alt_rounded;
+    }
+  }
+
+  IconData _subjectIcon(FinanceSubject subject) {
+    switch (subject) {
+      case FinanceSubject.matteo:
+        return Icons.man_rounded;
+      case FinanceSubject.chiara:
+        return Icons.woman_rounded;
+      case FinanceSubject.alice:
+        return Icons.child_care_rounded;
+      case FinanceSubject.shared:
+        return Icons.people_alt_rounded;
     }
   }
 }

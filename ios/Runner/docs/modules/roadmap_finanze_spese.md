@@ -639,3 +639,137 @@ Il principio fondativo rimane invariato:
 * **Spese** = memoria del denaro realmente vissuto.
 
 La separazione tra previsione e realtà è confermata come regola strutturale dell'intero ecosistema FrodoDesk.
+
+---
+
+# 🌍 EVOLUZIONE STRUTTURALE — FRODODESK CLOUD E MULTI FAMIGLIA
+
+## DECISIONE UFFICIALE (GIUGNO 2026)
+
+Durante la fase di consolidamento Finanze/Spese è emersa una nuova direzione strategica.
+
+FrodoDesk non dovrà evolvere solamente come sistema personale della famiglia attuale.
+
+L'obiettivo futuro diventa:
+
+👉 sistema universale per qualsiasi famiglia.
+
+---
+
+## PRINCIPIO
+
+La famiglia:
+
+- Matteo
+- Chiara
+- Alice
+
+rappresenta il primo caso reale di utilizzo.
+
+NON rappresenta una struttura fissa del sistema.
+
+---
+
+## STRUTTURA FUTURA
+
+Ogni nuova famiglia dovrà poter:
+
+✔ creare il proprio nucleo
+
+✔ creare le proprie persone
+
+✔ creare i propri conti
+
+✔ creare i propri fondi
+
+✔ creare le proprie ricorrenze
+
+✔ utilizzare gli stessi motori economici
+
+senza modifiche tecniche.
+
+---
+
+## CLOUD
+
+La direzione ufficiale prevede una futura sorgente dati condivisa.
+
+Obiettivo:
+
+stessi dati disponibili su:
+
+- PC
+- telefono
+- tablet
+
+senza procedure manuali di esportazione/importazione.
+
+---
+
+## INVITI
+
+Ogni famiglia dovrà poter invitare altri membri.
+
+Esempio:
+
+- amministratore famiglia
+- partner
+- figli
+- familiari autorizzati
+
+---
+
+## RUOLI
+
+I membri non dovranno avere necessariamente gli stessi permessi.
+
+Esempio:
+
+### Amministratore
+
+✔ gestione conti
+✔ gestione struttura
+✔ gestione permessi
+✔ gestione famiglia
+
+### Adulto
+
+✔ inserimento spese
+✔ inserimento entrate
+✔ utilizzo moduli autorizzati
+
+### Accesso limitato
+
+✔ visualizzazione autorizzata
+✔ accesso solo ad alcuni moduli
+
+---
+
+## ACCESSI ESTERNI FUTURI
+
+In futuro sarà possibile concedere accessi limitati a soggetti esterni.
+
+Esempi:
+
+- babysitter
+- allenatori
+- insegnanti
+- commercialisti
+- consulenti
+
+con autorizzazioni specifiche per modulo.
+
+---
+
+## FILOSOFIA
+
+La crescita verso il cloud NON modifica le priorità attuali.
+
+Priorità attuale:
+
+✔ consolidamento Finanze
+✔ consolidamento Spese
+✔ utilizzo reale quotidiano
+✔ test continui del sistema
+
+La trasformazione cloud verrà affrontata in una fase successiva.

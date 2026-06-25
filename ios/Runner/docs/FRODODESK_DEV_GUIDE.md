@@ -529,3 +529,138 @@ Prossimo obiettivo:
 👉 consolidare una sola verità temporale
 👉 solo dopo riallineare Home e IPS
 ```
+
+---
+
+# 🌍 AGGIORNAMENTO STRATEGICO — CLOUD E MULTI-FAMIGLIA
+
+(Data: Giugno 2026)
+
+## NUOVA DIREZIONE UFFICIALE
+
+FrodoDesk non deve evolvere come applicazione locale sincronizzata manualmente tramite esportazione/importazione dati.
+
+L'esportazione/importazione resta uno strumento tecnico di backup e sicurezza.
+
+La direzione ufficiale del progetto diventa:
+
+✔ Cloud centralizzato
+
+✔ Dati condivisi tra dispositivi
+
+✔ Sincronizzazione automatica
+
+✔ Multi-dispositivo
+
+✔ Multi-famiglia
+
+✔ Sistema utenti e permessi
+
+---
+
+## MODELLO FUTURO
+
+Struttura prevista:
+
+Utente
+↓
+Famiglia
+↓
+Persone
+↓
+Ruoli
+↓
+Permessi
+
+Esempio:
+
+Famiglia Rossi
+
+* Marco (amministratore)
+* Laura (adulto)
+* Luca (figlio)
+
+Famiglia Bianchi
+
+* Paolo (amministratore)
+* Anna (adulto)
+* Sofia (figlia)
+
+Ogni famiglia vive indipendentemente all'interno dello stesso sistema.
+
+---
+
+## PRINCIPIO CLOUD
+
+Una modifica effettuata da un dispositivo deve essere disponibile automaticamente su tutti gli altri dispositivi autorizzati.
+
+Esempio:
+
+Chiara modifica un turno.
+
+Risultato:
+
+✔ PC Matteo aggiornato
+✔ Telefono Matteo aggiornato
+✔ Telefono Chiara aggiornato
+
+senza esportazioni manuali.
+
+---
+
+## RUOLI E PERMESSI
+
+Il sistema dovrà supportare ruoli differenti.
+
+Esempi:
+
+* amministratore famiglia
+* adulto
+* figlio
+* collaboratore esterno
+* supporto temporaneo
+
+Ogni ruolo può avere permessi differenti.
+
+---
+
+## ACCESSI ESTERNI CONTROLLATI
+
+Una persona può appartenere contemporaneamente:
+
+✔ alla propria famiglia
+
+e
+
+✔ ad altre famiglie con permessi limitati.
+
+Esempio:
+
+Sandra
+
+* mantiene il proprio FrodoDesk personale
+* può essere invitata nella famiglia Matteo
+
+Permessi concessi:
+
+✔ vedere copertura Alice
+✔ confermare disponibilità
+
+Permessi negati:
+
+❌ finanze
+❌ conti
+❌ spese
+❌ dati privati
+
+---
+
+## REGOLA ARCHITETTURALE NUOVA
+
+Da questo momento ogni nuova funzionalità dovrebbe essere valutata anche rispetto alla futura architettura cloud.
+
+Domanda obbligatoria:
+
+"Questa funzione funzionerebbe ancora correttamente con più utenti, più dispositivi e più famiglie?"
+
+Se la risposta è no, la soluzione va rivalutata prima di essere consolidata.

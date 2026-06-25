@@ -707,3 +707,105 @@ e far leggere da lì:
 ⬜ lettura unica presenza Alice
 ⬜ IPS presenza-aware
 ⬜ conflitti presenza reale
+
+---
+
+# 🌍 EVOLUZIONE STRUTTURALE — HOME MULTI FAMIGLIA
+
+## NUOVA DIREZIONE UFFICIALE
+
+La Home attuale è costruita sulla famiglia:
+
+- Matteo
+- Chiara
+- Alice
+
+Questa struttura è considerata temporanea.
+
+L'obiettivo finale del sistema è permettere a qualsiasi famiglia di costruire la propria realtà.
+
+---
+
+## PRINCIPIO
+
+Quando una persona installa FrodoDesk deve poter:
+
+✔ creare una nuova famiglia
+
+✔ scegliere il nome della famiglia
+
+✔ inserire i membri
+
+✔ costruire la propria struttura reale
+
+senza alcun dato predefinito.
+
+---
+
+## IDENTITÀ DINAMICA
+
+La Home non dovrà più leggere:
+
+- Matteo
+- Chiara
+- Alice
+
+ma:
+
+👉 i membri effettivamente presenti nella famiglia.
+
+Esempi:
+
+- Famiglia Rossi
+- Famiglia Bianchi
+- Famiglia Verdi
+
+oppure:
+
+- coppia senza figli
+- famiglia con 1 figlio
+- famiglia con 4 figli
+- famiglia con persone anziane
+- famiglia con caregiver
+
+---
+
+## CLOUD
+
+La Home dovrà leggere una sorgente dati condivisa.
+
+Lo stesso stato dovrà essere visibile da:
+
+- telefono
+- PC
+- tablet
+
+senza procedure manuali di esportazione/importazione.
+
+---
+
+## NOTIFICHE FUTURE
+
+La Home dovrà diventare il punto di arrivo delle notifiche di sistema.
+
+Esempi:
+
+✔ evento modificato
+
+✔ copertura modificata
+
+✔ nuovo impegno familiare
+
+✔ nuova attività figlio
+
+✔ modifica turni
+
+---
+
+## PRINCIPIO GUIDA
+
+La Home deve diventare:
+
+👉 la porta d'ingresso della vita reale della famiglia
+
+non della famiglia Matteo-Chiara-Alice.

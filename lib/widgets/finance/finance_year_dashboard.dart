@@ -109,22 +109,15 @@ class _FinanceYearDashboardState extends State<FinanceYearDashboard> {
               late final Color color;
               late final String label;
 
-              switch (projection.saturation) {
-                case FinanceMonthSaturation.low:
-                  color = const Color(0xFF43A047);
-                  label = "Respira";
-
-                case FinanceMonthSaturation.medium:
-                  color = const Color(0xFFFFB300);
-                  label = "Denso";
-
-                case FinanceMonthSaturation.high:
-                  color = const Color(0xFFFB8C00);
-                  label = "Saturo";
-
-                case FinanceMonthSaturation.critical:
-                  color = const Color(0xFFE53935);
-                  label = "Critico";
+              if (projection.expectedMargin < 0) {
+                color = const Color(0xFFE53935);
+                label = "Soffre";
+              } else if (projection.expectedMargin <= 200) {
+                color = const Color(0xFFFFB300);
+                label = "Attenzione";
+              } else {
+                color = const Color(0xFF43A047);
+                label = "Respira";
               }
 
               return InkWell(

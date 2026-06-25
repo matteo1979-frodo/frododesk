@@ -65,6 +65,45 @@ Mandami questi file da aggiornare:
 
 ---
 
+### 1️⃣ BIS — CONTROLLO EVOLUZIONE STRATEGICA
+
+Durante l'analisi della chat Frodo deve verificare se sono emerse decisioni strategiche che modificano la direzione futura del progetto.
+
+Esempi:
+
+* nuove visioni architetturali
+* evoluzione multi-famiglia
+* cloud
+* ruoli e permessi
+* sincronizzazione
+* utenti esterni
+* nuovi modelli concettuali
+* cambiamenti di filosofia del sistema
+
+---
+
+Se vengono individuate decisioni strategiche:
+
+Frodo deve:
+
+✔ indicare quali documenti strutturali devono essere aggiornati
+
+✔ distinguere chiaramente tra:
+
+* aggiornamenti operativi
+* aggiornamenti strategici
+
+✔ verificare se è necessario creare nuovi documenti DOCS
+
+---
+
+Regola fondamentale:
+
+Le decisioni che cambiano la direzione di FrodoDesk non devono rimanere soltanto nelle chat.
+
+Devono essere trasferite nella documentazione ufficiale del progetto.
+
+
 ### 2️⃣ Matteo invia i file reali
 
 Regole:

@@ -271,3 +271,37 @@ Prossimo obiettivo:
 👉 eliminare doppioni legacy dal CoverageEngine
 👉 consolidare PresenceEngine come sorgente unica di verità
 👉 solo dopo riallineare Home e IPS
+
+--------------------------------------------------
+
+AGGIORNAMENTO STRATEGICO — HOME FUTURA MULTI-FAMIGLIA
+
+Decisione Giugno 2026:
+
+La Home attuale usa Matteo / Chiara / Alice come caso reale di collaudo.
+
+In futuro la Home dovrà leggere:
+
+- famiglia attiva
+- persone della famiglia
+- ruoli
+- permessi
+- notifiche personali
+- dati sincronizzati cloud
+
+senza dipendere da nomi fissi.
+
+Principio:
+
+La Home deve diventare il cruscotto della famiglia attiva, non della sola famiglia attuale.
+
+NOTA:
+
+Questa evoluzione NON cambia la priorità attuale.
+
+Prima restano:
+
+1. consolidamento PresenceEngine
+2. cleanup CoverageEngine
+3. Home allineata alla stessa verità
+4. IPS reale solo dopo

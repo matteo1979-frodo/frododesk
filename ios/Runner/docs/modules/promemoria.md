@@ -81,3 +81,81 @@ La decisione resta umana
 - etichetta "non fatto da ieri"
 - priorità promemoria
 - collegamento IPS (pressione operativa)
+
+---
+
+# 🌍 EVOLUZIONE STRUTTURALE — PROMEMORIA MULTI FAMIGLIA
+
+## PRINCIPIO
+
+Il modulo Promemoria non deve dipendere da persone predefinite.
+
+I nomi:
+
+- Matteo
+- Chiara
+- Alice
+
+devono essere considerati esempi della famiglia attuale.
+
+---
+
+## DIREZIONE FUTURA
+
+Ogni promemoria dovrà poter essere associato a:
+
+- una persona
+- più persone
+- l'intera famiglia
+
+indipendentemente dai nomi utilizzati.
+
+---
+
+## ESEMPI FUTURI
+
+- Comprare quaderni → Figlio 1
+- Visita dentista → Figlio 2
+- Pagare assicurazione → Matteo
+- Riunione scuola → Chiara
+- Prenotare vacanze → Famiglia
+
+---
+
+## CLOUD
+
+I promemoria dovranno essere sincronizzati automaticamente tra:
+
+- PC
+- telefono
+- tablet
+
+utilizzando la stessa sorgente dati condivisa.
+
+---
+
+## NOTIFICHE FUTURE
+
+Ogni membro della famiglia potrà scegliere quali promemoria ricevere.
+
+Esempi:
+
+✔ solo propri
+
+✔ propri + famiglia
+
+✔ tutti
+
+---
+
+## NOTA
+
+Questa evoluzione NON è prioritaria nella fase attuale.
+
+Priorità attuale:
+
+✔ stabilizzazione calendario reale
+✔ consolidamento moduli esistenti
+✔ utilizzo quotidiano del sistema
+
+La trasformazione multi-famiglia verrà affrontata successivamente.

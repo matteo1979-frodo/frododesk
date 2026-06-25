@@ -1283,3 +1283,176 @@ Se una modifica coinvolge una sezione complessa del progetto, Frodo deve prima a
 Principio operativo:
 
 👉 prima capire, poi modificare.
+
+---
+
+# 🔴 NUOVA REGOLA STRUTTURALE — IDENTITÀ FAMIGLIA
+
+## PRINCIPIO
+
+FrodoDesk NON deve essere costruito attorno a:
+
+- Matteo
+- Chiara
+- Alice
+
+come nomi fissi nel sistema.
+
+Questi sono i dati della famiglia laboratorio.
+
+---
+
+## REGOLA
+
+Ogni installazione FrodoDesk deve poter creare:
+
+✔ la propria famiglia
+
+✔ le proprie persone
+
+✔ i propri ruoli
+
+✔ le proprie regole
+
+---
+
+## ESEMPI
+
+Famiglia Rossi
+
+- Marco
+- Sara
+- Luca
+
+Famiglia Bianchi
+
+- Paolo
+- Elena
+- Giulia
+
+Devono poter utilizzare lo stesso sistema senza modifiche al codice.
+
+---
+
+# 🔴 NUOVA REGOLA — MULTI DISPOSITIVO
+
+## PRINCIPIO
+
+La verità del sistema deve essere unica.
+
+Una modifica effettuata da:
+
+- PC
+- telefono
+- tablet
+
+deve comparire automaticamente sugli altri dispositivi autorizzati.
+
+---
+
+## OBIETTIVO
+
+Evitare:
+
+❌ esportazioni manuali continue
+
+❌ copie divergenti
+
+❌ dati differenti tra dispositivi
+
+---
+
+# 🔴 NUOVA REGOLA — ACCOUNT E INVITI
+
+## PRINCIPIO
+
+L'accesso ad una famiglia deve essere controllato.
+
+Nessuna persona entra automaticamente.
+
+---
+
+## COMPORTAMENTO FUTURO
+
+Un amministratore può:
+
+✔ invitare persone
+
+✔ assegnare ruoli
+
+✔ limitare permessi
+
+✔ revocare accessi
+
+---
+
+# 🔴 NUOVA REGOLA — RUOLI
+
+Ruoli previsti:
+
+✔ amministratore
+
+✔ adulto
+
+✔ figlio
+
+✔ supporto
+
+✔ collaboratore esterno
+
+---
+
+## ESEMPIO
+
+Sandra può:
+
+✔ avere la propria famiglia FrodoDesk
+
+✔ accedere alla famiglia Matteo
+
+ma solo alle aree autorizzate.
+
+---
+
+# 🔴 NUOVA REGOLA — ACCESSI PARZIALI
+
+Una persona esterna non deve vedere automaticamente tutto.
+
+L'amministratore decide:
+
+✔ cosa può vedere
+
+✔ cosa può modificare
+
+✔ quali notifiche riceve
+
+---
+
+# 🔴 NUOVA REGOLA — EVENTI ESTERNI
+
+In futuro soggetti esterni autorizzati potranno proporre eventi.
+
+Esempi:
+
+- allenatori
+- scuole
+- associazioni
+- babysitter
+
+---
+
+## PRINCIPIO
+
+L'evento proposto NON diventa automatico.
+
+La famiglia mantiene sempre il controllo finale.
+
+---
+
+# 🔴 NUOVA REGOLA FONDAMENTALE
+
+Anche nel sistema multi-famiglia resta valida la regola storica:
+
+👉 il sistema suggerisce
+
+👉 la decisione resta sempre umana

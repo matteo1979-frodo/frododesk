@@ -33,6 +33,123 @@ la cartella `logic` contiene sia i motori del sistema sia gli store che gestisco
 
 ---
 
+# NUOVA DIREZIONE ARCHITETTURALE — MULTI FAMIGLIA
+
+## DECISIONE UFFICIALE (GIUGNO 2026)
+
+FrodoDesk non viene più considerato esclusivamente il sistema della famiglia attuale.
+
+La famiglia:
+
+* Matteo
+* Chiara
+* Alice
+
+rappresenta il primo caso reale di utilizzo e collaudo.
+
+L'architettura futura dovrà supportare qualsiasi famiglia senza modifiche strutturali.
+
+---
+
+## PRINCIPIO
+
+I motori del sistema non devono dipendere da:
+
+* nomi specifici
+* persone specifiche
+* strutture familiari fisse
+
+Devono lavorare tramite:
+
+* persone
+* ruoli
+* relazioni
+* permessi
+
+---
+
+## EVOLUZIONE PREVISTA
+
+Direzione futura:
+
+Famiglia
+↓
+Persone
+↓
+Ruoli
+↓
+Motori
+
+E NON:
+
+Matteo
+↓
+Chiara
+↓
+Alice
+↓
+Logiche dedicate
+
+---
+
+## CLOUD
+
+L'architettura dovrà prevedere una futura sorgente dati condivisa.
+
+Obiettivo:
+
+* PC
+* telefono
+* tablet
+
+devono leggere gli stessi dati.
+
+La sincronizzazione sostituirà le attuali procedure manuali di esportazione/importazione.
+
+---
+
+## RUOLI FUTURI
+
+L'architettura dovrà supportare:
+
+### Amministratore
+
+* gestione famiglia
+* gestione utenti
+* gestione permessi
+
+### Adulto
+
+* utilizzo moduli autorizzati
+
+### Accesso limitato
+
+* accesso parziale ai moduli
+
+### Utente esterno autorizzato
+
+* accesso limitato a specifiche aree
+
+Esempi:
+
+* babysitter
+* allenatore
+* insegnante
+* commercialista
+
+---
+
+## OBIETTIVO
+
+Trasformare progressivamente FrodoDesk da:
+
+"sistema reale della famiglia attuale"
+
+a:
+
+"motore universale di organizzazione della vita familiare".
+
+
 # MODELS
 
 I models rappresentano le strutture dati del sistema.

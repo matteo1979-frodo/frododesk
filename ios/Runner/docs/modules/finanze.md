@@ -1398,3 +1398,112 @@ senza rompere la separazione strutturale tra:
 Principio confermato:
 
 👉 una sola verità economica reale, molte letture e interpretazioni del sistema.
+
+---
+
+# 🌍 EVOLUZIONE STRUTTURALE FUTURA — FAMIGLIE, CLOUD E PERMESSI
+
+## PRINCIPIO
+
+Il modulo Finanze dovrà evolvere da:
+
+👉 finanze della famiglia attuale
+
+verso:
+
+👉 motore economico universale per qualsiasi famiglia.
+
+---
+
+## MULTI FAMIGLIA
+
+Ogni famiglia deve possedere:
+
+- propri conti
+- propri fondi
+- proprie ricorrenze
+- proprie simulazioni
+- propria pressione economica
+
+senza alcuna condivisione automatica con altre famiglie.
+
+---
+
+## CLOUD
+
+Le finanze devono poter essere utilizzate contemporaneamente da:
+
+- PC
+- telefono
+- tablet
+
+leggendo sempre gli stessi dati.
+
+Il cloud rappresenta la futura sorgente unica di verità.
+
+---
+
+## RUOLI E PERMESSI
+
+Non tutti i membri della famiglia devono avere gli stessi poteri.
+
+Esempio:
+
+### Amministratore
+
+Può:
+
+✔ creare conti
+✔ eliminare conti
+✔ modificare struttura economica
+✔ gestire accessi
+
+### Membro Adulto
+
+Può:
+
+✔ aggiungere spese
+✔ aggiungere entrate
+✔ utilizzare i moduli economici autorizzati
+
+ma NON può:
+
+❌ eliminare conti
+❌ modificare struttura economica
+❌ modificare permessi famiglia
+
+---
+
+## ACCESSI ESTERNI FUTURI
+
+Il sistema dovrà permettere accessi limitati a persone esterne.
+
+Esempi:
+
+- commercialista
+- consulente
+- familiare delegato
+
+tramite autorizzazioni specifiche.
+
+---
+
+## PRINCIPIO COLLABORATIVO
+
+La modifica strutturale dei dati economici deve restare protetta.
+
+Le attività quotidiane devono invece poter essere condivise tra i membri autorizzati della famiglia.
+
+---
+
+## NOTA
+
+Questa evoluzione NON modifica le priorità attuali.
+
+Priorità attuale:
+
+✔ consolidamento H3.5 vita reale
+✔ test del motore economico reale
+✔ stabilizzazione modulo Spese
+
+La trasformazione cloud e multi-famiglia verrà affrontata in una fase successiva.

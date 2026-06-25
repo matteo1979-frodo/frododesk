@@ -353,3 +353,163 @@ Prossimo step ufficiale:
 ✔ test reale completato
 ✔ sync UI ↔ companion funzionante
 ✔ lifecycle coerente
+
+---
+
+# 🌍 EVOLUZIONE STRUTTURALE — UI MULTI FAMIGLIA
+
+## DECISIONE UFFICIALE (GIUGNO 2026)
+
+La UI attuale è stata costruita utilizzando la famiglia:
+
+- Matteo
+- Chiara
+- Alice
+
+come caso reale di utilizzo.
+
+Questi nomi NON devono essere considerati elementi strutturali della UI.
+
+---
+
+## PRINCIPIO
+
+La UI deve rappresentare:
+
+👉 la realtà della famiglia attiva
+
+e NON una famiglia specifica.
+
+---
+
+## STRUTTURA FUTURA
+
+Ogni famiglia dovrà poter:
+
+✔ creare i propri membri
+
+✔ definire i propri ruoli
+
+✔ configurare la propria realtà
+
+senza modifiche alla UI.
+
+---
+
+## ESEMPI FUTURI
+
+La UI dovrà poter rappresentare correttamente:
+
+- coppia senza figli
+- famiglia con 1 figlio
+- famiglia con 4 figli
+- famiglia con anziani
+- famiglia con caregiver
+- famiglia con supporti esterni
+
+utilizzando la stessa struttura.
+
+---
+
+## EVENTI PERSONA
+
+L'attuale blocco:
+
+"ALICE / SCUOLA"
+
+deve essere considerato il primo prototipo di un futuro sistema più generale.
+
+Direzione futura:
+
+👉 Eventi Persona
+
+dove ogni persona della famiglia può avere:
+
+- scuola
+- sport
+- visite
+- lavoro
+- attività
+- impegni
+
+senza dipendere dal nome Alice.
+
+---
+
+## CLOUD
+
+La UI dovrà funzionare in modo identico su:
+
+- PC
+- telefono
+- tablet
+
+leggendo sempre la stessa sorgente dati condivisa.
+
+---
+
+## NOTIFICHE FUTURE
+
+La UI diventerà il punto di arrivo delle notifiche provenienti dai vari moduli.
+
+Esempi:
+
+✔ modifica turno
+
+✔ modifica copertura
+
+✔ nuovo evento
+
+✔ modifica evento
+
+✔ nuova attività figlio
+
+✔ richiesta proveniente da utenti esterni autorizzati
+
+---
+
+## ACCESSI FUTURI
+
+La UI dovrà adattarsi automaticamente ai permessi dell'utente.
+
+Esempio:
+
+### Amministratore
+
+vede tutte le funzioni
+
+### Adulto
+
+vede solo le funzioni autorizzate
+
+### Accesso limitato
+
+vede soltanto i moduli consentiti
+
+---
+
+## FILOSOFIA
+
+La UI non deve essere costruita per Matteo.
+
+La UI non deve essere costruita per Alice.
+
+La UI deve essere costruita per rappresentare la vita reale di qualsiasi famiglia.
+
+---
+
+## NOTA
+
+Questa evoluzione NON modifica le priorità attuali.
+
+Priorità attuale:
+
+✔ completamento calendario reale
+
+✔ consolidamento PresenceEngine
+
+✔ test vita reale quotidiana
+
+✔ stabilizzazione moduli esistenti
+
+La trasformazione cloud e multi-famiglia verrà affrontata in una fase successiva.

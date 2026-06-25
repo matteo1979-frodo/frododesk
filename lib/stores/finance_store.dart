@@ -1439,6 +1439,11 @@ class FinanceStore {
       );
 
       final currentMonth = DateTime(month.year, month.month, 1);
+      
+      if (item.confirmed) {
+        return firstDueMonth.year == currentMonth.year &&
+            firstDueMonth.month == currentMonth.month;
+      }
 
       if (currentMonth.year < firstDueMonth.year ||
           (currentMonth.year == firstDueMonth.year &&

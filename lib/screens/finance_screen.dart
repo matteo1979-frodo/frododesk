@@ -1035,6 +1035,8 @@ class _FinanceScreenState extends State<FinanceScreen> {
     FinancePaymentOwner selectedOwner =
         existing?.paymentOwner ?? FinancePaymentOwner.shared;
 
+    FinanceSubject selectedSubject = existing?.subject ?? FinanceSubject.shared;
+
     FinancePaymentMethod selectedPaymentMethod =
         existing?.paymentMethod ?? FinancePaymentMethod.manual;
 
@@ -1205,6 +1207,37 @@ class _FinanceScreenState extends State<FinanceScreen> {
                 },
               ),
               const SizedBox(height: 12),
+
+              DropdownButtonFormField<FinanceSubject>(
+                value: selectedSubject,
+                decoration: _inputDecoration("Di chi è"),
+                items: const [
+                  DropdownMenuItem(
+                    value: FinanceSubject.matteo,
+                    child: Text("Matteo"),
+                  ),
+                  DropdownMenuItem(
+                    value: FinanceSubject.chiara,
+                    child: Text("Chiara"),
+                  ),
+                  DropdownMenuItem(
+                    value: FinanceSubject.alice,
+                    child: Text("Alice"),
+                  ),
+                  DropdownMenuItem(
+                    value: FinanceSubject.shared,
+                    child: Text("Condiviso"),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value == null) return;
+
+                  refreshDialog(() {
+                    selectedSubject = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 12),
               DropdownButtonFormField<FinancePaymentMethod>(
                 value: selectedPaymentMethod,
                 decoration: _inputDecoration("Metodo pagamento"),
@@ -1307,6 +1340,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                           : FinancePaymentPriority.high,
                       protectionLevel: FinanceProtectionLevel.none,
                       paymentOwner: selectedOwner,
+                      subject: selectedSubject,
                       balanceId: selectedBalanceId,
                       paymentMethod: selectedPaymentMethod,
                       stability: FinanceStability.stable,

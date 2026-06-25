@@ -355,3 +355,164 @@ e diventare:
 ✔ consumatore PresenceEngine
 ✔ motore buchi
 ✔ NON proprietario presenza Alice
+
+---
+
+# 🌍 AGGIORNAMENTO STRATEGICO — PERSONE VIVE UNIVERSALI
+
+Decisione Giugno 2026:
+
+Il concetto di "Persone vive" non riguarda più solo Alice, Matteo e Chiara.
+
+Diventa una delle basi strutturali future di FrodoDesk.
+
+---
+
+## PRINCIPIO
+
+Ogni persona del sistema dovrà esistere come entità reale, configurabile e indipendente dai nomi attuali.
+
+La famiglia attuale:
+
+- Matteo
+- Chiara
+- Alice
+
+è il primo caso reale di collaudo.
+
+Non è la struttura definitiva del sistema.
+
+---
+
+## MODELLO FUTURO
+
+FrodoDesk dovrà permettere a ogni famiglia di creare le proprie persone.
+
+Esempi:
+
+- genitore
+- figlio
+- nonno
+- babysitter
+- caregiver
+- supporto esterno
+- allenatore
+- insegnante
+- consulente
+
+Ogni persona potrà avere:
+
+- profilo
+- ruolo
+- relazioni
+- disponibilità
+- permessi
+- presenza reale
+- eventi collegati
+
+---
+
+## PERSONE E CONTESTI MULTIPLI
+
+Una persona potrà appartenere a più contesti.
+
+Esempio:
+
+Sandra può avere:
+
+- il proprio FrodoDesk familiare
+- accesso limitato alla famiglia Matteo
+
+ma solo per i moduli autorizzati.
+
+Esempio autorizzazione:
+
+✔ copertura Alice
+
+❌ finanze
+
+❌ spese
+
+❌ dati privati
+
+---
+
+## ACCESSI E PROPOSTE
+
+Gli utenti esterni autorizzati non devono necessariamente modificare direttamente i dati della famiglia.
+
+Possono proporre modifiche.
+
+Esempi:
+
+- Sandra propone disponibilità fino alle 18:00
+- Allenatore propone spostamento allenamento
+- Insegnante propone modifica attività
+- Supporto familiare propone disponibilità
+
+L'amministratore o il membro autorizzato della famiglia può:
+
+✔ accettare
+
+✔ rifiutare
+
+✔ valutare l'impatto su calendario, copertura e conflitti
+
+---
+
+## COORDINAMENTO TRA FAMIGLIE
+
+FrodoDesk potrà evolvere da semplice sistema familiare a sistema di coordinamento della vita reale.
+
+Esempio:
+
+Allenatore modifica allenamento:
+
+- prima: martedì e giovedì 16:00–18:00
+- dopo: mercoledì 17:00–19:00
+
+Le famiglie autorizzate ricevono la proposta.
+
+Ogni famiglia può accettare.
+
+Il sistema verifica automaticamente:
+
+- calendario
+- copertura
+- turni
+- conflitti
+- disponibilità adulti
+
+L'organizzatore vede lo stato:
+
+- confermato
+- in attesa
+- problema logistico
+
+senza vedere i dati privati della famiglia.
+
+---
+
+## FILOSOFIA
+
+FrodoDesk non deve diventare solo un calendario.
+
+Deve diventare progressivamente:
+
+👉 un sistema di coordinamento della vita reale.
+
+La decisione resta sempre umana.
+
+Il sistema:
+
+✔ riceve proposte
+
+✔ valuta impatti
+
+✔ segnala problemi
+
+✔ protegge i dati privati
+
+✔ aiuta le famiglie a coordinarsi
+
+senza sostituirsi alle persone.
