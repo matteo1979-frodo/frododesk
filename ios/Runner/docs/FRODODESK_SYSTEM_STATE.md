@@ -1018,3 +1018,148 @@ Restano prioritarie:
 ✔ correzione comportamenti reali
 
 Solo dopo verrà avviata la trasformazione verso il modello multi-famiglia.
+
+---
+
+# OBSERVATION ENGINE — STATO ATTUALE
+
+━━━━━━━━━━━━━━━━━━
+
+## NUOVO PILASTRO ARCHITETTURALE
+
+🟢 AVVIATO
+
+Durante il consolidamento del modulo Spese è stata individuata una nuova architettura trasversale destinata a diventare uno dei pilastri di FrodoDesk.
+
+L'obiettivo non è più mostrare semplici dati.
+
+Il sistema deve produrre osservazioni intelligenti sulla vita della famiglia.
+
+---
+
+## STATO ATTUALE
+
+Creati:
+
+✔ `FrodoObservation`
+
+✔ `ObservationProvider`
+
+✔ `ObservationRegistry`
+
+✔ `ObservationEngine`
+
+✔ `FrodoDeskBootstrap`
+
+✔ primo provider reale:
+
+`SpeseObservationProvider`
+
+---
+
+## MODULO SPESE
+
+Il modulo Spese è diventato il primo modulo collegato al nuovo sistema osservazioni.
+
+È stato introdotto:
+
+`SpeseMonthReader`
+
+che produce osservazioni quali:
+
+✔ destinazione principale delle spese
+
+✔ categoria predominante
+
+✔ confronto col mese precedente
+
+✔ concentrazione temporale
+
+✔ volume movimenti
+
+✔ riepilogo economico del mese
+
+La schermata Spese mostra ora le osservazioni più importanti ed è predisposta per l'espansione futura ("Mostra tutte le analisi").
+
+---
+
+## OSSERVAZIONI
+
+Una osservazione rappresenta una interpretazione della situazione reale.
+
+Non è una notifica.
+
+Può essere:
+
+✔ attiva
+
+✔ risolta
+
+✔ ignorata
+
+✔ scaduta
+
+Ogni osservazione possiede:
+
+* livello
+* priorità
+* peso
+* categoria
+* stato
+* eventuale azione
+* collegamento al modulo sorgente
+
+---
+
+## PRINCIPIO OPERATIVO
+
+Ogni modulo dovrà produrre osservazioni tramite il proprio provider.
+
+Esempi previsti:
+
+* FinanceObservationProvider
+* CoverageObservationProvider
+* CalendarObservationProvider
+* HealthObservationProvider
+
+L'Observation Engine raccoglie tutte le osservazioni e decide quali siano le più rilevanti.
+
+La Home non dovrà più effettuare analisi autonome.
+
+---
+
+## NUOVA FILOSOFIA DEL SISTEMA
+
+Ogni osservazione nasce dalla risposta a una domanda reale.
+
+Esempi:
+
+* Alice è coperta?
+
+* Questo mese cosa ha caratterizzato le spese?
+
+* Il fondo auto è sufficiente?
+
+* C'è qualcosa che richiede attenzione?
+
+La progettazione futura dei moduli seguirà questo principio.
+
+Non verranno progettate semplici funzioni.
+
+Verranno progettate domande che FrodoDesk dovrà essere in grado di porsi autonomamente.
+
+---
+
+## STATO DI MATURITÀ
+
+🟡 FASE FONDATIVA
+
+Il framework architetturale dell'Observation Engine è stato creato.
+
+La fase successiva sarà:
+
+✔ completare il ciclo di vita delle osservazioni vive;
+
+✔ collegare progressivamente tutti i moduli al nuovo sistema;
+
+✔ trasformare la Home nel punto di aggregazione delle osservazioni dell'intero ecosistema FrodoDesk.

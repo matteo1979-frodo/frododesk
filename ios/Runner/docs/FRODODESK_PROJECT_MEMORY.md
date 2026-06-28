@@ -1001,3 +1001,195 @@ a
 ✔ ecosistema di coordinamento della vita reale
 
 mantenendo privacy, autonomia e controllo delle decisioni.
+
+---
+
+# OSSERVATION ENGINE — NASCITA DEL CERVELLO DI FRODODESK (GIUGNO 2026)
+
+━━━━━━━━━━━━━━━━━━
+
+Durante il consolidamento del modulo Spese è emersa una delle evoluzioni architetturali più importanti dell'intero progetto.
+
+Il sistema ha superato il concetto di semplice lettura dei dati.
+
+Da questo momento FrodoDesk inizia a costruire un vero motore di osservazione della vita familiare.
+
+---
+
+## CAMBIO DI FILOSOFIA
+
+Il progetto evolve da:
+
+❌ moduli che mostrano dati
+
+a
+
+✔ moduli che osservano la realtà.
+
+Ogni modulo non produce più semplici statistiche o riepiloghi.
+
+Produce osservazioni intelligenti.
+
+---
+
+## NASCE IL CONCETTO DI OSSERVAZIONE
+
+Viene introdotto il modello strutturale:
+
+**FrodoObservation**
+
+Una osservazione rappresenta qualcosa che FrodoDesk ha compreso osservando la realtà della famiglia.
+
+Non è una notifica.
+
+Non è un messaggio.
+
+È una interpretazione.
+
+---
+
+## OSSERVAZIONI VIVE
+
+Durante la progettazione viene presa una decisione fondamentale.
+
+Le osservazioni non sono oggetti statici.
+
+Sono oggetti vivi.
+
+Possono:
+
+✔ nascere
+
+✔ evolvere
+
+✔ aggiornarsi
+
+✔ risolversi
+
+✔ essere ignorate
+
+✔ scadere
+
+L'obiettivo è evitare la proliferazione di notifiche duplicate.
+
+La stessa osservazione deve poter accompagnare l'evoluzione della situazione reale.
+
+---
+
+## IL PRINCIPIO DELLE DOMANDE
+
+Nasce una nuova filosofia progettuale.
+
+Ogni osservazione nasce dalla risposta ad una domanda.
+
+Esempi:
+
+* Alice è coperta?
+
+* Questo mese cosa ha caratterizzato le spese?
+
+* Il fondo auto è sufficiente?
+
+* C'è qualcosa che richiede attenzione?
+
+Il progetto non verrà più guidato esclusivamente dalle funzionalità.
+
+Verrà guidato dalle domande che FrodoDesk deve essere capace di porsi osservando la vita della famiglia.
+
+---
+
+## NASCE L'OBSERVATION ENGINE
+
+Viene progettato un nuovo motore centrale.
+
+Responsabilità:
+
+✔ raccogliere osservazioni
+
+✔ ordinarle
+
+✔ filtrarle
+
+✔ gestire il loro ciclo di vita
+
+✔ consegnare alla Home solo ciò che è realmente importante.
+
+La Home perde progressivamente ogni responsabilità di analisi.
+
+Diventa un semplice consumatore delle osservazioni prodotte dai motori.
+
+---
+
+## OBSERVATION PROVIDER
+
+Ogni modulo dovrà produrre osservazioni attraverso un proprio provider.
+
+Primo caso reale implementato:
+
+SpeseObservationProvider
+
+In futuro:
+
+* FinanceObservationProvider
+
+* CoverageObservationProvider
+
+* CalendarObservationProvider
+
+* HealthObservationProvider
+
+L'Observation Engine non dovrà conoscere direttamente i singoli moduli.
+
+---
+
+## BOOTSTRAP
+
+Durante questa fase viene introdotto anche il concetto di bootstrap centrale.
+
+Il progetto non dovrà più inizializzare i motori in punti differenti.
+
+La nascita dell'applicazione dovrà passare da un unico punto di avvio.
+
+---
+
+## NUOVA IDENTITÀ DI FRODODESK
+
+Durante questa riunione emerge una nuova definizione del progetto.
+
+FrodoDesk non è un insieme di moduli.
+
+È un insieme di motori che osservano aspetti differenti della vita familiare.
+
+Ogni motore interpreta una parte della realtà.
+
+L'Observation Engine unisce queste interpretazioni.
+
+---
+
+## PILASTRI DEL SISTEMA
+
+Con questa evoluzione vengono riconosciuti come pilastri architetturali del progetto:
+
+* Presence Engine
+
+* Coverage Engine
+
+* Finance Engine
+
+* Observation Engine
+
+* Bootstrap
+
+Questi rappresentano il telaio sul quale dovrà evolvere tutto FrodoDesk.
+
+---
+
+## FRASE GUIDA
+
+FrodoDesk non registra la vita.
+
+La osserva.
+
+La comprende.
+
+E restituisce soltanto ciò che conta davvero.

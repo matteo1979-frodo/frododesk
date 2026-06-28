@@ -6,11 +6,14 @@ import 'package:intl/intl.dart';
 import '../models/finance_category_template.dart';
 import '../models/finance_month_projection.dart';
 import '../models/finance_recurring_item.dart';
+import '../models/frodo_observation.dart';
 import '../stores/finance_store.dart';
 import '../widgets/finance/finance_info_card.dart';
 import '../widgets/finance/finance_month_detail_dialog.dart';
 import '../widgets/finance/finance_year_dashboard.dart';
 import 'person_finance_screen.dart';
+import '../core/frododesk_bootstrap.dart';
+import '../engines/observation/observation_engine.dart';
 
 class FinanceScreen extends StatefulWidget {
   final FinanceStore financeStore;
@@ -29,6 +32,13 @@ class _FinanceScreenState extends State<FinanceScreen> {
     final pastItems = financeStore.pastRecurringItems();
     final presentItems = financeStore.presentRecurringItems();
     final futureItems = financeStore.futureRecurringItems();
+
+    FrodoDeskBootstrap.initialize(
+      expenses: const [],
+      financeStore: financeStore,
+    );
+
+    final financeObservations = ObservationEngine.collectForModule('finance');
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F1D12),
@@ -53,7 +63,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
                   children: [
-                    _buildFrodoControlCard(),
+                    _buildFrodoControlCard(financeObservations),
                     const SizedBox(height: 18),
                     _buildMainNumbers(),
                     const SizedBox(height: 18),
@@ -82,15 +92,22 @@ class _FinanceScreenState extends State<FinanceScreen> {
     );
   }
 
-  Widget _buildFrodoControlCard() {
+  Widget _buildFrodoControlCard(List<FrodoObservation> financeObservations) {
     final nextItems = [
       ...financeStore.presentRecurringItems(),
       ...financeStore.futureRecurringItems(),
     ]..sort((a, b) => a.nextDueDate.compareTo(b.nextDueDate));
 
     String message = "Nessuna criticità evidente nei prossimi giorni.";
+    final firstObservation = financeObservations.isNotEmpty
+        ? financeObservations.first
+        : null;
 
-    if (nextItems.isNotEmpty) {
+    if (firstObservation != null) {
+      message = firstObservation.message;
+    }
+
+    if (firstObservation == null && nextItems.isNotEmpty) {
       final first = nextItems.first;
       final sign = first.isIncome ? "+" : "-";
 
@@ -138,24 +155,26 @@ class _FinanceScreenState extends State<FinanceScreen> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.18),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white.withOpacity(0.12)),
-                  ),
-                  child: Text(
-                    "FrodoDesk non è collegato alla banca: i saldi sono affidabili solo se aggiorni movimenti, entrate e uscite reali.",
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.78),
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                      height: 1.25,
+                if (nextItems.isNotEmpty) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.white.withOpacity(0.12)),
+                    ),
+                    child: Text(
+                      "Prossima scadenza: ${_formatDate(nextItems.first.nextDueDate)} • ${nextItems.first.name} • ${nextItems.first.isIncome ? "+" : "-"}€${nextItems.first.expectedAmount.toStringAsFixed(0)}",
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.78),
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ),

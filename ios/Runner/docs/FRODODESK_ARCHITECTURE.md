@@ -473,3 +473,241 @@ Continuare la pulizia progressiva di CoverageEngine:
 ⬜ valutare spostamento tagli temporali  
 ⬜ solo dopo collegare Home direttamente alla stessa verità  
 ⬜ IPS solo dopo consolidamento completo  
+
+---
+
+# 🔄 AGGIORNAMENTO GIUGNO 2026
+
+# OBSERVATION ENGINE — NUOVO PILASTRO ARCHITETTURALE
+
+## PRINCIPIO
+
+FrodoDesk non deve limitarsi a registrare dati.
+
+FrodoDesk deve:
+
+✔ osservare
+✔ interpretare
+✔ ordinare
+✔ raccontare
+✔ aiutare a decidere
+
+---
+
+# NUOVO CONCETTO CENTRALE
+
+È stato introdotto il concetto di:
+
+## `FrodoObservation`
+
+Una osservazione non è una notifica.
+
+È un oggetto vivo che rappresenta qualcosa che FrodoDesk ha capito dalla vita reale della famiglia.
+
+---
+
+# OSSERVAZIONI VIVE
+
+Una osservazione può essere:
+
+* attiva
+* risolta
+* ignorata
+* scaduta
+
+Può avere:
+
+* priorità
+* peso
+* livello
+* categoria
+* motivazione
+* scadenza
+* azione collegata
+* tag
+* collegamento al modulo sorgente
+
+---
+
+# LIVELLI OSSERVAZIONE
+
+Livelli ufficiali:
+
+* info
+* attention
+* problem
+* opportunity
+* success
+
+---
+
+# NUOVI COMPONENTI ARCHITETTURALI
+
+Creati:
+
+```text
+lib/models/frodo_observation.dart
+lib/engines/observation/observation_engine.dart
+lib/engines/observation/observation_provider.dart
+lib/engines/observation/observation_registry.dart
+lib/engines/observation/modules/spese_observation_provider.dart
+lib/core/frododesk_bootstrap.dart
+```
+
+---
+
+# OBSERVATION ENGINE
+
+Responsabilità iniziali:
+
+✔ raccogliere osservazioni dai provider registrati
+✔ filtrare osservazioni attive
+✔ ignorare osservazioni scadute
+✔ ordinare per livello, priorità e peso
+✔ selezionare le osservazioni migliori per la Home
+
+---
+
+# OBSERVATION PROVIDER
+
+Ogni modulo futuro potrà produrre osservazioni tramite un provider.
+
+Esempi previsti:
+
+```text
+SpeseObservationProvider
+FinanceObservationProvider
+CoverageObservationProvider
+CalendarObservationProvider
+HealthObservationProvider
+```
+
+Il motore centrale non deve conoscere direttamente i singoli moduli.
+
+---
+
+# OBSERVATION REGISTRY
+
+È stato introdotto un registro centrale dei provider.
+
+Principio:
+
+```text
+Modulo
+↓
+Provider
+↓
+ObservationRegistry
+↓
+ObservationEngine
+↓
+Home / Dashboard / Moduli
+```
+
+---
+
+# BOOTSTRAP
+
+È stato introdotto il concetto di bootstrap centrale:
+
+```text
+FrodoDeskBootstrap
+```
+
+Responsabilità:
+
+✔ inizializzare registri
+✔ registrare provider
+✔ preparare i motori centrali
+✔ evitare inizializzazioni sparse nel progetto
+
+---
+
+# MODULO SPESE COME PRIMO CASO REALE
+
+Il modulo Spese è il primo modulo collegato al nuovo sistema osservazioni.
+
+Creato:
+
+```text
+SpeseMonthReader
+SpeseObservationProvider
+```
+
+Il modulo Spese ora può produrre osservazioni come:
+
+* destinazione principale delle spese
+* categoria più pesante
+* confronto con mese precedente
+* concentrazione temporale delle spese
+* volume movimenti registrati
+* totale mese
+
+---
+
+# NUOVO PRINCIPIO ARCHITETTURALE
+
+La Home NON deve analizzare.
+
+La Home deve leggere osservazioni già prodotte dai motori.
+
+Principio corretto:
+
+```text
+Motori reali
+↓
+ObservationProvider
+↓
+ObservationEngine
+↓
+Home
+```
+
+E NON:
+
+```text
+Home
+↓
+logiche proprie
+↓
+interpretazioni duplicate
+```
+
+---
+
+# PRINCIPIO DELLE DOMANDE
+
+Ogni osservazione nasce dalla risposta a una domanda reale.
+
+Esempi:
+
+* Alice è coperta?
+* Questo mese cosa ha pesato di più?
+* Il fondo auto è sufficiente?
+* Ci sono anomalie?
+* La famiglia sta migliorando o peggiorando?
+* Cosa richiede attenzione oggi?
+
+Da ora FrodoDesk non deve progettare solo funzioni.
+
+Deve progettare domande utili alla vita reale.
+
+---
+
+# SIGNIFICATO STRUTTURALE
+
+L’Observation Engine diventa un nuovo pilastro di FrodoDesk insieme a:
+
+* Coverage Engine
+* Finance Engine
+* Presence Engine
+* Persistence / Bootstrap
+* Observation Engine
+
+---
+
+# FRASE GUIDA
+
+FrodoDesk non registra la vita.
+
+La osserva, la comprende e la restituisce in forma utile.

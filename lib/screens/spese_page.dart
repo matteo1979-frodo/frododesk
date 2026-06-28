@@ -5,8 +5,12 @@ import '../stores/finance_store.dart';
 import '../stores/expense_store.dart';
 import '../models/real_expense.dart';
 import '../models/finance_recurring_item.dart';
+import '../models/frodo_observation.dart';
 import '../stores/expense_category_store.dart';
 import '../stores/cash_wallet_store.dart';
+import '../logic/spese/spese_month_reader.dart';
+import '../core/frododesk_bootstrap.dart';
+import '../engines/observation/observation_engine.dart';
 
 class SpesePage extends StatefulWidget {
   final FinanceStore financeStore;
@@ -82,15 +86,23 @@ class _SpesePageState extends State<SpesePage> {
         .where((wallet) => wallet.active)
         .fold<double>(0, (sum, wallet) => sum + wallet.currentAmount);
 
-    String monthSummary;
+    final previousMonth = DateTime(now.year, now.month - 1, 1);
 
-    if (currentMonthExpenses.isEmpty) {
-      monthSummary =
-          "Nessun movimento registrato. Quando inizierai a inserire spese reali, qui FrodoDesk ti aiuterà a capire dove stanno andando i soldi.";
-    } else {
-      monthSummary =
-          "Hai registrato ${currentMonthExpenses.length} movimenti per un totale di €${currentMonthTotal.toStringAsFixed(0)}.";
-    }
+    final previousMonthExpenses = expenseStore.all.where((expense) {
+      return expense.date.year == previousMonth.year &&
+          expense.date.month == previousMonth.month;
+    }).toList();
+
+    FrodoDeskBootstrap.initialize(
+      expenses: expenseStore.all,
+      financeStore: widget.financeStore,
+    );
+
+    final monthObservations = ObservationEngine.collect()
+        .where((observation) => observation.module == 'spese')
+        .toList();
+
+    final monthSummary = monthObservations.first.message;
 
     final categoryTotals = <String, double>{};
 
@@ -148,7 +160,7 @@ class _SpesePageState extends State<SpesePage> {
                       cashWalletTotal: cashWalletTotal,
                     ),
                     const SizedBox(height: 16),
-                    _SpeseMonthStatusCard(summary: monthSummary),
+                    _SpeseMonthStatusCard(observations: monthObservations),
                     const SizedBox(height: 18),
                     const Text(
                       "Movimenti del mese corrente",
@@ -972,26 +984,28 @@ class _SpeseMainGrid extends StatelessWidget {
 }
 
 class _SpeseMonthStatusCard extends StatelessWidget {
-  final String summary;
+  final List<FrodoObservation> observations;
 
-  const _SpeseMonthStatusCard({required this.summary});
+  const _SpeseMonthStatusCard({required this.observations});
 
   @override
   Widget build(BuildContext context) {
+    final visibleObservations = observations.take(4).toList();
+
     return _SpeseGlassCard(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _SpeseIconBox(
+          const _SpeseIconBox(
             icon: Icons.psychology_alt_rounded,
             color: Color(0xFFFFD54F),
           ),
-          SizedBox(width: 14),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   "Lettura del mese",
                   style: TextStyle(
                     color: Colors.white,
@@ -999,16 +1013,75 @@ class _SpeseMonthStatusCard extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                SizedBox(height: 7),
-                Text(
-                  summary,
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    height: 1.35,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+                const SizedBox(height: 10),
+                ...visibleObservations.map(
+                  (observation) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      "• ${observation.message}",
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        height: 1.35,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
+                if (observations.length > visibleObservations.length) ...[
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (dialogContext) {
+                            return AlertDialog(
+                              title: const Text("Tutte le analisi"),
+                              content: SingleChildScrollView(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: observations.map((observation) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 12,
+                                      ),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            observation.title,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(observation.message),
+                                        ],
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(dialogContext).pop();
+                                  },
+                                  child: const Text("Chiudi"),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
+                      icon: const Icon(Icons.list_alt_rounded),
+                      label: const Text("Mostra tutte le analisi"),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

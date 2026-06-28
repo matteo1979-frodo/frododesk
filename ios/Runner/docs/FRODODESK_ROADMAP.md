@@ -1052,3 +1052,180 @@ Questo blocco NON è autorizzato prima di:
 Prima si consolida il laboratorio reale della famiglia.
 
 Solo dopo si valuta l'espansione all'ecosistema.
+
+---
+
+# BLOCCO O — OBSERVATION ENGINE
+
+🟡 FASE FONDATIVA AVVIATA
+
+## SIGNIFICATO
+
+Durante il consolidamento H3.5 emerge un nuovo pilastro architetturale.
+
+FrodoDesk evolve da sistema che mostra dati a sistema che interpreta la realtà.
+
+Nasce ufficialmente l'Observation Engine.
+
+---
+
+# O1 — FRAMEWORK OSSERVAZIONI
+
+🟢 COMPLETATO
+
+Realizzato:
+
+☑ `FrodoObservation`
+
+☑ `ObservationProvider`
+
+☑ `ObservationRegistry`
+
+☑ `ObservationEngine`
+
+☑ `FrodoDeskBootstrap`
+
+☑ primo provider reale (`SpeseObservationProvider`)
+
+---
+
+## OBIETTIVO
+
+Separare definitivamente:
+
+* produzione delle osservazioni;
+* selezione delle osservazioni;
+* visualizzazione delle osservazioni.
+
+La Home non dovrà più contenere logiche di analisi.
+
+---
+
+# O2 — OSSERVAZIONI VIVE
+
+🟡 IN PROGETTAZIONE
+
+Obiettivo:
+
+trasformare ogni osservazione in un oggetto persistente capace di evolvere.
+
+Funzionalità previste:
+
+⬜ nascita
+
+⬜ aggiornamento
+
+⬜ risoluzione automatica
+
+⬜ ignorato dall'utente
+
+⬜ scadenza
+
+⬜ sostituzione
+
+⬜ storico
+
+---
+
+# O3 — DOMANDE
+
+🟡 FASE CONCETTUALE
+
+Nuovo principio progettuale.
+
+Ogni osservazione nasce dalla risposta a una domanda.
+
+Esempi:
+
+☑ Alice è coperta?
+
+☑ Questo mese cosa ha caratterizzato le spese?
+
+☑ Il fondo auto è sufficiente?
+
+☑ C'è qualcosa che richiede attenzione?
+
+Da questo momento ogni nuova funzionalità dovrà essere riconducibile a una domanda reale della vita familiare.
+
+---
+
+# O4 — INTEGRAZIONE MODULI
+
+⬜ FinanceObservationProvider
+
+⬜ CoverageObservationProvider
+
+⬜ CalendarObservationProvider
+
+⬜ StatisticsObservationProvider
+
+⬜ HomeObservationProvider
+
+⬜ HealthObservationProvider
+
+Ogni modulo dovrà produrre osservazioni senza conoscere gli altri moduli.
+
+---
+
+# O5 — HOME INTELLIGENTE
+
+⬜ eliminazione logiche duplicate
+
+⬜ lettura esclusiva Observation Engine
+
+⬜ ordinamento globale
+
+⬜ priorità dinamica
+
+⬜ osservazioni principali
+
+⬜ pulsante "Mostra tutte le analisi"
+
+La Home diventerà il punto di lettura unificato dello stato della famiglia.
+
+---
+
+# O6 — CERVELLO DI FRODODESK
+
+⚠️ VISIONE STRATEGICA
+
+L'Observation Engine rappresenta il livello di ragionamento dell'intero sistema.
+
+I moduli non dialogano direttamente con la Home.
+
+Interpretano la propria area della realtà.
+
+L'Observation Engine raccoglie queste interpretazioni e restituisce una visione unica della situazione familiare.
+
+Principio consolidato:
+
+```
+Motori
+
+↓
+
+Observation Provider
+
+↓
+
+Observation Engine
+
+↓
+
+Home
+```
+
+---
+
+## POSIZIONE NELLA ROADMAP
+
+Il blocco O diventa uno dei rami principali del progetto insieme a:
+
+* Calendario / Presence
+* Coverage
+* Finanze
+* Spese
+* Observation Engine
+* Ecosistema Multi-Famiglia
+
+L'Observation Engine guiderà progressivamente l'evoluzione di tutti gli altri moduli.
