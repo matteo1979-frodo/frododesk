@@ -4,6 +4,18 @@ import 'observation_registry.dart';
 class ObservationEngine {
   static final Map<String, FrodoObservation> _memory = {};
 
+  static bool contains(String id) {
+    return _memory.containsKey(id);
+  }
+
+  static FrodoObservation? get(String id) {
+    return _memory[id];
+  }
+
+  static List<FrodoObservation> refresh({DateTime? now}) {
+    return collect(now: now);
+  }
+
   static List<FrodoObservation> collect({DateTime? now}) {
     final currentTime = now ?? DateTime.now();
     final observations = <FrodoObservation>[];
@@ -27,27 +39,19 @@ class ObservationEngine {
   }
 
   static List<FrodoObservation> collectForModule(String module) {
-    return collect()
+    final observations = refresh()
         .where((observation) => observation.module == module)
         .toList();
+
+    _sortObservations(observations);
+
+    return observations;
   }
 
   static List<FrodoObservation> selectForHome({int limit = 6}) {
-    final active = collect().where((o) => o.isActive).toList();
+    final active = refresh().where((o) => o.isActive).toList();
 
-    active.sort((a, b) {
-      final levelCompare = _levelWeight(
-        b.level,
-      ).compareTo(_levelWeight(a.level));
-
-      if (levelCompare != 0) return levelCompare;
-
-      final priorityCompare = b.priority.compareTo(a.priority);
-
-      if (priorityCompare != 0) return priorityCompare;
-
-      return b.weight.compareTo(a.weight);
-    });
+    _sortObservations(active);
 
     return active.take(limit).toList();
   }
@@ -77,6 +81,22 @@ class ObservationEngine {
     }
 
     return observation;
+  }
+
+  static void _sortObservations(List<FrodoObservation> observations) {
+    observations.sort((a, b) {
+      final levelCompare = _levelWeight(
+        b.level,
+      ).compareTo(_levelWeight(a.level));
+
+      if (levelCompare != 0) return levelCompare;
+
+      final priorityCompare = b.priority.compareTo(a.priority);
+
+      if (priorityCompare != 0) return priorityCompare;
+
+      return b.weight.compareTo(a.weight);
+    });
   }
 
   static int _levelWeight(FrodoObservationLevel level) {

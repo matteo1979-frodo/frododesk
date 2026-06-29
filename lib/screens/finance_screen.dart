@@ -14,6 +14,7 @@ import '../widgets/finance/finance_year_dashboard.dart';
 import 'person_finance_screen.dart';
 import '../core/frododesk_bootstrap.dart';
 import '../engines/observation/observation_engine.dart';
+import 'finance/finance_observations_page.dart';
 
 class FinanceScreen extends StatefulWidget {
   final FinanceStore financeStore;
@@ -115,70 +116,80 @@ class _FinanceScreenState extends State<FinanceScreen> {
           "Prossima scadenza: ${_formatDate(first.nextDueDate)} • ${first.name} • $sign€${first.expectedAmount.toStringAsFixed(0)}";
     }
 
-    return _FinanceGlassCard(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: const Color(0xFFB08D57).withOpacity(0.20),
-              borderRadius: BorderRadius.circular(16),
+    return InkWell(
+      borderRadius: BorderRadius.circular(24),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const FinanceObservationsPage()),
+        );
+      },
+      child: _FinanceGlassCard(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: const Color(0xFFB08D57).withOpacity(0.20),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(
+                Icons.auto_awesome_rounded,
+                color: Color(0xFFFFD54F),
+              ),
             ),
-            child: const Icon(
-              Icons.auto_awesome_rounded,
-              color: Color(0xFFFFD54F),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Centro controllo economico",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 19,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  message,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.84),
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w600,
-                    height: 1.25,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                if (nextItems.isNotEmpty) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.18),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.white.withOpacity(0.12)),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Centro controllo economico",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
                     ),
-                    child: Text(
-                      "Prossima scadenza: ${_formatDate(nextItems.first.nextDueDate)} • ${nextItems.first.name} • ${nextItems.first.isIncome ? "+" : "-"}€${nextItems.first.expectedAmount.toStringAsFixed(0)}",
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.78),
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        height: 1.25,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    message,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.84),
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  if (nextItems.isNotEmpty) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.18),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.12),
+                        ),
+                      ),
+                      child: Text(
+                        "Prossima scadenza: ${_formatDate(nextItems.first.nextDueDate)} • ${nextItems.first.name} • ${nextItems.first.isIncome ? "+" : "-"}€${nextItems.first.expectedAmount.toStringAsFixed(0)}",
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.78),
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          height: 1.25,
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

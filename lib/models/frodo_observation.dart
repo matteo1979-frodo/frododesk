@@ -37,6 +37,8 @@ class FrodoObservation {
   final String title;
   final String message;
   final String? reason;
+  final String? details;
+  final String? impact;
 
   final int priority;
   final double weight;
@@ -64,6 +66,8 @@ class FrodoObservation {
     required this.title,
     required this.message,
     this.reason,
+    this.details,
+    this.impact,
     required this.priority,
     this.weight = 1.0,
     required this.level,
@@ -102,6 +106,8 @@ class FrodoObservation {
     return title != other.title ||
         message != other.message ||
         reason != other.reason ||
+        details != other.details ||
+        impact != other.impact ||
         level != other.level ||
         priority != other.priority ||
         weight != other.weight;
@@ -114,6 +120,8 @@ class FrodoObservation {
     String? title,
     String? message,
     String? reason,
+    String? details,
+    String? impact,
     int? priority,
     double? weight,
     FrodoObservationLevel? level,
@@ -135,6 +143,8 @@ class FrodoObservation {
       title: title ?? this.title,
       message: message ?? this.message,
       reason: reason ?? this.reason,
+      details: details ?? this.details,
+      impact: impact ?? this.impact,
       priority: priority ?? this.priority,
       weight: weight ?? this.weight,
       level: level ?? this.level,

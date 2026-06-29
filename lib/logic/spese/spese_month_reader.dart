@@ -86,7 +86,7 @@ class SpeseMonthReader {
         createdAt: now,
         action: const FrodoObservationAction(
           label: 'Apri Spese',
-          targetModule: 'spese',
+          targetModule: FrodoModules.spese,
         ),
       ),
     ];
