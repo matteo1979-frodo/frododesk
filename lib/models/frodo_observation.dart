@@ -28,6 +28,36 @@ class FrodoObservationAction {
   });
 }
 
+class FrodoObservationRecommendation {
+  final String title;
+  final String? description;
+  final FrodoObservationAction? action;
+  final int priority;
+
+  const FrodoObservationRecommendation({
+    required this.title,
+    this.description,
+    this.action,
+    this.priority = 0,
+  });
+}
+
+class FrodoObservationScenario {
+  final String title;
+  final String message;
+  final double? projectedBalance;
+  final FrodoObservationLevel level;
+  final List<String> steps;
+
+  const FrodoObservationScenario({
+    required this.title,
+    required this.message,
+    this.projectedBalance,
+    required this.level,
+    this.steps = const [],
+  });
+}
+
 class FrodoObservation {
   final String id;
 
@@ -39,6 +69,9 @@ class FrodoObservation {
   final String? reason;
   final String? details;
   final String? impact;
+
+  final List<FrodoObservationRecommendation> recommendations;
+  final List<FrodoObservationScenario> scenarios;
 
   final int priority;
   final double weight;
@@ -68,6 +101,8 @@ class FrodoObservation {
     this.reason,
     this.details,
     this.impact,
+    this.recommendations = const [],
+    this.scenarios = const [],
     required this.priority,
     this.weight = 1.0,
     required this.level,
@@ -108,6 +143,8 @@ class FrodoObservation {
         reason != other.reason ||
         details != other.details ||
         impact != other.impact ||
+        recommendations.length != other.recommendations.length ||
+        scenarios.length != other.scenarios.length ||
         level != other.level ||
         priority != other.priority ||
         weight != other.weight;
@@ -122,6 +159,8 @@ class FrodoObservation {
     String? reason,
     String? details,
     String? impact,
+    List<FrodoObservationRecommendation>? recommendations,
+    List<FrodoObservationScenario>? scenarios,
     int? priority,
     double? weight,
     FrodoObservationLevel? level,
@@ -145,6 +184,8 @@ class FrodoObservation {
       reason: reason ?? this.reason,
       details: details ?? this.details,
       impact: impact ?? this.impact,
+      recommendations: recommendations ?? this.recommendations,
+      scenarios: scenarios ?? this.scenarios,
       priority: priority ?? this.priority,
       weight: weight ?? this.weight,
       level: level ?? this.level,

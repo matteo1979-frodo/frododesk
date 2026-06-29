@@ -1,10 +1,10 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 
 import '../../core/frododesk_modules.dart';
 import '../../engines/observation/observation_engine.dart';
 import '../../models/frodo_observation.dart';
+import '../../widgets/observation/expandable_list.dart';
+import '../../widgets/observation/observation_card.dart';
 
 class FinanceObservationsPage extends StatelessWidget {
   const FinanceObservationsPage({super.key});
@@ -29,20 +29,20 @@ class FinanceObservationsPage extends StatelessWidget {
             child: Image.asset('assets/images/bg.jpg', fit: BoxFit.cover),
           ),
           Positioned.fill(
-            child: Container(color: Colors.black.withOpacity(0.30)),
+            child: Container(color: Colors.black.withOpacity(0.34)),
           ),
           SafeArea(
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 900),
+                constraints: const BoxConstraints(maxWidth: 920),
                 child: ListView(
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
                   children: [
                     const Text(
                       'Cosa sta osservando FrodoDesk',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 22,
+                        fontSize: 23,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -50,18 +50,18 @@ class FinanceObservationsPage extends StatelessWidget {
                     Text(
                       '${observations.length} osservazioni economiche attive',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.70),
+                        color: Colors.white.withOpacity(0.68),
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 18),
                     if (observations.isEmpty)
                       const _ObservationEmptyCard()
                     else
                       ...observations.map(
                         (observation) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.only(bottom: 14),
                           child: _FinanceObservationCard(
                             observation: observation,
                           ),
@@ -85,207 +85,198 @@ class _FinanceObservationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _levelColor(observation.level);
-    final icon = _levelIcon(observation.level);
+    final color = ObservationCard.levelColor(observation.level);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.14),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withOpacity(0.22)),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.18),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(icon, color: color, size: 25),
+    return ObservationCard(
+      observation: observation,
+      details:
+          observation.details == null || observation.details!.trim().isEmpty
+          ? null
+          : observation.title == 'Scadenze'
+          ? _DeadlineSectionsBox(text: observation.details!, color: color)
+          : _ObservationTextBox(text: observation.details!),
+      impact: observation.impact == null || observation.impact!.trim().isEmpty
+          ? null
+          : _ImpactBox(text: observation.impact!, color: color),
+      action: observation.action == null
+          ? null
+          : Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.open_in_new_rounded),
+                label: Text(observation.action!.label),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      observation.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 17,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      observation.message,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.76),
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
-                        height: 1.30,
-                      ),
-                    ),
-                    if (observation.targetDate != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        'Data collegata: ${observation.targetDate!.day.toString().padLeft(2, '0')}/${observation.targetDate!.month.toString().padLeft(2, '0')}/${observation.targetDate!.year}',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.58),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                    if (observation.action != null) ...[
-                      const SizedBox(height: 10),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton.icon(
-                          onPressed: () {},
-                          icon: const Icon(Icons.open_in_new_rounded),
-                          label: Text(observation.action!.label),
-                        ),
-                      ),
-                    ],
-                    if (observation.details != null &&
-                        observation.details!.trim().isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      Text(
-                        'Dettaglio',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.90),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.18),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.12),
-                          ),
-                        ),
-                        child: Text(
-                          observation.details!,
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.72),
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            height: 1.30,
-                          ),
-                        ),
-                      ),
-                    ],
+            ),
+    );
+  }
+}
 
-                    if (observation.impact != null &&
-                        observation.impact!.trim().isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      Text(
-                        'Impatto',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.90),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.18),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.12),
-                          ),
-                        ),
-                        child: Text(
-                          observation.impact!,
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.72),
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                            height: 1.30,
-                          ),
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 10),
-                    Text(
-                      _levelDescription(observation.level),
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+class _DeadlineSectionsBox extends StatelessWidget {
+  final String text;
+  final Color color;
+
+  const _DeadlineSectionsBox({required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final sections = text
+        .split(RegExp(r'\n\s*\n'))
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    return Column(
+      children: [
+        for (var i = 0; i < sections.length; i++) ...[
+          _DeadlineSectionTile(block: sections[i], color: color),
+          if (i != sections.length - 1) const SizedBox(height: 8),
+        ],
+      ],
+    );
+  }
+}
+
+class _DeadlineSectionTile extends StatelessWidget {
+  final String block;
+  final Color color;
+
+  const _DeadlineSectionTile({required this.block, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final lines = block
+        .split('\n')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    final title = lines.isNotEmpty ? lines[0] : '';
+    final status = lines.length > 1 ? lines[1] : '';
+    final items = lines.length > 2 ? lines.skip(2).toList() : <String>[];
+
+    final isEmpty = block.contains('Nessuna') && items.isEmpty;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.18),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.11)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _DeadlineHeader(title: title, status: status),
+          if (!isEmpty && items.isNotEmpty) ...[
+            const SizedBox(height: 9),
+            ExpandableList(items: items, accentColor: color, previewCount: 3),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DeadlineHeader extends StatelessWidget {
+  final String title;
+  final String status;
+
+  const _DeadlineHeader({required this.title, required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.88),
+            fontSize: 13.2,
+            fontWeight: FontWeight.w900,
           ),
+        ),
+        if (status.isNotEmpty) ...[
+          const SizedBox(height: 3),
+          Text(
+            status,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.76),
+              fontSize: 12.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ObservationTextBox extends StatelessWidget {
+  final String text;
+
+  const _ObservationTextBox({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.18),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.11)),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: Colors.white.withOpacity(0.78),
+          fontSize: 12.8,
+          fontWeight: FontWeight.w700,
+          height: 1.32,
         ),
       ),
     );
   }
+}
 
-  Color _levelColor(FrodoObservationLevel level) {
-    switch (level) {
-      case FrodoObservationLevel.problem:
-        return const Color(0xFFE53935);
-      case FrodoObservationLevel.attention:
-        return const Color(0xFFFFB74D);
-      case FrodoObservationLevel.opportunity:
-        return const Color(0xFF42A5F5);
-      case FrodoObservationLevel.success:
-        return const Color(0xFF66BB6A);
-      case FrodoObservationLevel.info:
-        return const Color(0xFF90A4AE);
-    }
-  }
+class _ImpactBox extends StatelessWidget {
+  final String text;
+  final Color color;
 
-  IconData _levelIcon(FrodoObservationLevel level) {
-    switch (level) {
-      case FrodoObservationLevel.problem:
-        return Icons.error_rounded;
-      case FrodoObservationLevel.attention:
-        return Icons.warning_amber_rounded;
-      case FrodoObservationLevel.opportunity:
-        return Icons.lightbulb_rounded;
-      case FrodoObservationLevel.success:
-        return Icons.check_circle_rounded;
-      case FrodoObservationLevel.info:
-        return Icons.info_rounded;
-    }
-  }
+  const _ImpactBox({required this.text, required this.color});
 
-  String _levelDescription(FrodoObservationLevel level) {
-    switch (level) {
-      case FrodoObservationLevel.problem:
-        return "Problema";
-      case FrodoObservationLevel.attention:
-        return "Richiede attenzione";
-      case FrodoObservationLevel.opportunity:
-        return "Opportunità";
-      case FrodoObservationLevel.success:
-        return "Situazione positiva";
-      case FrodoObservationLevel.info:
-        return "Informazione";
-    }
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: color.withOpacity(0.20)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.auto_awesome_rounded, size: 15, color: color),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.75),
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                height: 1.28,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

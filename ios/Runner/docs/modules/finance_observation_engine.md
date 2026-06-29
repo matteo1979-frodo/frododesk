@@ -567,3 +567,133 @@ Il Planner dovrà essere in grado di simulare contemporaneamente centinaia di co
 Il suo obiettivo non sarà soltanto prevedere il futuro.
 
 Sarà aiutare la famiglia a prendere decisioni migliori.
+
+---
+
+# ARCHITETTURA INTERNA DEL FINANCE OBSERVATION ENGINE
+
+Le macro-card non devono leggere direttamente il `FinanceStore`.
+
+Ogni macro-card deve essere costruita in due fasi.
+
+## FASE 1 — Analisi
+
+Il Reader trasforma i dati grezzi del FinanceStore in un modello di situazione.
+
+Esempi:
+
+```text
+FinanceStore
+      ↓
+
+FinanceDeadlinesSituation
+
+FinanceIncomeSituation
+
+FinanceEconomicSituation
+
+FinanceFundsSituation
+```
+
+Questi modelli rappresentano la situazione economica elaborata e non contengono elementi grafici.
+
+Devono essere completamente riutilizzabili.
+
+---
+
+## FASE 2 — Presentazione
+
+Le macro-card trasformano i modelli di situazione in Observation.
+
+Schema definitivo:
+
+```text
+FinanceStore
+
+↓
+
+Analyzer
+
+↓
+
+FinanceSituation
+
+↓
+
+Observation
+
+↓
+
+UI
+```
+
+---
+
+# PRINCIPIO DI RIUTILIZZO
+
+Il futuro Finance Planner non dovrà leggere direttamente il FinanceStore.
+
+Utilizzerà esclusivamente i modelli prodotti dagli Analyzer.
+
+Schema definitivo del motore:
+
+```text
+FinanceStore
+
+↓
+
+Deadlines Analyzer
+↓
+
+FinanceDeadlinesSituation
+
+Income Analyzer
+↓
+
+FinanceIncomeSituation
+
+Economic Analyzer
+↓
+
+FinanceEconomicSituation
+
+Funds Analyzer
+↓
+
+FinanceFundsSituation
+
+↓
+
+Finance Planner
+
+↓
+
+PlannerDecision
+
+↓
+
+Observation
+```
+
+---
+
+# VANTAGGI
+
+* Nessuna duplicazione della logica.
+* Una sola fonte di verità per ogni analisi.
+* Le macro-card diventano semplici viste dei dati.
+* Il Planner utilizza gli stessi risultati mostrati all'utente.
+* Ogni Analyzer può essere testato in modo indipendente.
+* L'architettura rimane estendibile senza modificare il Reader.
+
+---
+
+# REGOLA ARCHITETTURALE
+
+Ogni nuova analisi economica deve essere implementata come Analyzer indipendente.
+
+Il Reader coordina gli Analyzer.
+
+Le Observation visualizzano il risultato.
+
+Il Planner prende decisioni utilizzando esclusivamente i modelli di situazione prodotti dagli Analyzer.

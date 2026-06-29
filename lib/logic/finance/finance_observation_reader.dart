@@ -2,6 +2,7 @@ import '../../core/frododesk_modules.dart';
 import '../../models/finance_recurring_item.dart';
 import '../../models/frodo_observation.dart';
 import '../../stores/finance_store.dart';
+import 'finance_planner_engine.dart';
 
 class FinanceObservationReader {
   static List<FrodoObservation> analyze(FinanceStore financeStore) {
@@ -15,6 +16,18 @@ class FinanceObservationReader {
     );
 
     _buildEconomicSituationObservation(
+      financeStore: financeStore,
+      now: now,
+      observations: observations,
+    );
+
+    _buildFundsObservation(
+      financeStore: financeStore,
+      now: now,
+      observations: observations,
+    );
+
+    _buildPlannerObservation(
       financeStore: financeStore,
       now: now,
       observations: observations,
@@ -46,62 +59,84 @@ class FinanceObservationReader {
 
     if (pendingItems.isEmpty) return;
 
-    final overdue = pendingItems.where((item) {
-      final dueDay = DateTime(
+    DateTime dayOf(FinanceRecurringItem item) {
+      return DateTime(
         item.nextDueDate.year,
         item.nextDueDate.month,
         item.nextDueDate.day,
       );
+    }
 
-      return dueDay.isBefore(today);
+    double totalOf(List<FinanceRecurringItem> items) {
+      return items.fold<double>(0, (sum, item) => sum + item.expectedAmount);
+    }
+
+    String dateOf(FinanceRecurringItem item) {
+      final day = item.nextDueDate.day.toString().padLeft(2, '0');
+      final month = item.nextDueDate.month.toString().padLeft(2, '0');
+      return '$day/$month';
+    }
+
+    String itemLine(FinanceRecurringItem item) {
+      return '• ${item.name}: -€${item.expectedAmount.toStringAsFixed(0)} (${dateOf(item)})';
+    }
+
+    String section({
+      required String icon,
+      required String title,
+      required List<FinanceRecurringItem> items,
+      String emptyLabel = '✅ Nessuna',
+    }) {
+      if (items.isEmpty) {
+        return '$icon $title\n$emptyLabel';
+      }
+
+      final count = items.length;
+      final total = totalOf(items);
+      final allItems = items.map(itemLine).join('\n');
+
+      return '$icon $title\n$count scadenze • €${total.toStringAsFixed(0)}\n$allItems';
+    }
+
+    final overdue = pendingItems.where((item) {
+      return dayOf(item).isBefore(today);
     }).toList();
 
     final next7Days = pendingItems.where((item) {
-      final dueDay = DateTime(
-        item.nextDueDate.year,
-        item.nextDueDate.month,
-        item.nextDueDate.day,
-      );
-
+      final dueDay = dayOf(item);
       return !dueDay.isBefore(today) && !dueDay.isAfter(endOfWeek);
     }).toList();
 
     final thisMonth = pendingItems.where((item) {
-      final dueDay = DateTime(
-        item.nextDueDate.year,
-        item.nextDueDate.month,
-        item.nextDueDate.day,
-      );
-
+      final dueDay = dayOf(item);
       return dueDay.isAfter(endOfWeek) && !dueDay.isAfter(endOfMonth);
     }).toList();
 
     final future = pendingItems.where((item) {
-      final dueDay = DateTime(
-        item.nextDueDate.year,
-        item.nextDueDate.month,
-        item.nextDueDate.day,
-      );
-
-      return dueDay.isAfter(endOfMonth);
+      return dayOf(item).isAfter(endOfMonth);
     }).toList();
 
-    String formatItems(List<FinanceRecurringItem> items) {
-      if (items.isEmpty) return '-';
+    final totalPending = totalOf(pendingItems);
+    final overdueTotal = totalOf(overdue);
+    final next7Total = totalOf(next7Days);
+    final futureTotal = totalOf(future);
 
-      return items
-          .take(5)
-          .map(
-            (item) =>
-                '${item.name}: -€${item.expectedAmount.toStringAsFixed(0)} (${item.nextDueDate.day.toString().padLeft(2, '0')}/${item.nextDueDate.month.toString().padLeft(2, '0')})',
-          )
-          .join('\n');
-    }
+    final hasOverdue = overdue.isNotEmpty;
+    final hasHeavyWeek = next7Total >= 500;
 
-    final totalPending = pendingItems.fold<double>(
-      0,
-      (sum, item) => sum + item.expectedAmount,
-    );
+    final message = hasOverdue
+        ? 'Priorità oggi: ${overdue.length} scadenze già in ritardo per €${overdueTotal.toStringAsFixed(0)}.'
+        : next7Days.isNotEmpty
+        ? 'Nei prossimi 7 giorni hai ${next7Days.length} scadenze per €${next7Total.toStringAsFixed(0)}.'
+        : 'Nessuna scadenza urgente. Totale aperto: €${totalPending.toStringAsFixed(0)}.';
+
+    final impact = hasOverdue
+        ? 'Per rimettere in ordine le scadenze devi gestire prima i pagamenti già scaduti.'
+        : hasHeavyWeek
+        ? 'La settimana concentra molte uscite: conviene controllare la disponibilità prima di confermare nuovi pagamenti.'
+        : future.isNotEmpty
+        ? 'Non ci sono ritardi immediati, ma restano €${futureTotal.toStringAsFixed(0)} di scadenze future da pianificare.'
+        : 'Le scadenze aperte non mostrano pressione immediata.';
 
     observations.add(
       FrodoObservation(
@@ -109,14 +144,19 @@ class FinanceObservationReader {
         module: FrodoModules.finance,
         category: FrodoObservationCategory.finance,
         title: 'Scadenze',
-        message:
-            '${pendingItems.length} scadenze ancora da confermare per €${totalPending.toStringAsFixed(0)}.',
+        message: message,
         details:
-            'In ritardo\n${formatItems(overdue)}\n\nEntro 7 giorni\n${formatItems(next7Days)}\n\nEntro il mese\n${formatItems(thisMonth)}\n\nFuture\n${formatItems(future)}',
-        impact:
-            'Le scadenze non confermate rappresentano gli impegni economici ancora aperti.',
-        priority: overdue.isNotEmpty ? 96 : 88,
-        level: overdue.isNotEmpty
+            'Priorità oggi\n${section(icon: '🔴', title: 'In ritardo', items: overdue)}\n\n'
+            'Da controllare a breve\n${section(icon: '🟡', title: 'Tra oggi e 7 giorni', items: next7Days)}\n\n'
+            'Resto del mese\n${section(icon: '🟢', title: 'Entro il mese', items: thisMonth)}\n\n'
+            'Da pianificare\n${section(icon: '🔵', title: 'Dopo questo mese', items: future)}',
+        impact: impact,
+        priority: hasOverdue
+            ? 96
+            : hasHeavyWeek
+            ? 90
+            : 88,
+        level: hasOverdue
             ? FrodoObservationLevel.problem
             : FrodoObservationLevel.attention,
         createdAt: now,
@@ -181,6 +221,127 @@ class FinanceObservationReader {
         impact: impact,
         priority: priority,
         level: level,
+        createdAt: now,
+      ),
+    );
+  }
+
+  static void _buildFundsObservation({
+    required FinanceStore financeStore,
+    required DateTime now,
+    required List<FrodoObservation> observations,
+  }) {
+    if (financeStore.funds.isEmpty) return;
+
+    final totalFunds = financeStore.totalFunds();
+
+    final protectedAmount = financeStore.funds
+        .where((f) => f.protected)
+        .fold<double>(0, (sum, f) => sum + f.amount);
+
+    final availableAmount = financeStore.funds
+        .where((f) => !f.protected)
+        .fold<double>(0, (sum, f) => sum + f.amount);
+
+    final activeFunds = financeStore.funds.where((f) => f.amount > 0).length;
+    final emptyFunds = financeStore.funds.where((f) => f.amount <= 0).length;
+    final protectedFunds = financeStore.funds.where((f) => f.protected).length;
+    final unprotectedFunds = financeStore.funds
+        .where((f) => !f.protected)
+        .length;
+
+    String icon(double amount) {
+      if (amount <= 0) return '🔴';
+      if (amount < 500) return '🟡';
+      return '🟢';
+    }
+
+    String status(double amount) {
+      if (amount <= 0) return 'Nessuna copertura';
+      if (amount < 500) return 'Copertura bassa';
+      if (amount < 1500) return 'Copertura discreta';
+      return 'Copertura buona';
+    }
+
+    final sortedFunds = [...financeStore.funds]
+      ..sort((a, b) {
+        final protectedCompare = b.protected.toString().compareTo(
+          a.protected.toString(),
+        );
+
+        if (protectedCompare != 0) return protectedCompare;
+
+        return b.amount.compareTo(a.amount);
+      });
+
+    final details = sortedFunds
+        .map(
+          (fund) =>
+              '${icon(fund.amount)} ${fund.name}: '
+              '€${fund.amount.toStringAsFixed(0)} '
+              '(${status(fund.amount)})',
+        )
+        .join('\n');
+
+    observations.add(
+      FrodoObservation(
+        id: 'finance_funds_${now.year}_${now.month}',
+        module: FrodoModules.finance,
+        category: FrodoObservationCategory.finance,
+        title: 'Stato fondi',
+        message:
+            'Totale fondi €${totalFunds.toStringAsFixed(0)} '
+            '(Protetti €${protectedAmount.toStringAsFixed(0)} • '
+            'Disponibili €${availableAmount.toStringAsFixed(0)}).',
+        details: details,
+        impact:
+            '$activeFunds fondi attivi • '
+            '$emptyFunds da completare • '
+            '$protectedFunds protetti • '
+            '$unprotectedFunds utilizzabili.',
+        priority: totalFunds > 0 ? 50 : 85,
+        level: totalFunds > 0
+            ? FrodoObservationLevel.info
+            : FrodoObservationLevel.attention,
+        createdAt: now,
+      ),
+    );
+  }
+
+  static void _buildPlannerObservation({
+    required FinanceStore financeStore,
+    required DateTime now,
+    required List<FrodoObservation> observations,
+  }) {
+    final monthKey = '${now.year}_${now.month.toString().padLeft(2, '0')}';
+
+    final matteoForecast = financeStore.availableThisMonthForOwner(
+      FinancePaymentOwner.matteo,
+    );
+
+    final chiaraForecast = financeStore.availableThisMonthForOwner(
+      FinancePaymentOwner.chiara,
+    );
+
+    final familyForecast = matteoForecast + chiaraForecast;
+    final totalFunds = financeStore.totalFunds();
+
+    final planner = FinancePlannerEngine.analyze(financeStore: financeStore);
+
+    observations.add(
+      FrodoObservation(
+        id: 'finance_planner_$monthKey',
+        module: FrodoModules.finance,
+        category: FrodoObservationCategory.finance,
+        title: 'Piano consigliato',
+        message: planner.message,
+        details:
+            'Matteo: €${matteoForecast.toStringAsFixed(0)}\nChiara: €${chiaraForecast.toStringAsFixed(0)}\nFamiglia: €${familyForecast.toStringAsFixed(0)}\nFondi: €${totalFunds.toStringAsFixed(0)}',
+        impact: planner.impact,
+        scenarios: planner.scenarios,
+        recommendations: planner.recommendations,
+        priority: planner.priority,
+        level: planner.level,
         createdAt: now,
       ),
     );
