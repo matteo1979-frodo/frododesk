@@ -7,6 +7,7 @@ class PlannerScenarioBuilder {
     required double familyForecast,
     double? projectedAfterIncome,
     double? projectedWithFunds,
+    bool hasOnlyProtectedFunds = false,
   }) {
     final steps = decisions
         .take(6)
@@ -27,13 +28,14 @@ class PlannerScenarioBuilder {
 
     final level = projectedBalance >= 0
         ? FrodoObservationLevel.success
-        : hasBlocked
+        : hasBlocked || hasOnlyProtectedFunds
         ? FrodoObservationLevel.attention
         : FrodoObservationLevel.problem;
 
-    final message = projectedBalance >= 0
-        ? 'Questo scenario mantiene il mese sostenibile.'
-        : 'Questo scenario richiede attenzione: il saldo resta in pressione.';
+    final message = _scenarioMessage(
+      projectedBalance: projectedBalance,
+      hasOnlyProtectedFunds: hasOnlyProtectedFunds,
+    );
 
     final scenarioSteps = steps.isEmpty
         ? const ['Mantieni monitorata la situazione economica.']
@@ -48,6 +50,23 @@ class PlannerScenarioBuilder {
         steps: scenarioSteps,
       ),
     ];
+
+    if (hasOnlyProtectedFunds) {
+      scenarios.add(
+        FrodoObservationScenario(
+          title: 'Scenario con fondi protetti',
+          message:
+              'Usare fondi protetti può risolvere il problema immediato, ma riduce la resilienza futura.',
+          projectedBalance: familyForecast,
+          level: FrodoObservationLevel.attention,
+          steps: const [
+            'Non considerare i fondi protetti come prima soluzione.',
+            'Prima verifica entrate imminenti, spese rimandabili e margine manovrabile.',
+            'Usa fondi protetti solo se la situazione reale lo rende necessario.',
+          ],
+        ),
+      );
+    }
 
     if (hasDelayed || hasIncome) {
       scenarios.add(
@@ -68,6 +87,21 @@ class PlannerScenarioBuilder {
     }
 
     return scenarios;
+  }
+
+  static String _scenarioMessage({
+    required double projectedBalance,
+    required bool hasOnlyProtectedFunds,
+  }) {
+    if (hasOnlyProtectedFunds) {
+      return 'Questo scenario evita di usare subito fondi protetti.';
+    }
+
+    if (projectedBalance >= 0) {
+      return 'Questo scenario mantiene il mese sostenibile.';
+    }
+
+    return 'Questo scenario richiede attenzione: il saldo resta in pressione.';
   }
 
   static String _stepForDecision(PlannerDecision decision) {

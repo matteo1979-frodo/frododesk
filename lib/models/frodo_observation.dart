@@ -12,6 +12,20 @@ enum FrodoObservationCategory {
   system,
 }
 
+enum FrodoObservationExplanationLevel { positive, neutral, warning, critical }
+
+class FrodoObservationExplanation {
+  final String reasonKey;
+  final FrodoObservationExplanationLevel level;
+  final String message;
+
+  const FrodoObservationExplanation({
+    required this.reasonKey,
+    required this.level,
+    required this.message,
+  });
+}
+
 class FrodoObservationAction {
   final String label;
   final String targetModule;
@@ -72,6 +86,7 @@ class FrodoObservation {
 
   final List<FrodoObservationRecommendation> recommendations;
   final List<FrodoObservationScenario> scenarios;
+  final List<FrodoObservationExplanation> explanations;
 
   final int priority;
   final double weight;
@@ -103,6 +118,7 @@ class FrodoObservation {
     this.impact,
     this.recommendations = const [],
     this.scenarios = const [],
+    this.explanations = const [],
     required this.priority,
     this.weight = 1.0,
     required this.level,
@@ -119,6 +135,8 @@ class FrodoObservation {
   });
 
   bool get isActive => status == FrodoObservationStatus.active;
+
+  bool get hasExplanations => explanations.isNotEmpty;
 
   bool isExpired(DateTime now) {
     if (validUntil == null) return false;
@@ -145,6 +163,7 @@ class FrodoObservation {
         impact != other.impact ||
         recommendations.length != other.recommendations.length ||
         scenarios.length != other.scenarios.length ||
+        explanations.length != other.explanations.length ||
         level != other.level ||
         priority != other.priority ||
         weight != other.weight;
@@ -161,6 +180,7 @@ class FrodoObservation {
     String? impact,
     List<FrodoObservationRecommendation>? recommendations,
     List<FrodoObservationScenario>? scenarios,
+    List<FrodoObservationExplanation>? explanations,
     int? priority,
     double? weight,
     FrodoObservationLevel? level,
@@ -186,6 +206,7 @@ class FrodoObservation {
       impact: impact ?? this.impact,
       recommendations: recommendations ?? this.recommendations,
       scenarios: scenarios ?? this.scenarios,
+      explanations: explanations ?? this.explanations,
       priority: priority ?? this.priority,
       weight: weight ?? this.weight,
       level: level ?? this.level,

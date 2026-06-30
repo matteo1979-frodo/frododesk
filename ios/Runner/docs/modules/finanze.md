@@ -1507,3 +1507,172 @@ Priorità attuale:
 ✔ stabilizzazione modulo Spese
 
 La trasformazione cloud e multi-famiglia verrà affrontata in una fase successiva.
+
+---
+
+# H4 — MOTORE DECISIONALE DEL PLANNER (GIUGNO 2026)
+
+Con H4 il modulo Finanze introduce ufficialmente il primo motore decisionale.
+
+Il Planner non produce più semplici suggerimenti statici.
+
+Analizza le singole voci economiche e costruisce automaticamente scenari e raccomandazioni.
+
+---
+
+## NUOVA ARCHITETTURA
+
+Il Planner viene suddiviso in componenti indipendenti.
+
+Struttura ufficiale:
+
+FinancePlannerEngine
+
+↓
+
+PlannerDecisionEngine
+
+↓
+
+PlannerDecision
+
+↓
+
+PlannerScenarioBuilder
+
+↓
+
+PlannerRecommendationBuilder
+
+↓
+
+FinancePlannerResult
+
+↓
+
+Observation
+
+↓
+
+UI
+
+Ogni componente ha una responsabilità unica.
+
+Questo permette di espandere il motore senza aumentare la complessità del codice.
+
+---
+
+## PLANNER DECISION ENGINE
+
+Viene introdotto il concetto di decisione economica.
+
+Ogni ricorrenza viene analizzata singolarmente.
+
+Il risultato NON è più direttamente uno scenario.
+
+Il risultato è una decisione motivata.
+
+Esempi:
+
+- pagare subito
+- mantenere copertura
+- attendere entrata
+- rimandare
+- usare fondi
+- monitorare
+
+---
+
+## REGOLE DECISIONALI INTRODOTTE
+
+Prima implementazione ufficiale delle regole del Planner.
+
+### RID
+
+Le spese con pagamento automatico (RID/addebiti automatici):
+
+- non vengono proposte come rimandabili;
+- non vengono proposte come spostabili;
+- devono rimanere coperte.
+
+---
+
+### PRIORITÀ
+
+Le spese critiche vengono sempre analizzate prima delle spese normali.
+
+La priorità considera:
+
+- obbligatorietà;
+- priorità pagamento;
+- livello di protezione.
+
+---
+
+### ENTRATE IMMINENTI
+
+Il Planner valuta le entrate previste nei prossimi giorni.
+
+Se un'entrata è sufficiente a riportare il sistema in equilibrio:
+
+preferisce attendere l'entrata invece di suggerire immediatamente l'utilizzo dei fondi.
+
+---
+
+### SPESE RIMANDABILI
+
+Solo le ricorrenze realmente flessibili possono essere suggerite come rimandabili.
+
+Il Planner utilizza il comportamento economico della ricorrenza e non semplicemente la categoria.
+
+---
+
+## GENERAZIONE AUTOMATICA
+
+Gli scenari non vengono più costruiti manualmente.
+
+PlannerScenarioBuilder genera automaticamente:
+
+- scenario consigliato;
+- scenario alternativo;
+- passi operativi.
+
+PlannerRecommendationBuilder genera automaticamente:
+
+- raccomandazioni;
+- priorità;
+- motivazioni.
+
+---
+
+## PRINCIPIO FONDAMENTALE
+
+Il Planner non decide al posto dell'utente.
+
+Il Planner:
+
+- interpreta;
+- confronta;
+- spiega;
+- suggerisce.
+
+La decisione finale rimane sempre dell'utente.
+
+---
+
+## DIREZIONE FUTURA
+
+L'architettura H4 è predisposta per l'introduzione progressiva di nuove regole decisionali.
+
+Tra le evoluzioni previste:
+
+- utilizzo intelligente dei fondi;
+- protezione dei fondi dedicati;
+- simulazioni multi-scenario;
+- spiegazione completa delle decisioni;
+- valutazione automatica dello scenario migliore;
+- motore decisionale estensibile tramite regole indipendenti.
+
+Decisione architetturale ufficiale:
+
+Il Planner evolve da insieme di condizioni statiche a motore decisionale modulare.

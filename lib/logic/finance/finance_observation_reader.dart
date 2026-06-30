@@ -3,6 +3,7 @@ import '../../models/finance_recurring_item.dart';
 import '../../models/frodo_observation.dart';
 import '../../stores/finance_store.dart';
 import 'finance_planner_engine.dart';
+import 'planner/finance_observation_explanation_builder.dart';
 
 class FinanceObservationReader {
   static List<FrodoObservation> analyze(FinanceStore financeStore) {
@@ -336,8 +337,14 @@ class FinanceObservationReader {
         title: 'Piano consigliato',
         message: planner.message,
         details:
-            'Matteo: €${matteoForecast.toStringAsFixed(0)}\nChiara: €${chiaraForecast.toStringAsFixed(0)}\nFamiglia: €${familyForecast.toStringAsFixed(0)}\nFondi: €${totalFunds.toStringAsFixed(0)}',
+            'Matteo: €${matteoForecast.toStringAsFixed(0)}\n'
+            'Chiara: €${chiaraForecast.toStringAsFixed(0)}\n'
+            'Famiglia: €${familyForecast.toStringAsFixed(0)}\n'
+            'Fondi: €${totalFunds.toStringAsFixed(0)}',
         impact: planner.impact,
+        explanations: FinanceObservationExplanationBuilder.build(
+          decisions: planner.decisions,
+        ),
         scenarios: planner.scenarios,
         recommendations: planner.recommendations,
         priority: planner.priority,

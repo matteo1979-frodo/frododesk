@@ -1,6 +1,6 @@
 # FRODODESK — MASTER ROADMAP UNIFICATA V4
 
-Ultimo aggiornamento: 5 Giugno 2026
+Ultimo aggiornamento: Giugno 2026
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -29,6 +29,7 @@ FrodoDesk È:
 Principio immutabile:
 
 👉 Il sistema suggerisce
+
 👉 La decisione resta sempre umana
 
 ━━━━━━━━━━━━━━━━━━
@@ -43,7 +44,7 @@ Principio immutabile:
 
 ✅ niente nuove aree funzionali fuori roadmap
 
-✅ stabilità prima dell’espansione
+✅ stabilità prima dell'espansione
 
 ✅ test vita reale continui
 
@@ -63,7 +64,7 @@ Principio immutabile:
 
 ✅ motore prima della UI
 
-✅ comportamento reale prima dell’estetica
+✅ comportamento reale prima dell'estetica
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -74,13 +75,21 @@ Principio immutabile:
 ## CALENDARIO
 
 ☑ stabile
+
 ☑ utilizzabile nella vita reale
+
 ☑ copertura reale funzionante
+
 ☑ PresenceEngine consolidato
+
 ☑ eventi reali vivi
+
 ☑ eventi Alice vivi
+
 ☑ Home coerente con motore reale
+
 ☑ Sandra modalità reale
+
 ☑ supporto multi-persona
 
 ---
@@ -105,9 +114,7 @@ Principio immutabile:
 
 🟢 MOTORE ECONOMICO FONDATIVO COMPLETATO
 
-🟡 FASE ATTUALE:
-
-H3.5 — CONSOLIDAMENTO VITA REALE
+🟢 H4 — ARCHITETTURA DEL PLANNER COMPLETATA
 
 ☑ FinanceStore reale presente
 
@@ -151,7 +158,7 @@ H3.5 — CONSOLIDAMENTO VITA REALE
 
 ☑ storico movimenti
 
-☑ dettaglio mesi ripristinato
+☑ dettaglio mesi
 
 ☑ saldo reale separato dalla pressione futura
 
@@ -159,7 +166,15 @@ H3.5 — CONSOLIDAMENTO VITA REALE
 
 ☑ saldo basato solo sui conti attivi
 
-☑ test vita reale superati
+☑ Observation Finance collegata
+
+☑ PlannerDecisionEngine
+
+☑ PlannerScenarioBuilder
+
+☑ PlannerRecommendationBuilder
+
+☑ Planner completamente modularizzato
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -171,33 +186,29 @@ H3.5 — CONSOLIDAMENTO VITA REALE
 
 Priorità assoluta:
 
-➡️ consolidamento del comportamento reale.
+➡️ aumentare l'intelligenza del Planner.
 
 NON:
 
 ❌ nuove aree
 
-❌ automazioni premature
-
 ❌ grafica avanzata
 
-❌ IPS economico finale
+❌ IPS economico
 
-❌ modularizzazione cosmetica
+❌ automazioni premature
+
+❌ simulazioni complesse premature
 
 PRIMA:
 
-✔ comportamento economico reale
+✔ regole decisionali
 
-✔ pressione reale
+✔ comportamento reale
 
-✔ resilienza
+✔ spiegabilità
 
-✔ simulazione futura
-
-✔ stabilità sistema
-
-✔ consolidamento vita reale
+✔ simulazioni affidabili
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -205,31 +216,21 @@ PRIMA:
 
 ━━━━━━━━━━━━━━━━━━
 
-⚠️ NON codice impulsivo.
+FASE ATTUALE
 
-FASE ATTUALE:
+🟢 H4.1
 
-🟡 H3.5 — CONSOLIDAMENTO VITA REALE
+Espansione del motore decisionale.
 
 Obiettivo:
 
-✔ verificare il comportamento reale dei conti
+✔ aumentare progressivamente le regole decisionali
 
-✔ verificare il comportamento reale delle ricorrenze
+✔ migliorare il Planner
 
-✔ verificare la coerenza Home ↔ Finanze
+✔ spiegare ogni decisione
 
-✔ verificare i trasferimenti reali
-
-✔ verificare conferme e annullamenti
-
-✔ verificare il comportamento dei fondi
-
-✔ eliminare incoerenze UI prima di nuove funzioni
-
-Solo dopo:
-
-➡️ H4 — Simulazione futura reale
+✔ preparare le simulazioni intelligenti
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -239,414 +240,307 @@ Solo dopo:
 
 # BLOCCO H — MOTORE ECONOMICO REALE
 
-## H1 — Fondamenta esistenti
+## H1
 
-☑ FinanceStore reale
+☑ COMPLETATO
 
-☑ recurring items
+---
 
-☑ fondi
+## H2
 
-☑ snapshot
+🟢 CONSOLIDATO
 
-☑ dashboard annuale
+---
 
-☑ simulazione base
+## H3
 
-☑ pressure score iniziale
+🟢 COMPLETATO
 
-☑ Home consolidata
+---
 
-☑ owner condivisi
+## H3.5
 
-☑ timeline economica
+🟢 CONSOLIDATO
 
-☑ conti bancari reali
+La fase di utilizzo nella vita reale viene considerata conclusa.
 
-☑ prepagate
+Le verifiche effettuate hanno consentito di stabilizzare:
 
-☑ rapporti collegati
+☑ conti reali
+
+☑ ricorrenze
+
+☑ conferme
+
+☑ annullamenti
 
 ☑ trasferimenti
 
-☑ storico transazioni
+☑ fondi
 
-☑ conferma ricorrenze
+☑ sincronizzazione Home
 
-☑ annullamento conferme
-
-☑ gestione saldi reali
+☑ sincronizzazione Conti Persona
 
 ☑ Centro Controllo Economico
 
-☑ saldo reale separato dalla pressione futura
+☑ Observation Engine per il modulo Finanze
 
-☑ sincronizzazione Home ↔ Conti Persona
+Il motore economico viene considerato sufficientemente stabile da consentire l'evoluzione verso il Planner decisionale.
 
----
+## H4 — MOTORE DECISIONALE DEL PLANNER
 
-## H2 — COMPORTAMENTO ECONOMICO REALE
+🟢 ARCHITETTURA COMPLETATA
 
-🟡 IN CONSOLIDAMENTO
+Con H4 il Planner evolve definitivamente da insieme di condizioni statiche a motore decisionale modulare.
 
-### Concetti consolidati
+Architettura consolidata:
 
-☑ pressione prevedibile/imprevedibile
-☑ pressione statica/dinamica
-☑ rigidità economica
-☑ manovrabilità
-☑ sacrificabilità
-☑ conseguenze del non pagare
-☑ vicinanza temporale
-☑ liquidità operativa
-☑ affidabilità temporale
-☑ stato temporale voci
-☑ pagamento manuale vs RID
-☑ memoria economica evolutiva
-☑ entità economiche vive
-☑ inserimento manuale obbligatorio
-☑ crescita storica sistema
-☑ saturazione sistema economico
-☑ pressione accumulata
-☑ stanchezza economica sistema
-☑ recupero del sistema
-☑ fattori che restituiscono ossigeno
-☑ differenza sistema stabile vs affaticato
-☑ lettura multi-pressione contemporanea
-☑ pressione ricorsiva
-☑ debito di resilienza
-☑ costo invisibile delle manovre
-☑ usura del sistema economico
-☑ sopravvivenza vs ricostruzione
-☑ salute del sistema economico
-☑ collasso come perdita capacità di recupero
-☑ differenza tra "coperto" e "risolto"
-☑ consumo resilienza futura
-☑ ossigeno economico familiare
-☑ differenza tra denaro disponibile e ossigeno reale
-☑ sistema che sopravvive vs sistema che guarisce
-☑ sincronizzazione della sopravvivenza economica
-☑ vita reale che genera pressione economica
-☑ pressione che genera altra pressione
-☑ lettura evolutiva direzione sistema familiare
+FinancePlannerEngine
+
+↓
+
+PlannerDecisionEngine
+
+↓
+
+PlannerDecision
+
+↓
+
+PlannerScenarioBuilder
+
+↓
+
+PlannerRecommendationBuilder
+
+↓
+
+FinancePlannerResult
+
+↓
+
+FinanceObservationReader
+
+↓
+
+Observation Engine
+
+↓
+
+UI
 
 ---
 
-### DNA tecnico già implementato
+### H4.1 — Regole decisionali
 
-☑ distinzione saldo lordo vs ossigeno reale
-
-☑ liquidità respirabile
-
-☑ conti operativi
-
-☑ FinanceBalanceType
-
-☑ balanceId separato da personId
-
-☑ splits economici reali
-
-☑ supporto quote personalizzate
-
-☑ operational balance
-
-☑ warning operativo
-
-☑ stress operativo
-
-☑ stress ratio
-
-☑ vitalityState iniziale
-
-☑ resilienza base
-
-☑ recupero economico
-
-☑ stress persistente
-
-☑ differenza sistema stabile vs sistema affaticato
-
-☑ differenza sistema che sopravvive vs sistema che recupera
-
-☑ differenza tra warning e perdita controllo
-
-☑ lettura usura economica iniziale
-
-☑ saldo reale separato dalle ricorrenze future
-
-☑ conferma ricorrenza modifica il saldo
-
-☑ annullamento conferma ripristina il saldo
-
-☑ trasferimenti reali tra conti
-
-☑ coerenza Home ↔ Conti Persona
-
-☑ esclusione automatica conti disattivati
-
----
-
-### Da completare
-
-⬜ definizione pesi reali pressione
-
-⬜ definizione resilienza matematica
-
-⬜ definizione sincronizzazione economica
-
-⬜ definizione collasso sistema
-
-⬜ definizione priorità sopravvivenza
-
-⬜ definizione soglie saturazione
-
-⬜ definizione recupero economico reale
-
-⬜ definizione matematica ossigeno economico
-
-⬜ definizione usura progressiva sistema
-
-⬜ definizione salute economica famiglia
-
-⬜ definizione equilibrio sopravvivenza/ricostruzione
-
-⬜ utilizzo reale del DNA economico nelle simulazioni
-
----
-
-## H3 — ARCHITETTURA VOCI ECONOMICHE
-
-☑ sistema "aggiungi elemento economico"
-
-☑ gestione conti reali
-
-☑ gestione prepagate
-
-☑ gestione rapporti collegati
-
-☑ modalità pagamento
-
-☑ gestione conferme
-
-☑ gestione storico
-
-☑ modifica importi reali in conferma
-
-☑ gestione split economici
-
-☑ associazione conto di pagamento
-
-🟡 popup dinamici per categoria
-
-🟡 comportamento automatico per tipo voce
-
-⬜ gestione ritardi
-
----
-
-## H3.5 — CONSOLIDAMENTO VITA REALE
-
-⚠️ NUOVA FASE UFFICIALE
+🟡 FASE ATTUALE
 
 Obiettivo:
 
-Trasformare il motore economico in uno strumento utilizzabile nella vita quotidiana senza incoerenze.
+insegnare al Planner come ragionare.
 
-### Completato
-
-☑ nuova schermata Finanze
-
-☑ Centro Controllo Economico
-
-☑ dettaglio mesi ripristinato
-
-☑ gestione conti reali
-
-☑ trasferimenti reali
-
-☑ conferma ricorrenze
-
-☑ annullamento conferme
-
-☑ saldo reale separato dalle previsioni
-
-☑ Home sincronizzata con i conti reali
-
-☑ esclusione conti disattivati
-
-☑ test pratico uscita → conferma → ripristino superato
-
-### Da verificare nella vita reale
-
-⬜ bollette reali
-
-⬜ stipendi reali
-
-⬜ fondi reali
-
-⬜ utilizzo continuativo quotidiano
-
-⬜ casi limite
+Le nuove funzionalità verranno implementate esclusivamente come regole indipendenti.
 
 ---
 
-## H4 — SIMULAZIONE FUTURA REALE
+### Già implementato
 
-⬜ simulazione 3 mesi
+☑ RID non spostabili
 
-⬜ simulazione 6 mesi
+☑ addebiti automatici protetti
 
-⬜ simulazione 12 mesi
+☑ priorità delle spese critiche
 
-⬜ rischio pressione futura
+☑ distinzione tra spese rimandabili e non rimandabili
 
-⬜ accumulo pressione
+☑ valutazione entrate imminenti
 
-⬜ sincronizzazione temporale
+☑ utilizzo fondi solo quando realmente necessario
 
-⬜ rischio liquidità
+☑ scenari generati automaticamente
 
-⬜ mesi critici
+☑ raccomandazioni generate automaticamente
+
+---
+
+### Da sviluppare
+
+⬜ fondi protetti
+
+⬜ fondi dedicati
+
+⬜ saldo minimo conto
+
+⬜ conto personale in sofferenza
+
+⬜ pagamento condiviso
+
+⬜ priorità familiare
+
+⬜ priorità personale
+
+⬜ utilizzo intelligente fondi
+
+⬜ utilizzo parziale fondi
+
+⬜ scelta conto migliore
+
+⬜ simulazione cambio conto
+
+⬜ protezione stipendio
+
+⬜ gestione tredicesima
+
+⬜ gestione quattordicesima
+
+⬜ premio produzione
+
+⬜ entrate straordinarie
+
+⬜ gestione rate
+
+⬜ gestione ritardi
+
+⬜ priorità temporale reale
+
+⬜ conflitti economici
+
+---
+
+### Obiettivo finale
+
+Ogni decisione dovrà essere spiegabile.
+
+Il Planner non dovrà mai limitarsi a dire:
+
+"fai questo"
+
+ma dovrà poter spiegare:
+
+• perché;
+
+• quali regole sono state applicate;
+
+• quali alternative sono state valutate.
+
+---
+
+## H4.2 — Simulazioni intelligenti
+
+⬜ simulazione spostamento pagamento
+
+⬜ simulazione utilizzo fondo
+
+⬜ simulazione arrivo stipendio
+
+⬜ simulazione cambio conto
+
+⬜ simulazione più scenari contemporanei
+
+⬜ simulazione resilienza
+
+---
+
+## H4.3 — Valutazione scenari
+
+Il Planner dovrà confrontare automaticamente gli scenari.
+
+Ogni scenario riceverà un punteggio.
+
+Esempio:
+
+Scenario A
+
+82
+
+Scenario B
+
+65
+
+Scenario C
+
+97
+
+Il Planner dovrà motivare la scelta dello scenario migliore.
+
+---
+
+## H4.4 — Planner spiegabile
+
+Ogni suggerimento dovrà poter essere aperto.
+
+L'utente dovrà vedere:
+
+✔ regole applicate
+
+✔ priorità considerate
+
+✔ motivazioni
+
+✔ eventuali eccezioni
+
+✔ impatto previsto
 
 ---
 
 ## H5 — COLLEGAMENTO VITA REALE ↔ FINANZE
 
-🟡 FASE SUCCESSIVA
+La vita reale dovrà diventare un generatore automatico di pressione economica.
 
-Obiettivo:
+NON creare semplici spese.
 
-La vita reale deve generare automaticamente pressione economica.
+Interpretare gli eventi della famiglia.
 
-NON si tratta di creare spese.
+Esempi:
 
-Si tratta di capire come gli eventi familiari modificano la stabilità economica.
+⬜ Sandra
 
-### Collegamenti previsti
+⬜ mensa Alice
 
-⬜ Sandra dinamica
+⬜ scuola
 
-⬜ mensa Alice dinamica
+⬜ sport
 
-⬜ eventi Alice → pressione
+⬜ ferie
 
-⬜ scuola → impatto economico
+⬜ malattie
 
-⬜ sport e corsi → pressione
+⬜ supporti
 
-⬜ ferie → pressione
+⬜ eventi reali
 
-⬜ malattie → pressione
+⬜ spostamenti
 
-⬜ eventi familiari → pressione
-
-⬜ supporto familiare → costo reale
-
-⬜ accompagnamenti → impatto economico
-
-Principio:
-
-👉 La vita genera economia.
-👉 L'economia modifica la resilienza.
-👉 La resilienza modifica la stabilità familiare.
+⬜ casa
 
 ---
 
 ## H6 — IPS ECONOMICO
 
-⚠️ NON PRIORITARIO ORA
+NON prioritario.
 
-Quando H5 sarà stabile, il motore economico entrerà nell'IPS generale.
+Entrerà in sviluppo solo quando il Planner sarà considerato stabile.
 
 Obiettivi:
 
-⬜ pressione economica globale
+⬜ pressione globale
 
-⬜ resilienza sistema
+⬜ resilienza
 
-⬜ rischio familiare economico
+⬜ rischio economico
 
-⬜ collegamento IPS generale
+⬜ stato futuro della famiglia
 
-⬜ lettura stato economico della famiglia
-
-⬜ direzione futura del sistema
+⬜ integrazione IPS
 
 ---
 
-## H7 — EVOLUZIONI PROFONDE DEL MOTORE ECONOMICO
+## H7 — Evoluzioni profonde
 
-⚠️ BLOCCO FUTURO
+Resta il contenitore delle idee evolutive.
 
-NON autorizza sviluppo immediato.
-
-Serve esclusivamente a conservare le idee strutturali emerse durante la costruzione del DNA economico.
-
-Si affronterà solo dopo:
-
-☑ consolidamento H2
-
-☑ consolidamento H3
-
-☑ completamento H3.5
-
-☑ simulazione reale stabile
-
-☑ utilizzo quotidiano nella vita reale
-
----
-
-### Evoluzioni salvate
-
-⬜ vitalityState evolutivo completo
-
-⬜ spirale economica evolutiva
-
-⬜ debito resilienza futura
-
-⬜ perdita progressiva controllo
-
-⬜ saturazione resilienza familiare
-
-⬜ sistema che sopravvive vs sistema che guarisce
-
-⬜ lettura traiettoria economica familiare
-
-⬜ deterioramento progressivo
-
-⬜ consumo resilienza tramite manovre temporanee
-
-⬜ stress economico cronico
-
-⬜ lettura salute evolutiva sistema
-
----
-
-⬜ differenza tra:
-
-stable
-
-recovering
-
-fatigued
-
-surviving
-
-degrading
-
-losingControl
-
-drowning
-
----
-
-Principio ufficiale:
-
-👉 prima consolidare
-
-👉 poi espandere
-
-👉 poi approfondire
+Nessuna implementazione autorizzata fino al completamento del Planner.
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -658,548 +552,170 @@ Principio ufficiale:
 
 ⚠️ IMPORTANTISSIMO
 
-La MASTER ROADMAP deve esistere come:
+La MASTER ROADMAP deve continuare a rappresentare l'unico documento ufficiale dell'evoluzione del progetto.
 
-✅ UN SOLO documento ufficiale vivo
+Ogni modifica architetturale deve essere registrata qui prima di essere considerata consolidata.
 
-NON devono esistere:
+Restano vietati:
 
 ❌ roadmap duplicate
 
-❌ patch parallele permanenti
+❌ roadmap parallele
 
 ❌ copie divergenti
 
-❌ versioni concorrenti
-
-❌ roadmap spezzate
+❌ documentazione concorrente
 
 ---
 
-## REGOLA AGGIORNAMENTO ROADMAP
+## REGOLA EVOLUTIVA
 
-Ogni aggiornamento futuro deve:
+Ogni nuova funzionalità deve rispettare il seguente ordine:
 
-✔ aggiornare il documento esistente
+1. idea
 
-✔ preservare la struttura corretta
+↓
 
-✔ integrare nuove decisioni senza rompere le precedenti
+2. decisione architetturale
 
-✔ evitare cancellazioni impulsive
+↓
 
-✔ evitare perdita concetti consolidati
+3. roadmap
 
-✔ mantenere coerenza CNC globale
+↓
 
----
+4. implementazione
 
-## REGOLA EVOLUZIONE STRUTTURALE
+↓
 
-Nuove idee NON autorizzano:
+5. consolidamento
 
-❌ espansione immediata
+↓
 
-❌ cambio priorità impulsivo
+6. utilizzo reale
 
-❌ creazione nuovi documenti paralleli
+↓
 
-Prima bisogna decidere:
+7. evoluzione
 
-1. in quale fase appartiene
-
-2. quali fondamenta richiede
-
-3. se aumenta ordine o caos
-
-4. se è davvero prioritaria
-
-Solo dopo:
-
-👉 viene integrata nella roadmap ufficiale unica.
+Mai il contrario.
 
 ━━━━━━━━━━━━━━━━━━
-
-# DIREZIONE OPERATIVA IMMEDIATA
-
-━━━━━━━━━━━━━━━━━━
-
-⚠️ NON codice impulsivo.
-
-FASE ATTUALE:
-
-🟡 H3.5 — CONSOLIDAMENTO VITA REALE
-
-Prima:
-
-✔ definizione comportamento reale
-
-✔ verifica vita reale
-
-✔ verifica coerenza conti
-
-✔ verifica ricorrenze
-
-✔ verifica fondi
-
-✔ eliminazione incoerenze UI
-
-✔ stabilizzazione utilizzo quotidiano
-
-Poi:
-
-👉 H4 — Simulazione futura reale.
-
-━━━━━━━━━━━━━━━━━━
-
-# OBIETTIVO FINALE
-
-━━━━━━━━━━━━━━━━━━
-
-FrodoDesk deve diventare:
-
-➡️ un simulatore di stabilità familiare
-
-➡️ un lettore di pressione reale
-
-➡️ un sistema preventivo
-
-➡️ un supporto decisionale umano
-
-➡️ un interprete della vita reale
-
-NON:
-
-❌ un gestionale
-
-❌ un Excel
-
-❌ un tracker spese
-
-❌ una semplice app calendario
-
-❌ un home banking
-
----
-
-# STATO UFFICIALE DEL PROGETTO
-
-(5 Giugno 2026)
-
-🟢 Calendario consolidato.
-
-🟢 Home consolidata.
-
-🟢 Motore economico fondativo completato.
-
-🟡 Fase attuale:
-
-H3.5 — Consolidamento Vita Reale.
-
-Obiettivo operativo:
-
-👉 verificare che il sistema si comporti esattamente come la vita reale, prima di espandere ulteriormente FrodoDesk.
-
----
-
-# AGGIORNAMENTO ROADMAP — CONSOLIDAMENTO MODULO SPESE REALE (GIUGNO 2026)
-
-## DECISIONE STRUTTURALE
-
-Durante la fase H3.5 (Consolidamento Vita Reale) viene aperto e consolidato il primo ramo operativo del modulo Spese.
-
-La costruzione del modulo Spese NON rappresenta una deviazione dalla roadmap economica.
-
-Al contrario, costituisce una verifica pratica del principio fondativo:
-
-👉 **PREVISIONE ≠ REALTÀ**
-
-Il modulo Finanze continua a simulare il futuro.
-
-Il modulo Spese registra invece esclusivamente ciò che è realmente accaduto.
-
----
-
-## BLOCCO S1 — MEMORIA ECONOMICA REALE
-
-🟢 COMPLETATO — V1 OPERATIVA
-
-### Obiettivo
-
-Costruire una memoria persistente del denaro realmente vissuto dalla famiglia.
-
-### Completato
-
-☑ struttura `RealExpense` consolidata
-
-☑ CRUD completo Spese reali
-
-☑ CRUD completo Prelievi contanti
-
-☑ CRUD completo Entrate extra
-
-☑ collegamento ai conti reali
-
-☑ collegamento ai portafogli contanti
-
-☑ storico persistente
-
-☑ data e ora reali personalizzabili
-
-☑ modifica dei movimenti esistenti
-
-☑ ordinamento cronologico automatico
-
-☑ sincronizzazione automatica dei saldi
-
-☑ aggiornamento immediato della UI
-
----
-
-## SIGNIFICATO ARCHITETTURALE
-
-Per la prima volta FrodoDesk possiede contemporaneamente:
-
-✔ una simulazione economica del futuro;
-
-✔ una memoria persistente del passato.
-
-Il sistema inizia quindi a leggere il tempo economico in entrambe le direzioni.
-
----
-
-## PROSSIMA EVOLUZIONE AUTORIZZATA
-
-⚠️ NON aggiungere subito nuove funzionalità al modulo Spese.
-
-La priorità resta il collaudo reale prolungato.
-
-Obiettivi della fase:
-
-⬜ verificare utilizzo quotidiano
-
-⬜ verificare coerenza Spese ↔ Finanze
-
-⬜ verificare casi limite
-
-⬜ consolidare il comportamento reale
-
-Solo dopo sarà autorizzato il collegamento progressivo con:
-
-* Statistiche Economiche;
-* confronto previsione ↔ realtà;
-* lettura comportamentale della spesa familiare.
-
----
-
-## REGOLA DI ROADMAP CONSOLIDATA
-
-Il modulo Spese viene ufficialmente riconosciuto come **sorgente di verità economica storica**.
-
-Il modulo Finanze rimane invece il **motore di previsione e simulazione**.
-
-Entrambi i moduli devono evolvere separatamente e collegarsi solo attraverso interfacce e dati reali, senza duplicare responsabilità.
-
-Principio confermato:
-
-👉 **una sola verità, molte letture.**
-
-━━━━━━━━━━━━━━━━━━
-
-# BLOCCO Z — ECOSISTEMA FRODODESK
-
-⚠️ VISIONE FUTURA — NON PRIORITARIA
-
-NON autorizza sviluppo immediato.
-
-NON modifica le priorità attuali.
-
-Serve a conservare la direzione strategica emersa durante le riunioni di Giugno 2026.
-
----
-
-## OBIETTIVO
-
-Evolvere FrodoDesk da:
-
-❌ sistema della singola famiglia
-
-a
-
-✔ piattaforma multi-famiglia
-
----
-
-## PRINCIPIO
-
-Ogni famiglia deve poter:
-
-- creare il proprio spazio
-- creare le proprie persone
-- creare i propri conti
-- creare i propri eventi
-- mantenere privati i propri dati
-
----
-
-## MULTI-DEVICE
-
-Visione futura:
-
-Una modifica effettuata su:
-
-- PC
-- telefono
-- tablet
-
-deve sincronizzarsi automaticamente su tutti i dispositivi autorizzati.
-
-Obiettivo:
-
-✔ una sola verità
-✔ sincronizzazione automatica
-
----
-
-## ACCOUNT FAMIGLIA
-
-Ogni famiglia avrà:
-
-- amministratore
-- membri
-- ruoli
-- permessi
-
-Esempio:
-
-Famiglia Rossi
-Famiglia Bianchi
-Famiglia Verdi
-
-indipendenti tra loro.
-
----
-
-## RUOLI FUTURI
-
-Possibili ruoli:
-
-- Amministratore
-- Adulto
-- Figlio
-- Supporto
-- Collaboratore esterno
-
----
-
-## ACCESSI INCROCIATI
-
-Una persona potrà appartenere a più contesti.
-
-Esempio:
-
-Sandra
-
-potrà:
-
-- gestire la propria famiglia
-- collaborare con la famiglia Matteo
-
-senza creare account multipli.
-
----
-
-## EVENTI CONDIVISI
-
-In futuro il sistema potrà supportare:
-
-- scuole
-- sport
-- associazioni
-- babysitter
-- allenatori
-
-che propongono eventi alle famiglie autorizzate.
-
----
-
-## PRINCIPIO DECISIONALE
-
-Anche nell'ecosistema esteso resta valida la regola:
-
-👉 il sistema suggerisce
-
-👉 la decisione resta umana
-
----
-
-## POSIZIONE IN ROADMAP
-
-Questo blocco NON è autorizzato prima di:
-
-☑ consolidamento Calendario
-
-☑ consolidamento Finanze
-
-☑ consolidamento Vita Reale
-
-☑ sincronizzazione multi-dispositivo
-
-☑ identità utenti
-
-☑ architettura cloud
-
-Prima si consolida il laboratorio reale della famiglia.
-
-Solo dopo si valuta l'espansione all'ecosistema.
-
----
 
 # BLOCCO O — OBSERVATION ENGINE
 
-🟡 FASE FONDATIVA AVVIATA
+🟢 PILASTRO ARCHITETTURALE ATTIVO
 
-## SIGNIFICATO
+Il framework Observation è ormai parte integrante dell'architettura.
 
-Durante il consolidamento H3.5 emerge un nuovo pilastro architetturale.
+Componenti consolidati:
 
-FrodoDesk evolve da sistema che mostra dati a sistema che interpreta la realtà.
+☑ ObservationEngine
 
-Nasce ufficialmente l'Observation Engine.
+☑ ObservationRegistry
+
+☑ ObservationProvider
+
+☑ FrodoObservation
+
+☑ Bootstrap
+
+☑ ObservationCard
+
+☑ ExpandableObservationList
+
+☑ Observation UI unificata
 
 ---
 
-# O1 — FRAMEWORK OSSERVAZIONI
+## O1
 
 🟢 COMPLETATO
 
-Realizzato:
-
-☑ `FrodoObservation`
-
-☑ `ObservationProvider`
-
-☑ `ObservationRegistry`
-
-☑ `ObservationEngine`
-
-☑ `FrodoDeskBootstrap`
-
-☑ primo provider reale (`SpeseObservationProvider`)
+Framework osservazioni.
 
 ---
 
-## OBIETTIVO
+## O2
 
-Separare definitivamente:
+🟢 COMPLETATO
 
-* produzione delle osservazioni;
-* selezione delle osservazioni;
-* visualizzazione delle osservazioni.
+Observation vive.
 
-La Home non dovrà più contenere logiche di analisi.
+Le osservazioni supportano:
 
----
+☑ priorità
 
-# O2 — OSSERVAZIONI VIVE
+☑ peso
 
-🟡 IN PROGETTAZIONE
+☑ categoria
 
-Obiettivo:
+☑ livello
 
-trasformare ogni osservazione in un oggetto persistente capace di evolvere.
+☑ stato
 
-Funzionalità previste:
+☑ azioni
 
-⬜ nascita
+☑ motivazioni
 
-⬜ aggiornamento
+☑ scenari
 
-⬜ risoluzione automatica
-
-⬜ ignorato dall'utente
-
-⬜ scadenza
-
-⬜ sostituzione
-
-⬜ storico
+☑ raccomandazioni
 
 ---
 
-# O3 — DOMANDE
+## O3
 
-🟡 FASE CONCETTUALE
+🟢 IN EVOLUZIONE
 
-Nuovo principio progettuale.
+Ogni modulo dovrà produrre osservazioni come risposta ad una domanda reale.
 
-Ogni osservazione nasce dalla risposta a una domanda.
-
-Esempi:
-
-☑ Alice è coperta?
-
-☑ Questo mese cosa ha caratterizzato le spese?
-
-☑ Il fondo auto è sufficiente?
-
-☑ C'è qualcosa che richiede attenzione?
-
-Da questo momento ogni nuova funzionalità dovrà essere riconducibile a una domanda reale della vita familiare.
+Il Planner finanziario rappresenta il primo esempio completo di questo principio.
 
 ---
 
-# O4 — INTEGRAZIONE MODULI
+## O4
 
-⬜ FinanceObservationProvider
+🟡 IN SVILUPPO
 
-⬜ CoverageObservationProvider
+Provider previsti:
 
-⬜ CalendarObservationProvider
+⬜ Finance
 
-⬜ StatisticsObservationProvider
+⬜ Coverage
 
-⬜ HomeObservationProvider
+⬜ Calendar
 
-⬜ HealthObservationProvider
+⬜ Statistics
 
-Ogni modulo dovrà produrre osservazioni senza conoscere gli altri moduli.
+⬜ Health
 
----
-
-# O5 — HOME INTELLIGENTE
-
-⬜ eliminazione logiche duplicate
-
-⬜ lettura esclusiva Observation Engine
-
-⬜ ordinamento globale
-
-⬜ priorità dinamica
-
-⬜ osservazioni principali
-
-⬜ pulsante "Mostra tutte le analisi"
-
-La Home diventerà il punto di lettura unificato dello stato della famiglia.
+⬜ Home
 
 ---
 
-# O6 — CERVELLO DI FRODODESK
+## O5
 
-⚠️ VISIONE STRATEGICA
+🟡 HOME INTELLIGENTE
 
-L'Observation Engine rappresenta il livello di ragionamento dell'intero sistema.
+La Home continuerà a perdere logiche interne.
 
-I moduli non dialogano direttamente con la Home.
+Diventerà progressivamente un semplice lettore delle osservazioni prodotte dai motori.
 
-Interpretano la propria area della realtà.
+---
 
-L'Observation Engine raccoglie queste interpretazioni e restituisce una visione unica della situazione familiare.
+## O6
 
-Principio consolidato:
+🟢 DIREZIONE CONSOLIDATA
 
-```
+Il cervello di FrodoDesk sarà costituito da più motori indipendenti.
+
+Ogni motore interpreterà la propria area.
+
+L'Observation Engine costruirà una visione unica dello stato della famiglia.
+
+Principio definitivo:
+
 Motori
 
 ↓
@@ -1213,19 +729,123 @@ Observation Engine
 ↓
 
 Home
-```
 
----
+━━━━━━━━━━━━━━━━━━
 
-## POSIZIONE NELLA ROADMAP
+# BLOCCO Z — ECOSISTEMA FRODODESK
 
-Il blocco O diventa uno dei rami principali del progetto insieme a:
+⚠️ VISIONE FUTURA
 
-* Calendario / Presence
-* Coverage
-* Finanze
-* Spese
-* Observation Engine
-* Ecosistema Multi-Famiglia
+Nessuna modifica alle priorità.
 
-L'Observation Engine guiderà progressivamente l'evoluzione di tutti gli altri moduli.
+La direzione rimane:
+
+✔ multi famiglia
+
+✔ cloud
+
+✔ sincronizzazione
+
+✔ permessi
+
+✔ ruoli
+
+✔ dispositivi multipli
+
+Questa parte rimane congelata fino al consolidamento completo del Planner.
+
+━━━━━━━━━━━━━━━━━━
+
+# DIREZIONE OPERATIVA ATTUALE
+
+━━━━━━━━━━━━━━━━━━
+
+FASE UFFICIALE
+
+🟢 H4.1
+
+Espansione del motore decisionale.
+
+Priorità assoluta:
+
+✔ aumentare le regole del Planner
+
+✔ migliorare la qualità delle decisioni
+
+✔ rendere ogni scelta spiegabile
+
+✔ costruire simulazioni sempre più aderenti alla realtà
+
+NON è il momento di:
+
+❌ nuove aree funzionali
+
+❌ cloud
+
+❌ ecosistema
+
+❌ IPS completo
+
+❌ grafica avanzata
+
+Prima il Planner.
+
+Poi tutto il resto.
+
+━━━━━━━━━━━━━━━━━━
+
+# STATO UFFICIALE DEL PROGETTO
+
+(Giugno 2026)
+
+🟢 Calendario consolidato
+
+🟢 Presence Engine consolidato
+
+🟢 Coverage consolidato
+
+🟢 Home consolidata
+
+🟢 Modulo Spese operativo
+
+🟢 Observation Engine operativo
+
+🟢 Centro Controllo Economico operativo
+
+🟢 Motore economico consolidato
+
+🟢 Planner Decision Engine introdotto
+
+🟢 Architettura H4 completata
+
+🟡 Fase attuale:
+
+H4.1
+
+Espansione dell'intelligenza del Planner.
+
+Obiettivo:
+
+trasformare FrodoDesk da simulatore economico a vero sistema di supporto decisionale.
+
+━━━━━━━━━━━━━━━━━━
+
+# VISIONE STRATEGICA
+
+FrodoDesk non deve limitarsi a registrare la vita.
+
+Deve:
+
+✔ comprenderla;
+
+✔ interpretarla;
+
+✔ simulare conseguenze;
+
+✔ spiegare il proprio ragionamento;
+
+✔ aiutare la famiglia a prendere decisioni migliori.
+
+Il sistema suggerisce.
+
+La decisione rimane sempre umana.

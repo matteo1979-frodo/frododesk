@@ -11,6 +11,7 @@ class FinancePlannerResult {
   final String impact;
   final FrodoObservationLevel level;
   final int priority;
+  final List<PlannerDecision> decisions;
   final List<FrodoObservationScenario> scenarios;
   final List<FrodoObservationRecommendation> recommendations;
 
@@ -19,6 +20,7 @@ class FinancePlannerResult {
     required this.impact,
     required this.level,
     required this.priority,
+    required this.decisions,
     required this.scenarios,
     required this.recommendations,
   });
@@ -36,8 +38,20 @@ class FinancePlannerEngine {
       FinancePaymentOwner.chiara,
     );
 
+    final ownersUnderPressure = <FinancePaymentOwner>[
+      if (matteoForecast < 0) FinancePaymentOwner.matteo,
+      if (chiaraForecast < 0) FinancePaymentOwner.chiara,
+    ];
+
     final familyForecast = matteoForecast + chiaraForecast;
+
     final totalFunds = financeStore.totalFunds();
+
+    final usableFunds = financeStore.funds
+        .where((fund) => !fund.protected)
+        .fold<double>(0, (sum, fund) => sum + fund.amount);
+
+    final protectedFunds = totalFunds - usableFunds;
 
     final pendingExpenses = financeStore.recurringItems
         .where((item) => !item.isIncome && !item.confirmed)
@@ -61,27 +75,34 @@ class FinancePlannerEngine {
     );
 
     final projectedAfterIncome = familyForecast + imminentIncomeTotal;
-    final projectedWithFunds = familyForecast + totalFunds;
+    final projectedWithFunds = familyForecast + usableFunds;
 
     final decisionItems = <FinanceRecurringItem>[
       ...pendingExpenses,
       ...imminentIncome,
     ];
 
-    final decisions = PlannerDecisionEngine.analyze(items: decisionItems);
+    final decisions = PlannerDecisionEngine.analyze(
+      items: decisionItems,
+      balances: financeStore.balances,
+      ownersUnderPressure: ownersUnderPressure,
+    );
 
     final hasProblem = familyForecast < 0 || financeStore.isUnderPressure();
     final hasPersonalPressure = matteoForecast < 0 || chiaraForecast < 0;
     final hasImminentIncomeSolution =
         hasProblem && imminentIncome.isNotEmpty && projectedAfterIncome >= 0;
 
-    final hasFundsSolution = hasProblem && totalFunds > 0;
+    final hasFundsSolution = hasProblem && usableFunds > 0;
+    final hasOnlyProtectedFunds =
+        hasProblem && usableFunds <= 0 && protectedFunds > 0;
 
     final message = _message(
       hasProblem: hasProblem,
       hasPersonalPressure: hasPersonalPressure,
       hasImminentIncomeSolution: hasImminentIncomeSolution,
       hasFundsSolution: hasFundsSolution,
+      hasOnlyProtectedFunds: hasOnlyProtectedFunds,
     );
 
     final impact = _impact(
@@ -89,6 +110,7 @@ class FinancePlannerEngine {
       hasPersonalPressure: hasPersonalPressure,
       hasImminentIncomeSolution: hasImminentIncomeSolution,
       hasFundsSolution: hasFundsSolution,
+      hasOnlyProtectedFunds: hasOnlyProtectedFunds,
     );
 
     final level = _level(
@@ -96,6 +118,7 @@ class FinancePlannerEngine {
       hasPersonalPressure: hasPersonalPressure,
       hasImminentIncomeSolution: hasImminentIncomeSolution,
       hasFundsSolution: hasFundsSolution,
+      hasOnlyProtectedFunds: hasOnlyProtectedFunds,
     );
 
     final priority = _priority(
@@ -103,6 +126,7 @@ class FinancePlannerEngine {
       hasPersonalPressure: hasPersonalPressure,
       hasImminentIncomeSolution: hasImminentIncomeSolution,
       hasFundsSolution: hasFundsSolution,
+      hasOnlyProtectedFunds: hasOnlyProtectedFunds,
     );
 
     final scenarios = PlannerScenarioBuilder.build(
@@ -114,6 +138,7 @@ class FinancePlannerEngine {
       projectedWithFunds: !hasImminentIncomeSolution && hasFundsSolution
           ? projectedWithFunds
           : null,
+      hasOnlyProtectedFunds: hasOnlyProtectedFunds,
     );
 
     final recommendations = PlannerRecommendationBuilder.build(
@@ -125,6 +150,7 @@ class FinancePlannerEngine {
       impact: impact,
       level: level,
       priority: priority,
+      decisions: decisions,
       scenarios: scenarios,
       recommendations: recommendations,
     );
@@ -135,13 +161,18 @@ class FinancePlannerEngine {
     required bool hasPersonalPressure,
     required bool hasImminentIncomeSolution,
     required bool hasFundsSolution,
+    required bool hasOnlyProtectedFunds,
   }) {
     if (hasImminentIncomeSolution) {
       return 'Conviene aspettare le entrate in arrivo.';
     }
 
     if (hasFundsSolution) {
-      return 'I fondi possono aiutare, ma solo sulle spese non rimandabili.';
+      return 'I fondi utilizzabili possono aiutare, senza toccare quelli protetti.';
+    }
+
+    if (hasOnlyProtectedFunds) {
+      return 'Ci sono fondi disponibili, ma risultano protetti: non vanno considerati come prima soluzione.';
     }
 
     if (hasProblem) {
@@ -160,13 +191,18 @@ class FinancePlannerEngine {
     required bool hasPersonalPressure,
     required bool hasImminentIncomeSolution,
     required bool hasFundsSolution,
+    required bool hasOnlyProtectedFunds,
   }) {
     if (hasImminentIncomeSolution) {
       return 'Le entrate imminenti possono riportare il mese in sicurezza senza usare fondi.';
     }
 
     if (hasFundsSolution) {
-      return 'Prima di usare fondi, FrodoDesk distingue RID, spese critiche e spese rimandabili.';
+      return 'Il Planner considera prima i fondi non protetti e lascia intatte le protezioni dedicate.';
+    }
+
+    if (hasOnlyProtectedFunds) {
+      return 'Usare fondi protetti ridurrebbe la resilienza futura: il Planner preferisce cercare alternative.';
     }
 
     if (hasProblem) {
@@ -185,12 +221,13 @@ class FinancePlannerEngine {
     required bool hasPersonalPressure,
     required bool hasImminentIncomeSolution,
     required bool hasFundsSolution,
+    required bool hasOnlyProtectedFunds,
   }) {
     if (hasImminentIncomeSolution || hasFundsSolution) {
       return FrodoObservationLevel.opportunity;
     }
 
-    if (hasProblem) {
+    if (hasProblem || hasOnlyProtectedFunds) {
       return FrodoObservationLevel.problem;
     }
 
@@ -206,6 +243,7 @@ class FinancePlannerEngine {
     required bool hasPersonalPressure,
     required bool hasImminentIncomeSolution,
     required bool hasFundsSolution,
+    required bool hasOnlyProtectedFunds,
   }) {
     if (hasProblem && !hasImminentIncomeSolution && !hasFundsSolution) {
       return 94;
@@ -217,6 +255,10 @@ class FinancePlannerEngine {
 
     if (hasFundsSolution) {
       return 91;
+    }
+
+    if (hasOnlyProtectedFunds) {
+      return 90;
     }
 
     if (hasPersonalPressure) {

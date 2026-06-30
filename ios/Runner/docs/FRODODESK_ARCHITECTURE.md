@@ -711,3 +711,178 @@ L’Observation Engine diventa un nuovo pilastro di FrodoDesk insieme a:
 FrodoDesk non registra la vita.
 
 La osserva, la comprende e la restituisce in forma utile.
+
+---
+
+# 🔄 AGGIORNAMENTO GIUGNO 2026
+
+# FINANCE PLANNER ENGINE — NUOVO PILASTRO DECISIONALE
+
+## PRINCIPIO
+
+Il modulo Finanze evolve da semplice simulatore economico a motore decisionale.
+
+Il Planner non genera più direttamente scenari e raccomandazioni.
+
+Analizza prima ogni singola voce economica e costruisce successivamente le proposte per l'utente.
+
+---
+
+# NUOVA ARCHITETTURA
+
+Il Planner viene suddiviso in componenti indipendenti.
+
+Struttura ufficiale:
+
+FinancePlannerEngine
+
+↓
+
+PlannerDecisionEngine
+
+↓
+
+PlannerDecision
+
+↓
+
+PlannerScenarioBuilder
+
+↓
+
+PlannerRecommendationBuilder
+
+↓
+
+FinancePlannerResult
+
+↓
+
+FinanceObservationReader
+
+↓
+
+Observation Engine
+
+↓
+
+UI
+
+---
+
+# PLANNER DECISION
+
+Viene introdotto il concetto di decisione economica.
+
+Ogni ricorrenza viene trasformata in una decisione motivata.
+
+Una decisione rappresenta il comportamento che il Planner ritiene più corretto per quella specifica voce economica.
+
+Esempi:
+
+* payNow
+* keepCovered
+* waitIncome
+* delay
+* useFunds
+* blocked
+* monitor
+
+---
+
+# DECISION ENGINE
+
+Il Decision Engine rappresenta il cervello del Planner.
+
+Responsabilità:
+
+✔ analizzare ogni ricorrenza singolarmente
+
+✔ applicare regole economiche
+
+✔ attribuire priorità
+
+✔ produrre decisioni spiegabili
+
+Il Decision Engine NON costruisce scenari.
+
+Produce esclusivamente decisioni.
+
+---
+
+# SCENARIO BUILDER
+
+Lo Scenario Builder non contiene logiche economiche.
+
+Riceve le decisioni prodotte dal Decision Engine e costruisce automaticamente:
+
+* scenario consigliato
+* scenario alternativo
+* passi operativi
+
+In questo modo gli scenari non sono più scritti manualmente.
+
+---
+
+# RECOMMENDATION BUILDER
+
+Le raccomandazioni vengono generate automaticamente a partire dalle decisioni.
+
+Il builder traduce il ragionamento del Planner in suggerimenti leggibili dall'utente.
+
+---
+
+# SEPARAZIONE DELLE RESPONSABILITÀ
+
+Decisione architetturale ufficiale:
+
+FinancePlannerEngine
+
+coordina il processo.
+
+PlannerDecisionEngine
+
+decide.
+
+PlannerScenarioBuilder
+
+racconta gli scenari.
+
+PlannerRecommendationBuilder
+
+genera le raccomandazioni.
+
+Ogni componente possiede una sola responsabilità.
+
+---
+
+# PRIME REGOLE DECISIONALI
+
+La prima versione del motore introduce:
+
+* RID non spostabili;
+* priorità delle spese critiche;
+* valutazione delle entrate imminenti;
+* distinzione tra spese rimandabili e non rimandabili.
+
+Le regole sono indipendenti dall'interfaccia grafica.
+
+---
+
+# DIREZIONE FUTURA
+
+L'architettura è predisposta per una crescita progressiva del Planner.
+
+Ogni nuova regola dovrà essere aggiunta senza modificare i componenti già esistenti.
+
+L'obiettivo è costruire un motore decisionale estensibile, spiegabile e facilmente manutenibile.
+
+---
+
+# NUOVO PRINCIPIO ARCHITETTURALE
+
+Il Planner non deve più ragionare sul mese.
+
+Deve ragionare sulle singole entità economiche.
+
+Le simulazioni del mese diventano una conseguenza delle decisioni prese sulle singole voci economiche.

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../models/frodo_observation.dart';
 
+import '../shared/frodo_explanation_dialog.dart';
+
 class ObservationCard extends StatelessWidget {
   final FrodoObservation observation;
   final Widget? details;
@@ -84,6 +86,53 @@ class ObservationCard extends StatelessWidget {
                       _RecommendationsBox(
                         recommendations: observation.recommendations,
                         color: color,
+                      ),
+                    ],
+                    if (observation.explanations.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () {
+                          showFrodoExplanationDialog(
+                            context: context,
+                            observation: observation,
+                          );
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 13,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.16),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.12),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Text('🧠', style: TextStyle(fontSize: 20)),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Come ha ragionato Frodo',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.92),
+                                    fontSize: 13.4,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                color: Colors.white.withOpacity(0.60),
+                                size: 16,
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
                     if (impact != null) ...[

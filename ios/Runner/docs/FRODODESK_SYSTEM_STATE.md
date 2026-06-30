@@ -1163,3 +1163,137 @@ La fase successiva sarà:
 ✔ collegare progressivamente tutti i moduli al nuovo sistema;
 
 ✔ trasformare la Home nel punto di aggregazione delle osservazioni dell'intero ecosistema FrodoDesk.
+
+---
+
+# H4 — FINANCE PLANNER DECISION ENGINE (GIUGNO 2026)
+
+━━━━━━━━━━━━━━━━━━
+
+# STATO ATTUALE
+
+━━━━━━━━━━━━━━━━━━
+
+## COMPLETATO
+
+🟢 Primo motore decisionale del Planner implementato.
+
+Il Planner finanziario non è più un insieme di logiche concentrate in un unico metodo.
+
+È stato trasformato in un sistema modulare composto da componenti specializzati.
+
+---
+
+# NUOVA ARCHITETTURA
+
+FinancePlannerEngine
+
+↓
+
+PlannerDecisionEngine
+
+↓
+
+PlannerDecision
+
+↓
+
+PlannerScenarioBuilder
+
+↓
+
+PlannerRecommendationBuilder
+
+↓
+
+FinancePlannerResult
+
+↓
+
+FinanceObservationReader
+
+↓
+
+Observation Engine
+
+↓
+
+UI
+
+---
+
+# COMPONENTI INTRODOTTI
+
+✔ PlannerDecision
+
+✔ PlannerDecisionEngine
+
+✔ PlannerScenarioBuilder
+
+✔ PlannerRecommendationBuilder
+
+✔ refactor completo di FinancePlannerEngine
+
+---
+
+# PRIME REGOLE ATTIVE
+
+Il Planner applica già automaticamente:
+
+✔ RID non spostabili
+
+✔ addebiti automatici protetti
+
+✔ priorità delle spese critiche
+
+✔ distinzione tra spese rimandabili e non rimandabili
+
+✔ valutazione delle entrate imminenti
+
+✔ utilizzo dei fondi solo quando realmente necessario
+
+---
+
+# NUOVO COMPORTAMENTO
+
+Il Planner non costruisce più scenari manualmente.
+
+Flusso operativo:
+
+1. analizza ogni ricorrenza;
+
+2. produce una decisione motivata;
+
+3. costruisce automaticamente gli scenari;
+
+4. genera automaticamente le raccomandazioni;
+
+5. produce il risultato finale per il sistema osservazioni.
+
+---
+
+# STATO DI MATURITÀ
+
+🟢 H4 ARCHITETTURA COMPLETATA
+
+È stata completata la trasformazione architetturale del Planner.
+
+Le future evoluzioni dovranno concentrarsi sull'intelligenza delle regole e non più sulla struttura del motore.
+
+---
+
+# PROSSIMA FASE
+
+H4.1 — Espansione del motore decisionale.
+
+Obiettivi:
+
+✔ aumentare progressivamente le regole decisionali;
+
+✔ migliorare la valutazione dei fondi;
+
+✔ introdurre simulazioni sempre più realistiche;
+
+✔ costruire spiegazioni dettagliate delle decisioni;
+
+✔ arrivare alla selezione automatica dello scenario migliore.

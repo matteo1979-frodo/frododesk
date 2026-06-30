@@ -17,12 +17,18 @@ class PlannerRecommendationBuilder {
     final income = decisions
         .where((d) => d.type == PlannerDecisionType.waitIncome)
         .toList();
+    final monitor = decisions
+        .where((d) => d.type == PlannerDecisionType.monitor)
+        .toList();
 
     if (blocked.isNotEmpty) {
       recommendations.add(
         FrodoObservationRecommendation(
           title: 'Non spostare ${_names(blocked)}',
-          description: 'Sono RID, addebiti automatici o spese non manovrabili.',
+          description: _description(
+            fallback: 'Sono RID, addebiti automatici o spese non manovrabili.',
+            decisions: blocked,
+          ),
           priority: 110,
         ),
       );
@@ -32,7 +38,10 @@ class PlannerRecommendationBuilder {
       recommendations.add(
         FrodoObservationRecommendation(
           title: 'Dai priorità a ${_names(payNow)}',
-          description: 'Sono spese critiche, obbligatorie o con priorità alta.',
+          description: _description(
+            fallback: 'Sono spese critiche, obbligatorie o con priorità alta.',
+            decisions: payNow,
+          ),
           priority: 100,
         ),
       );
@@ -42,7 +51,10 @@ class PlannerRecommendationBuilder {
       recommendations.add(
         FrodoObservationRecommendation(
           title: 'Aspetta ${_names(income)}',
-          description: 'Le entrate imminenti possono evitare l’uso dei fondi.',
+          description: _description(
+            fallback: 'Le entrate imminenti possono evitare l’uso dei fondi.',
+            decisions: income,
+          ),
           priority: 95,
         ),
       );
@@ -52,9 +64,25 @@ class PlannerRecommendationBuilder {
       recommendations.add(
         FrodoObservationRecommendation(
           title: 'Puoi rimandare ${_names(delay)}',
-          description:
-              'Sono spese flessibili: possono aiutare a recuperare margine.',
+          description: _description(
+            fallback:
+                'Sono spese flessibili: possono aiutare a recuperare margine.',
+            decisions: delay,
+          ),
           priority: 90,
+        ),
+      );
+    }
+
+    if (monitor.isNotEmpty) {
+      recommendations.add(
+        FrodoObservationRecommendation(
+          title: 'Monitora ${_names(monitor)}',
+          description: _description(
+            fallback: 'Sono voci che richiedono attenzione prima di decidere.',
+            decisions: monitor,
+          ),
+          priority: 85,
         ),
       );
     }
@@ -73,6 +101,29 @@ class PlannerRecommendationBuilder {
     recommendations.sort((a, b) => b.priority.compareTo(a.priority));
 
     return recommendations;
+  }
+
+  static String _description({
+    required String fallback,
+    required List<PlannerDecision> decisions,
+  }) {
+    final traceMessages = decisions
+        .expand((decision) => decision.decisionTrace)
+        .where(
+          (trace) =>
+              trace.level == PlannerDecisionTraceLevel.warning ||
+              trace.level == PlannerDecisionTraceLevel.critical,
+        )
+        .map((trace) => trace.message)
+        .toSet()
+        .take(3)
+        .toList();
+
+    if (traceMessages.isEmpty) {
+      return fallback;
+    }
+
+    return traceMessages.join(' ');
   }
 
   static String _names(List<PlannerDecision> decisions) {
