@@ -35,6 +35,7 @@ import '../widgets/fourth_shift_panel.dart';
 import '../widgets/ferie_period_panel.dart';
 import '../widgets/disease_period_panel.dart';
 import '../widgets/extra_events_dialog.dart';
+import '../logic/calendar/view_models/sandra_coverage_view_model.dart';
 
 // ✅ NEW: Eventi speciali centro estivo
 import '../logic/summer_camp_special_event_store.dart';
@@ -48,6 +49,12 @@ import '../models/promemoria.dart';
 import '../logic/alice_events/alice_event_behavior_text.dart';
 import '../logic/alice_events/alice_event_behavior.dart';
 import '../logic/alice_events/alice_event_engine.dart';
+import '../logic/calendar/models/family_now_snapshot.dart';
+import '../logic/calendar/models/coverage_result_step_a.dart';
+import '../logic/calendar/models/date_range.dart';
+import '../logic/calendar/models/turn_event_conflict.dart';
+import '../widgets/calendar/sandra_compact_row.dart';
+import '../widgets/calendar/sandra_coverage_card.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -994,7 +1001,7 @@ class _CalendarioScreenStepAStabileState
         disease?.type == DiseaseType.bed;
   }
 
-  String _buildBlockingStateConflictDetail({required _DateRange overlap}) {
+  String _buildBlockingStateConflictDetail({required DateRange overlap}) {
     return "Evento incompatibile con stato reale bloccante.\n"
         "Stato reale: malattia a letto\n"
         "Fascia in conflitto: ${_rangeLabel(overlap)}";
@@ -1269,7 +1276,7 @@ class _CalendarioScreenStepAStabileState
     return TimeOfDay(hour: h, minute: min);
   }
 
-  _DateRange? _permessoRangeFromDisplayString(dynamic pr, DateTime day) {
+  DateRange? _permessoRangeFromDisplayString(dynamic pr, DateTime day) {
     try {
       final dynamic displayDyn = pr.toDisplayString();
       if (displayDyn is! String) return null;
@@ -1285,7 +1292,7 @@ class _CalendarioScreenStepAStabileState
       final endDT = _atDayTime(day, end);
       if (!endDT.isAfter(startDT)) return null;
 
-      return _DateRange(start: startDT, end: endDT);
+      return DateRange(start: startDT, end: endDT);
     } catch (_) {
       return null;
     }
@@ -1423,19 +1430,19 @@ class _CalendarioScreenStepAStabileState
     return active ? "Alice con $who ✅" : "Porta Alice con $who";
   }
 
-  _DateRange? _rangeOverlap(_DateRange a, _DateRange b) {
+  DateRange? _rangeOverlap(DateRange a, DateRange b) {
     final start = a.start.isAfter(b.start) ? a.start : b.start;
     final end = a.end.isBefore(b.end) ? a.end : b.end;
 
     if (!end.isAfter(start)) return null;
-    return _DateRange(start: start, end: end);
+    return DateRange(start: start, end: end);
   }
 
-  _DateRange? _eventRangeForConflict(RealEvent event, DateTime day) {
+  DateRange? _eventRangeForConflict(RealEvent event, DateTime day) {
     final d0 = _onlyDate(day);
 
     if (event.startTime == null && event.endTime == null) {
-      return _DateRange(
+      return DateRange(
         start: DateTime(d0.year, d0.month, d0.day, 0, 0),
         end: DateTime(d0.year, d0.month, d0.day, 23, 59),
       );
@@ -1447,25 +1454,22 @@ class _CalendarioScreenStepAStabileState
 
       if (!end.isAfter(start)) return null;
 
-      return _DateRange(start: start, end: end);
+      return DateRange(start: start, end: end);
     }
 
     if (event.startTime != null) {
       final start = _atDayTime(d0, event.startTime!);
-      return _DateRange(
+      return DateRange(
         start: start,
         end: start.add(const Duration(minutes: 1)),
       );
     }
 
     final end = _atDayTime(d0, event.endTime!);
-    return _DateRange(
-      start: end.subtract(const Duration(minutes: 1)),
-      end: end,
-    );
+    return DateRange(start: end.subtract(const Duration(minutes: 1)), end: end);
   }
 
-  _DateRange? _permessoRangeFromOverride(
+  DateRange? _permessoRangeFromOverride(
     PersonDayOverride? manualOverride,
     DateTime day,
   ) {
@@ -1539,10 +1543,10 @@ class _CalendarioScreenStepAStabileState
 
     if (!endDT.isAfter(startDT)) return null;
 
-    return _DateRange(start: startDT, end: endDT);
+    return DateRange(start: startDT, end: endDT);
   }
 
-  String _rangeLabel(_DateRange range) {
+  String _rangeLabel(DateRange range) {
     return "${fmtDateTimeHHmm(range.start)}-${fmtDateTimeHHmm(range.end)}";
   }
 
@@ -1572,7 +1576,7 @@ class _CalendarioScreenStepAStabileState
 
   String _buildOpenConflictDetail({
     required TurnPlan turnPlan,
-    required _DateRange overlap,
+    required DateRange overlap,
   }) {
     return "Evento dentro il turno di lavoro.\n"
         "Turno: ${_turnPlanSummary(turnPlan)}\n"
@@ -1581,8 +1585,8 @@ class _CalendarioScreenStepAStabileState
 
   String _buildPartialConflictDetail({
     required TurnPlan turnPlan,
-    required _DateRange overlap,
-    required _DateRange covered,
+    required DateRange overlap,
+    required DateRange covered,
     required List<String> uncoveredParts,
   }) {
     return "Evento dentro il turno di lavoro.\n"
@@ -1594,8 +1598,8 @@ class _CalendarioScreenStepAStabileState
 
   String _buildResolvedConflictDetail({
     required TurnPlan turnPlan,
-    required _DateRange overlap,
-    required _DateRange covered,
+    required DateRange overlap,
+    required DateRange covered,
   }) {
     return "Evento dentro il turno di lavoro.\n"
         "Turno: ${_turnPlanSummary(turnPlan)}\n"
@@ -1605,7 +1609,7 @@ class _CalendarioScreenStepAStabileState
 
   String _buildResolvedConflictDetailFerie({
     required TurnPlan turnPlan,
-    required _DateRange overlap,
+    required DateRange overlap,
   }) {
     return "Evento dentro il turno di lavoro.\n"
         "Turno: ${_turnPlanSummary(turnPlan)}\n"
@@ -1908,7 +1912,7 @@ class _CalendarioScreenStepAStabileState
 
     if (isSick) return const [];
 
-    final turnRange = _DateRange(
+    final turnRange = DateRange(
       start: _atDayTime(day, turnPlan.start),
       end: _atDayTime(day, turnPlan.end),
     );
@@ -1997,14 +2001,14 @@ class _CalendarioScreenStepAStabileState
         continue;
       }
 
-      _DateRange? uncoveredBefore;
-      _DateRange? uncoveredAfter;
+      DateRange? uncoveredBefore;
+      DateRange? uncoveredAfter;
 
       if (covered.start.isAfter(overlap.start)) {
-        uncoveredBefore = _DateRange(start: overlap.start, end: covered.start);
+        uncoveredBefore = DateRange(start: overlap.start, end: covered.start);
       }
       if (covered.end.isBefore(overlap.end)) {
-        uncoveredAfter = _DateRange(start: covered.end, end: overlap.end);
+        uncoveredAfter = DateRange(start: covered.end, end: overlap.end);
       }
 
       final uncoveredParts = <String>[];
@@ -3678,7 +3682,7 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
-  _FamilyNowSnapshot _buildFamilyNowSnapshot() {
+  FamilyNowSnapshot _buildFamilyNowSnapshot() {
     final realNow = DateTime.now();
 
     final now = DateTime(
@@ -4148,7 +4152,7 @@ class _CalendarioScreenStepAStabileState
     final chiaraVisual = getStatusVisual(chiaraNowLabel);
     final aliceVisual = getStatusVisual(aliceNowLabel);
 
-    return _FamilyNowSnapshot(
+    return FamilyNowSnapshot(
       realNow: realNow,
       now: now,
       realEventStore: realEventStore,
@@ -9046,177 +9050,81 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
-  Widget _cardCopertura(CoverageResultStepA cov) {
+  SandraCoverageViewModel _buildSandraCoverageViewModel() {
     final sandraDecision = _sandraDecisionForDay(_selectedDay);
 
-    final manualMattina = _effSandraMattina(_selectedDay);
-    final manualPranzo = _effSandraPranzo(_selectedDay);
-    final manualSera = _effSandraSera(_selectedDay);
-
-    return _card(
-      title: "Copertura Sandra / Babysitter",
-      subtitle: "Fasce rapide con modifica orario e attivazione manuale.",
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sandraCompactRow(
-            title: "Mattina",
-            start: _engine.sandraCambioMattinaStart,
-            end: _engine.sandraCambioMattinaEnd,
-            serve: sandraDecision.serveSandraMattina,
-            manual: manualMattina,
-            onEdit: () {
-              _editSandraWindow(
-                title: "Cambio turno mattina",
-                currentStart: _engine.sandraCambioMattinaStart,
-                currentEnd: _engine.sandraCambioMattinaEnd,
-                onSave: (s, e) => _engine.setSandraCambioMattina(s, e),
-              );
-            },
-            onChanged: (v) {
-              setState(
-                () => daySettingsStore.setSandraMattinaForDay(_selectedDay, v),
-              );
-              ipsStore.refresh(now: _selectedDay);
-            },
-          ),
-          const SizedBox(height: 8),
-          _sandraCompactRow(
-            title: "Pranzo",
-            start: _effectiveSandraPranzoStart(_selectedDay),
-            end: _engine.sandraPranzoEnd,
-            serve: sandraDecision.serveSandraPranzo,
-            manual: manualPranzo,
-            onEdit: () {
-              _editSandraWindow(
-                title: "Pranzo",
-                currentStart: _engine.sandraPranzoStart,
-                currentEnd: _engine.sandraPranzoEnd,
-                onSave: (s, e) => _engine.setSandraPranzo(s, e),
-              );
-            },
-            onChanged: (v) {
-              setState(
-                () => daySettingsStore.setSandraPranzoForDay(_selectedDay, v),
-              );
-              ipsStore.refresh(now: _selectedDay);
-            },
-          ),
-          const SizedBox(height: 8),
-          _sandraCompactRow(
-            title: "Sera",
-            start: _engine.sandraSeraStart,
-            end: _engine.sandraSeraEnd,
-            serve: sandraDecision.serveSandraSera,
-            manual: manualSera,
-            onEdit: () {
-              _editSandraWindow(
-                title: "Sera",
-                currentStart: _engine.sandraSeraStart,
-                currentEnd: _engine.sandraSeraEnd,
-                onSave: (s, e) => _engine.setSandraSera(s, e),
-              );
-            },
-            onChanged: (v) {
-              setState(
-                () => daySettingsStore.setSandraSeraForDay(_selectedDay, v),
-              );
-              ipsStore.refresh(now: _selectedDay);
-            },
-          ),
-        ],
-      ),
+    return SandraCoverageViewModel(
+      decision: sandraDecision,
+      manualMattina: _effSandraMattina(_selectedDay),
+      manualPranzo: _effSandraPranzo(_selectedDay),
+      manualSera: _effSandraSera(_selectedDay),
+      mattinaStart: _engine.sandraCambioMattinaStart,
+      mattinaEnd: _engine.sandraCambioMattinaEnd,
+      pranzoStart: _effectiveSandraPranzoStart(_selectedDay),
+      pranzoEnd: _engine.sandraPranzoEnd,
+      seraStart: _engine.sandraSeraStart,
+      seraEnd: _engine.sandraSeraEnd,
     );
   }
 
-  Widget _sandraNeedText({required bool serve, required bool manual}) {
-    String text;
-    Color color;
-
-    if (serve && manual) {
-      text = "Serve dal motore • attivata manualmente";
-      color = Colors.orange;
-    } else if (serve) {
-      text = "Serve dal motore";
-      color = Colors.red;
-    } else if (manual) {
-      text = "Attivata manualmente";
-      color = Colors.blueGrey;
-    } else {
-      text = "Non serve dal motore";
-      color = Colors.green;
-    }
-
-    return Text(
-      text,
-      style: TextStyle(color: color, fontWeight: FontWeight.w700),
+  void _editSandraMattina() {
+    _editSandraWindow(
+      title: "Cambio turno mattina",
+      currentStart: _engine.sandraCambioMattinaStart,
+      currentEnd: _engine.sandraCambioMattinaEnd,
+      onSave: (s, e) => _engine.setSandraCambioMattina(s, e),
     );
   }
 
-  Widget _sandraCompactRow({
-    required String title,
-    required TimeOfDay start,
-    required TimeOfDay end,
-    required bool serve,
-    required bool manual,
-    required VoidCallback onEdit,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.03),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.black.withOpacity(0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  "$title   ${fmtTimeOfDay(start)}–${fmtTimeOfDay(end)}",
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.edit, size: 18),
-                tooltip: "Modifica fascia",
-                onPressed: onEdit,
-              ),
-              Switch(value: manual, onChanged: onChanged),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.only(left: 2, top: 2),
-            child: _sandraNeedText(serve: serve, manual: manual),
-          ),
-        ],
-      ),
+  void _editSandraPranzo() {
+    _editSandraWindow(
+      title: "Cambio turno pranzo",
+      currentStart: _engine.sandraPranzoStart,
+      currentEnd: _engine.sandraPranzoEnd,
+      onSave: (s, e) => _engine.setSandraPranzo(s, e),
     );
   }
 
-  Widget _sandraWindowRow({
-    required String title,
-    required TimeOfDay start,
-    required TimeOfDay end,
-    required VoidCallback onEdit,
-  }) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            "$title\n${fmtTimeOfDay(start)}–${fmtTimeOfDay(end)}",
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.edit, size: 18),
-          tooltip: "Modifica fascia",
-          onPressed: onEdit,
-        ),
-      ],
+  void _editSandraSera() {
+    _editSandraWindow(
+      title: "Cambio turno sera",
+      currentStart: _engine.sandraSeraStart,
+      currentEnd: _engine.sandraSeraEnd,
+      onSave: (s, e) => _engine.setSandraSera(s, e),
+    );
+  }
+
+  void _setSandraMattina(bool value) {
+    setState(() {
+      daySettingsStore.setSandraMattinaForDay(_selectedDay, value);
+    });
+    ipsStore.refresh(now: _selectedDay);
+  }
+
+  void _setSandraPranzo(bool value) {
+    setState(() {
+      daySettingsStore.setSandraPranzoForDay(_selectedDay, value);
+    });
+    ipsStore.refresh(now: _selectedDay);
+  }
+
+  void _setSandraSera(bool value) {
+    setState(() {
+      daySettingsStore.setSandraSeraForDay(_selectedDay, value);
+    });
+    ipsStore.refresh(now: _selectedDay);
+  }
+
+  Widget _cardCopertura(CoverageResultStepA cov) {
+    return SandraCoverageCard(
+      model: _buildSandraCoverageViewModel(),
+      onEditMattina: _editSandraMattina,
+      onEditPranzo: _editSandraPranzo,
+      onEditSera: _editSandraSera,
+
+      onChangedMattina: _setSandraMattina,
+      onChangedPranzo: _setSandraPranzo,
+      onChangedSera: _setSandraSera,
     );
   }
 
@@ -10314,84 +10222,3 @@ class _CalendarioScreenStepAStabileState
 }
 
 enum DayGapVisualState { noProblem, coveredNeed, realGap }
-
-class CoverageResultStepA {
-  final bool ok;
-  final List<String> details;
-  final List<CoverageGapDetail> gapDetails;
-  final String bannerText;
-
-  const CoverageResultStepA({
-    required this.ok,
-    required this.details,
-    required this.gapDetails,
-    required this.bannerText,
-  });
-}
-
-enum TurnEventConflictState { open, partial, resolved }
-
-class TurnEventConflictResolution {
-  final RealEvent event;
-  final TurnEventConflictState state;
-  final _DateRange overlapRange;
-  final String? detailText;
-  final bool hasTurnContext;
-
-  const TurnEventConflictResolution({
-    required this.event,
-    required this.state,
-    required this.overlapRange,
-    this.detailText,
-    this.hasTurnContext = true,
-  });
-}
-
-class _DateRange {
-  final DateTime start;
-  final DateTime end;
-
-  const _DateRange({required this.start, required this.end});
-}
-
-class _FamilyNowSnapshot {
-  final DateTime realNow;
-  final DateTime now;
-  final dynamic realEventStore;
-  final DateTime nowDay;
-  final bool matteoBusyNow;
-  final bool chiaraBusyNow;
-  final bool aliceIsOutNow;
-  final String matteoNowLabel;
-  final String chiaraNowLabel;
-  final String aliceNowLabel;
-  final String matteoTurnLabel;
-  final CoverageResultStepA cov;
-  final bool isEmergency;
-  final bool showSummerCampSpecialCard;
-  final int ipsCoverage30;
-  final StatusVisual matteoVisual;
-  final StatusVisual chiaraVisual;
-  final StatusVisual aliceVisual;
-
-  const _FamilyNowSnapshot({
-    required this.realNow,
-    required this.now,
-    required this.realEventStore,
-    required this.nowDay,
-    required this.matteoBusyNow,
-    required this.chiaraBusyNow,
-    required this.aliceIsOutNow,
-    required this.matteoNowLabel,
-    required this.chiaraNowLabel,
-    required this.aliceNowLabel,
-    required this.matteoTurnLabel,
-    required this.cov,
-    required this.isEmergency,
-    required this.showSummerCampSpecialCard,
-    required this.ipsCoverage30,
-    required this.matteoVisual,
-    required this.chiaraVisual,
-    required this.aliceVisual,
-  });
-}

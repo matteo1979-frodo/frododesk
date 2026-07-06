@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/work_shift.dart';
 import '../models/real_event.dart';
 import '../screens/calendario_screen_stepa.dart';
+import '../logic/calendar/models/turn_event_conflict.dart';
 
 String fmtTimeOfDay(TimeOfDay t) =>
     "${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}";
