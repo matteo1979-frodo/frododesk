@@ -38,7 +38,7 @@ class PlannerDecisionEngine {
       return PlannerDecision(
         item: item,
         type: PlannerDecisionType.waitIncome,
-        reason: 'Entrata prevista: va considerata prima di usare fondi.',
+        reason: _incomeReason(item),
         score: 850,
         decisionTrace: decisionTrace,
       );
@@ -48,7 +48,7 @@ class PlannerDecisionEngine {
       return PlannerDecision(
         item: item,
         type: PlannerDecisionType.keepCovered,
-        reason: 'RID/addebito automatico: non va spostato o rimandato.',
+        reason: _automaticPaymentReason(item),
         score: 1000,
         decisionTrace: decisionTrace,
       );
@@ -58,8 +58,7 @@ class PlannerDecisionEngine {
       return PlannerDecision(
         item: item,
         type: PlannerDecisionType.keepCovered,
-        reason:
-            'Voce protetta: rappresenta una protezione economica e non dovrebbe essere utilizzata se non strettamente necessario.',
+        reason: _protectedReason(item),
         score: 950,
         decisionTrace: decisionTrace,
       );
@@ -69,7 +68,7 @@ class PlannerDecisionEngine {
       return PlannerDecision(
         item: item,
         type: PlannerDecisionType.payNow,
-        reason: 'Spesa critica o obbligatoria: va messa tra le priorità.',
+        reason: _criticalReason(item),
         score: 900,
         decisionTrace: decisionTrace,
       );
@@ -79,8 +78,7 @@ class PlannerDecisionEngine {
       return PlannerDecision(
         item: item,
         type: PlannerDecisionType.monitor,
-        reason:
-            'Questa uscita rischia di portare il conto collegato sotto la soglia minima di sicurezza.',
+        reason: _minimumBalanceReason(item, balances),
         score: 875,
         decisionTrace: decisionTrace,
       );
@@ -90,8 +88,7 @@ class PlannerDecisionEngine {
       return PlannerDecision(
         item: item,
         type: PlannerDecisionType.monitor,
-        reason:
-            'Questa uscita pesa su una persona già in sofferenza economica: prima di confermarla valuta se esistono alternative.',
+        reason: _ownerUnderPressureReason(item, ownersUnderPressure),
         score: 825,
         decisionTrace: decisionTrace,
       );
@@ -101,7 +98,7 @@ class PlannerDecisionEngine {
       return PlannerDecision(
         item: item,
         type: PlannerDecisionType.delay,
-        reason: 'Spesa rimandabile: può aiutare a recuperare margine.',
+        reason: _delayReason(item),
         score: 500,
         decisionTrace: decisionTrace,
       );
@@ -110,7 +107,7 @@ class PlannerDecisionEngine {
     return PlannerDecision(
       item: item,
       type: PlannerDecisionType.monitor,
-      reason: 'Spesa da monitorare: non ha una regola forte associata.',
+      reason: _genericMonitorReason(item),
       score: 300,
       decisionTrace: decisionTrace,
     );
@@ -125,93 +122,89 @@ class PlannerDecisionEngine {
 
     if (item.isIncome) {
       trace.add(
-        const PlannerDecisionTrace(
+        PlannerDecisionTrace(
           reason: PlannerDecisionReason.incomeForecast,
           level: PlannerDecisionTraceLevel.positive,
-          message: 'La voce è un’entrata prevista.',
+          message: _incomeReason(item),
         ),
       );
     } else {
       trace.add(
-        const PlannerDecisionTrace(
+        PlannerDecisionTrace(
           reason: PlannerDecisionReason.generic,
           level: PlannerDecisionTraceLevel.neutral,
-          message: 'La voce è un’uscita prevista.',
+          message:
+              'Ho considerato ${item.name} come uscita prevista da €${_money(item.expectedAmount)}.',
         ),
       );
     }
 
     if (_isAutomaticOrRid(item)) {
       trace.add(
-        const PlannerDecisionTrace(
+        PlannerDecisionTrace(
           reason: PlannerDecisionReason.automaticPayment,
           level: PlannerDecisionTraceLevel.critical,
-          message:
-              'La voce risulta collegata a RID o addebito automatico: non va trattata come spostabile.',
+          message: _automaticPaymentReason(item),
         ),
       );
     }
 
     if (_isProtected(item)) {
       trace.add(
-        const PlannerDecisionTrace(
+        PlannerDecisionTrace(
           reason: PlannerDecisionReason.protectedExpense,
           level: PlannerDecisionTraceLevel.warning,
-          message:
-              'La voce è protetta: consumarla o modificarla può ridurre la resilienza economica.',
+          message: _protectedReason(item),
         ),
       );
     }
 
     if (_isCritical(item)) {
       trace.add(
-        const PlannerDecisionTrace(
+        PlannerDecisionTrace(
           reason: PlannerDecisionReason.criticalExpense,
           level: PlannerDecisionTraceLevel.critical,
-          message:
-              'La voce ha priorità critica o obbligatoria e deve essere valutata prima delle spese manovrabili.',
+          message: _criticalReason(item),
         ),
       );
     }
 
     if (_wouldBreakMinimumBalance(item, balances)) {
       trace.add(
-        const PlannerDecisionTrace(
+        PlannerDecisionTrace(
           reason: PlannerDecisionReason.minimumBalance,
           level: PlannerDecisionTraceLevel.warning,
-          message:
-              'Il conto collegato rischia di scendere sotto la soglia minima di sicurezza.',
+          message: _minimumBalanceReason(item, balances),
         ),
       );
     }
 
     if (_isAssignedToOwnerUnderPressure(item, ownersUnderPressure)) {
       trace.add(
-        const PlannerDecisionTrace(
+        PlannerDecisionTrace(
           reason: PlannerDecisionReason.ownerUnderPressure,
           level: PlannerDecisionTraceLevel.warning,
-          message: 'La voce pesa su una persona già in sofferenza economica.',
+          message: _ownerUnderPressureReason(item, ownersUnderPressure),
         ),
       );
     }
 
     if (_canBeDelayed(item)) {
       trace.add(
-        const PlannerDecisionTrace(
+        PlannerDecisionTrace(
           reason: PlannerDecisionReason.delayAllowed,
           level: PlannerDecisionTraceLevel.positive,
-          message:
-              'La voce è manovrabile: può essere valutata come rimandabile.',
+          message: _delayReason(item),
         ),
       );
     }
 
     if (trace.length == 1) {
       trace.add(
-        const PlannerDecisionTrace(
+        PlannerDecisionTrace(
           reason: PlannerDecisionReason.generic,
           level: PlannerDecisionTraceLevel.neutral,
-          message: 'Non sono emerse regole forti aggiuntive per questa voce.',
+          message: _genericMonitorReason(item),
         ),
       );
     }
@@ -243,18 +236,114 @@ class PlannerDecisionEngine {
     FinanceRecurringItem item,
     List<FinanceBalance> balances,
   ) {
-    final balanceId = item.balanceId;
-
-    if (balanceId == null) return false;
-
-    final balance = balances.where((b) => b.balanceId == balanceId).firstOrNull;
+    final balance = _linkedBalance(item, balances);
 
     if (balance == null) return false;
-    if (!balance.active) return false;
 
     final projectedAmount = balance.availableAmount - item.expectedAmount;
 
     return projectedAmount <= balance.warningThreshold;
+  }
+
+  static FinanceBalance? _linkedBalance(
+    FinanceRecurringItem item,
+    List<FinanceBalance> balances,
+  ) {
+    final balanceId = item.balanceId;
+
+    if (balanceId == null) return null;
+
+    final matches = balances.where((b) => b.balanceId == balanceId).toList();
+
+    if (matches.isEmpty) return null;
+
+    final balance = matches.first;
+
+    if (!balance.active) return null;
+
+    return balance;
+  }
+
+  static String _incomeReason(FinanceRecurringItem item) {
+    return 'Ho visto che ${item.name} è un’entrata prevista da €${_money(item.expectedAmount)} per ${_ownerLabel(item.paymentOwner)}. Prima di usare fondi o forzare pagamenti, conviene considerare questa entrata nel piano.';
+  }
+
+  static String _automaticPaymentReason(FinanceRecurringItem item) {
+    return 'Ho visto che ${item.name} è collegata a un pagamento automatico o RID. Per questo non la considero una voce spostabile o rimandabile.';
+  }
+
+  static String _protectedReason(FinanceRecurringItem item) {
+    return 'Ho visto che ${item.name} è una voce protetta. Preferisco non modificarla o consumarla se non strettamente necessario, perché serve a mantenere protezione economica.';
+  }
+
+  static String _criticalReason(FinanceRecurringItem item) {
+    return 'Ho dato priorità a ${item.name}, perché è una spesa critica o obbligatoria da €${_money(item.expectedAmount)}. Prima vengono le voci che non possono essere lasciate indietro.';
+  }
+
+  static String _minimumBalanceReason(
+    FinanceRecurringItem item,
+    List<FinanceBalance> balances,
+  ) {
+    final balance = _linkedBalance(item, balances);
+
+    if (balance == null) {
+      return 'Ho visto che ${item.name} rischia di portare il conto collegato sotto la soglia minima di sicurezza.';
+    }
+
+    final before = balance.availableAmount;
+    final after = before - item.expectedAmount;
+    final owner = _personLabel(balance.personId);
+
+    return 'Ho controllato ${balance.name} di $owner. Prima di ${item.name} risultano disponibili circa €${_money(before)}. Dopo questa uscita da €${_money(item.expectedAmount)} resterebbero circa €${_money(after)}, sotto la soglia minima impostata di €${_money(balance.warningThreshold)}.';
+  }
+
+  static String _ownerUnderPressureReason(
+    FinanceRecurringItem item,
+    List<FinancePaymentOwner> ownersUnderPressure,
+  ) {
+    final owners = ownersUnderPressure.map(_ownerLabel).join(', ');
+
+    if (item.paymentOwner == FinancePaymentOwner.shared) {
+      return 'Ho visto che ${item.name} è una spesa condivisa, ma almeno una persona è già in sofferenza economica ($owners). Prima di confermarla conviene valutare se il peso è distribuito bene.';
+    }
+
+    return 'Ho visto che ${item.name} pesa su ${_ownerLabel(item.paymentOwner)}, che risulta già in sofferenza economica. Prima di confermare questa uscita conviene valutare alternative.';
+  }
+
+  static String _delayReason(FinanceRecurringItem item) {
+    return 'Ho visto che ${item.name} non è automatica, non è critica e può essere rimandata. Spostarla può aiutare a recuperare margine senza toccare le spese bloccate.';
+  }
+
+  static String _genericMonitorReason(FinanceRecurringItem item) {
+    return 'Ho controllato ${item.name}, ma non ho trovato una regola forte che imponga di pagarla subito, rimandarla o bloccarla. Per ora la considero una voce da monitorare.';
+  }
+
+  static String _money(double value) {
+    return value.toStringAsFixed(0);
+  }
+
+  static String _personLabel(String personId) {
+    switch (personId) {
+      case 'matteo':
+        return 'Matteo';
+      case 'chiara':
+        return 'Chiara';
+      case 'alice':
+        return 'Alice';
+      default:
+        return personId;
+    }
+  }
+
+  static String _ownerLabel(FinancePaymentOwner owner) {
+    switch (owner) {
+      case FinancePaymentOwner.matteo:
+        return 'Matteo';
+      case FinancePaymentOwner.chiara:
+        return 'Chiara';
+      case FinancePaymentOwner.shared:
+        return 'Condiviso';
+    }
   }
 
   static bool _isAssignedToOwnerUnderPressure(

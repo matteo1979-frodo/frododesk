@@ -5,35 +5,63 @@ class FinanceObservationExplanationBuilder {
   static List<FrodoObservationExplanation> build({
     required List<PlannerDecision> decisions,
   }) {
+    final traces = decisions
+        .expand((decision) => decision.decisionTrace)
+        .where((trace) => trace.visibleToUser)
+        .toList();
+
     final explanations = <FrodoObservationExplanation>[];
-    final seenKeys = <String>{};
+    final seenReasonKeys = <String>{};
 
-    for (final decision in decisions) {
-      for (final trace in decision.decisionTrace.where(
-        (trace) => trace.visibleToUser,
-      )) {
-        final metadata = trace.reason.metadata;
-        final key = '${trace.reason.name}_${trace.level.name}_${trace.message}';
+    final orderedReasons = <PlannerDecisionReason>[
+      PlannerDecisionReason.automaticPayment,
+      PlannerDecisionReason.criticalExpense,
+      PlannerDecisionReason.protectedExpense,
+      PlannerDecisionReason.minimumBalance,
+      PlannerDecisionReason.ownerUnderPressure,
+      PlannerDecisionReason.incomeForecast,
+      PlannerDecisionReason.delayAllowed,
+      PlannerDecisionReason.usableFunds,
+      PlannerDecisionReason.protectedFunds,
+      PlannerDecisionReason.sharedPayment,
+      PlannerDecisionReason.familyPriority,
+      PlannerDecisionReason.personalPriority,
+      PlannerDecisionReason.suggestedAccount,
+      PlannerDecisionReason.thirteenthSalary,
+      PlannerDecisionReason.fourteenthSalary,
+      PlannerDecisionReason.productionBonus,
+      PlannerDecisionReason.extraordinaryIncome,
+      PlannerDecisionReason.opportunity,
+      PlannerDecisionReason.generic,
+    ];
 
-        if (seenKeys.contains(key)) {
-          continue;
-        }
+    for (final reason in orderedReasons) {
+      final matching = traces.where((trace) => trace.reason == reason).toList();
 
-        seenKeys.add(key);
-
-        explanations.add(
-          FrodoObservationExplanation(
-            reasonKey: trace.reason.name,
-            level: _mapLevel(trace.level),
-            message: '${metadata.icon} ${metadata.title}\n${trace.message}',
-          ),
-        );
+      if (matching.isEmpty) {
+        continue;
       }
-    }
 
-    explanations.sort((a, b) {
-      return _levelWeight(b.level).compareTo(_levelWeight(a.level));
-    });
+      final strongest = matching.reduce((a, b) {
+        return _traceWeight(a.level) >= _traceWeight(b.level) ? a : b;
+      });
+
+      if (seenReasonKeys.contains(reason.name)) {
+        continue;
+      }
+
+      seenReasonKeys.add(reason.name);
+
+      final metadata = reason.metadata;
+
+      explanations.add(
+        FrodoObservationExplanation(
+          reasonKey: reason.name,
+          level: _mapLevel(strongest.level),
+          message: '${metadata.icon} ${metadata.title}\n${strongest.message}',
+        ),
+      );
+    }
 
     return explanations;
   }
@@ -53,15 +81,15 @@ class FinanceObservationExplanationBuilder {
     }
   }
 
-  static int _levelWeight(FrodoObservationExplanationLevel level) {
+  static int _traceWeight(PlannerDecisionTraceLevel level) {
     switch (level) {
-      case FrodoObservationExplanationLevel.critical:
+      case PlannerDecisionTraceLevel.critical:
         return 4;
-      case FrodoObservationExplanationLevel.warning:
+      case PlannerDecisionTraceLevel.warning:
         return 3;
-      case FrodoObservationExplanationLevel.positive:
+      case PlannerDecisionTraceLevel.positive:
         return 2;
-      case FrodoObservationExplanationLevel.neutral:
+      case PlannerDecisionTraceLevel.neutral:
         return 1;
     }
   }

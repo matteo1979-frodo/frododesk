@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../models/frodo_observation.dart';
+import 'frodo_reason_narrator.dart';
+import 'frodo_reason_story.dart';
 
 Future<void> showFrodoExplanationDialog({
   required BuildContext context,
@@ -22,8 +24,6 @@ class FrodoExplanationDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final explanations = observation.explanations;
-
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
@@ -51,58 +51,15 @@ class FrodoExplanationDialog extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const _FrodoBrainIcon(),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Come ha ragionato Frodo',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 19,
-                              fontWeight: FontWeight.w900,
-                              height: 1.1,
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          Text(
-                            'Ti mostro i controlli principali che hanno portato a questa osservazione.',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.68),
-                              fontSize: 12.8,
-                              fontWeight: FontWeight.w700,
-                              height: 1.28,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                _DialogHeader(observation: observation),
                 const SizedBox(height: 14),
                 _ObservationSummary(observation: observation),
                 const SizedBox(height: 14),
-                if (explanations.isEmpty)
-                  const _EmptyExplanationState()
-                else
-                  Flexible(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          for (var i = 0; i < explanations.length; i++) ...[
-                            _ExplanationTile(explanation: explanations[i]),
-                            if (i != explanations.length - 1)
-                              const SizedBox(height: 9),
-                          ],
-                        ],
-                      ),
-                    ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: FrodoReasonStory(observation: observation),
                   ),
+                ),
                 const SizedBox(height: 15),
                 SizedBox(
                   width: double.infinity,
@@ -131,6 +88,49 @@ class FrodoExplanationDialog extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _DialogHeader extends StatelessWidget {
+  final FrodoObservation observation;
+
+  const _DialogHeader({required this.observation});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _FrodoBrainIcon(),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Come ha ragionato Frodo',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                  height: 1.1,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                FrodoReasonNarrator.opening(observation),
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.68),
+                  fontSize: 12.8,
+                  fontWeight: FontWeight.w700,
+                  height: 1.28,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -173,94 +173,26 @@ class _ObservationSummary extends StatelessWidget {
               height: 1.28,
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ExplanationTile extends StatelessWidget {
-  final FrodoObservationExplanation explanation;
-
-  const _ExplanationTile({required this.explanation});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = _explanationLevelColor(explanation.level);
-    final parts = explanation.message.split('\n');
-    final title = parts.isNotEmpty ? parts.first.trim() : '💡 Valutazione';
-    final body = parts.length > 1
-        ? parts.skip(1).join('\n').trim()
-        : explanation.message.trim();
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.20),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: color.withOpacity(0.24)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _LevelDot(color: color),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.90),
-                    fontSize: 13.2,
-                    fontWeight: FontWeight.w900,
-                    height: 1.18,
-                  ),
-                ),
-                if (body.isNotEmpty && body != title) ...[
-                  const SizedBox(height: 5),
-                  Text(
-                    body,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.66),
-                      fontSize: 12.25,
-                      fontWeight: FontWeight.w700,
-                      height: 1.30,
-                    ),
-                  ),
-                ],
-              ],
+          const SizedBox(height: 10),
+          Text(
+            'Percorso seguito',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.92),
+              fontSize: 12.5,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            FrodoReasonNarrator.pathIntro(observation),
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.66),
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              height: 1.3,
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _EmptyExplanationState extends StatelessWidget {
-  const _EmptyExplanationState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.18),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.12)),
-      ),
-      child: Text(
-        'Frodo non ha ancora motivazioni dettagliate da mostrare per questa osservazione.',
-        style: TextStyle(
-          color: Colors.white.withOpacity(0.66),
-          fontSize: 12.6,
-          fontWeight: FontWeight.w700,
-          height: 1.28,
-        ),
       ),
     );
   }
@@ -285,30 +217,6 @@ class _FrodoBrainIcon extends StatelessWidget {
   }
 }
 
-class _LevelDot extends StatelessWidget {
-  final Color color;
-
-  const _LevelDot({required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 28,
-      height: 28,
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(11),
-        border: Border.all(color: color.withOpacity(0.28)),
-      ),
-      child: Icon(_levelIcon(color), color: color, size: 16),
-    );
-  }
-
-  IconData _levelIcon(Color color) {
-    return Icons.circle_rounded;
-  }
-}
-
 Color _observationLevelColor(FrodoObservationLevel level) {
   switch (level) {
     case FrodoObservationLevel.problem:
@@ -320,19 +228,6 @@ Color _observationLevelColor(FrodoObservationLevel level) {
     case FrodoObservationLevel.success:
       return const Color(0xFF66BB6A);
     case FrodoObservationLevel.info:
-      return const Color(0xFF90A4AE);
-  }
-}
-
-Color _explanationLevelColor(FrodoObservationExplanationLevel level) {
-  switch (level) {
-    case FrodoObservationExplanationLevel.critical:
-      return const Color(0xFFE53935);
-    case FrodoObservationExplanationLevel.warning:
-      return const Color(0xFFFFB74D);
-    case FrodoObservationExplanationLevel.positive:
-      return const Color(0xFF66BB6A);
-    case FrodoObservationExplanationLevel.neutral:
       return const Color(0xFF90A4AE);
   }
 }

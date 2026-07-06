@@ -1,4 +1,5 @@
 import '../../../models/finance_recurring_item.dart';
+import 'planner_reason_data.dart';
 
 enum PlannerDecisionType {
   payNow,
@@ -10,9 +11,6 @@ enum PlannerDecisionType {
   monitor,
 }
 
-/// Identifica la regola che ha contribuito alla decisione.
-/// La UI e gli altri motori devono usare questo enum,
-/// mai confrontare direttamente le stringhe.
 enum PlannerDecisionReason {
   incomeForecast,
   automaticPayment,
@@ -58,126 +56,108 @@ extension PlannerDecisionReasonExtension on PlannerDecisionReason {
           icon: '📅',
           level: PlannerDecisionTraceLevel.positive,
         );
-
       case PlannerDecisionReason.automaticPayment:
         return const PlannerDecisionReasonMetadata(
           title: 'Pagamento automatico',
           icon: '🚫',
           level: PlannerDecisionTraceLevel.critical,
         );
-
       case PlannerDecisionReason.protectedExpense:
         return const PlannerDecisionReasonMetadata(
           title: 'Voce protetta',
           icon: '🛡️',
           level: PlannerDecisionTraceLevel.warning,
         );
-
       case PlannerDecisionReason.criticalExpense:
         return const PlannerDecisionReasonMetadata(
           title: 'Spesa prioritaria',
           icon: '🎯',
           level: PlannerDecisionTraceLevel.critical,
         );
-
       case PlannerDecisionReason.minimumBalance:
         return const PlannerDecisionReasonMetadata(
           title: 'Saldo minimo',
           icon: '🏦',
           level: PlannerDecisionTraceLevel.warning,
         );
-
       case PlannerDecisionReason.ownerUnderPressure:
         return const PlannerDecisionReasonMetadata(
           title: 'Pressione personale',
           icon: '👤',
           level: PlannerDecisionTraceLevel.warning,
         );
-
       case PlannerDecisionReason.delayAllowed:
         return const PlannerDecisionReasonMetadata(
           title: 'Può essere rimandata',
           icon: '⏳',
           level: PlannerDecisionTraceLevel.positive,
         );
-
       case PlannerDecisionReason.usableFunds:
         return const PlannerDecisionReasonMetadata(
           title: 'Fondi utilizzabili',
           icon: '💰',
           level: PlannerDecisionTraceLevel.positive,
         );
-
       case PlannerDecisionReason.protectedFunds:
         return const PlannerDecisionReasonMetadata(
           title: 'Fondi protetti',
           icon: '🛡️',
           level: PlannerDecisionTraceLevel.warning,
         );
-
       case PlannerDecisionReason.sharedPayment:
         return const PlannerDecisionReasonMetadata(
           title: 'Pagamento condiviso',
           icon: '👨‍👩‍👧',
           level: PlannerDecisionTraceLevel.neutral,
         );
-
       case PlannerDecisionReason.familyPriority:
         return const PlannerDecisionReasonMetadata(
           title: 'Priorità familiare',
           icon: '⚖️',
           level: PlannerDecisionTraceLevel.critical,
         );
-
       case PlannerDecisionReason.personalPriority:
         return const PlannerDecisionReasonMetadata(
           title: 'Priorità personale',
           icon: '👤',
           level: PlannerDecisionTraceLevel.warning,
         );
-
       case PlannerDecisionReason.suggestedAccount:
         return const PlannerDecisionReasonMetadata(
           title: 'Conto consigliato',
           icon: '💳',
           level: PlannerDecisionTraceLevel.positive,
         );
-
       case PlannerDecisionReason.thirteenthSalary:
         return const PlannerDecisionReasonMetadata(
           title: 'Tredicesima',
           icon: '💶',
           level: PlannerDecisionTraceLevel.positive,
         );
-
       case PlannerDecisionReason.fourteenthSalary:
         return const PlannerDecisionReasonMetadata(
           title: 'Quattordicesima',
           icon: '💶',
           level: PlannerDecisionTraceLevel.positive,
         );
-
       case PlannerDecisionReason.productionBonus:
         return const PlannerDecisionReasonMetadata(
           title: 'Premio produzione',
           icon: '🎁',
           level: PlannerDecisionTraceLevel.positive,
         );
-
       case PlannerDecisionReason.extraordinaryIncome:
         return const PlannerDecisionReasonMetadata(
           title: 'Entrata straordinaria',
           icon: '📈',
           level: PlannerDecisionTraceLevel.positive,
         );
-
       case PlannerDecisionReason.opportunity:
         return const PlannerDecisionReasonMetadata(
           title: 'Opportunità economica',
           icon: '📈',
           level: PlannerDecisionTraceLevel.positive,
         );
-
       case PlannerDecisionReason.generic:
         return const PlannerDecisionReasonMetadata(
           title: 'Valutazione generale',
@@ -192,15 +172,15 @@ class PlannerDecisionTrace {
   final PlannerDecisionReason reason;
   final PlannerDecisionTraceLevel level;
   final String message;
+  final PlannerReasonData? data;
 
-  /// Se false la motivazione resta disponibile per il motore
-  /// ma non viene mostrata nel blocco "Come ha ragionato Frodo".
   final bool visibleToUser;
 
   const PlannerDecisionTrace({
     required this.reason,
     required this.level,
     required this.message,
+    this.data,
     this.visibleToUser = true,
   });
 }
@@ -210,9 +190,7 @@ class PlannerDecision {
   final PlannerDecisionType type;
   final String reason;
   final int score;
-
-  /// Tutte le valutazioni effettuate dal Planner
-  /// che hanno portato alla decisione finale.
+  final PlannerReasonData? reasonData;
   final List<PlannerDecisionTrace> decisionTrace;
 
   const PlannerDecision({
@@ -220,6 +198,7 @@ class PlannerDecision {
     required this.type,
     required this.reason,
     required this.score,
+    this.reasonData,
     this.decisionTrace = const [],
   });
 
