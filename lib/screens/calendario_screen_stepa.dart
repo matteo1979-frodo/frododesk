@@ -64,6 +64,7 @@ import '../widgets/calendar/school_out_summary.dart';
 import '../widgets/calendar/school_coverage_choice_section.dart';
 import '../widgets/calendar/alice_events_header.dart';
 import '../widgets/calendar/hidden_alice_events_link.dart';
+import '../widgets/calendar/alice_events_list.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -7466,383 +7467,397 @@ class _CalendarioScreenStepAStabileState
 
                 if (hasExtraEvents) ...[
                   const SizedBox(height: 12),
-                  ...visibleAliceEvents.map((e) {
-                    bool isConflict = false;
-                    final List<String> conflictWith = [];
-                    final bool isExpanded = _expandedAliceEventIds.contains(
-                      e.id,
-                    );
+                  AliceEventsList(
+                    child: Column(
+                      children: visibleAliceEvents.map((e) {
+                        bool isConflict = false;
+                        final List<String> conflictWith = [];
+                        final bool isExpanded = _expandedAliceEventIds.contains(
+                          e.id,
+                        );
 
-                    for (final other in extraEvents) {
-                      if (other.id == e.id) continue;
+                        for (final other in extraEvents) {
+                          if (other.id == e.id) continue;
 
-                      final overlap =
-                          e.start.hour * 60 + e.start.minute <
-                              other.end.hour * 60 + other.end.minute &&
-                          other.start.hour * 60 + other.start.minute <
-                              e.end.hour * 60 + e.end.minute;
+                          final overlap =
+                              e.start.hour * 60 + e.start.minute <
+                                  other.end.hour * 60 + other.end.minute &&
+                              other.start.hour * 60 + other.start.minute <
+                                  e.end.hour * 60 + e.end.minute;
 
-                      if (overlap) {
-                        isConflict = true;
-                        conflictWith.add(other.label);
-                      }
-                    }
-
-                    return InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () {
-                        setState(() {
-                          if (isExpanded) {
-                            _expandedAliceEventIds.remove(e.id);
-                          } else {
-                            _expandedAliceEventIds
-                              ..clear()
-                              ..add(e.id);
+                          if (overlap) {
+                            isConflict = true;
+                            conflictWith.add(other.label);
                           }
-                        });
-                      },
-                      child: Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: isConflict
-                              ? Colors.red.withOpacity(0.08)
-                              : Colors.white,
+                        }
+
+                        return InkWell(
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isConflict
-                                ? Colors.red.withOpacity(0.4)
-                                : Colors.black.withOpacity(0.08),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                          onTap: () {
+                            setState(() {
+                              if (isExpanded) {
+                                _expandedAliceEventIds.remove(e.id);
+                              } else {
+                                _expandedAliceEventIds
+                                  ..clear()
+                                  ..add(e.id);
+                              }
+                            });
+                          },
+                          child: Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isConflict
+                                  ? Colors.red.withOpacity(0.08)
+                                  : Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isConflict
+                                    ? Colors.red.withOpacity(0.4)
+                                    : Colors.black.withOpacity(0.08),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Icon(
-                                  _aliceSpecialCategoryIcon(e.category),
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        e.label,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        "${fmtTimeOfDay(e.start)}–${fmtTimeOfDay(e.end)}",
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.black.withOpacity(0.6),
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Column(
+                                Row(
+                                  children: [
+                                    Icon(
+                                      _aliceSpecialCategoryIcon(e.category),
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            _aliceSpecialCategoryLabel(
-                                              e.category,
+                                            e.label,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 14,
                                             ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            "${fmtTimeOfDay(e.start)}–${fmtTimeOfDay(e.end)}",
                                             style: TextStyle(
-                                              fontSize: 11,
+                                              fontSize: 12,
                                               color: Colors.black.withOpacity(
-                                                0.45,
+                                                0.6,
                                               ),
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
                                           const SizedBox(height: 2),
-                                          Container(
-                                            margin: const EdgeInsets.only(
-                                              top: 2,
-                                            ),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 6,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color:
-                                                  _aliceEventEngine
-                                                      .requiresLogistics(e)
-                                                  ? Colors.orange.withOpacity(
-                                                      0.10,
-                                                    )
-                                                  : Colors.green.withOpacity(
-                                                      0.10,
-                                                    ),
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
-                                            ),
-                                            child: Text(
-                                              _aliceEventEngine
-                                                      .requiresLogistics(e)
-                                                  ? "Accomp. + Ritiro"
-                                                  : "Evento passivo",
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                color:
-                                                    _aliceEventEngine
-                                                        .requiresLogistics(e)
-                                                    ? Colors.orange
-                                                    : Colors.green,
-                                                fontWeight: FontWeight.w700,
+                                          Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                _aliceSpecialCategoryLabel(
+                                                  e.category,
+                                                ),
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: Colors.black
+                                                      .withOpacity(0.45),
+                                                  fontWeight: FontWeight.w600,
+                                                ),
                                               ),
-                                            ),
+                                              const SizedBox(height: 2),
+                                              Container(
+                                                margin: const EdgeInsets.only(
+                                                  top: 2,
+                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 6,
+                                                      vertical: 2,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      _aliceEventEngine
+                                                          .requiresLogistics(e)
+                                                      ? Colors.orange
+                                                            .withOpacity(0.10)
+                                                      : Colors.green
+                                                            .withOpacity(0.10),
+                                                  borderRadius:
+                                                      BorderRadius.circular(6),
+                                                ),
+                                                child: Text(
+                                                  _aliceEventEngine
+                                                          .requiresLogistics(e)
+                                                      ? "Accomp. + Ritiro"
+                                                      : "Evento passivo",
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    color:
+                                                        _aliceEventEngine
+                                                            .requiresLogistics(
+                                                              e,
+                                                            )
+                                                        ? Colors.orange
+                                                        : Colors.green,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ],
                                       ),
-                                    ],
-                                  ),
-                                ),
-                                if (e.note.trim().isNotEmpty) ...[
-                                  const SizedBox(width: 6),
-                                  const Icon(
-                                    Icons.notes,
-                                    size: 16,
-                                    color: Colors.black54,
-                                  ),
-                                ],
-                                if (isConflict) ...[
-                                  const SizedBox(width: 6),
-                                  const Icon(
-                                    Icons.warning_amber_rounded,
-                                    size: 18,
-                                    color: Colors.red,
-                                  ),
-                                ],
-                                const SizedBox(width: 8),
-                                Icon(
-                                  isExpanded
-                                      ? Icons.expand_less
-                                      : Icons.expand_more,
-                                  size: 20,
-                                  color: Colors.black54,
-                                ),
-                              ],
-                            ),
-                            if (isExpanded) ...[
-                              const SizedBox(height: 6),
-
-                              Text(
-                                "Categoria: ${_aliceSpecialCategoryLabel(e.category)}",
-                                style: TextStyle(
-                                  color: Colors.black.withOpacity(0.72),
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-
-                              const SizedBox(height: 4),
-
-                              Text(
-                                "Comportamento: ${aliceEventBehaviorLabel(e.behavior)}",
-                                style: TextStyle(
-                                  color: Colors.black.withOpacity(0.72),
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-
-                              if (e.accompanyingAdultKey != null) ...[
-                                const SizedBox(height: 4),
-
-                                Text(
-                                  "Con: ${e.accompanyingAdultKey == 'matteo'
-                                      ? 'Matteo'
-                                      : e.accompanyingAdultKey == 'chiara'
-                                      ? 'Chiara'
-                                      : e.accompanyingAdultKey == 'sandra'
-                                      ? 'Sandra'
-                                      : 'Supporto'}",
-                                  style: TextStyle(
-                                    color: Colors.purple.shade700,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-
-                              if (e.dropOffAdultKey != null) ...[
-                                const SizedBox(height: 4),
-
-                                Text(
-                                  "Accompagna: ${e.dropOffAdultKey == 'matteo'
-                                      ? 'Matteo'
-                                      : e.dropOffAdultKey == 'chiara'
-                                      ? 'Chiara'
-                                      : e.dropOffAdultKey == 'sandra'
-                                      ? 'Sandra'
-                                      : 'Supporto'}",
-                                  style: TextStyle(
-                                    color: Colors.blue.shade700,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-
-                              if (e.pickUpAdultKey != null) ...[
-                                const SizedBox(height: 4),
-
-                                Text(
-                                  "Ritiro: ${e.pickUpAdultKey == 'matteo'
-                                      ? 'Matteo'
-                                      : e.pickUpAdultKey == 'chiara'
-                                      ? 'Chiara'
-                                      : e.pickUpAdultKey == 'sandra'
-                                      ? 'Sandra'
-                                      : 'Supporto'}",
-                                  style: TextStyle(
-                                    color: Colors.green.shade700,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-
-                              const SizedBox(height: 4),
-
-                              Text(
-                                _aliceEventEngine.operationalDescription(e),
-                                style: TextStyle(
-                                  color: Colors.blueGrey.shade700,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-
-                              const SizedBox(height: 4),
-
-                              Text(
-                                _aliceEventEngine.realTimeMeaning(e),
-                                style: TextStyle(
-                                  color:
-                                      _aliceEventEngine.isAliceOutDuringEvent(e)
-                                      ? Colors.orange
-                                      : Colors.green,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                ),
-                              ),
-
-                              const SizedBox(height: 4),
-
-                              Text(
-                                _aliceEventEngine.requiresAdultSupervision(e)
-                                    ? "Serve supervisione adulta."
-                                    : "Non richiede supervisione adulta.",
-                                style: TextStyle(
-                                  color:
-                                      _aliceEventEngine
-                                          .requiresAdultSupervision(e)
-                                      ? Colors.deepOrange
-                                      : Colors.teal,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                ),
-                              ),
-
-                              const SizedBox(height: 4),
-
-                              Text(
-                                _aliceEventEngine.canGenerateCoverageProblem(e)
-                                    ? "Può influenzare la copertura familiare."
-                                    : "Nessun impatto previsto sulla copertura.",
-                                style: TextStyle(
-                                  color:
-                                      _aliceEventEngine
-                                          .canGenerateCoverageProblem(e)
-                                      ? Colors.redAccent
-                                      : Colors.green,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                ),
-                              ),
-
-                              const SizedBox(height: 4),
-
-                              Text(
-                                "Orario: ${fmtTimeOfDay(e.start)}–${fmtTimeOfDay(e.end)}",
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              if (e.note.trim().isNotEmpty) ...[
-                                const SizedBox(height: 6),
-                                Text(
-                                  "Nota: ${e.note}",
-                                  style: TextStyle(
-                                    color: Colors.black.withOpacity(0.72),
-                                  ),
-                                ),
-                              ],
-                              if (conflictWith.isNotEmpty) ...[
-                                const SizedBox(height: 6),
-                                Text(
-                                  "In conflitto con: ${conflictWith.join(', ')}",
-                                  style: const TextStyle(
-                                    color: Colors.red,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: [
-                                    OutlinedButton.icon(
-                                      onPressed: () =>
-                                          _startEditAliceSpecialEvent(e),
-                                      icon: const Icon(Icons.edit_calendar),
-                                      label: const Text("Sposta evento"),
                                     ),
-                                    OutlinedButton.icon(
-                                      onPressed: () =>
-                                          _removeAliceSpecialEvent(e),
-                                      icon: const Icon(Icons.cancel_outlined),
-                                      label: const Text("Annulla evento"),
+                                    if (e.note.trim().isNotEmpty) ...[
+                                      const SizedBox(width: 6),
+                                      const Icon(
+                                        Icons.notes,
+                                        size: 16,
+                                        color: Colors.black54,
+                                      ),
+                                    ],
+                                    if (isConflict) ...[
+                                      const SizedBox(width: 6),
+                                      const Icon(
+                                        Icons.warning_amber_rounded,
+                                        size: 18,
+                                        color: Colors.red,
+                                      ),
+                                    ],
+                                    const SizedBox(width: 8),
+                                    Icon(
+                                      isExpanded
+                                          ? Icons.expand_less
+                                          : Icons.expand_more,
+                                      size: 20,
+                                      color: Colors.black54,
                                     ),
                                   ],
                                 ),
-                              ],
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: OutlinedButton.icon(
-                                      onPressed: () =>
-                                          _startEditAliceSpecialEvent(e),
-                                      icon: const Icon(Icons.edit),
-                                      label: const Text("Modifica"),
+                                if (isExpanded) ...[
+                                  const SizedBox(height: 6),
+
+                                  Text(
+                                    "Categoria: ${_aliceSpecialCategoryLabel(e.category)}",
+                                    style: TextStyle(
+                                      color: Colors.black.withOpacity(0.72),
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: OutlinedButton.icon(
-                                      onPressed: () =>
-                                          _removeAliceSpecialEvent(e),
-                                      icon: const Icon(Icons.delete_outline),
-                                      label: const Text("Rimuovi"),
+
+                                  const SizedBox(height: 4),
+
+                                  Text(
+                                    "Comportamento: ${aliceEventBehaviorLabel(e.behavior)}",
+                                    style: TextStyle(
+                                      color: Colors.black.withOpacity(0.72),
+                                      fontWeight: FontWeight.w700,
                                     ),
+                                  ),
+
+                                  if (e.accompanyingAdultKey != null) ...[
+                                    const SizedBox(height: 4),
+
+                                    Text(
+                                      "Con: ${e.accompanyingAdultKey == 'matteo'
+                                          ? 'Matteo'
+                                          : e.accompanyingAdultKey == 'chiara'
+                                          ? 'Chiara'
+                                          : e.accompanyingAdultKey == 'sandra'
+                                          ? 'Sandra'
+                                          : 'Supporto'}",
+                                      style: TextStyle(
+                                        color: Colors.purple.shade700,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+
+                                  if (e.dropOffAdultKey != null) ...[
+                                    const SizedBox(height: 4),
+
+                                    Text(
+                                      "Accompagna: ${e.dropOffAdultKey == 'matteo'
+                                          ? 'Matteo'
+                                          : e.dropOffAdultKey == 'chiara'
+                                          ? 'Chiara'
+                                          : e.dropOffAdultKey == 'sandra'
+                                          ? 'Sandra'
+                                          : 'Supporto'}",
+                                      style: TextStyle(
+                                        color: Colors.blue.shade700,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+
+                                  if (e.pickUpAdultKey != null) ...[
+                                    const SizedBox(height: 4),
+
+                                    Text(
+                                      "Ritiro: ${e.pickUpAdultKey == 'matteo'
+                                          ? 'Matteo'
+                                          : e.pickUpAdultKey == 'chiara'
+                                          ? 'Chiara'
+                                          : e.pickUpAdultKey == 'sandra'
+                                          ? 'Sandra'
+                                          : 'Supporto'}",
+                                      style: TextStyle(
+                                        color: Colors.green.shade700,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+
+                                  const SizedBox(height: 4),
+
+                                  Text(
+                                    _aliceEventEngine.operationalDescription(e),
+                                    style: TextStyle(
+                                      color: Colors.blueGrey.shade700,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 4),
+
+                                  Text(
+                                    _aliceEventEngine.realTimeMeaning(e),
+                                    style: TextStyle(
+                                      color:
+                                          _aliceEventEngine
+                                              .isAliceOutDuringEvent(e)
+                                          ? Colors.orange
+                                          : Colors.green,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 4),
+
+                                  Text(
+                                    _aliceEventEngine.requiresAdultSupervision(
+                                          e,
+                                        )
+                                        ? "Serve supervisione adulta."
+                                        : "Non richiede supervisione adulta.",
+                                    style: TextStyle(
+                                      color:
+                                          _aliceEventEngine
+                                              .requiresAdultSupervision(e)
+                                          ? Colors.deepOrange
+                                          : Colors.teal,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 4),
+
+                                  Text(
+                                    _aliceEventEngine
+                                            .canGenerateCoverageProblem(e)
+                                        ? "Può influenzare la copertura familiare."
+                                        : "Nessun impatto previsto sulla copertura.",
+                                    style: TextStyle(
+                                      color:
+                                          _aliceEventEngine
+                                              .canGenerateCoverageProblem(e)
+                                          ? Colors.redAccent
+                                          : Colors.green,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 4),
+
+                                  Text(
+                                    "Orario: ${fmtTimeOfDay(e.start)}–${fmtTimeOfDay(e.end)}",
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  if (e.note.trim().isNotEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      "Nota: ${e.note}",
+                                      style: TextStyle(
+                                        color: Colors.black.withOpacity(0.72),
+                                      ),
+                                    ),
+                                  ],
+                                  if (conflictWith.isNotEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      "In conflitto con: ${conflictWith.join(', ')}",
+                                      style: const TextStyle(
+                                        color: Colors.red,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: [
+                                        OutlinedButton.icon(
+                                          onPressed: () =>
+                                              _startEditAliceSpecialEvent(e),
+                                          icon: const Icon(Icons.edit_calendar),
+                                          label: const Text("Sposta evento"),
+                                        ),
+                                        OutlinedButton.icon(
+                                          onPressed: () =>
+                                              _removeAliceSpecialEvent(e),
+                                          icon: const Icon(
+                                            Icons.cancel_outlined,
+                                          ),
+                                          label: const Text("Annulla evento"),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton.icon(
+                                          onPressed: () =>
+                                              _startEditAliceSpecialEvent(e),
+                                          icon: const Icon(Icons.edit),
+                                          label: const Text("Modifica"),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: OutlinedButton.icon(
+                                          onPressed: () =>
+                                              _removeAliceSpecialEvent(e),
+                                          icon: const Icon(
+                                            Icons.delete_outline,
+                                          ),
+                                          label: const Text("Rimuovi"),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
                 ],
               ],
             ),
