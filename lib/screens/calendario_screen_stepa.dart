@@ -66,6 +66,7 @@ import '../widgets/calendar/alice_events_header.dart';
 import '../widgets/calendar/hidden_alice_events_link.dart';
 import '../widgets/calendar/alice_events_list.dart';
 import '../widgets/calendar/alice_event_tile.dart';
+import '../widgets/calendar/alice_event_expanded.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -7649,222 +7650,28 @@ class _CalendarioScreenStepAStabileState
                                       ),
                                     ],
                                   ),
-                                  if (isExpanded) ...[
-                                    const SizedBox(height: 6),
-
-                                    Text(
-                                      "Categoria: ${_aliceSpecialCategoryLabel(e.category)}",
-                                      style: TextStyle(
-                                        color: Colors.black.withOpacity(0.72),
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                                  if (isExpanded)
+                                    AliceEventExpanded(
+                                      event: e,
+                                      conflictWith: conflictWith,
+                                      categoryLabel: _aliceSpecialCategoryLabel,
+                                      operationalDescription: _aliceEventEngine
+                                          .operationalDescription,
+                                      realTimeMeaning:
+                                          _aliceEventEngine.realTimeMeaning,
+                                      isAliceOutDuringEvent: _aliceEventEngine
+                                          .isAliceOutDuringEvent,
+                                      requiresAdultSupervision:
+                                          _aliceEventEngine
+                                              .requiresAdultSupervision,
+                                      canGenerateCoverageProblem:
+                                          _aliceEventEngine
+                                              .canGenerateCoverageProblem,
+                                      onEdit: () =>
+                                          _startEditAliceSpecialEvent(e),
+                                      onRemove: () =>
+                                          _removeAliceSpecialEvent(e),
                                     ),
-
-                                    const SizedBox(height: 4),
-
-                                    Text(
-                                      "Comportamento: ${aliceEventBehaviorLabel(e.behavior)}",
-                                      style: TextStyle(
-                                        color: Colors.black.withOpacity(0.72),
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-
-                                    if (e.accompanyingAdultKey != null) ...[
-                                      const SizedBox(height: 4),
-
-                                      Text(
-                                        "Con: ${e.accompanyingAdultKey == 'matteo'
-                                            ? 'Matteo'
-                                            : e.accompanyingAdultKey == 'chiara'
-                                            ? 'Chiara'
-                                            : e.accompanyingAdultKey == 'sandra'
-                                            ? 'Sandra'
-                                            : 'Supporto'}",
-                                        style: TextStyle(
-                                          color: Colors.purple.shade700,
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-
-                                    if (e.dropOffAdultKey != null) ...[
-                                      const SizedBox(height: 4),
-
-                                      Text(
-                                        "Accompagna: ${e.dropOffAdultKey == 'matteo'
-                                            ? 'Matteo'
-                                            : e.dropOffAdultKey == 'chiara'
-                                            ? 'Chiara'
-                                            : e.dropOffAdultKey == 'sandra'
-                                            ? 'Sandra'
-                                            : 'Supporto'}",
-                                        style: TextStyle(
-                                          color: Colors.blue.shade700,
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-
-                                    if (e.pickUpAdultKey != null) ...[
-                                      const SizedBox(height: 4),
-
-                                      Text(
-                                        "Ritiro: ${e.pickUpAdultKey == 'matteo'
-                                            ? 'Matteo'
-                                            : e.pickUpAdultKey == 'chiara'
-                                            ? 'Chiara'
-                                            : e.pickUpAdultKey == 'sandra'
-                                            ? 'Sandra'
-                                            : 'Supporto'}",
-                                        style: TextStyle(
-                                          color: Colors.green.shade700,
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-
-                                    const SizedBox(height: 4),
-
-                                    Text(
-                                      _aliceEventEngine.operationalDescription(
-                                        e,
-                                      ),
-                                      style: TextStyle(
-                                        color: Colors.blueGrey.shade700,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-
-                                    const SizedBox(height: 4),
-
-                                    Text(
-                                      _aliceEventEngine.realTimeMeaning(e),
-                                      style: TextStyle(
-                                        color:
-                                            _aliceEventEngine
-                                                .isAliceOutDuringEvent(e)
-                                            ? Colors.orange
-                                            : Colors.green,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-
-                                    const SizedBox(height: 4),
-
-                                    Text(
-                                      _aliceEventEngine
-                                              .requiresAdultSupervision(e)
-                                          ? "Serve supervisione adulta."
-                                          : "Non richiede supervisione adulta.",
-                                      style: TextStyle(
-                                        color:
-                                            _aliceEventEngine
-                                                .requiresAdultSupervision(e)
-                                            ? Colors.deepOrange
-                                            : Colors.teal,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-
-                                    const SizedBox(height: 4),
-
-                                    Text(
-                                      _aliceEventEngine
-                                              .canGenerateCoverageProblem(e)
-                                          ? "Può influenzare la copertura familiare."
-                                          : "Nessun impatto previsto sulla copertura.",
-                                      style: TextStyle(
-                                        color:
-                                            _aliceEventEngine
-                                                .canGenerateCoverageProblem(e)
-                                            ? Colors.redAccent
-                                            : Colors.green,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-
-                                    const SizedBox(height: 4),
-
-                                    Text(
-                                      "Orario: ${fmtTimeOfDay(e.start)}–${fmtTimeOfDay(e.end)}",
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    if (e.note.trim().isNotEmpty) ...[
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        "Nota: ${e.note}",
-                                        style: TextStyle(
-                                          color: Colors.black.withOpacity(0.72),
-                                        ),
-                                      ),
-                                    ],
-                                    if (conflictWith.isNotEmpty) ...[
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        "In conflitto con: ${conflictWith.join(', ')}",
-                                        style: const TextStyle(
-                                          color: Colors.red,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Wrap(
-                                        spacing: 8,
-                                        runSpacing: 8,
-                                        children: [
-                                          OutlinedButton.icon(
-                                            onPressed: () =>
-                                                _startEditAliceSpecialEvent(e),
-                                            icon: const Icon(
-                                              Icons.edit_calendar,
-                                            ),
-                                            label: const Text("Sposta evento"),
-                                          ),
-                                          OutlinedButton.icon(
-                                            onPressed: () =>
-                                                _removeAliceSpecialEvent(e),
-                                            icon: const Icon(
-                                              Icons.cancel_outlined,
-                                            ),
-                                            label: const Text("Annulla evento"),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                    const SizedBox(height: 10),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: OutlinedButton.icon(
-                                            onPressed: () =>
-                                                _startEditAliceSpecialEvent(e),
-                                            icon: const Icon(Icons.edit),
-                                            label: const Text("Modifica"),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: OutlinedButton.icon(
-                                            onPressed: () =>
-                                                _removeAliceSpecialEvent(e),
-                                            icon: const Icon(
-                                              Icons.delete_outline,
-                                            ),
-                                            label: const Text("Rimuovi"),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
                                 ],
                               ),
                             ),
