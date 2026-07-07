@@ -54,6 +54,11 @@ import '../logic/calendar/models/date_range.dart';
 import '../logic/calendar/models/turn_event_conflict.dart';
 
 import '../widgets/calendar/sandra_coverage_card.dart';
+import '../widgets/calendar/alice_state_banner.dart';
+import '../widgets/calendar/alice_events_section.dart';
+import '../widgets/calendar/alice_event_conflict_banner.dart';
+import '../widgets/calendar/alice_school_header.dart';
+import '../widgets/calendar/school_status_box.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -7421,130 +7426,24 @@ class _CalendarioScreenStepAStabileState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: aliceEventColor().withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: aliceEventColor().withOpacity(0.6),
-                width: 1.5,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(aliceEventIcon(), size: 18, color: aliceEventColor()),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    "Stato Alice: ${aliceEventLabel()}",
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 15,
-                      color: aliceEventColor().withOpacity(1.0),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          AliceStateBanner(
+            label: aliceEventLabel(),
+            color: aliceEventColor(),
+            icon: aliceEventIcon(),
+            periodLabel: hasAlicePeriodState ? alicePeriodStateLabel() : null,
+            periodColor: alicePeriodStateColor(),
+            periodIcon: alicePeriodStateIcon(),
           ),
 
-          if (hasAlicePeriodState) ...[
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: alicePeriodStateColor().withOpacity(0.10),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: alicePeriodStateColor().withOpacity(0.45),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    alicePeriodStateIcon(),
-                    size: 18,
-                    color: alicePeriodStateColor(),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      "Stato periodo attivo: ${alicePeriodStateLabel()}",
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: alicePeriodStateColor(),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          Text(
-            "Orario: ${fmtTimeOfDay(aliceEvent?.summerCampStart ?? _scuolaStart)}–${fmtTimeOfDay(uscita13Eff ? uscitaAt : (daySettingsStore.schoolOutStartForDay(_selectedDay) ?? _scuolaEnd))}",
+          AliceSchoolHeader(
+            orario:
+                "Orario: ${fmtTimeOfDay(aliceEvent?.summerCampStart ?? _scuolaStart)}–${fmtTimeOfDay(uscita13Eff ? uscitaAt : (daySettingsStore.schoolOutStartForDay(_selectedDay) ?? _scuolaEnd))}",
+            uscitaAnticipata: uscita13Eff,
           ),
 
-          if (uscita13Eff) ...[
-            const SizedBox(height: 6),
-            const Text(
-              "Uscita anticipata Alice scuola",
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.w800),
-            ),
-          ],
+          if (hasAliceEventConflict) ...[const AliceEventConflictBanner()],
 
-          const SizedBox(height: 12),
-
-          if (hasAliceEventConflict) ...[
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.withOpacity(0.28)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.warning_amber_rounded, color: Colors.red),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          "Conflitto eventi Alice rilevato",
-                          style: TextStyle(fontWeight: FontWeight.w900),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    "Due o più eventi Alice si sovrappongono nello stesso orario. Il sistema avvisa, ma la decisione resta umana.",
-                    style: TextStyle(
-                      color: Colors.black.withOpacity(0.72),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.deepPurple.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.deepPurple.withOpacity(0.18)),
-            ),
+          AliceEventsSection(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -8463,78 +8362,16 @@ class _CalendarioScreenStepAStabileState
             },
           ),
           const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.indigo.withOpacity(0.06),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.indigo.withOpacity(0.18)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.school, size: 18),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        "Scuola",
-                        style: TextStyle(fontWeight: FontWeight.w900),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "Periodo attivo: $schoolPeriodLabel",
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  isSchoolDayActive
-                      ? "Oggi: giorno scuola attivo"
-                      : "Oggi: nessuna scuola prevista",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: isSchoolDayActive ? Colors.green : Colors.orange,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "Giorno letto dal periodo: $schoolWeekdayLabel",
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "Accompagnamento automatico: ${fmtTimeOfDay(accompagnamento)}",
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  "Ingresso reale: ${fmtTimeOfDay(ingressoReale)}",
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  "Uscita reale: ${fmtTimeOfDay(uscitaReale)}",
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  "Rientro automatico: ${fmtTimeOfDay(uscitaFine)}",
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 10),
 
-                OutlinedButton.icon(
-                  onPressed: _openSchoolPanel,
-                  icon: const Icon(Icons.settings),
-                  label: const Text("Apri gestione Scuola"),
-                ),
-              ],
-            ),
+          SchoolStatusBox(
+            schoolPeriodLabel: schoolPeriodLabel,
+            isSchoolDayActive: isSchoolDayActive,
+            schoolWeekdayLabel: schoolWeekdayLabel,
+            accompagnamento: accompagnamento,
+            ingressoReale: ingressoReale,
+            uscitaReale: uscitaReale,
+            uscitaFine: uscitaFine,
+            onOpenSchoolPanel: _openSchoolPanel,
           ),
           if (!uscita13Eff) ...[
             const SizedBox(height: 10),
