@@ -62,6 +62,8 @@ import '../widgets/calendar/school_status_box.dart';
 import '../widgets/calendar/day_organization_section.dart';
 import '../widgets/calendar/school_out_summary.dart';
 import '../widgets/calendar/school_coverage_choice_section.dart';
+import '../widgets/calendar/alice_events_header.dart';
+import '../widgets/calendar/hidden_alice_events_link.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -7450,49 +7452,16 @@ class _CalendarioScreenStepAStabileState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Eventi Alice del giorno",
-                  style: TextStyle(fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  hasExtraEvents
-                      ? "Eventi salvati: ${extraEvents.length}"
-                      : "Nessun evento Alice salvato per questo giorno.",
-                  style: TextStyle(color: Colors.black.withOpacity(0.68)),
-                ),
-                const SizedBox(height: 10),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _openNewAliceSpecialEventEditor,
-                        icon: const Icon(Icons.add),
-                        label: const Text("Nuovo evento Alice"),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _showAlicePeriodPanel = !_showAlicePeriodPanel;
-                          });
-                        },
-                        icon: const Icon(Icons.calendar_month),
-                        label: Text(
-                          _showAlicePeriodPanel
-                              ? "Chiudi stato / periodo"
-                              : "Modifica stato / periodo",
-                        ),
-                      ),
-                    ),
-                  ],
+                AliceEventsHeader(
+                  hasExtraEvents: hasExtraEvents,
+                  extraEventsCount: extraEvents.length,
+                  showAlicePeriodPanel: _showAlicePeriodPanel,
+                  onNewAliceEvent: _openNewAliceSpecialEventEditor,
+                  onToggleAlicePeriodPanel: () {
+                    setState(() {
+                      _showAlicePeriodPanel = !_showAlicePeriodPanel;
+                    });
+                  },
                 ),
 
                 if (hasExtraEvents) ...[
@@ -7879,201 +7848,172 @@ class _CalendarioScreenStepAStabileState
             ),
           ),
 
-          if (hiddenAliceEventsCount > 0) ...[
-            Padding(
-              padding: const EdgeInsets.only(top: 2, left: 4),
-              child: InkWell(
-                onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) {
-                      return AlertDialog(
-                        title: const Text("Tutti gli eventi Alice"),
-                        content: SizedBox(
-                          width: double.maxFinite,
-                          child: SingleChildScrollView(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: extraEvents.map((e) {
-                                bool isConflict = false;
-                                final List<String> conflictWith = [];
+          HiddenAliceEventsLink(
+            hiddenCount: hiddenAliceEventsCount,
+            onTap: () {
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: const Text("Tutti gli eventi Alice"),
+                    content: SizedBox(
+                      width: double.maxFinite,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: extraEvents.map((e) {
+                            bool isConflict = false;
+                            final List<String> conflictWith = [];
 
-                                for (final other in extraEvents) {
-                                  if (other.id == e.id) continue;
+                            for (final other in extraEvents) {
+                              if (other.id == e.id) continue;
 
-                                  final overlap =
-                                      e.start.hour * 60 + e.start.minute <
-                                          other.end.hour * 60 +
-                                              other.end.minute &&
-                                      other.start.hour * 60 +
-                                              other.start.minute <
-                                          e.end.hour * 60 + e.end.minute;
+                              final overlap =
+                                  e.start.hour * 60 + e.start.minute <
+                                      other.end.hour * 60 + other.end.minute &&
+                                  other.start.hour * 60 + other.start.minute <
+                                      e.end.hour * 60 + e.end.minute;
 
-                                  if (overlap) {
-                                    isConflict = true;
-                                    conflictWith.add(other.label);
-                                  }
-                                }
+                              if (overlap) {
+                                isConflict = true;
+                                conflictWith.add(other.label);
+                              }
+                            }
 
-                                return Container(
-                                  width: double.infinity,
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: isConflict
-                                        ? Colors.red.withOpacity(0.08)
-                                        : Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: isConflict
-                                          ? Colors.red.withOpacity(0.4)
-                                          : Colors.black.withOpacity(0.08),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                            return Container(
+                              width: double.infinity,
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: isConflict
+                                    ? Colors.red.withOpacity(0.08)
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isConflict
+                                      ? Colors.red.withOpacity(0.4)
+                                      : Colors.black.withOpacity(0.08),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
                                     children: [
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            _aliceSpecialCategoryIcon(
-                                              e.category,
-                                            ),
-                                            size: 18,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              e.label,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w900,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                      Icon(
+                                        _aliceSpecialCategoryIcon(e.category),
+                                        size: 18,
                                       ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        "Categoria: ${_aliceSpecialCategoryLabel(e.category)}",
-                                        style: TextStyle(
-                                          color: Colors.black.withOpacity(0.72),
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        "Orario: ${fmtTimeOfDay(e.start)}–${fmtTimeOfDay(e.end)}",
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                      if (e.note.trim().isNotEmpty) ...[
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          "Nota: ${e.note}",
-                                          style: TextStyle(
-                                            color: Colors.black.withOpacity(
-                                              0.72,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                      if (conflictWith.isNotEmpty) ...[
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          "In conflitto con: ${conflictWith.join(', ')}",
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          e.label,
                                           style: const TextStyle(
-                                            color: Colors.red,
-                                            fontWeight: FontWeight.w800,
+                                            fontWeight: FontWeight.w900,
                                           ),
                                         ),
-                                        const SizedBox(height: 6),
-                                        Wrap(
-                                          spacing: 8,
-                                          runSpacing: 8,
-                                          children: [
-                                            OutlinedButton.icon(
-                                              onPressed: () {
-                                                Navigator.pop(context);
-                                                _startEditAliceSpecialEvent(e);
-                                              },
-                                              icon: const Icon(
-                                                Icons.edit_calendar,
-                                              ),
-                                              label: const Text(
-                                                "Sposta evento",
-                                              ),
-                                            ),
-                                            OutlinedButton.icon(
-                                              onPressed: () {
-                                                Navigator.pop(context);
-                                                _removeAliceSpecialEvent(e);
-                                              },
-                                              icon: const Icon(
-                                                Icons.cancel_outlined,
-                                              ),
-                                              label: const Text(
-                                                "Annulla evento",
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          OutlinedButton.icon(
-                                            onPressed: () {
-                                              Navigator.pop(context);
-                                              _startEditAliceSpecialEvent(e);
-                                            },
-                                            icon: const Icon(Icons.edit),
-                                            label: const Text("Modifica"),
-                                          ),
-                                          const SizedBox(width: 10),
-                                          OutlinedButton.icon(
-                                            onPressed: () {
-                                              Navigator.pop(context);
-                                              _removeAliceSpecialEvent(e);
-                                            },
-                                            icon: const Icon(Icons.delete),
-                                            label: const Text("Rimuovi"),
-                                          ),
-                                        ],
                                       ),
                                     ],
                                   ),
-                                );
-                              }).toList(),
-                            ),
-                          ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    "Categoria: ${_aliceSpecialCategoryLabel(e.category)}",
+                                    style: TextStyle(
+                                      color: Colors.black.withOpacity(0.72),
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "Orario: ${fmtTimeOfDay(e.start)}–${fmtTimeOfDay(e.end)}",
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  if (e.note.trim().isNotEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      "Nota: ${e.note}",
+                                      style: TextStyle(
+                                        color: Colors.black.withOpacity(0.72),
+                                      ),
+                                    ),
+                                  ],
+                                  if (conflictWith.isNotEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      "In conflitto con: ${conflictWith.join(', ')}",
+                                      style: const TextStyle(
+                                        color: Colors.red,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: [
+                                        OutlinedButton.icon(
+                                          onPressed: () {
+                                            Navigator.pop(context);
+                                            _startEditAliceSpecialEvent(e);
+                                          },
+                                          icon: const Icon(Icons.edit_calendar),
+                                          label: const Text("Sposta evento"),
+                                        ),
+                                        OutlinedButton.icon(
+                                          onPressed: () {
+                                            Navigator.pop(context);
+                                            _removeAliceSpecialEvent(e);
+                                          },
+                                          icon: const Icon(
+                                            Icons.cancel_outlined,
+                                          ),
+                                          label: const Text("Annulla evento"),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    children: [
+                                      OutlinedButton.icon(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          _startEditAliceSpecialEvent(e);
+                                        },
+                                        icon: const Icon(Icons.edit),
+                                        label: const Text("Modifica"),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      OutlinedButton.icon(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          _removeAliceSpecialEvent(e);
+                                        },
+                                        icon: const Icon(Icons.delete),
+                                        label: const Text("Rimuovi"),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
                         ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text("Chiudi"),
-                          ),
-                        ],
-                      );
-                    },
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text("Chiudi"),
+                      ),
+                    ],
                   );
                 },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Text(
-                    "+$hiddenAliceEventsCount altri eventi",
-                    style: TextStyle(
-                      color: Colors.blue.shade700,
-                      fontWeight: FontWeight.w800,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-
+              );
+            },
+          ),
           if (_showAliceEventEditor) ...[
             const SizedBox(height: 10),
             Row(
