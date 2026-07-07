@@ -59,6 +59,9 @@ import '../widgets/calendar/alice_events_section.dart';
 import '../widgets/calendar/alice_event_conflict_banner.dart';
 import '../widgets/calendar/alice_school_header.dart';
 import '../widgets/calendar/school_status_box.dart';
+import '../widgets/calendar/day_organization_section.dart';
+import '../widgets/calendar/school_out_summary.dart';
+import '../widgets/calendar/school_coverage_choice_section.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -8340,28 +8343,13 @@ class _CalendarioScreenStepAStabileState
             ),
           ],
 
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 10),
-          const Text(
-            "Stato / organizzazione della giornata",
-            style: TextStyle(fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 12),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(
-              uscita13Eff
-                  ? "Uscita anticipata: ${fmtTimeOfDay(uscitaAt)}"
-                  : "Uscita anticipata (tocca per impostare orario)",
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
-            value: uscita13Eff,
-            onChanged: (v) async {
+          DayOrganizationSection(
+            uscita13Eff: uscita13Eff,
+            uscitaAt: uscitaAt,
+            onToggleUscitaAnticipata: (v) async {
               await _toggleUscitaAnticipata(v);
             },
           ),
-          const SizedBox(height: 8),
 
           SchoolStatusBox(
             schoolPeriodLabel: schoolPeriodLabel,
@@ -8373,51 +8361,59 @@ class _CalendarioScreenStepAStabileState
             uscitaFine: uscitaFine,
             onOpenSchoolPanel: _openSchoolPanel,
           ),
-          if (!uscita13Eff) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    "Uscita: ${fmtTimeOfDay(outStart)}–${fmtTimeOfDay(outEnd)}${hasCustomOut ? " (personalizzata)" : ""}",
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: null,
-              icon: const Icon(Icons.lock),
-              label: const Text("Uscita (gestita da Scuola)"),
-            ),
-          ],
+          SchoolOutSummary(
+            visible: !uscita13Eff,
+            outStart: outStart,
+            outEnd: outEnd,
+            hasCustomOut: hasCustomOut,
+          ),
           const SizedBox(height: 14),
           const Divider(),
           const SizedBox(height: 10),
-          const Text(
-            "Decisione scuola (copertura)",
-            style: TextStyle(fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 10),
-          DropdownButtonFormField<SchoolCoverChoice>(
-            value: _effectiveSchoolInCover(_selectedDay),
-            isExpanded: true,
-            decoration: InputDecoration(
-              labelText:
-                  "Ingresso ${fmtTimeOfDay(ingressoInizio)}–${fmtTimeOfDay(ingressoFine)}",
-            ),
-            items: SchoolCoverChoice.values.map((c) {
-              return DropdownMenuItem(
-                value: c,
-                child: Text(_schoolCoverLabel(c)),
-              );
-            }).toList(),
-            onChanged: (v) {
-              if (v == null) return;
-              setState(
-                () => daySettingsStore.setSchoolInCoverForDay(_selectedDay, v),
-              );
+          SchoolCoverageChoiceSection(
+            ingressoInizio: ingressoInizio,
+            ingressoFine: ingressoFine,
+            uscitaReale: uscitaReale,
+            uscitaAt: uscitaAt,
+            uscita13Eff: uscita13Eff,
+            schoolInCover: _effectiveSchoolInCover(_selectedDay),
+            schoolOutCover: _effectiveSchoolOutCover(_selectedDay),
+            lunchCover: _effectiveLunchCover(_selectedDay),
+            labelForChoice: _schoolCoverLabel,
+            onSchoolInChanged: (v) {
+              setState(() {
+                daySettingsStore.setSchoolInCoverForDay(_selectedDay, v);
+              });
+              if (v == SchoolCoverChoice.altro) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      "Altro: lista persone arriverà dopo (placeholder).",
+                    ),
+                  ),
+                );
+              }
+              ipsStore.refresh(now: _selectedDay);
+            },
+            onSchoolOutChanged: (v) {
+              setState(() {
+                daySettingsStore.setSchoolOutCoverForDay(_selectedDay, v);
+              });
+              if (v == SchoolCoverChoice.altro) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      "Altro: lista persone arriverà dopo (placeholder).",
+                    ),
+                  ),
+                );
+              }
+              ipsStore.refresh(now: _selectedDay);
+            },
+            onLunchChanged: (v) {
+              setState(() {
+                daySettingsStore.setLunchCoverForDay(_selectedDay, v);
+              });
               if (v == SchoolCoverChoice.altro) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -8430,81 +8426,6 @@ class _CalendarioScreenStepAStabileState
               ipsStore.refresh(now: _selectedDay);
             },
           ),
-          if (!uscita13Eff) ...[
-            const SizedBox(height: 12),
-
-            DropdownButtonFormField<SchoolCoverChoice>(
-              value: _effectiveSchoolOutCover(_selectedDay),
-              isExpanded: true,
-              decoration: InputDecoration(
-                labelText:
-                    "Uscita ${fmtTimeOfDay(uscitaReale)}–${fmtTimeOfDay(TimeOfDay(hour: (uscitaReale.hour + ((uscitaReale.minute + 20) ~/ 60)), minute: (uscitaReale.minute + 20) % 60))}",
-              ),
-              items: SchoolCoverChoice.values.map((c) {
-                return DropdownMenuItem(
-                  value: c,
-                  child: Text(_schoolCoverLabel(c)),
-                );
-              }).toList(),
-              onChanged: (v) {
-                if (v == null) return;
-                setState(
-                  () =>
-                      daySettingsStore.setSchoolOutCoverForDay(_selectedDay, v),
-                );
-                if (v == SchoolCoverChoice.altro) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        "Altro: lista persone arriverà dopo (placeholder).",
-                      ),
-                    ),
-                  );
-                }
-                ipsStore.refresh(now: _selectedDay);
-              },
-            ),
-          ],
-          if (uscita13Eff) ...[
-            const SizedBox(height: 14),
-            const Divider(),
-            const SizedBox(height: 10),
-            const Text(
-              "Decisione pranzo (uscita anticipata)",
-              style: TextStyle(fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<SchoolCoverChoice>(
-              value: _effectiveLunchCover(_selectedDay),
-              isExpanded: true,
-              decoration: InputDecoration(
-                labelText:
-                    "Pranzo ${fmtTimeOfDay(uscitaAt)}–${fmtTimeOfDay(TimeOfDay(hour: ((uscitaAt.hour * 60 + uscitaAt.minute + 20) ~/ 60) % 24, minute: (uscitaAt.hour * 60 + uscitaAt.minute + 20) % 60))}",
-              ),
-              items: SchoolCoverChoice.values.map((c) {
-                return DropdownMenuItem(
-                  value: c,
-                  child: Text(_schoolCoverLabel(c)),
-                );
-              }).toList(),
-              onChanged: (v) {
-                if (v == null) return;
-                setState(
-                  () => daySettingsStore.setLunchCoverForDay(_selectedDay, v),
-                );
-                if (v == SchoolCoverChoice.altro) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        "Altro: lista persone arriverà dopo (placeholder).",
-                      ),
-                    ),
-                  );
-                }
-                ipsStore.refresh(now: _selectedDay);
-              },
-            ),
-          ],
         ],
       ),
     );
