@@ -20,7 +20,7 @@ import '../models/rotation_override.dart';
 import '../models/alice_special_event.dart';
 import '../models/school_model.dart';
 import '../logic/core_store.dart';
-import '../logic/alice_special_event_store.dart';
+
 import '../models/week_identity.dart';
 import '../logic/settings_store.dart';
 import '../logic/ips_store.dart';
@@ -42,8 +42,7 @@ import '../logic/summer_camp_special_event_store.dart';
 
 import '../utils/calendario_formatters.dart';
 import '../utils/status_visual.dart';
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+
 import '../logic/promemoria_store.dart';
 import '../models/promemoria.dart';
 import '../logic/alice_events/alice_event_behavior_text.dart';
@@ -53,7 +52,7 @@ import '../logic/calendar/models/family_now_snapshot.dart';
 import '../logic/calendar/models/coverage_result_step_a.dart';
 import '../logic/calendar/models/date_range.dart';
 import '../logic/calendar/models/turn_event_conflict.dart';
-import '../widgets/calendar/sandra_compact_row.dart';
+
 import '../widgets/calendar/sandra_coverage_card.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
@@ -101,8 +100,6 @@ class _CalendarioScreenStepAStabileState
   bool _showAliceEventEditor = false;
   bool _showAlicePeriodPanel = false;
 
-  final Set<String> _forcedConflictKeys = <String>{};
-
   final Set<String> _expandedAliceEventIds = <String>{};
 
   final AliceEventEngine _aliceEventEngine = const AliceEventEngine();
@@ -140,10 +137,6 @@ class _CalendarioScreenStepAStabileState
     await _promemoriaStore.load();
 
     setState(() {});
-  }
-
-  Future<void> _savePromemoria() async {
-    // non serve più: il salvataggio è gestito dal PromemoriaStore
   }
 
   Future<void> _scrollTo(GlobalKey key) async {
@@ -247,45 +240,6 @@ class _CalendarioScreenStepAStabileState
     final returnMinutes = cfg.returnHomeMinutes;
 
     return TimeOfDay(hour: returnMinutes ~/ 60, minute: returnMinutes % 60);
-  }
-
-  Future<void> _editSchoolOutTimesForDay() async {
-    final start0 = _effSchoolOutStart(_selectedDay);
-    final end0 = _effSchoolOutEnd(_selectedDay);
-
-    final start = await showTimePicker(
-      context: context,
-      initialTime: start0,
-      helpText: "Uscita scuola • INIZIO",
-      cancelText: "Annulla",
-      confirmText: "OK",
-    );
-    if (start == null) return;
-
-    final end = await showTimePicker(
-      context: context,
-      initialTime: end0,
-      helpText: "Uscita scuola • FINE",
-      cancelText: "Annulla",
-      confirmText: "OK",
-    );
-    if (end == null) return;
-
-    final startMin = start.hour * 60 + start.minute;
-    final endMin = end.hour * 60 + end.minute;
-    if (endMin <= startMin) return;
-
-    setState(() {
-      daySettingsStore.setSchoolOutTimesForDay(_selectedDay, start, end);
-    });
-    ipsStore.refresh(now: _selectedDay);
-  }
-
-  void _resetSchoolOutTimesForDay() {
-    setState(() {
-      daySettingsStore.clearSchoolOutTimesForDay(_selectedDay);
-    });
-    ipsStore.refresh(now: _selectedDay);
   }
 
   Future<void> _toggleUscitaAnticipata(bool enabled) async {
@@ -948,14 +902,6 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
-  String _forcedConflictKeyFor({
-    required String personKey,
-    required List<TurnEventConflictResolution> conflicts,
-  }) {
-    final ids = conflicts.map((c) => c.event.id).toList()..sort();
-    return "$personKey|${ids.join("|")}";
-  }
-
   bool _isForcedConflict({
     required String personKey,
     required List<TurnEventConflictResolution> conflicts,
@@ -1400,36 +1346,6 @@ class _CalendarioScreenStepAStabileState
     return existing ? "Togli Alice da $who" : "Porta Alice con $who";
   }
 
-  String _companionButtonTextForGap(CoverageGapDetail gap) {
-    final match = RegExp(r'(\d{2}:\d{2})–(\d{2}:\d{2})').firstMatch(gap.label);
-    if (match == null) return "Porta Alice con te";
-
-    TimeOfDay parse(String t) {
-      final p = t.split(":");
-      return TimeOfDay(hour: int.parse(p[0]), minute: int.parse(p[1]));
-    }
-
-    final start = parse(match.group(1)!);
-    final end = parse(match.group(2)!);
-
-    final person = _whoCanBringAliceForGap(start: start, end: end);
-
-    final active = coreStore.aliceCompanionStore
-        .entriesForDay(_selectedDay)
-        .any(
-          (e) =>
-              e.person == person &&
-              e.start.hour == start.hour &&
-              e.start.minute == start.minute &&
-              e.end.hour == end.hour &&
-              e.end.minute == end.minute,
-        );
-
-    final who = person == AliceCompanionPerson.matteo ? "Matteo" : "Chiara";
-
-    return active ? "Alice con $who ✅" : "Porta Alice con $who";
-  }
-
   DateRange? _rangeOverlap(DateRange a, DateRange b) {
     final start = a.start.isAfter(b.start) ? a.start : b.start;
     final end = a.end.isBefore(b.end) ? a.end : b.end;
@@ -1740,164 +1656,6 @@ class _CalendarioScreenStepAStabileState
     return Colors.blueGrey;
   }
 
-  void _addDailyTurnOverrideTest({
-    required TurnPersonId person,
-    required TurnOverrideShift shift,
-  }) {
-    coreStore.turnOverrideStore.add(
-      TurnOverride(
-        type: TurnOverrideType.dailyShiftChange,
-        person: person,
-        startDate: _selectedDay,
-        shift: shift,
-      ),
-    );
-    setState(() {});
-  }
-
-  void _addPeriodTurnOverrideTest({
-    required TurnPersonId person,
-    required TurnOverrideShift shift,
-  }) {
-    coreStore.turnOverrideStore.add(
-      TurnOverride(
-        type: TurnOverrideType.periodShiftChange,
-        person: person,
-        startDate: _selectedDay,
-        endDate: _selectedDay.add(const Duration(days: 2)),
-        shift: shift,
-      ),
-    );
-    setState(() {});
-  }
-
-  void _clearTurnOverrideTests() {
-    coreStore.turnOverrideStore.clearAll();
-    setState(() {});
-  }
-
-  Widget _turnOverrideDebugBox() {
-    final matteoDaily = coreStore.turnOverrideStore.dailyOverrideFor(
-      person: TurnPersonId.matteo,
-      day: _selectedDay,
-    );
-    final chiaraDaily = coreStore.turnOverrideStore.dailyOverrideFor(
-      person: TurnPersonId.chiara,
-      day: _selectedDay,
-    );
-    final matteoPeriod = coreStore.turnOverrideStore.periodOverrideFor(
-      person: TurnPersonId.matteo,
-      day: _selectedDay,
-    );
-    final chiaraPeriod = coreStore.turnOverrideStore.periodOverrideFor(
-      person: TurnPersonId.chiara,
-      day: _selectedDay,
-    );
-
-    String fmtOverride(TurnOverride? item) {
-      if (item == null || item.shift == null) return "nessuno";
-      if (item.type == TurnOverrideType.dailyShiftChange) {
-        return "${_turnOverrideShiftLabel(item.shift!)} (solo oggi)";
-      }
-      if (item.endDate != null) {
-        return "${_turnOverrideShiftLabel(item.shift!)} (${fmtShortDate(item.startDate)} → ${fmtShortDate(item.endDate!)})";
-      }
-      return _turnOverrideShiftLabel(item.shift!);
-    }
-
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.indigo.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.indigo.withOpacity(0.28)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "DEBUG TEST — Cambio turno",
-            style: TextStyle(fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "Usa questi pulsanti solo per verificare che il motore legga davvero i nuovi override turno.",
-            style: TextStyle(
-              color: Colors.black.withOpacity(0.68),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            "Matteo oggi: ${fmtOverride(matteoDaily)}",
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-          Text(
-            "Chiara oggi: ${fmtOverride(chiaraDaily)}",
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-          Text(
-            "Matteo periodo: ${fmtOverride(matteoPeriod)}",
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-          Text(
-            "Chiara periodo: ${fmtOverride(chiaraPeriod)}",
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              OutlinedButton(
-                onPressed: () {
-                  _addDailyTurnOverrideTest(
-                    person: TurnPersonId.matteo,
-                    shift: TurnOverrideShift.pomeriggio,
-                  );
-                },
-                child: const Text("Test Matteo oggi → Pomeriggio"),
-              ),
-              OutlinedButton(
-                onPressed: () {
-                  _addDailyTurnOverrideTest(
-                    person: TurnPersonId.chiara,
-                    shift: TurnOverrideShift.mattina,
-                  );
-                },
-                child: const Text("Test Chiara oggi → Mattina"),
-              ),
-              OutlinedButton(
-                onPressed: () {
-                  _addPeriodTurnOverrideTest(
-                    person: TurnPersonId.matteo,
-                    shift: TurnOverrideShift.notte,
-                  );
-                },
-                child: const Text("Test Matteo periodo → Notte"),
-              ),
-              OutlinedButton(
-                onPressed: () {
-                  _addPeriodTurnOverrideTest(
-                    person: TurnPersonId.chiara,
-                    shift: TurnOverrideShift.pomeriggio,
-                  );
-                },
-                child: const Text("Test Chiara periodo → Pomeriggio"),
-              ),
-              OutlinedButton(
-                onPressed: _clearTurnOverrideTests,
-                child: const Text("Pulisci test turni"),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   List<TurnEventConflictResolution> _turnEventResolutionsForPerson({
     required String personKey,
     required TurnPlan turnPlan,
@@ -2035,17 +1793,6 @@ class _CalendarioScreenStepAStabileState
     }
 
     return resolutions;
-  }
-
-  String? _extractGapTime(String label) {
-    final parts = label.split(': ');
-    if (parts.length < 2) return null;
-
-    final candidate = parts.last.trim();
-    if (candidate.contains('–')) return null;
-    if (candidate.contains('-')) return null;
-
-    return null;
   }
 
   List<RealEvent> _eventsForPersonOnDay({
@@ -2243,74 +1990,6 @@ class _CalendarioScreenStepAStabileState
       gapDetails: filteredGapDetails,
       bannerText: bannerText,
     );
-  }
-
-  DayGapVisualState _dayGapVisualState(CoverageResultStepA cov) {
-    if (!cov.ok) return DayGapVisualState.realGap;
-
-    final d0 = _selectedDay;
-    final sandraDecision = _sandraDecisionForDay(d0);
-    final uscita13Eff = _effUscita13(d0);
-
-    final bool sandraHelps =
-        (sandraDecision.serveSandraMattina && _effSandraMattina(d0)) ||
-        (sandraDecision.serveSandraPranzo && _effSandraPranzo(d0)) ||
-        (sandraDecision.serveSandraSera && _effSandraSera(d0));
-
-    final bool schoolInHelp =
-        _effectiveSchoolInCover(d0) != SchoolCoverChoice.none;
-
-    final bool schoolOutHelp =
-        !uscita13Eff && _effectiveSchoolOutCover(d0) != SchoolCoverChoice.none;
-
-    final bool lunchHelp =
-        uscita13Eff && _effectiveLunchCover(d0) != SchoolCoverChoice.none;
-
-    final logisticAliceEvents = coreStore.aliceSpecialEventStore
-        .eventsForDay(d0)
-        .where((e) => e.behavior == AliceEventBehavior.logistic)
-        .toList();
-
-    final hasIncompleteLogistics = logisticAliceEvents.any(
-      (e) =>
-          !_aliceEventEngine.hasDropOffAssigned(e) ||
-          !_aliceEventEngine.hasPickUpAssigned(e),
-    );
-
-    final hasLogisticConflict = logisticAliceEvents.any((e) {
-      final usesMatteo = _aliceEventEngine.usesMatteo(e);
-      final usesChiara = _aliceEventEngine.usesChiara(e);
-
-      final start = DateTime(
-        d0.year,
-        d0.month,
-        d0.day,
-        e.start.hour,
-        e.start.minute,
-      );
-
-      final end = DateTime(d0.year, d0.month, d0.day, e.end.hour, e.end.minute);
-
-      final matteoBusy = usesMatteo && _engine.isMatteoBusyBetween(start, end);
-
-      final chiaraBusy = usesChiara && _engine.isChiaraBusyBetween(start, end);
-
-      return matteoBusy || chiaraBusy;
-    });
-
-    if (hasLogisticConflict) {
-      return DayGapVisualState.realGap;
-    }
-
-    if (hasIncompleteLogistics) {
-      return DayGapVisualState.coveredNeed;
-    }
-
-    if (sandraHelps || schoolInHelp || schoolOutHelp || lunchHelp) {
-      return DayGapVisualState.coveredNeed;
-    }
-
-    return DayGapVisualState.noProblem;
   }
 
   bool _isEmergencyActive() {
@@ -4795,19 +4474,6 @@ class _CalendarioScreenStepAStabileState
                             return '$hh:$mm';
                           }
 
-                          String matteoCurrentEventLabel() {
-                            if (matteoNowEvents.isEmpty) return "Nessun evento";
-
-                            final first = matteoNowEvents.first;
-                            final base =
-                                "${first.title} ${fmtTime(first.startTime)}–${fmtTime(first.endTime)}";
-
-                            if (matteoNowEvents.length == 1) return base;
-
-                            final extra = matteoNowEvents.length - 1;
-                            return "$base  +$extra altri";
-                          }
-
                           final matteoFutureEvents = matteoEvents.where((e) {
                             if (e.startTime == null) return false;
 
@@ -5125,19 +4791,6 @@ class _CalendarioScreenStepAStabileState
                             final hh = t.hour.toString().padLeft(2, '0');
                             final mm = t.minute.toString().padLeft(2, '0');
                             return '$hh:$mm';
-                          }
-
-                          String chiaraCurrentEventLabel() {
-                            if (chiaraNowEvents.isEmpty) return "Nessun evento";
-
-                            final first = chiaraNowEvents.first;
-                            final base =
-                                "${first.title} ${fmtTime(first.startTime)}–${fmtTime(first.endTime)}";
-
-                            if (chiaraNowEvents.length == 1) return base;
-
-                            final extra = chiaraNowEvents.length - 1;
-                            return "$base  +$extra altri";
                           }
 
                           Widget buildEventLine({
@@ -5934,7 +5587,7 @@ class _CalendarioScreenStepAStabileState
                     Padding(
                       padding: const EdgeInsets.only(top: 2, bottom: 2),
                       child: Text(
-                        carryLabel!,
+                        carryLabel,
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.orange.shade800,
@@ -7590,13 +7243,8 @@ class _CalendarioScreenStepAStabileState
   }
 
   Widget _cardScuola() {
-    final inChoice = daySettingsStore.schoolInCoverForDay(_selectedDay);
-    final outChoice = daySettingsStore.schoolOutCoverForDay(_selectedDay);
-
     final uscitaAt = _effUscitaAnticipataAt(_selectedDay);
     final uscita13Eff = uscitaAt != null;
-
-    final lunchChoice = daySettingsStore.lunchCoverForDay(_selectedDay);
 
     final aliceEvent = coreStore.aliceEventStore.getEventForDay(_selectedDay);
 
@@ -7863,7 +7511,7 @@ class _CalendarioScreenStepAStabileState
           ],
 
           Text(
-            "Orario: ${fmtTimeOfDay(aliceEvent?.summerCampStart ?? _scuolaStart)}–${fmtTimeOfDay(uscita13Eff ? uscitaAt! : (daySettingsStore.schoolOutStartForDay(_selectedDay) ?? _scuolaEnd))}",
+            "Orario: ${fmtTimeOfDay(aliceEvent?.summerCampStart ?? _scuolaStart)}–${fmtTimeOfDay(uscita13Eff ? uscitaAt : (daySettingsStore.schoolOutStartForDay(_selectedDay) ?? _scuolaEnd))}",
           ),
 
           if (uscita13Eff) ...[
@@ -8830,7 +8478,7 @@ class _CalendarioScreenStepAStabileState
             contentPadding: EdgeInsets.zero,
             title: Text(
               uscita13Eff
-                  ? "Uscita anticipata: ${fmtTimeOfDay(uscitaAt!)}"
+                  ? "Uscita anticipata: ${fmtTimeOfDay(uscitaAt)}"
                   : "Uscita anticipata (tocca per impostare orario)",
               style: const TextStyle(fontWeight: FontWeight.w800),
             ),
@@ -9019,7 +8667,7 @@ class _CalendarioScreenStepAStabileState
               isExpanded: true,
               decoration: InputDecoration(
                 labelText:
-                    "Pranzo ${fmtTimeOfDay(uscitaAt!)}–${fmtTimeOfDay(TimeOfDay(hour: ((uscitaAt!.hour * 60 + uscitaAt!.minute + 20) ~/ 60) % 24, minute: (uscitaAt!.hour * 60 + uscitaAt!.minute + 20) % 60))}",
+                    "Pranzo ${fmtTimeOfDay(uscitaAt)}–${fmtTimeOfDay(TimeOfDay(hour: ((uscitaAt.hour * 60 + uscitaAt.minute + 20) ~/ 60) % 24, minute: (uscitaAt!.hour * 60 + uscitaAt!.minute + 20) % 60))}",
               ),
               items: SchoolCoverChoice.values.map((c) {
                 return DropdownMenuItem(
@@ -9263,22 +8911,6 @@ class _CalendarioScreenStepAStabileState
     final startMin = startTime.hour * 60 + startTime.minute;
     final endMin = endTime.hour * 60 + endTime.minute;
 
-    final matteoPlan = _turns.turnPlanForPersonDay(
-      person: TurnPerson.matteo,
-      day: _selectedDay,
-    );
-
-    final chiaraPlan = _turns.turnPlanForPersonDay(
-      person: TurnPerson.chiara,
-      day: _selectedDay,
-    );
-
-    final matteoStartMin = matteoPlan.start.hour * 60 + matteoPlan.start.minute;
-    final matteoEndMin = matteoPlan.end.hour * 60 + matteoPlan.end.minute;
-
-    final chiaraStartMin = chiaraPlan.start.hour * 60 + chiaraPlan.start.minute;
-    final chiaraEndMin = chiaraPlan.end.hour * 60 + chiaraPlan.end.minute;
-
     final startDT = DateTime(
       _selectedDay.year,
       _selectedDay.month,
@@ -9354,26 +8986,6 @@ class _CalendarioScreenStepAStabileState
       suggestion,
       style: TextStyle(color: Colors.green, fontWeight: FontWeight.w700),
     );
-  }
-
-  Future<void> _pickSchoolTimes() async {
-    final start = await showTimePicker(
-      context: context,
-      initialTime: _scuolaStart,
-    );
-    if (start == null) return;
-
-    // 👉 END NON È PIÙ SCELTO: è automatico (+20 min)
-    final end = TimeOfDay(
-      hour: (start.hour + ((start.minute + 20) ~/ 60)) % 24,
-      minute: (start.minute + 20) % 60,
-    );
-
-    if (!mounted) return;
-
-    setState(() {
-      daySettingsStore.setSchoolOutTimesForDay(_selectedDay, start, end);
-    });
   }
 
   void _openSchoolPanel() {
@@ -10165,58 +9777,6 @@ class _CalendarioScreenStepAStabileState
           ),
         ),
       ],
-    );
-  }
-
-  void _showExtraEventsDialog({
-    required String personName,
-    required List<RealEvent> events,
-  }) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text("Eventi $personName"),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: events.map((e) {
-                  String time = "";
-
-                  if (e.startTime != null && e.endTime != null) {
-                    time =
-                        "${fmtTimeOfDay(e.startTime!)}–${fmtTimeOfDay(e.endTime!)}";
-                  } else if (e.startTime != null) {
-                    time = fmtTimeOfDay(e.startTime!);
-                  } else {
-                    time = "Tutto il giorno";
-                  }
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.event, size: 16),
-                        const SizedBox(width: 6),
-                        Expanded(child: Text("${e.title} • $time")),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              child: const Text("Chiudi"),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ],
-        );
-      },
     );
   }
 }
