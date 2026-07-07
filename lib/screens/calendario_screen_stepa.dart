@@ -4293,35 +4293,10 @@ class _CalendarioScreenStepAStabileState
     final isEmergency = _isEmergencyActive();
     final bool showSummerCampSpecialCard = _selectedDayIsSummerCampDay();
 
-    final baseIpsCoverage30 = coreStore.coverageAdapter.riskScore30Days(
-      startDay: _selectedDay,
-    );
-
-    final hasForcedConflictToday =
-        overrideStore.isForcedConflictForDay(
-          day: _selectedDay,
-          personKey: 'matteo',
-          eventIds: _eventsForPersonOnDay(
-            personKey: 'matteo',
-            day: _selectedDay,
-          ).map((e) => e.id).toList(),
-        ) ||
-        overrideStore.isForcedConflictForDay(
-          day: _selectedDay,
-          personKey: 'chiara',
-          eventIds: _eventsForPersonOnDay(
-            personKey: 'chiara',
-            day: _selectedDay,
-          ).map((e) => e.id).toList(),
-        );
-
-    final forcedPenalty = hasForcedConflictToday ? 15 : 0;
-
-    final int ipsCoverage30 = (baseIpsCoverage30 + forcedPenalty).clamp(0, 100);
-
     final matteoVisual = getStatusVisual(matteoNowLabel);
     final chiaraVisual = getStatusVisual(chiaraNowLabel);
     final aliceVisual = getStatusVisual(aliceNowLabel);
+    final familyNowSnapshot = _buildFamilyNowSnapshot();
 
     return Scaffold(
       appBar: AppBar(
@@ -4354,7 +4329,7 @@ class _CalendarioScreenStepAStabileState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 8),
-            _buildIpsPressureLine(ipsCoverage30),
+            _buildIpsPressureLine(familyNowSnapshot.ipsCoverage30),
             Container(
               width: double.infinity,
               margin: const EdgeInsets.only(top: 8),
@@ -8667,7 +8642,7 @@ class _CalendarioScreenStepAStabileState
               isExpanded: true,
               decoration: InputDecoration(
                 labelText:
-                    "Pranzo ${fmtTimeOfDay(uscitaAt)}–${fmtTimeOfDay(TimeOfDay(hour: ((uscitaAt.hour * 60 + uscitaAt.minute + 20) ~/ 60) % 24, minute: (uscitaAt!.hour * 60 + uscitaAt!.minute + 20) % 60))}",
+                    "Pranzo ${fmtTimeOfDay(uscitaAt)}–${fmtTimeOfDay(TimeOfDay(hour: ((uscitaAt.hour * 60 + uscitaAt.minute + 20) ~/ 60) % 24, minute: (uscitaAt.hour * 60 + uscitaAt.minute + 20) % 60))}",
               ),
               items: SchoolCoverChoice.values.map((c) {
                 return DropdownMenuItem(
