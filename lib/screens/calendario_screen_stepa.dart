@@ -69,6 +69,7 @@ import '../widgets/calendar/alice_event_tile.dart';
 import '../widgets/calendar/alice_event_expanded.dart';
 import '../logic/calendar/builders/alice_event_tile_view_model_builder.dart';
 import '../logic/calendar/builders/alice_event_conflict_builder.dart';
+import '../logic/calendar/view_models/alice_event_tile_view_model.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -7009,6 +7010,32 @@ class _CalendarioScreenStepAStabileState
     }
   }
 
+  AliceEventTileViewModel _buildAliceEventTileModel({
+    required AliceSpecialEvent event,
+    required bool isConflict,
+  }) {
+    return const AliceEventTileViewModelBuilder().build(
+      event: event,
+      isConflict: isConflict,
+      isExpanded: _expandedAliceEventIds.contains(event.id),
+      requiresLogistics: _aliceEventEngine.requiresLogistics(event),
+      categoryIcon: _aliceSpecialCategoryIcon(event.category),
+      categoryLabel: _aliceSpecialCategoryLabel(event.category),
+    );
+  }
+
+  void _toggleAliceEventExpanded(String eventId) {
+    setState(() {
+      if (_expandedAliceEventIds.contains(eventId)) {
+        _expandedAliceEventIds.remove(eventId);
+      } else {
+        _expandedAliceEventIds
+          ..clear()
+          ..add(eventId);
+      }
+    });
+  }
+
   void _openNewAliceSpecialEventEditor() {
     setState(() {
       _resetAliceSpecialEventEditor(closeEditor: false);
@@ -7476,24 +7503,11 @@ class _CalendarioScreenStepAStabileState
                       children: visibleAliceEvents.map((e) {
                         bool isConflict = false;
                         final List<String> conflictWith = [];
-                        final bool isExpanded = _expandedAliceEventIds.contains(
-                          e.id,
-                        );
 
-                        final tileModel = const AliceEventTileViewModelBuilder()
-                            .build(
-                              event: e,
-                              isConflict: isConflict,
-                              isExpanded: isExpanded,
-                              requiresLogistics: _aliceEventEngine
-                                  .requiresLogistics(e),
-                              categoryIcon: _aliceSpecialCategoryIcon(
-                                e.category,
-                              ),
-                              categoryLabel: _aliceSpecialCategoryLabel(
-                                e.category,
-                              ),
-                            );
+                        final tileModel = _buildAliceEventTileModel(
+                          event: e,
+                          isConflict: isConflict,
+                        );
 
                         for (final other in extraEvents) {
                           if (other.id == e.id) continue;
@@ -7512,17 +7526,7 @@ class _CalendarioScreenStepAStabileState
 
                         return AliceEventTile(
                           model: tileModel,
-                          onTap: () {
-                            setState(() {
-                              if (tileModel.isExpanded) {
-                                _expandedAliceEventIds.remove(e.id);
-                              } else {
-                                _expandedAliceEventIds
-                                  ..clear()
-                                  ..add(e.id);
-                              }
-                            });
-                          },
+                          onTap: () => _toggleAliceEventExpanded(tileModel.id),
                           expandedChild: tileModel.isExpanded
                               ? AliceEventExpanded(
                                   event: e,
