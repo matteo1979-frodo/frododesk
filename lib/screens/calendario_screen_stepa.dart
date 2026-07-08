@@ -68,6 +68,7 @@ import '../widgets/calendar/alice_events_list.dart';
 import '../widgets/calendar/alice_event_tile.dart';
 import '../widgets/calendar/alice_event_expanded.dart';
 import '../logic/calendar/builders/alice_event_tile_view_model_builder.dart';
+import '../logic/calendar/builders/alice_event_conflict_builder.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -7564,23 +7565,14 @@ class _CalendarioScreenStepAStabileState
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: extraEvents.map((e) {
-                            bool isConflict = false;
-                            final List<String> conflictWith = [];
+                            final conflictResult =
+                                const AliceEventConflictBuilder().build(
+                                  event: e,
+                                  allEvents: extraEvents,
+                                );
 
-                            for (final other in extraEvents) {
-                              if (other.id == e.id) continue;
-
-                              final overlap =
-                                  e.start.hour * 60 + e.start.minute <
-                                      other.end.hour * 60 + other.end.minute &&
-                                  other.start.hour * 60 + other.start.minute <
-                                      e.end.hour * 60 + e.end.minute;
-
-                              if (overlap) {
-                                isConflict = true;
-                                conflictWith.add(other.label);
-                              }
-                            }
+                            final isConflict = conflictResult.isConflict;
+                            final conflictWith = conflictResult.conflictWith;
 
                             return Container(
                               width: double.infinity,
