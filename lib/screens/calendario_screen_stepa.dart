@@ -67,6 +67,7 @@ import '../widgets/calendar/hidden_alice_events_link.dart';
 import '../widgets/calendar/alice_events_list.dart';
 import '../widgets/calendar/alice_event_tile.dart';
 import '../widgets/calendar/alice_event_expanded.dart';
+import '../logic/calendar/builders/alice_event_tile_view_model_builder.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -7478,6 +7479,21 @@ class _CalendarioScreenStepAStabileState
                           e.id,
                         );
 
+                        final tileModel = const AliceEventTileViewModelBuilder()
+                            .build(
+                              event: e,
+                              isConflict: isConflict,
+                              isExpanded: isExpanded,
+                              requiresLogistics: _aliceEventEngine
+                                  .requiresLogistics(e),
+                              categoryIcon: _aliceSpecialCategoryIcon(
+                                e.category,
+                              ),
+                              categoryLabel: _aliceSpecialCategoryLabel(
+                                e.category,
+                              ),
+                            );
+
                         for (final other in extraEvents) {
                           if (other.id == e.id) continue;
 
@@ -7494,188 +7510,37 @@ class _CalendarioScreenStepAStabileState
                         }
 
                         return AliceEventTile(
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(12),
-                            onTap: () {
-                              setState(() {
-                                if (isExpanded) {
-                                  _expandedAliceEventIds.remove(e.id);
-                                } else {
-                                  _expandedAliceEventIds
-                                    ..clear()
-                                    ..add(e.id);
-                                }
-                              });
-                            },
-                            child: Container(
-                              width: double.infinity,
-                              margin: const EdgeInsets.only(bottom: 10),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: isConflict
-                                    ? Colors.red.withOpacity(0.08)
-                                    : Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: isConflict
-                                      ? Colors.red.withOpacity(0.4)
-                                      : Colors.black.withOpacity(0.08),
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        _aliceSpecialCategoryIcon(e.category),
-                                        size: 18,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              e.label,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w900,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              "${fmtTimeOfDay(e.start)}–${fmtTimeOfDay(e.end)}",
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.black.withOpacity(
-                                                  0.6,
-                                                ),
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  _aliceSpecialCategoryLabel(
-                                                    e.category,
-                                                  ),
-                                                  style: TextStyle(
-                                                    fontSize: 11,
-                                                    color: Colors.black
-                                                        .withOpacity(0.45),
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 2),
-                                                Container(
-                                                  margin: const EdgeInsets.only(
-                                                    top: 2,
-                                                  ),
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 6,
-                                                        vertical: 2,
-                                                      ),
-                                                  decoration: BoxDecoration(
-                                                    color:
-                                                        _aliceEventEngine
-                                                            .requiresLogistics(
-                                                              e,
-                                                            )
-                                                        ? Colors.orange
-                                                              .withOpacity(0.10)
-                                                        : Colors.green
-                                                              .withOpacity(
-                                                                0.10,
-                                                              ),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          6,
-                                                        ),
-                                                  ),
-                                                  child: Text(
-                                                    _aliceEventEngine
-                                                            .requiresLogistics(
-                                                              e,
-                                                            )
-                                                        ? "Accomp. + Ritiro"
-                                                        : "Evento passivo",
-                                                    style: TextStyle(
-                                                      fontSize: 10,
-                                                      color:
-                                                          _aliceEventEngine
-                                                              .requiresLogistics(
-                                                                e,
-                                                              )
-                                                          ? Colors.orange
-                                                          : Colors.green,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      if (e.note.trim().isNotEmpty) ...[
-                                        const SizedBox(width: 6),
-                                        const Icon(
-                                          Icons.notes,
-                                          size: 16,
-                                          color: Colors.black54,
-                                        ),
-                                      ],
-                                      if (isConflict) ...[
-                                        const SizedBox(width: 6),
-                                        const Icon(
-                                          Icons.warning_amber_rounded,
-                                          size: 18,
-                                          color: Colors.red,
-                                        ),
-                                      ],
-                                      const SizedBox(width: 8),
-                                      Icon(
-                                        isExpanded
-                                            ? Icons.expand_less
-                                            : Icons.expand_more,
-                                        size: 20,
-                                        color: Colors.black54,
-                                      ),
-                                    ],
-                                  ),
-                                  if (isExpanded)
-                                    AliceEventExpanded(
-                                      event: e,
-                                      conflictWith: conflictWith,
-                                      categoryLabel: _aliceSpecialCategoryLabel,
-                                      operationalDescription: _aliceEventEngine
-                                          .operationalDescription,
-                                      realTimeMeaning:
-                                          _aliceEventEngine.realTimeMeaning,
-                                      isAliceOutDuringEvent: _aliceEventEngine
-                                          .isAliceOutDuringEvent,
-                                      requiresAdultSupervision:
-                                          _aliceEventEngine
-                                              .requiresAdultSupervision,
-                                      canGenerateCoverageProblem:
-                                          _aliceEventEngine
-                                              .canGenerateCoverageProblem,
-                                      onEdit: () =>
-                                          _startEditAliceSpecialEvent(e),
-                                      onRemove: () =>
-                                          _removeAliceSpecialEvent(e),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
+                          model: tileModel,
+                          onTap: () {
+                            setState(() {
+                              if (tileModel.isExpanded) {
+                                _expandedAliceEventIds.remove(e.id);
+                              } else {
+                                _expandedAliceEventIds
+                                  ..clear()
+                                  ..add(e.id);
+                              }
+                            });
+                          },
+                          expandedChild: tileModel.isExpanded
+                              ? AliceEventExpanded(
+                                  event: e,
+                                  conflictWith: conflictWith,
+                                  categoryLabel: _aliceSpecialCategoryLabel,
+                                  operationalDescription:
+                                      _aliceEventEngine.operationalDescription,
+                                  realTimeMeaning:
+                                      _aliceEventEngine.realTimeMeaning,
+                                  isAliceOutDuringEvent:
+                                      _aliceEventEngine.isAliceOutDuringEvent,
+                                  requiresAdultSupervision: _aliceEventEngine
+                                      .requiresAdultSupervision,
+                                  canGenerateCoverageProblem: _aliceEventEngine
+                                      .canGenerateCoverageProblem,
+                                  onEdit: () => _startEditAliceSpecialEvent(e),
+                                  onRemove: () => _removeAliceSpecialEvent(e),
+                                )
+                              : null,
                         );
                       }).toList(),
                     ),

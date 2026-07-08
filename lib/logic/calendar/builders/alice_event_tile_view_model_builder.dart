@@ -25,6 +25,11 @@ class AliceEventTileViewModelBuilder {
       isExpanded: isExpanded,
       hasNote: event.note.trim().isNotEmpty,
       requiresLogistics: requiresLogistics,
+
+      badgeColor: requiresLogistics ? Colors.orange : Colors.green,
+      badgeBackground: requiresLogistics
+          ? Colors.orange.withOpacity(0.10)
+          : Colors.green.withOpacity(0.10),
     );
   }
 }

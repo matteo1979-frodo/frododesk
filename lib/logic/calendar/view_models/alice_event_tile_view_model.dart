@@ -11,6 +11,8 @@ class AliceEventTileViewModel {
   final bool isExpanded;
   final bool hasNote;
   final bool requiresLogistics;
+  final Color badgeColor;
+  final Color badgeBackground;
 
   const AliceEventTileViewModel({
     required this.id,
@@ -22,5 +24,7 @@ class AliceEventTileViewModel {
     required this.isExpanded,
     required this.hasNote,
     required this.requiresLogistics,
+    required this.badgeColor,
+    required this.badgeBackground,
   });
 }
