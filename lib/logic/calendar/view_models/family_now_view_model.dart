@@ -1,23 +1,16 @@
-import '../../../utils/status_visual.dart';
+import 'family_member_now_view_model.dart';
 
 class FamilyNowViewModel {
-  final StatusVisual matteoVisual;
-  final StatusVisual chiaraVisual;
-  final StatusVisual aliceVisual;
-
-  final String matteoLabel;
-  final String chiaraLabel;
-  final String aliceLabel;
+  final FamilyMemberNowViewModel matteo;
+  final FamilyMemberNowViewModel chiara;
+  final FamilyMemberNowViewModel alice;
 
   final bool emergency;
 
   const FamilyNowViewModel({
-    required this.matteoVisual,
-    required this.chiaraVisual,
-    required this.aliceVisual,
-    required this.matteoLabel,
-    required this.chiaraLabel,
-    required this.aliceLabel,
+    required this.matteo,
+    required this.chiara,
+    required this.alice,
     required this.emergency,
   });
 }

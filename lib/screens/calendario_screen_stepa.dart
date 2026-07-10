@@ -70,6 +70,8 @@ import '../widgets/calendar/alice_event_expanded.dart';
 import '../logic/calendar/builders/alice_event_tile_view_model_builder.dart';
 import '../logic/calendar/builders/alice_event_conflict_builder.dart';
 import '../logic/calendar/view_models/alice_event_tile_view_model.dart';
+import '../logic/calendar/builders/family_now_view_model_builder.dart';
+import '../widgets/calendar/family_now_card.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -3535,6 +3537,18 @@ class _CalendarioScreenStepAStabileState
       now.add(const Duration(minutes: 1)),
     );
 
+    final chiaraPlan = _turns.turnPlanForPersonDay(
+      person: TurnPerson.chiara,
+      day: _selectedDay,
+    );
+
+    String chiaraTurnLabel = "Turno non previsto";
+
+    if (!chiaraPlan.isOff) {
+      chiaraTurnLabel =
+          "Turno ${fmtTimeOfDay(chiaraPlan.start)}–${fmtTimeOfDay(chiaraPlan.end)}";
+    }
+
     final chiaraBusyNow =
         chiaraBedSick || chiaraBusyForTurn || chiaraBusyForEventNow;
 
@@ -3859,6 +3873,7 @@ class _CalendarioScreenStepAStabileState
       chiaraNowLabel: chiaraNowLabel,
       aliceNowLabel: aliceNowLabel,
       matteoTurnLabel: matteoTurnLabel,
+      chiaraTurnLabel: chiaraTurnLabel,
       cov: cov,
       isEmergency: isEmergency,
       showSummerCampSpecialCard: showSummerCampSpecialCard,
@@ -3871,448 +3886,15 @@ class _CalendarioScreenStepAStabileState
 
   @override
   Widget build(BuildContext context) {
-    final realNow = DateTime.now();
-
-    final now = DateTime(
-      _selectedDay.year,
-      _selectedDay.month,
-      _selectedDay.day,
-      realNow.hour,
-      realNow.minute,
-      realNow.second,
-      realNow.millisecond,
-      realNow.microsecond,
-    );
-    final realEventStore = coreStore.realEventStore;
-    final nowDay = _onlyDate(now);
-
-    final matteoOverride = _getOverridesForDay(nowDay).matteo;
-    final matteoDisease = coreStore.diseasePeriodStore.getPeriodForDay(
-      'matteo',
-      nowDay,
-    );
-
-    final matteoOnHoliday = coreStore.feriePeriodStore.isOnHoliday(
-      FeriePerson.matteo,
-      nowDay,
-    );
-
-    final matteoBedSick =
-        matteoOverride?.status == OverrideStatus.malattiaALetto ||
-        matteoDisease?.type == DiseaseType.bed;
-
-    final matteoEventsNow = coreStore.realEventStore
-        .eventsForDay(nowDay)
-        .where((e) => e.personKey == 'matteo');
-
-    bool matteoBusyForEventNow = false;
-
-    for (final event in matteoEventsNow) {
-      final eventStart = DateTime(
-        event.startDate.year,
-        event.startDate.month,
-        event.startDate.day,
-        event.startTime?.hour ?? 0,
-        event.startTime?.minute ?? 0,
-      );
-
-      DateTime eventEnd = DateTime(
-        event.endDate.year,
-        event.endDate.month,
-        event.endDate.day,
-        event.endTime?.hour ?? 23,
-        event.endTime?.minute ?? 59,
-      );
-
-      if (!eventEnd.isAfter(eventStart)) {
-        eventEnd = eventEnd.add(const Duration(days: 1));
-      }
-
-      final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
-
-      if (isNowInside) {
-        matteoBusyForEventNow = true;
-        break;
-      }
-    }
-
-    final matteoBusyForTurn = _engine.isMatteoBusyBetween(
-      now,
-      now.add(const Duration(minutes: 1)),
-    );
-
-    final matteoPlan = _turns.turnPlanForPersonDay(
-      person: TurnPerson.matteo,
-      day: _selectedDay,
-    );
-
-    String matteoTurnLabel = "Turno non previsto";
-
-    if (!matteoPlan.isOff) {
-      matteoTurnLabel =
-          "Turno ${fmtTimeOfDay(matteoPlan.start)}–${fmtTimeOfDay(matteoPlan.end)}";
-    }
-
-    final matteoBusyNow =
-        matteoBedSick || matteoBusyForTurn || matteoBusyForEventNow;
-
-    final String matteoNowLabel;
-
-    if (matteoDisease?.type == DiseaseType.mild) {
-      matteoNowLabel = "malattia leggera";
-    } else if (matteoBedSick) {
-      matteoNowLabel = "occupato • malattia a letto";
-    } else if (matteoOnHoliday) {
-      matteoNowLabel = "libero • ferie";
-    } else if (matteoBusyForEventNow) {
-      matteoNowLabel = "occupato • evento";
-    } else if (matteoBusyForTurn) {
-      matteoNowLabel = "occupato • turno";
-    } else {
-      matteoNowLabel = "libero";
-    }
-
-    final chiaraOverride = _getOverridesForDay(nowDay).chiara;
-    final chiaraDisease = coreStore.diseasePeriodStore.getPeriodForDay(
-      'chiara',
-      nowDay,
-    );
-
-    final chiaraOnHoliday = coreStore.feriePeriodStore.isOnHoliday(
-      FeriePerson.chiara,
-      nowDay,
-    );
-
-    final chiaraBedSick =
-        chiaraOverride?.status == OverrideStatus.malattiaALetto ||
-        chiaraDisease?.type == DiseaseType.bed;
-
-    final chiaraEventsNow = coreStore.realEventStore
-        .eventsForDay(nowDay)
-        .where((e) => e.personKey == 'chiara');
-
-    bool chiaraBusyForEventNow = false;
-
-    for (final event in chiaraEventsNow) {
-      final eventStart = DateTime(
-        event.startDate.year,
-        event.startDate.month,
-        event.startDate.day,
-        event.startTime?.hour ?? 0,
-        event.startTime?.minute ?? 0,
-      );
-
-      DateTime eventEnd = DateTime(
-        event.endDate.year,
-        event.endDate.month,
-        event.endDate.day,
-        event.endTime?.hour ?? 23,
-        event.endTime?.minute ?? 59,
-      );
-
-      if (!eventEnd.isAfter(eventStart)) {
-        eventEnd = eventEnd.add(const Duration(days: 1));
-      }
-
-      final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
-
-      if (isNowInside) {
-        chiaraBusyForEventNow = true;
-        break;
-      }
-    }
-
-    final chiaraBusyForTurn = _engine.isChiaraBusyBetween(
-      now,
-      now.add(const Duration(minutes: 1)),
-    );
-
-    final chiaraBusyNow =
-        chiaraBedSick || chiaraBusyForTurn || chiaraBusyForEventNow;
-
-    final String chiaraNowLabel;
-
-    if (chiaraDisease?.type == DiseaseType.mild) {
-      chiaraNowLabel = "malattia leggera";
-    } else if (chiaraBedSick) {
-      chiaraNowLabel = "occupato • malattia a letto";
-    } else if (chiaraOnHoliday) {
-      chiaraNowLabel = "libero • ferie";
-    } else if (chiaraBusyForEventNow) {
-      chiaraNowLabel = "occupato • evento";
-    } else if (chiaraBusyForTurn) {
-      chiaraNowLabel = "occupato • turno";
-    } else {
-      chiaraNowLabel = "libero";
-    }
-
-    final alicePeriodNow = coreStore.aliceEventStore.getEventForDay(nowDay);
-    final aliceSpecialEventsNow = coreStore.aliceSpecialEventStore.eventsForDay(
-      nowDay,
-    );
-
-    bool _isNowInsideRange(TimeOfDay start, TimeOfDay end) {
-      final rangeStart = DateTime(
-        nowDay.year,
-        nowDay.month,
-        nowDay.day,
-        start.hour,
-        start.minute,
-      );
-
-      final rangeEnd = DateTime(
-        nowDay.year,
-        nowDay.month,
-        nowDay.day,
-        end.hour,
-        end.minute,
-      );
-
-      return now.isAfter(rangeStart) && now.isBefore(rangeEnd);
-    }
-
-    bool aliceIsOutNow = false;
-
-    final aliceEventsNow = coreStore.realEventStore
-        .eventsForDay(nowDay)
-        .where((e) => e.personKey == 'alice');
-
-    bool aliceBusyForEventNow = false;
-
-    for (final event in aliceEventsNow) {
-      final eventStart = DateTime(
-        event.startDate.year,
-        event.startDate.month,
-        event.startDate.day,
-        event.startTime?.hour ?? 0,
-        event.startTime?.minute ?? 0,
-      );
-
-      DateTime eventEnd = DateTime(
-        event.endDate.year,
-        event.endDate.month,
-        event.endDate.day,
-        event.endTime?.hour ?? 23,
-        event.endTime?.minute ?? 59,
-      );
-
-      if (!eventEnd.isAfter(eventStart)) {
-        eventEnd = eventEnd.add(const Duration(days: 1));
-      }
-
-      final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
-
-      if (isNowInside) {
-        aliceBusyForEventNow = true;
-        break;
-      }
-    }
-
-    final isRealSchoolDay = coreStore.schoolStore.hasSchoolOn(nowDay);
-
-    if (aliceBusyForEventNow) {
-      aliceIsOutNow = true;
-    } else {
-      if (alicePeriodNow == null) {
-        if (!isRealSchoolDay) {
-          aliceIsOutNow = false;
-        } else {
-          final uscitaAt = _effUscitaAnticipataAt(nowDay);
-          final schoolEnd = uscitaAt ?? _effSchoolOutEnd(nowDay);
-          final schoolStart = _scuolaStart;
-
-          aliceIsOutNow = _isNowInsideRange(schoolStart, schoolEnd);
-        }
-      } else {
-        switch (alicePeriodNow.type) {
-          case AliceEventType.schoolNormal:
-            if (!isRealSchoolDay) {
-              aliceIsOutNow = false;
-              break;
-            }
-
-            final uscitaAt = _effUscitaAnticipataAt(nowDay);
-            final schoolEnd = uscitaAt ?? _effSchoolOutEnd(nowDay);
-            final schoolStart = _scuolaStart;
-
-            aliceIsOutNow = _isNowInsideRange(schoolStart, schoolEnd);
-            break;
-
-          case AliceEventType.summerCamp:
-            final campStart =
-                alicePeriodNow.summerCampStart ??
-                const TimeOfDay(hour: 8, minute: 30);
-
-            final campEnd =
-                alicePeriodNow.summerCampEnd ??
-                const TimeOfDay(hour: 16, minute: 30);
-
-            aliceIsOutNow = _isNowInsideRange(campStart, campEnd);
-            break;
-
-          case AliceEventType.vacation:
-          case AliceEventType.schoolClosure:
-          case AliceEventType.sickness:
-            aliceIsOutNow = false;
-            break;
-        }
-      }
-    }
-
-    for (final event in aliceSpecialEventsNow) {
-      final eventStart = DateTime(
-        nowDay.year,
-        nowDay.month,
-        nowDay.day,
-        event.start.hour,
-        event.start.minute,
-      );
-
-      final eventEnd = DateTime(
-        nowDay.year,
-        nowDay.month,
-        nowDay.day,
-        event.end.hour,
-        event.end.minute,
-      );
-
-      final isActiveNow = now.isAfter(eventStart) && now.isBefore(eventEnd);
-
-      if (isActiveNow && _aliceEventEngine.isAliceOutDuringEvent(event)) {
-        aliceIsOutNow = true;
-        break;
-      }
-    }
-
-    final isAliceSick = alicePeriodNow?.type == AliceEventType.sickness;
-
-    AliceSpecialEvent? activeAliceSpecialEventNow;
-    for (final event in aliceSpecialEventsNow) {
-      final eventStart = DateTime(
-        nowDay.year,
-        nowDay.month,
-        nowDay.day,
-        event.start.hour,
-        event.start.minute,
-      );
-
-      final eventEnd = DateTime(
-        nowDay.year,
-        nowDay.month,
-        nowDay.day,
-        event.end.hour,
-        event.end.minute,
-      );
-
-      final isActiveNow = now.isAfter(eventStart) && now.isBefore(eventEnd);
-
-      if (isActiveNow) {
-        activeAliceSpecialEventNow = event;
-        break;
-      }
-    }
-
-    RealEvent? activeAliceRealEventNow;
-    final aliceRealEventsNow = coreStore.realEventStore
-        .eventsForDay(nowDay)
-        .where((e) => e.personKey == 'alice');
-
-    for (final event in aliceRealEventsNow) {
-      final eventStart = DateTime(
-        event.startDate.year,
-        event.startDate.month,
-        event.startDate.day,
-        event.startTime?.hour ?? 0,
-        event.startTime?.minute ?? 0,
-      );
-
-      DateTime eventEnd = DateTime(
-        event.endDate.year,
-        event.endDate.month,
-        event.endDate.day,
-        event.endTime?.hour ?? 23,
-        event.endTime?.minute ?? 59,
-      );
-
-      if (!eventEnd.isAfter(eventStart)) {
-        eventEnd = eventEnd.add(const Duration(days: 1));
-      }
-
-      final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
-
-      if (isNowInside) {
-        activeAliceRealEventNow = event;
-        break;
-      }
-    }
-
-    String _aliceOutsideLabelFromText(
-      String text, {
-      AliceSpecialEventCategory? category,
-    }) {
-      switch (category) {
-        case AliceSpecialEventCategory.school:
-          return "fuori • scuola";
-        case AliceSpecialEventCategory.health:
-          return "fuori • visita";
-        case AliceSpecialEventCategory.sport:
-          return "fuori • sport";
-        case AliceSpecialEventCategory.activity:
-          return "fuori • attività";
-        case AliceSpecialEventCategory.other:
-        case null:
-          break;
-      }
-
-      final lower = text.toLowerCase();
-
-      if (lower.contains('centro estivo')) return "fuori • centro estivo";
-      if (lower.contains('gita')) return "fuori • gita";
-      if (lower.contains('visita') ||
-          lower.contains('dentista') ||
-          lower.contains('medic') ||
-          lower.contains('pediatra')) {
-        return "fuori • visita";
-      }
-      if (lower.contains('scuola')) return "fuori • scuola";
-      if (lower.contains('danza') ||
-          lower.contains('ballo') ||
-          lower.contains('pallavolo') ||
-          lower.contains('sport')) {
-        return "fuori • sport";
-      }
-      if (lower.contains('teatro') ||
-          lower.contains('ripetizioni') ||
-          lower.contains('corso')) {
-        return "fuori • attività";
-      }
-
-      return "fuori";
-    }
-
-    final String aliceNowLabel = aliceIsOutNow
-        ? (activeAliceSpecialEventNow != null
-              ? _aliceOutsideLabelFromText(
-                  activeAliceSpecialEventNow.label,
-                  category: activeAliceSpecialEventNow.category,
-                )
-              : activeAliceRealEventNow != null
-              ? _aliceOutsideLabelFromText(activeAliceRealEventNow.title)
-              : (alicePeriodNow?.type == AliceEventType.summerCamp
-                    ? "fuori • centro estivo"
-                    : (coreStore.aliceEventStore.isSchoolNormalDay(_selectedDay)
-                          ? "fuori • scuola"
-                          : "fuori • casa")))
-        : (isAliceSick ? "a casa • malata" : "a casa");
-
-    final cov = _computeCoverageStepA(_selectedDay);
-    final isEmergency = _isEmergencyActive();
-    final bool showSummerCampSpecialCard = _selectedDayIsSummerCampDay();
-
-    final matteoVisual = getStatusVisual(matteoNowLabel);
-    final chiaraVisual = getStatusVisual(chiaraNowLabel);
-    final aliceVisual = getStatusVisual(aliceNowLabel);
     final familyNowSnapshot = _buildFamilyNowSnapshot();
+    final cov = familyNowSnapshot.cov;
+    final isEmergency = familyNowSnapshot.isEmergency;
+    final showSummerCampSpecialCard =
+        familyNowSnapshot.showSummerCampSpecialCard;
+
+    final familyNowViewModel = const FamilyNowViewModelBuilder().build(
+      familyNowSnapshot,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -4346,1056 +3928,684 @@ class _CalendarioScreenStepAStabileState
           children: [
             const SizedBox(height: 8),
             _buildIpsPressureLine(familyNowSnapshot.ipsCoverage30),
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(top: 8),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.indigo.withOpacity(0.07),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.indigo.withOpacity(0.22)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.family_restroom,
-                        size: 18,
-                        color: Colors.indigo.shade700,
-                      ),
-                      const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text(
-                          "STATO ATTUALE FAMIGLIA",
-                          style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 14,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.75),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                            color: Colors.indigo.withOpacity(0.14),
-                          ),
-                        ),
-                        child: Text(
-                          DateFormat('HH:mm', 'it_IT').format(realNow),
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.indigo.shade700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Fotografia reale riferita al giorno selezionato, all'ora attuale.",
-                    style: TextStyle(
-                      color: Colors.black.withOpacity(0.65),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  GestureDetector(
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) {
-                          final matteoEvents = realEventStore
-                              .eventsForDay(_selectedDay)
-                              .where((e) => e.personKey == 'matteo')
-                              .toList();
+            FamilyNowCard(
+              model: familyNowViewModel,
+              realNow: familyNowSnapshot.realNow,
+              onTapMatteo: () {
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    final matteoEvents = familyNowSnapshot.realEventStore
+                        .eventsForDay(_selectedDay)
+                        .where((e) => e.personKey == 'matteo')
+                        .toList();
 
-                          final matteoPastEvents = matteoEvents.where((e) {
-                            if (e.endTime == null) return false;
+                    final matteoPastEvents = matteoEvents.where((e) {
+                      if (e.endTime == null) return false;
 
-                            final eventEnd = DateTime(
-                              _selectedDay.year,
-                              _selectedDay.month,
-                              _selectedDay.day,
-                              e.endTime!.hour,
-                              e.endTime!.minute,
-                            );
-
-                            return now.isAfter(eventEnd);
-                          }).toList();
-
-                          final matteoNowEvents = matteoEvents.where((e) {
-                            if (e.startTime == null || e.endTime == null) {
-                              return false;
-                            }
-
-                            final eventStart = DateTime(
-                              _selectedDay.year,
-                              _selectedDay.month,
-                              _selectedDay.day,
-                              e.startTime!.hour,
-                              e.startTime!.minute,
-                            );
-
-                            final eventEnd = DateTime(
-                              _selectedDay.year,
-                              _selectedDay.month,
-                              _selectedDay.day,
-                              e.endTime!.hour,
-                              e.endTime!.minute,
-                            );
-
-                            return now.isAfter(eventStart) &&
-                                now.isBefore(eventEnd);
-                          }).toList();
-
-                          String fmtTime(TimeOfDay? t) {
-                            if (t == null) return '--:--';
-                            final hh = t.hour.toString().padLeft(2, '0');
-                            final mm = t.minute.toString().padLeft(2, '0');
-                            return '$hh:$mm';
-                          }
-
-                          final matteoFutureEvents = matteoEvents.where((e) {
-                            if (e.startTime == null) return false;
-
-                            final eventStart = DateTime(
-                              _selectedDay.year,
-                              _selectedDay.month,
-                              _selectedDay.day,
-                              e.startTime!.hour,
-                              e.startTime!.minute,
-                            );
-
-                            return now.isBefore(eventStart);
-                          }).toList();
-
-                          Widget buildEventLine({
-                            required String prefix,
-                            required dynamic event,
-                            Color? color,
-                            FontWeight fontWeight = FontWeight.normal,
-                          }) {
-                            return Text(
-                              "$prefix${event.title} ${fmtTime(event.startTime)} - ${fmtTime(event.endTime)}",
-                              style: TextStyle(
-                                color: color,
-                                fontWeight: fontWeight,
-                              ),
-                            );
-                          }
-
-                          return AlertDialog(
-                            title: const Text("Matteo"),
-                            content: SingleChildScrollView(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    "Stato attuale",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    matteoNowLabel,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      color: matteoVisual.color,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-
-                                  const SizedBox(height: 6),
-                                  Text(matteoTurnLabel),
-                                  Text(
-                                    "Stato attuale: $matteoNowLabel",
-                                    style: TextStyle(
-                                      color: matteoVisual.color,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  const Text(
-                                    "Eventi della giornata",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  const Text(
-                                    "Prima",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  if (matteoPastEvents.isEmpty)
-                                    Text(
-                                      "• Nessun evento già concluso",
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    )
-                                  else
-                                    ...matteoPastEvents.map(
-                                      (e) => buildEventLine(
-                                        prefix: "✓ ",
-                                        event: e,
-                                      ),
-                                    ),
-                                  const SizedBox(height: 10),
-                                  const Text(
-                                    "Adesso",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  if (matteoNowEvents.isEmpty)
-                                    Text(
-                                      "• Nessun evento in corso",
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    )
-                                  else
-                                    ...matteoNowEvents.map(
-                                      (e) => buildEventLine(
-                                        prefix: "👉 ",
-                                        event: e,
-                                        color: Colors.orange,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
-                                  const SizedBox(height: 10),
-                                  const Text(
-                                    "Dopo",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  if (matteoFutureEvents.isEmpty)
-                                    Text(
-                                      "• Nessun evento successivo",
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    )
-                                  else
-                                    ...matteoFutureEvents.map(
-                                      (e) => buildEventLine(
-                                        prefix: "• ",
-                                        event: e,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: const Text("Chiudi"),
-                              ),
-                            ],
-                          );
-                        },
+                      final eventEnd = DateTime(
+                        _selectedDay.year,
+                        _selectedDay.month,
+                        _selectedDay.day,
+                        e.endTime!.hour,
+                        e.endTime!.minute,
                       );
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: matteoBusyNow
-                            ? Colors.red.withOpacity(0.08)
-                            : Colors.green.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: matteoBusyNow
-                              ? Colors.red.withOpacity(0.35)
-                              : Colors.green.withOpacity(0.35),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            matteoBusyNow ? Icons.block : Icons.check_circle,
-                            size: 18,
-                            color: matteoBusyNow ? Colors.red : Colors.green,
-                          ),
-                          const SizedBox(width: 8),
-                          const SizedBox(
-                            width: 62,
-                            child: Text(
-                              "Matteo",
-                              style: TextStyle(fontWeight: FontWeight.w900),
-                            ),
-                          ),
-                          Expanded(
-                            child: RichText(
-                              text: TextSpan(
-                                children: [
-                                  WidgetSpan(
-                                    alignment: PlaceholderAlignment.middle,
-                                    child: TweenAnimationBuilder<double>(
-                                      duration: const Duration(
-                                        milliseconds: 800,
-                                      ),
-                                      tween: Tween(
-                                        begin: 1.0,
-                                        end: matteoBusyNow ? 1.2 : 1.0,
-                                      ),
-                                      builder: (context, value, child) {
-                                        return Transform.scale(
-                                          scale: value,
-                                          child: Padding(
-                                            padding: const EdgeInsets.only(
-                                              right: 10,
-                                            ),
-                                            child: Transform.translate(
-                                              offset: const Offset(0, -5),
-                                              child: Text(
-                                                matteoVisual.emoji,
-                                                style: const TextStyle(
-                                                  fontSize: 22,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  TextSpan(
-                                    text: matteoNowLabel,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      color: matteoVisual.color,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) {
-                          final chiaraEvents = realEventStore
-                              .eventsForDay(_selectedDay)
-                              .where((e) => e.personKey == 'chiara')
-                              .toList();
 
-                          final chiaraPastEvents = chiaraEvents.where((e) {
-                            if (e.endTime == null) return false;
+                      return familyNowSnapshot.now.isAfter(eventEnd);
+                    }).toList();
 
-                            final eventEnd = DateTime(
-                              _selectedDay.year,
-                              _selectedDay.month,
-                              _selectedDay.day,
-                              e.endTime!.hour,
-                              e.endTime!.minute,
-                            );
+                    final matteoNowEvents = matteoEvents.where((e) {
+                      if (e.startTime == null || e.endTime == null) {
+                        return false;
+                      }
 
-                            return now.isAfter(eventEnd);
-                          }).toList();
-
-                          final chiaraNowEvents = chiaraEvents.where((e) {
-                            if (e.startTime == null || e.endTime == null) {
-                              return false;
-                            }
-
-                            final eventStart = DateTime(
-                              _selectedDay.year,
-                              _selectedDay.month,
-                              _selectedDay.day,
-                              e.startTime!.hour,
-                              e.startTime!.minute,
-                            );
-
-                            final eventEnd = DateTime(
-                              _selectedDay.year,
-                              _selectedDay.month,
-                              _selectedDay.day,
-                              e.endTime!.hour,
-                              e.endTime!.minute,
-                            );
-
-                            return now.isAfter(eventStart) &&
-                                now.isBefore(eventEnd);
-                          }).toList();
-
-                          final chiaraFutureEvents = chiaraEvents.where((e) {
-                            if (e.startTime == null) return false;
-
-                            final eventStart = DateTime(
-                              _selectedDay.year,
-                              _selectedDay.month,
-                              _selectedDay.day,
-                              e.startTime!.hour,
-                              e.startTime!.minute,
-                            );
-
-                            return now.isBefore(eventStart);
-                          }).toList();
-
-                          final chiaraPlan = _turns.turnPlanForPersonDay(
-                            person: TurnPerson.chiara,
-                            day: _selectedDay,
-                          );
-
-                          String chiaraTurnLabel = "Turno non previsto";
-
-                          if (!chiaraPlan.isOff) {
-                            chiaraTurnLabel =
-                                "Turno ${fmtTimeOfDay(chiaraPlan.start)}–${fmtTimeOfDay(chiaraPlan.end)}";
-                          }
-
-                          String fmtTime(TimeOfDay? t) {
-                            if (t == null) return '--:--';
-                            final hh = t.hour.toString().padLeft(2, '0');
-                            final mm = t.minute.toString().padLeft(2, '0');
-                            return '$hh:$mm';
-                          }
-
-                          Widget buildEventLine({
-                            required String prefix,
-                            required dynamic event,
-                            Color? color,
-                            FontWeight fontWeight = FontWeight.normal,
-                          }) {
-                            return Text(
-                              "$prefix${event.title} ${fmtTime(event.startTime)} - ${fmtTime(event.endTime)}",
-                              style: TextStyle(
-                                color: color,
-                                fontWeight: fontWeight,
-                              ),
-                            );
-                          }
-
-                          return AlertDialog(
-                            title: const Text("Chiara"),
-                            content: SingleChildScrollView(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    "Stato attuale",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    chiaraNowLabel,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      color: chiaraVisual.color,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-
-                                  const SizedBox(height: 16),
-                                  const Text(
-                                    "Turno previsto",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(chiaraTurnLabel),
-                                  Text(
-                                    "Stato attuale: $chiaraNowLabel",
-                                    style: TextStyle(
-                                      color: chiaraVisual.color,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  const Text(
-                                    "Eventi della giornata",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  const Text(
-                                    "Prima",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  if (chiaraPastEvents.isEmpty)
-                                    Text(
-                                      "• Nessun evento già concluso",
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    )
-                                  else
-                                    ...chiaraPastEvents.map(
-                                      (e) => buildEventLine(
-                                        prefix: "✓ ",
-                                        event: e,
-                                      ),
-                                    ),
-                                  const SizedBox(height: 10),
-                                  const Text(
-                                    "Adesso",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  if (chiaraNowEvents.isEmpty)
-                                    Text(
-                                      "• Nessun evento in corso",
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    )
-                                  else
-                                    ...chiaraNowEvents.map(
-                                      (e) => buildEventLine(
-                                        prefix: "👉 ",
-                                        event: e,
-                                        color: Colors.orange,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
-                                  const SizedBox(height: 10),
-                                  const Text(
-                                    "Dopo",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  if (chiaraFutureEvents.isEmpty)
-                                    Text(
-                                      "• Nessun evento successivo",
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    )
-                                  else
-                                    ...chiaraFutureEvents.map(
-                                      (e) => buildEventLine(
-                                        prefix: "• ",
-                                        event: e,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: const Text("Chiudi"),
-                              ),
-                            ],
-                          );
-                        },
+                      final eventStart = DateTime(
+                        _selectedDay.year,
+                        _selectedDay.month,
+                        _selectedDay.day,
+                        e.startTime!.hour,
+                        e.startTime!.minute,
                       );
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: chiaraBusyNow
-                            ? Colors.red.withOpacity(0.08)
-                            : Colors.green.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: chiaraBusyNow
-                              ? Colors.red.withOpacity(0.35)
-                              : Colors.green.withOpacity(0.35),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            chiaraBusyNow ? Icons.block : Icons.check_circle,
-                            size: 18,
-                            color: chiaraBusyNow ? Colors.red : Colors.green,
-                          ),
-                          const SizedBox(width: 8),
-                          const SizedBox(
-                            width: 62,
-                            child: Text(
-                              "Chiara",
-                              style: TextStyle(fontWeight: FontWeight.w900),
+
+                      final eventEnd = DateTime(
+                        _selectedDay.year,
+                        _selectedDay.month,
+                        _selectedDay.day,
+                        e.endTime!.hour,
+                        e.endTime!.minute,
+                      );
+
+                      return familyNowSnapshot.now.isAfter(eventStart) &&
+                          familyNowSnapshot.now.isBefore(eventEnd);
+                    }).toList();
+
+                    String fmtTime(TimeOfDay? t) {
+                      if (t == null) return '--:--';
+                      final hh = t.hour.toString().padLeft(2, '0');
+                      final mm = t.minute.toString().padLeft(2, '0');
+                      return '$hh:$mm';
+                    }
+
+                    final matteoFutureEvents = matteoEvents.where((e) {
+                      if (e.startTime == null) return false;
+
+                      final eventStart = DateTime(
+                        _selectedDay.year,
+                        _selectedDay.month,
+                        _selectedDay.day,
+                        e.startTime!.hour,
+                        e.startTime!.minute,
+                      );
+
+                      return familyNowSnapshot.now.isBefore(eventStart);
+                    }).toList();
+
+                    Widget buildEventLine({
+                      required String prefix,
+                      required dynamic event,
+                      Color? color,
+                      FontWeight fontWeight = FontWeight.normal,
+                    }) {
+                      return Text(
+                        "$prefix${event.title} ${fmtTime(event.startTime)} - ${fmtTime(event.endTime)}",
+                        style: TextStyle(color: color, fontWeight: fontWeight),
+                      );
+                    }
+
+                    return AlertDialog(
+                      title: const Text("Matteo"),
+                      content: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Stato attuale",
+                              style: TextStyle(fontWeight: FontWeight.w700),
                             ),
-                          ),
-                          Expanded(
-                            child: RichText(
-                              text: TextSpan(
-                                children: [
-                                  WidgetSpan(
-                                    alignment: PlaceholderAlignment.middle,
-                                    child: TweenAnimationBuilder<double>(
-                                      duration: const Duration(
-                                        milliseconds: 800,
-                                      ),
-                                      tween: Tween(
-                                        begin: 1.0,
-                                        end: chiaraBusyNow ? 1.2 : 1.0,
-                                      ),
-                                      builder: (context, value, child) {
-                                        return Transform.scale(
-                                          scale: value,
-                                          child: Padding(
-                                            padding: const EdgeInsets.only(
-                                              right: 10,
-                                            ),
-                                            child: Transform.translate(
-                                              offset: const Offset(0, -5),
-                                              child: Text(
-                                                chiaraVisual.emoji,
-                                                style: const TextStyle(
-                                                  fontSize: 22,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  TextSpan(
-                                    text: chiaraNowLabel,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      color: chiaraVisual.color,
-                                    ),
-                                  ),
-                                ],
+                            const SizedBox(height: 6),
+                            Text(
+                              familyNowSnapshot.matteoNowLabel,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                color: familyNowSnapshot.matteoVisual.color,
                               ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(height: 12),
+                            Text(familyNowSnapshot.matteoTurnLabel),
+                            Text(
+                              "Stato attuale: ${familyNowSnapshot.matteoNowLabel}",
+                              style: TextStyle(
+                                color: familyNowSnapshot.matteoVisual.color,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              "Eventi della giornata",
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              "Prima",
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 4),
+                            if (matteoPastEvents.isEmpty)
+                              Text(
+                                "• Nessun evento già concluso",
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              )
+                            else
+                              ...matteoPastEvents.map(
+                                (e) => buildEventLine(prefix: "✓ ", event: e),
+                              ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              "Adesso",
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 4),
+                            if (matteoNowEvents.isEmpty)
+                              Text(
+                                "• Nessun evento in corso",
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              )
+                            else
+                              ...matteoNowEvents.map(
+                                (e) => buildEventLine(
+                                  prefix: "👉 ",
+                                  event: e,
+                                  color: Colors.orange,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              "Dopo",
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 4),
+                            if (matteoFutureEvents.isEmpty)
+                              Text(
+                                "• Nessun evento successivo",
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              )
+                            else
+                              ...matteoFutureEvents.map(
+                                (e) => buildEventLine(prefix: "• ", event: e),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) {
-                          final aliceSpecialEvents = coreStore
-                              .aliceSpecialEventStore
-                              .eventsForDay(_selectedDay);
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text("Chiudi"),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+              onTapChiara: () {
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    final chiaraEvents = familyNowSnapshot.realEventStore
+                        .eventsForDay(_selectedDay)
+                        .where((e) => e.personKey == 'chiara')
+                        .toList();
 
-                          final aliceRealEvents = coreStore.realEventStore
-                              .eventsForDay(_selectedDay)
-                              .where((e) => e.personKey == 'alice')
-                              .toList();
+                    final chiaraPastEvents = chiaraEvents.where((e) {
+                      if (e.endTime == null) return false;
 
-                          final alicePeriod = coreStore.aliceEventStore
-                              .getEventForDay(_selectedDay);
+                      final eventEnd = DateTime(
+                        _selectedDay.year,
+                        _selectedDay.month,
+                        _selectedDay.day,
+                        e.endTime!.hour,
+                        e.endTime!.minute,
+                      );
 
-                          String fmtTime(TimeOfDay? t) {
-                            if (t == null) return '--:--';
-                            final hh = t.hour.toString().padLeft(2, '0');
-                            final mm = t.minute.toString().padLeft(2, '0');
-                            return '$hh:$mm';
-                          }
+                      return familyNowSnapshot.now.isAfter(eventEnd);
+                    }).toList();
 
-                          String periodLabel(AliceEventType type) {
-                            switch (type) {
-                              case AliceEventType.schoolNormal:
-                                return "Scuola";
-                              case AliceEventType.vacation:
-                                return "Vacanza";
-                              case AliceEventType.schoolClosure:
-                                return "Scuola chiusa";
-                              case AliceEventType.sickness:
-                                return "Malattia";
-                              case AliceEventType.summerCamp:
-                                return "Centro estivo";
-                            }
-                          }
+                    final chiaraNowEvents = chiaraEvents.where((e) {
+                      if (e.startTime == null || e.endTime == null) {
+                        return false;
+                      }
 
-                          final List<Map<String, dynamic>> aliceDayEvents = [];
+                      final eventStart = DateTime(
+                        _selectedDay.year,
+                        _selectedDay.month,
+                        _selectedDay.day,
+                        e.startTime!.hour,
+                        e.startTime!.minute,
+                      );
 
-                          if (alicePeriod != null) {
-                            if (alicePeriod.type ==
-                                AliceEventType.schoolNormal) {
-                              final isRealSchoolDay = coreStore.schoolStore
-                                  .hasSchoolOn(_selectedDay);
+                      final eventEnd = DateTime(
+                        _selectedDay.year,
+                        _selectedDay.month,
+                        _selectedDay.day,
+                        e.endTime!.hour,
+                        e.endTime!.minute,
+                      );
 
-                              if (isRealSchoolDay) {
-                                final schoolStart = _scuolaStart;
-                                final schoolEnd =
-                                    _effUscitaAnticipataAt(_selectedDay) ??
-                                    _effSchoolOutEnd(_selectedDay);
+                      return familyNowSnapshot.now.isAfter(eventStart) &&
+                          familyNowSnapshot.now.isBefore(eventEnd);
+                    }).toList();
 
-                                aliceDayEvents.add({
-                                  'title': "Scuola",
-                                  'start': schoolStart,
-                                  'end': schoolEnd,
-                                });
-                              }
-                            } else if (alicePeriod.type ==
-                                AliceEventType.summerCamp) {
-                              aliceDayEvents.add({
-                                'title': "Centro estivo",
-                                'start':
-                                    alicePeriod.summerCampStart ??
-                                    const TimeOfDay(hour: 8, minute: 30),
-                                'end':
-                                    alicePeriod.summerCampEnd ??
-                                    const TimeOfDay(hour: 16, minute: 30),
-                              });
-                            }
-                          } else {
-                            final isRealSchoolDay =
-                                coreStore.schoolStore
-                                    .activePeriodForDay(_selectedDay)
-                                    ?.weekConfig
-                                    .forWeekday(_selectedDay.weekday)
-                                    .enabled ??
-                                false;
+                    final chiaraFutureEvents = chiaraEvents.where((e) {
+                      if (e.startTime == null) return false;
 
-                            if (isRealSchoolDay) {
-                              final schoolStart = _scuolaStart;
-                              final schoolEnd =
-                                  _effUscitaAnticipataAt(_selectedDay) ??
-                                  _effSchoolOutEnd(_selectedDay);
+                      final eventStart = DateTime(
+                        _selectedDay.year,
+                        _selectedDay.month,
+                        _selectedDay.day,
+                        e.startTime!.hour,
+                        e.startTime!.minute,
+                      );
 
-                              aliceDayEvents.add({
-                                'title': "Scuola",
-                                'start': schoolStart,
-                                'end': schoolEnd,
-                              });
-                            }
-                          }
+                      return familyNowSnapshot.now.isBefore(eventStart);
+                    }).toList();
 
-                          for (final e in aliceSpecialEvents) {
-                            aliceDayEvents.add({
-                              'title': e.label,
-                              'start': e.start,
-                              'end': e.end,
-                            });
-                          }
+                    String fmtTime(TimeOfDay? t) {
+                      if (t == null) return '--:--';
+                      final hh = t.hour.toString().padLeft(2, '0');
+                      final mm = t.minute.toString().padLeft(2, '0');
+                      return '$hh:$mm';
+                    }
 
-                          for (final e in aliceRealEvents) {
-                            aliceDayEvents.add({
-                              'title': e.title,
-                              'start': e.startTime,
-                              'end': e.endTime,
-                            });
-                          }
+                    Widget buildEventLine({
+                      required String prefix,
+                      required dynamic event,
+                      Color? color,
+                      FontWeight fontWeight = FontWeight.normal,
+                    }) {
+                      return Text(
+                        "$prefix${event.title} ${fmtTime(event.startTime)} - ${fmtTime(event.endTime)}",
+                        style: TextStyle(color: color, fontWeight: fontWeight),
+                      );
+                    }
 
-                          aliceDayEvents.sort((a, b) {
-                            final aStart = a['start'] as TimeOfDay?;
-                            final bStart = b['start'] as TimeOfDay?;
+                    return AlertDialog(
+                      title: const Text("Chiara"),
+                      content: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Stato attuale",
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              familyNowSnapshot.chiaraNowLabel,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                color: familyNowSnapshot.chiaraVisual.color,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
 
-                            final aMin = aStart == null
-                                ? 9999
-                                : aStart.hour * 60 + aStart.minute;
-                            final bMin = bStart == null
-                                ? 9999
-                                : bStart.hour * 60 + bStart.minute;
+                            const SizedBox(height: 16),
+                            const Text(
+                              "Turno previsto",
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(familyNowSnapshot.chiaraTurnLabel),
+                            Text(
+                              "Stato attuale: ${familyNowSnapshot.chiaraNowLabel}",
+                              style: TextStyle(
+                                color: familyNowSnapshot.chiaraVisual.color,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              "Eventi della giornata",
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              "Prima",
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 4),
+                            if (chiaraPastEvents.isEmpty)
+                              Text(
+                                "• Nessun evento già concluso",
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              )
+                            else
+                              ...chiaraPastEvents.map(
+                                (e) => buildEventLine(prefix: "✓ ", event: e),
+                              ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              "Adesso",
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 4),
+                            if (chiaraNowEvents.isEmpty)
+                              Text(
+                                "• Nessun evento in corso",
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              )
+                            else
+                              ...chiaraNowEvents.map(
+                                (e) => buildEventLine(
+                                  prefix: "👉 ",
+                                  event: e,
+                                  color: Colors.orange,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              "Dopo",
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 4),
+                            if (chiaraFutureEvents.isEmpty)
+                              Text(
+                                "• Nessun evento successivo",
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              )
+                            else
+                              ...chiaraFutureEvents.map(
+                                (e) => buildEventLine(prefix: "• ", event: e),
+                              ),
+                          ],
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text("Chiudi"),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+              onTapAlice: () {
+                showDialog(
+                  context: context,
+                  builder: (context) {
+                    final aliceSpecialEvents = coreStore.aliceSpecialEventStore
+                        .eventsForDay(_selectedDay);
 
-                            return aMin.compareTo(bMin);
+                    final aliceRealEvents = coreStore.realEventStore
+                        .eventsForDay(_selectedDay)
+                        .where((e) => e.personKey == 'alice')
+                        .toList();
+
+                    final alicePeriod = coreStore.aliceEventStore
+                        .getEventForDay(_selectedDay);
+
+                    String fmtTime(TimeOfDay? t) {
+                      if (t == null) return '--:--';
+                      final hh = t.hour.toString().padLeft(2, '0');
+                      final mm = t.minute.toString().padLeft(2, '0');
+                      return '$hh:$mm';
+                    }
+
+                    String periodLabel(AliceEventType type) {
+                      switch (type) {
+                        case AliceEventType.schoolNormal:
+                          return "Scuola";
+                        case AliceEventType.vacation:
+                          return "Vacanza";
+                        case AliceEventType.schoolClosure:
+                          return "Scuola chiusa";
+                        case AliceEventType.sickness:
+                          return "Malattia";
+                        case AliceEventType.summerCamp:
+                          return "Centro estivo";
+                      }
+                    }
+
+                    final List<Map<String, dynamic>> aliceDayEvents = [];
+
+                    if (alicePeriod != null) {
+                      if (alicePeriod.type == AliceEventType.schoolNormal) {
+                        final isRealSchoolDay = coreStore.schoolStore
+                            .hasSchoolOn(_selectedDay);
+
+                        if (isRealSchoolDay) {
+                          final schoolStart = _scuolaStart;
+                          final schoolEnd =
+                              _effUscitaAnticipataAt(_selectedDay) ??
+                              _effSchoolOutEnd(_selectedDay);
+
+                          aliceDayEvents.add({
+                            'title': "Scuola",
+                            'start': schoolStart,
+                            'end': schoolEnd,
                           });
+                        }
+                      } else if (alicePeriod.type ==
+                          AliceEventType.summerCamp) {
+                        aliceDayEvents.add({
+                          'title': "Centro estivo",
+                          'start':
+                              alicePeriod.summerCampStart ??
+                              const TimeOfDay(hour: 8, minute: 30),
+                          'end':
+                              alicePeriod.summerCampEnd ??
+                              const TimeOfDay(hour: 16, minute: 30),
+                        });
+                      }
+                    } else {
+                      final isRealSchoolDay =
+                          coreStore.schoolStore
+                              .activePeriodForDay(_selectedDay)
+                              ?.weekConfig
+                              .forWeekday(_selectedDay.weekday)
+                              .enabled ??
+                          false;
 
-                          DateTime toDateTime(
-                            TimeOfDay? t, {
-                            bool endOfDay = false,
-                          }) {
-                            if (t == null) {
-                              return DateTime(
-                                _selectedDay.year,
-                                _selectedDay.month,
-                                _selectedDay.day,
-                                endOfDay ? 23 : 0,
-                                endOfDay ? 59 : 0,
-                              );
-                            }
+                      if (isRealSchoolDay) {
+                        final schoolStart = _scuolaStart;
+                        final schoolEnd =
+                            _effUscitaAnticipataAt(_selectedDay) ??
+                            _effSchoolOutEnd(_selectedDay);
 
-                            return DateTime(
-                              _selectedDay.year,
-                              _selectedDay.month,
-                              _selectedDay.day,
-                              t.hour,
-                              t.minute,
-                            );
-                          }
+                        aliceDayEvents.add({
+                          'title': "Scuola",
+                          'start': schoolStart,
+                          'end': schoolEnd,
+                        });
+                      }
+                    }
 
-                          final alicePastEvents = aliceDayEvents.where((e) {
-                            final end = toDateTime(
-                              e['end'] as TimeOfDay?,
-                              endOfDay: true,
-                            );
-                            return now.isAfter(end);
-                          }).toList();
+                    for (final e in aliceSpecialEvents) {
+                      aliceDayEvents.add({
+                        'title': e.label,
+                        'start': e.start,
+                        'end': e.end,
+                      });
+                    }
 
-                          final aliceNowEvents = aliceDayEvents.where((e) {
-                            final start = toDateTime(e['start'] as TimeOfDay?);
-                            final end = toDateTime(
-                              e['end'] as TimeOfDay?,
-                              endOfDay: true,
-                            );
-                            return now.isAfter(start) && now.isBefore(end);
-                          }).toList();
+                    for (final e in aliceRealEvents) {
+                      aliceDayEvents.add({
+                        'title': e.title,
+                        'start': e.startTime,
+                        'end': e.endTime,
+                      });
+                    }
 
-                          final aliceFutureEvents = aliceDayEvents.where((e) {
-                            final start = toDateTime(e['start'] as TimeOfDay?);
-                            return now.isBefore(start);
-                          }).toList();
+                    aliceDayEvents.sort((a, b) {
+                      final aStart = a['start'] as TimeOfDay?;
+                      final bStart = b['start'] as TimeOfDay?;
 
-                          Widget buildEventLine({
-                            required String prefix,
-                            required Map<String, dynamic> event,
-                            Color? color,
-                            FontWeight fontWeight = FontWeight.normal,
-                          }) {
-                            final start = event['start'] as TimeOfDay?;
-                            final end = event['end'] as TimeOfDay?;
-                            final title = event['title'] as String;
+                      final aMin = aStart == null
+                          ? 9999
+                          : aStart.hour * 60 + aStart.minute;
+                      final bMin = bStart == null
+                          ? 9999
+                          : bStart.hour * 60 + bStart.minute;
 
-                            final timeText = (start != null || end != null)
-                                ? " ${fmtTime(start)} - ${fmtTime(end)}"
-                                : "";
+                      return aMin.compareTo(bMin);
+                    });
 
-                            return Text(
-                              "$prefix$title$timeText",
+                    DateTime toDateTime(TimeOfDay? t, {bool endOfDay = false}) {
+                      if (t == null) {
+                        return DateTime(
+                          _selectedDay.year,
+                          _selectedDay.month,
+                          _selectedDay.day,
+                          endOfDay ? 23 : 0,
+                          endOfDay ? 59 : 0,
+                        );
+                      }
+
+                      return DateTime(
+                        _selectedDay.year,
+                        _selectedDay.month,
+                        _selectedDay.day,
+                        t.hour,
+                        t.minute,
+                      );
+                    }
+
+                    final alicePastEvents = aliceDayEvents.where((e) {
+                      final end = toDateTime(
+                        e['end'] as TimeOfDay?,
+                        endOfDay: true,
+                      );
+                      return familyNowSnapshot.now.isAfter(end);
+                    }).toList();
+
+                    final aliceNowEvents = aliceDayEvents.where((e) {
+                      final start = toDateTime(e['start'] as TimeOfDay?);
+                      final end = toDateTime(
+                        e['end'] as TimeOfDay?,
+                        endOfDay: true,
+                      );
+                      return familyNowSnapshot.now.isAfter(start) &&
+                          familyNowSnapshot.now.isBefore(end);
+                    }).toList();
+
+                    final aliceFutureEvents = aliceDayEvents.where((e) {
+                      final start = toDateTime(e['start'] as TimeOfDay?);
+                      return familyNowSnapshot.now.isBefore(start);
+                    }).toList();
+
+                    Widget buildEventLine({
+                      required String prefix,
+                      required Map<String, dynamic> event,
+                      Color? color,
+                      FontWeight fontWeight = FontWeight.normal,
+                    }) {
+                      final start = event['start'] as TimeOfDay?;
+                      final end = event['end'] as TimeOfDay?;
+                      final title = event['title'] as String;
+
+                      final timeText = (start != null || end != null)
+                          ? " ${fmtTime(start)} - ${fmtTime(end)}"
+                          : "";
+
+                      return Text(
+                        "$prefix$title$timeText",
+                        style: TextStyle(color: color, fontWeight: fontWeight),
+                      );
+                    }
+
+                    return AlertDialog(
+                      title: const Text("Alice"),
+                      content: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Stato attuale",
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              familyNowSnapshot.aliceNowLabel,
                               style: TextStyle(
-                                color: color,
-                                fontWeight: fontWeight,
-                              ),
-                            );
-                          }
-
-                          return AlertDialog(
-                            title: const Text("Alice"),
-                            content: SingleChildScrollView(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    "Stato attuale",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    aliceNowLabel,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      color: aliceVisual.color,
-                                    ),
-                                  ),
-                                  if (alicePeriod != null &&
-                                      alicePeriod.type !=
-                                          AliceEventType.schoolNormal) ...[
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      "Stato giorno: ${periodLabel(alicePeriod.type)}",
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.black.withOpacity(0.7),
-                                      ),
-                                    ),
-                                  ],
-                                  const SizedBox(height: 16),
-                                  const Text(
-                                    "Eventi della giornata",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  const Text(
-                                    "Prima",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  if (alicePastEvents.isEmpty)
-                                    Text(
-                                      "• Nessun evento già concluso",
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    )
-                                  else
-                                    ...alicePastEvents.map(
-                                      (e) => buildEventLine(
-                                        prefix: "✓ ",
-                                        event: e,
-                                      ),
-                                    ),
-                                  const SizedBox(height: 10),
-                                  const Text(
-                                    "Adesso",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  if (aliceNowEvents.isEmpty)
-                                    Text(
-                                      "• Nessun evento in corso",
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    )
-                                  else
-                                    ...aliceNowEvents.map(
-                                      (e) => buildEventLine(
-                                        prefix: "👉 ",
-                                        event: e,
-                                        color: Colors.orange,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
-                                  const SizedBox(height: 10),
-                                  const Text(
-                                    "Dopo",
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  if (aliceFutureEvents.isEmpty)
-                                    Text(
-                                      "• Nessun evento successivo",
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    )
-                                  else
-                                    ...aliceFutureEvents.map(
-                                      (e) => buildEventLine(
-                                        prefix: "• ",
-                                        event: e,
-                                      ),
-                                    ),
-                                ],
+                                fontWeight: FontWeight.w800,
+                                color: familyNowSnapshot.aliceVisual.color,
                               ),
                             ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text("Chiudi"),
+                            if (alicePeriod != null &&
+                                alicePeriod.type !=
+                                    AliceEventType.schoolNormal) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                "Stato giorno: ${periodLabel(alicePeriod.type)}",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black.withOpacity(0.7),
+                                ),
                               ),
                             ],
-                          );
-                        },
-                      );
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: aliceIsOutNow
-                            ? Colors.orange.withOpacity(0.10)
-                            : Colors.blue.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: aliceIsOutNow
-                              ? Colors.orange.withOpacity(0.35)
-                              : Colors.blue.withOpacity(0.35),
+                            const SizedBox(height: 16),
+                            const Text(
+                              "Eventi della giornata",
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              "Prima",
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 4),
+                            if (alicePastEvents.isEmpty)
+                              Text(
+                                "• Nessun evento già concluso",
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              )
+                            else
+                              ...alicePastEvents.map(
+                                (e) => buildEventLine(prefix: "✓ ", event: e),
+                              ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              "Adesso",
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 4),
+                            if (aliceNowEvents.isEmpty)
+                              Text(
+                                "• Nessun evento in corso",
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              )
+                            else
+                              ...aliceNowEvents.map(
+                                (e) => buildEventLine(
+                                  prefix: "👉 ",
+                                  event: e,
+                                  color: Colors.orange,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              "Dopo",
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            const SizedBox(height: 4),
+                            if (aliceFutureEvents.isEmpty)
+                              Text(
+                                "• Nessun evento successivo",
+                                style: TextStyle(
+                                  color: Colors.grey.shade700,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              )
+                            else
+                              ...aliceFutureEvents.map(
+                                (e) => buildEventLine(prefix: "• ", event: e),
+                              ),
+                          ],
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            aliceIsOutNow ? Icons.directions_walk : Icons.home,
-                            size: 18,
-                            color: aliceIsOutNow ? Colors.orange : Colors.blue,
-                          ),
-                          const SizedBox(width: 8),
-                          const SizedBox(
-                            width: 62,
-                            child: Text(
-                              "Alice",
-                              style: TextStyle(fontWeight: FontWeight.w900),
-                            ),
-                          ),
-                          Expanded(
-                            child: RichText(
-                              text: TextSpan(
-                                children: [
-                                  WidgetSpan(
-                                    alignment: PlaceholderAlignment.middle,
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(right: 10),
-                                      child: Transform.translate(
-                                        offset: const Offset(0, -5),
-                                        child: Text(
-                                          aliceVisual.emoji,
-                                          style: const TextStyle(fontSize: 22),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  TextSpan(
-                                    text: aliceNowLabel,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      color: aliceVisual.color,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text("Chiudi"),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
             ),
             const SizedBox(height: 8),
             _weekNavBar(),
@@ -7501,28 +6711,15 @@ class _CalendarioScreenStepAStabileState
                   AliceEventsList(
                     child: Column(
                       children: visibleAliceEvents.map((e) {
-                        bool isConflict = false;
-                        final List<String> conflictWith = [];
+                        final conflictResult = const AliceEventConflictBuilder()
+                            .build(event: e, allEvents: extraEvents);
 
                         final tileModel = _buildAliceEventTileModel(
                           event: e,
-                          isConflict: isConflict,
+                          isConflict: conflictResult.isConflict,
                         );
 
-                        for (final other in extraEvents) {
-                          if (other.id == e.id) continue;
-
-                          final overlap =
-                              e.start.hour * 60 + e.start.minute <
-                                  other.end.hour * 60 + other.end.minute &&
-                              other.start.hour * 60 + other.start.minute <
-                                  e.end.hour * 60 + e.end.minute;
-
-                          if (overlap) {
-                            isConflict = true;
-                            conflictWith.add(other.label);
-                          }
-                        }
+                        final conflictWith = conflictResult.conflictWith;
 
                         return AliceEventTile(
                           model: tileModel,

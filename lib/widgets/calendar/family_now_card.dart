@@ -1,14 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../utils/status_visual.dart';
 
+import '../../logic/calendar/view_models/family_member_now_view_model.dart';
 import '../../logic/calendar/view_models/family_now_view_model.dart';
 
 class FamilyNowCard extends StatelessWidget {
   final FamilyNowViewModel model;
   final DateTime realNow;
+  final VoidCallback onTapMatteo;
+  final VoidCallback onTapChiara;
+  final VoidCallback onTapAlice;
 
-  const FamilyNowCard({super.key, required this.model, required this.realNow});
+  const FamilyNowCard({
+    super.key,
+    required this.model,
+    required this.realNow,
+    required this.onTapMatteo,
+    required this.onTapChiara,
+    required this.onTapAlice,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -70,27 +80,11 @@ class FamilyNowCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          _FamilyNowRow(
-            name: "Matteo",
-            label: model.matteoLabel,
-            visual: model.matteoVisual,
-            busy: model.matteoLabel.startsWith("occupato"),
-          ),
+          _FamilyNowRow(model: model.matteo, onTap: onTapMatteo),
           const SizedBox(height: 8),
-          _FamilyNowRow(
-            name: "Chiara",
-            label: model.chiaraLabel,
-            visual: model.chiaraVisual,
-            busy: model.chiaraLabel.startsWith("occupato"),
-          ),
+          _FamilyNowRow(model: model.chiara, onTap: onTapChiara),
           const SizedBox(height: 8),
-          _FamilyNowRow(
-            name: "Alice",
-            label: model.aliceLabel,
-            visual: model.aliceVisual,
-            busy: model.aliceLabel.startsWith("fuori"),
-            isAlice: true,
-          ),
+          _FamilyNowRow(model: model.alice, onTap: onTapAlice),
         ],
       ),
     );
@@ -98,86 +92,80 @@ class FamilyNowCard extends StatelessWidget {
 }
 
 class _FamilyNowRow extends StatelessWidget {
-  final String name;
-  final String label;
-  final StatusVisual visual;
-  final bool busy;
-  final bool isAlice;
+  final FamilyMemberNowViewModel model;
+  final VoidCallback onTap;
 
-  const _FamilyNowRow({
-    required this.name,
-    required this.label,
-    required this.visual,
-    required this.busy,
-    this.isAlice = false,
-  });
+  const _FamilyNowRow({required this.model, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final color = isAlice
-        ? busy
+    final color = model.isAlice
+        ? model.busy
               ? Colors.orange
               : Colors.blue
-        : busy
+        : model.busy
         ? Colors.red
         : Colors.green;
 
-    final icon = isAlice
-        ? busy
+    final icon = model.isAlice
+        ? model.busy
               ? Icons.directions_walk
               : Icons.home
-        : busy
+        : model.busy
         ? Icons.block
         : Icons.check_circle;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.35)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 62,
-            child: Text(
-              name,
-              style: const TextStyle(fontWeight: FontWeight.w900),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withOpacity(0.35)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 62,
+              child: Text(
+                model.name,
+                style: const TextStyle(fontWeight: FontWeight.w900),
+              ),
             ),
-          ),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
-                children: [
-                  WidgetSpan(
-                    alignment: PlaceholderAlignment.middle,
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 10),
-                      child: Transform.translate(
-                        offset: const Offset(0, -5),
-                        child: Text(
-                          visual.emoji,
-                          style: const TextStyle(fontSize: 22),
+            Expanded(
+              child: RichText(
+                text: TextSpan(
+                  children: [
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: Transform.translate(
+                          offset: const Offset(0, -5),
+                          child: Text(
+                            model.visual.emoji,
+                            style: const TextStyle(fontSize: 22),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  TextSpan(
-                    text: label,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: visual.color,
+                    TextSpan(
+                      text: model.label,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: model.visual.color,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

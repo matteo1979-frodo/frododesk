@@ -1,7 +1,7 @@
 # FRODODESK — PROJECT MEMORY
 
-Ultimo aggiornamento: 26 Maggio 2026  
-(Consolidamento roadmap unificata + DNA economico reale H2)
+Ultimo aggiornamento: Luglio 2026
+(Chiusura H5 — Consolidamento Architetturale)
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -9,125 +9,113 @@ Ultimo aggiornamento: 26 Maggio 2026
 
 ━━━━━━━━━━━━━━━━━━
 
-FrodoDesk è un sistema di simulazione della realtà familiare progettato per:
+FrodoDesk è un sistema di simulazione della realtà familiare.
 
-- leggere la vita reale nel tempo
-- prevenire pressione familiare
-- evidenziare problemi prima che esplodano
-- simulare stabilità futura
-- supportare decisioni umane
+Il suo obiettivo non è organizzare appuntamenti.
 
-NON è:
+Il suo obiettivo è comprendere il comportamento della vita quotidiana e aiutare la famiglia a prendere decisioni migliori.
 
-❌ un semplice calendario
-❌ un semplice planner turni
-❌ un semplice gestionale
+Il progetto continua ad evolvere seguendo un principio immutabile:
+
+👉 il sistema osserva
+
+👉 interpreta
+
+👉 suggerisce
+
+👉 la decisione resta sempre umana.
+
+FrodoDesk NON è:
+
+❌ un calendario
+
+❌ un planner turni
+
+❌ un gestionale
+
 ❌ un home banking
-❌ un Excel evoluto
 
-È:
+❌ un semplice insieme di schermate
 
-➡️ un simulatore di stabilità familiare
-➡️ un motore preventivo
-➡️ un lettore di pressione reale
-➡️ un sistema che prova a leggere la sostenibilità della vita quotidiana
+È invece:
 
-Principio immutabile:
+✔ simulatore della stabilità familiare
 
-👉 Il sistema suggerisce  
-👉 La decisione resta sempre umana
+✔ motore di prevenzione
 
-━━━━━━━━━━━━━━━━━━
+✔ interprete della pressione familiare
 
-# PERSONE MODELLO
+✔ ecosistema di motori specializzati
+
+✔ piattaforma destinata ad evolvere verso un sistema multi-famiglia.
 
 ━━━━━━━━━━━━━━━━━━
 
-Famiglia principale:
-
-- Matteo
-- Chiara
-- Alice
-
-Rete supporto:
-
-- Sandra
-- supporti configurabili
+# FILOSOFIA FONDAMENTALE
 
 ━━━━━━━━━━━━━━━━━━
 
-# STRATI DEL SISTEMA
+Ogni nuova funzione deve nascere osservando un problema reale della vita quotidiana.
+
+Mai partire dalla tecnologia.
+
+Sempre partire dalla realtà.
+
+Il progetto continua a seguire il principio:
+
+"La vita reale decide.
+
+Il software si adatta."
 
 ━━━━━━━━━━━━━━━━━━
 
-## Work layer
+# ARCHITETTURA EVOLUTIVA
 
-- turni
-- quarta squadra
-- viaggio lavoro
-- riposo post-notte
+━━━━━━━━━━━━━━━━━━
 
----
+Durante H5 è stata consolidata definitivamente una nuova struttura.
 
-## Family layer
+Store
 
-- eventi Alice
-- eventi familiari
-- eventi personali
-- centro estivo
-- accompagnamento
-- presenza relazionale
+↓
 
----
+Engine
 
-## Availability layer
+↓
 
-- malattia
-- ferie
-- override
-- reperibilità INPS
+Builder
 
----
+↓
 
-## Support layer
+ViewModel
 
-- rete supporto
-- Sandra
-- supporto temporale reale
+↓
 
----
+Widget
 
-## Coverage layer
+Ogni livello ha una responsabilità precisa.
 
-- rilevazione buchi
-- spiegazione copertura
-- supporto reale
-- segmentazione reale presenza
+Store
 
----
+→ conserva i dati.
 
-## Presence layer
+Engine
 
-- AlicePresenceEngine
-- posizione reale Alice
-- presenza relazionale
-- accompagnamento
-- supporto reale
-- eventi reali
+→ interpreta il dominio.
 
----
+Builder
 
-## Economic layer
+→ prepara i dati.
 
-- saldi
-- fondi
-- recurring items
-- simulazione futura
-- pressione economica
-- resilienza
-- ossigeno economico
-- stabilità futura
-- dashboard temporale
+ViewModel
+
+→ espone dati pronti per la UI.
+
+Widget
+
+→ visualizza.
+
+La UI non deve più contenere logica di business.
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -135,1061 +123,741 @@ Rete supporto:
 
 ━━━━━━━━━━━━━━━━━━
 
-Il progetto segue filosofia CNC:
+Le regole consolidate diventano:
 
-✔ un passo alla volta  
-✔ motore prima  
-✔ UI dopo  
-✔ stabilità prima espansione  
-✔ nessun mega-refactor impulsivo  
-✔ test reale continuo  
-✔ lavoro sempre su file reali  
+✔ piccoli passi
 
-Principio consolidato:
+✔ una responsabilità alla volta
 
-👉 “app dentro app dentro app”
+✔ commit frequenti
 
-I moduli devono:
+✔ sempre verde prima del commit
 
-✔ crescere separati  
-✔ restare modulari  
-✔ influenzarsi progressivamente  
-✔ convergere lentamente verso il sistema globale  
+✔ comportamento invariato durante il refactoring
 
-━━━━━━━━━━━━━━━━━━
+✔ evitare mega-refactor
 
-# EVOLUZIONE STRUTTURALE DEL PROGETTO
+✔ nessun file creato senza una destinazione architetturale chiara
+
+✔ fermarsi quando emerge un dubbio progettuale
+
+Il codice deve diventare progressivamente più semplice senza perdere stabilità.
 
 ━━━━━━━━━━━━━━━━━━
 
-Il progetto ha attraversato questi passaggi:
-
-❌ planner turni  
-➡️ simulazione giornata reale
-
-❌ calendario eventi  
-➡️ copertura reale dinamica
-
-❌ Home informativa  
-➡️ Home operativa e gerarchica
-
-❌ eventi temporanei  
-➡️ memoria persistente reale
-
-❌ Alice come semplice evento  
-➡️ Alice come presenza reale nel tempo
-
-❌ finanze come numeri  
-➡️ simulazione stabilità economica familiare
+# EVOLUZIONE DEL PROGETTO
 
 ━━━━━━━━━━━━━━━━━━
 
-# CALENDARIO REALE — STATO STORICO CONSOLIDATO
+Il progetto ha attraversato le seguenti trasformazioni.
+
+Planner Turni
+
+↓
+
+Calendario Reale
+
+↓
+
+Coverage Engine
+
+↓
+
+Presence Engine
+
+↓
+
+Home Operativa
+
+↓
+
+Motore Economico
+
+↓
+
+Observation Engine
+
+↓
+
+Planner Decision Engine
+
+↓
+
+Architettura a responsabilità separate
+
+La milestone H5 rappresenta il primo refactoring architetturale sistematico dell'intero progetto.
+
+Non introduce nuove funzioni.
+
+Introduce un nuovo modo di costruire FrodoDesk.
 
 ━━━━━━━━━━━━━━━━━━
 
-Completato:
-
-✔ motore copertura stabile  
-✔ SchoolStore reale  
-✔ gestione turni reale  
-✔ riposo post-notte corretto  
-✔ supporto temporale reale  
-✔ Sandra separata dalla rete supporto  
-✔ eventi Alice integrati  
-✔ eventi multi-persona  
-✔ Home coerente col motore reale  
-
-Problemi strutturali storicamente risolti:
-
-✔ falsi buchi Home  
-✔ falsi buchi Alice durante eventi reali  
-✔ supporti parziali invalidi  
-✔ incoerenza Home ↔ Calendario  
-✔ bug post centro estivo  
-✔ duplicazioni logiche presenza Alice  
+# MEMORIA DELLA MILESTONE H5
 
 ━━━━━━━━━━━━━━━━━━
 
-# PRESENCE ENGINE — MEMORIA STRUTTURALE
+H5 nasce con un obiettivo preciso.
+
+Ridurre la complessità del Calendario senza modificarne il comportamento.
+
+Durante H5 vengono introdotti per la prima volta:
+
+✔ Widget specializzati
+
+✔ ViewModel
+
+✔ Builder
+
+✔ separazione stabile delle responsabilità
+
+✔ schermate sempre più orientate al ruolo di orchestratore.
+
+Il principio più importante emerso durante questa fase è:
+
+"La schermata coordina.
+
+Non pensa."
+
+Questo rappresenta uno dei cambiamenti architetturali più importanti dalla nascita del progetto.
 
 ━━━━━━━━━━━━━━━━━━
 
-Passaggio evolutivo fondamentale:
-
-❌ Alice interpretata direttamente dal CoverageEngine  
-➡️ Alice centralizzata nel PresenceEngine
-
-Domanda strutturale ufficiale:
-
-👉 “Dove si trova realmente Alice in questa fascia?”
-
----
-
-## AlicePresenceState
-
-Attualmente presenti:
-
-✔ home  
-✔ school  
-✔ timedEvent  
-✔ realEvent  
-✔ summerCamp  
-✔ accompanied  
-✔ support  
-
-Previsti:
-
-⬜ outsideWithFamily  
-⬜ autonomousFuture  
-
----
-
-## Significato architetturale
-
-Il sistema sta evolvendo verso:
-
-✔ presenza reale familiare  
-✔ presenza relazionale  
-✔ copertura dinamica reale  
-✔ interpretazione temporale reale della giornata  
+# MEMORIA ARCHITETTURALE
 
 ━━━━━━━━━━━━━━━━━━
 
-# EVENTI GLOBALI — MEMORIA STORICA
+Durante H5 il progetto raggiunge una nuova maturità.
+
+Per la prima volta viene separato chiaramente il concetto di:
+
+• struttura del sistema
+
+da
+
+• funzionalità del sistema.
+
+Questa distinzione diventa permanente.
+
+Il progetto non crescerà più aggiungendo codice alle schermate.
+
+Crescerà costruendo livelli sempre più indipendenti.
 
 ━━━━━━━━━━━━━━━━━━
 
-Il sistema ha introdotto:
-
-✔ navigazione anno → mesi → eventi  
-✔ dettaglio evento  
-✔ memoria evento persistente  
-✔ note reali  
-✔ eventi multi-persona  
-
-Significato:
-
-👉 FrodoDesk non legge più solo “oggi”.
-
-Inizia a leggere:
-
-✔ tempo
-✔ storia
-✔ periodi
-✔ memoria familiare
+# RESPONSABILITÀ DEI LIVELLI
 
 ━━━━━━━━━━━━━━━━━━
 
-# STATISTICHE — DIREZIONE CONSOLIDATA
-
-━━━━━━━━━━━━━━━━━━
-
-Statistiche NON devono essere:
-
-❌ dashboard decorative
-
-Devono essere:
-
-✔ lettura reale del sistema
-✔ memoria evolutiva
-✔ supporto decisionale
-✔ confronto temporale reale
-
-Struttura temporale consolidata:
-
-- Giorno
-- Settimana
-- Mese
-- Anno
-
-Principio:
-
-👉 le statistiche leggono SOLO moduli reali vivi.
-
-━━━━━━━━━━━━━━━━━━
-
-# FINANZE — MEMORIA EVOLUTIVA CONSOLIDATA
-
-━━━━━━━━━━━━━━━━━━
-
-Il modulo Finanze è passato da:
-
-❌ semplice modello economico demo
-
-➡️ motore concettuale di stabilità familiare reale
-
----
-
-## Nuovo significato Finanze
-
-Finanze NON rappresenta:
-
-❌ soldi rimasti
-
-Finanze rappresenta:
-
-✔ resilienza
-✔ fragilità
-✔ sostenibilità
-✔ rischio futuro
-✔ capacità di assorbire imprevisti
-✔ pressione reale
-✔ sincronizzazione economica
-✔ ossigeno economico familiare
-
----
-
-# DISTINZIONI ECONOMICHE CONSOLIDATE
-
-━━━━━━━━━━━━━━━━━━
-
-## PREVISIONE ≠ REALTÀ
-
-Esempi:
-
-✔ stipendio previsto ≠ stipendio reale  
-✔ Netflix prevista ≠ pagamento reale  
-✔ assicurazione prevista ≠ importo reale  
-
----
-
-## PRESSIONE PREVEDIBILE / IMPREVEDIBILE
-
-### Prevedibile
-
-- mutuo
-- bollette
-- revisione
-- assicurazione
-
-### Imprevedibile
-
-- guasti
-- visite
-- emergenze
-- spese improvvise
-
----
-
-## PRESSIONE STATICA / DINAMICA
-
-### Statica
-
-- mutuo
-- rate
-- abbonamenti
-
-### Dinamica
-
-- Sandra
-- mensa Alice
-- sport
-- centro estivo
-- eventi scolastici
-
----
-
-## SISTEMA STABILE vs SISTEMA AFFATICATO
-
-Il sistema ora distingue concettualmente:
-
-✔ stabilità  
-✔ sopravvivenza  
-✔ recupero  
-✔ usura  
-✔ resilienza  
-✔ perdita controllo  
-
-━━━━━━━━━━━━━━━━━━
-
-# DNA ECONOMICO H2 — MEMORIA CONSOLIDATA
-
-━━━━━━━━━━━━━━━━━━
-
-Concetti ormai consolidati:
-
-✔ pressione accumulata  
-✔ debito resilienza  
-✔ costo invisibile manovre  
-✔ consumo resilienza futura  
-✔ ossigeno economico  
-✔ differenza tra saldo e ossigeno reale  
-✔ sopravvivenza vs ricostruzione  
-✔ sincronizzazione sopravvivenza economica  
-✔ sistema che sopravvive vs sistema che guarisce  
-✔ pressione che genera altra pressione  
-✔ direzione evolutiva sistema familiare  
-
----
-
-## LEGGI COMPORTAMENTALI CONSOLIDATE (RIUNIONE H2)
-
-Durante il consolidamento H2 è emersa una distinzione fondamentale tra:
-
-- denaro
-- ossigeno economico
-- resilienza
-- protezione
-- direzione del sistema
-
-Questi concetti NON sono ancora formule matematiche definitive.
-
-Rappresentano il comportamento reale che il motore economico dovrà interpretare.
-
-### LEGGE 1 — PRESSIONE REALE
-
-Una spesa non genera pressione in base al suo importo.
-
-Genera pressione in base a quanto il sistema era preparato ad assorbirla.
-
----
-
-### LEGGE 2 — DANNO RESIDUO
-
-La pressione non misura il costo dell'evento.
-
-Misura quanto l'evento ha indebolito la capacità futura della famiglia di assorbire la vita.
-
----
-
-### LEGGE 3 — CONSUMO DI RESILIENZA
-
-Un fondo utilizzato non genera necessariamente pressione immediata.
-
-Riduce però la resilienza futura del sistema.
-
----
-
-### LEGGE 4 — RESILIENZA STRUTTURATA
-
-Non tutta la liquidità ha lo stesso valore.
-
-Una liquidità organizzata in protezioni dedicate aumenta la capacità di assorbire eventi reali.
-
----
-
-### LEGGE 5 — VULNERABILITÀ ACQUISITA
-
-Quando una protezione viene consumata il sistema non diventa automaticamente instabile.
-
-Diventa però più vulnerabile a quella specifica categoria di eventi futuri.
-
----
-
-### LEGGE 6 — DIREZIONE DEL SISTEMA
-
-Lo stato della famiglia non dipende solo dalle risorse disponibili.
-
-Dipende anche dalla direzione in cui il sistema si sta muovendo.
-
-Differenza strutturale:
-
-✔ sistema che sopravvive
-
-vs
-
-✔ sistema che guarisce
-
----
-
-## DISTINZIONI UFFICIALI
-
-### DENARO
-
-Risponde alla domanda:
-
-👉 Quanto possiedo oggi?
-
----
-
-### OSSIGENO ECONOMICO
-
-Risponde alla domanda:
-
-👉 Quanto posso ancora assorbire la vita senza entrare in sofferenza strutturale?
-
----
-
-### RESILIENZA
-
-Risponde alla domanda:
-
-👉 Quanto sono preparato al prossimo colpo?
-
----
-
-### PROTEZIONE
-
-Risponde alla domanda:
-
-👉 Quali categorie di rischio risultano già coperte?
-
----
-
-### DIREZIONE
-
-Risponde alla domanda:
-
-👉 Sto guarendo oppure sto semplicemente sopravvivendo?
-
----
-
-## DNA tecnico introdotto
-
-✔ FinanceBalanceType  
-✔ operational balance  
-✔ warning operativo  
-✔ stress operativo  
-✔ stress ratio  
-✔ vitalityState iniziale  
-✔ resilienza base  
-✔ recupero economico  
-✔ stress persistente  
-✔ splits economici reali  
-✔ owner condivisi  
-✔ liquidità respirabile  
-
-━━━━━━━━━━━━━━━━━━
-
-# H7 — EVOLUZIONI PROFONDE SALVATE
-
-━━━━━━━━━━━━━━━━━━
-
-Decisione strutturale importante:
-
-⚠️ NON espandere subito il motore.
-
-MA:
-
-✔ salvare le evoluzioni profonde emerse durante H2.
-
-Esempi:
-
-- vitalityState evolutivo
-- drowning
-- losingControl
-- deterioramento progressivo
-- spirale economica
-- saturazione resilienza
-- stress cronico
-- traiettoria economica familiare
-
-Principio consolidato:
-
-👉 prima consolidare  
-👉 poi espandere  
-👉 poi approfondire  
-
-━━━━━━━━━━━━━━━━━━
-
-# HOME — MEMORIA STRUTTURALE
-
-━━━━━━━━━━━━━━━━━━
-
-La Home è stata consolidata come:
-
-✔ orchestratore  
-✔ vista gerarchica  
-✔ accesso rapido ai problemi reali  
-
-Decisione importante:
-
-⚠️ STOP modularizzazione aggressiva.
-
-Motivo:
-
-Le parti rimaste contengono:
-
-- callback
-- parsing
-- store
-- business logic
-- comportamento reale
-- dialog complessi
-
-Ulteriori estrazioni aumenterebbero il rischio.
-
-━━━━━━━━━━━━━━━━━━
-
-# REGOLA DOCUMENTALE CONSOLIDATA
-
-━━━━━━━━━━━━━━━━━━
-
-La MASTER ROADMAP deve esistere come:
-
-✅ documento unico vivo ufficiale
-
-Sono vietati:
-
-❌ roadmap duplicate  
-❌ patch parallele permanenti  
-❌ copie divergenti  
-
-Ogni aggiornamento deve:
-
-✔ integrare  
-✔ consolidare  
-✔ preservare memoria strutturale  
-✔ evitare caos documentale  
-
-━━━━━━━━━━━━━━━━━━
-
-# DIREZIONE ATTUALE DEL PROGETTO
-
-━━━━━━━━━━━━━━━━━━
-
-Priorità reale attuale:
-
-➡️ consolidamento del motore economico reale
-
-NON:
-
-❌ IPS finale
-❌ automazioni pesanti
-❌ mega-refactor
-❌ espansioni casuali
-
-PRIMA:
-
-✔ resilienza
-✔ pressione reale
-✔ simulazione futura
-✔ stabilità sistema
-✔ consolidamento H2
-
-━━━━━━━━━━━━━━━━━━
-
-# STATO REALE ATTUALE
-
-━━━━━━━━━━━━━━━━━━
-
-✔ Calendario reale stabile  
-✔ PresenceEngine consolidato  
-✔ Home consolidata  
-✔ Eventi Globali vivi  
-✔ Statistiche strutturalmente avviate  
-✔ Finanze V1 reale avviata  
-✔ DNA economico H2 consolidato  
-✔ roadmap unificata consolidata  
-
-━━━━━━━━━━━━━━━━━━
-
-# FRASE DI RIPARTENZA UFFICIALE
-
-Ripartiamo da FrodoDesk — consolidamento H2 del motore economico reale: resilienza, pressione reale, ossigeno economico e comportamento economico familiare. Priorità: consolidare il DNA economico prima di IPS economico, automazioni o espansioni premature.# CONSOLIDAMENTO VITA REALE — GIUGNO 2026
-
-Durante il consolidamento del motore economico, il progetto ha raggiunto una nuova fase evolutiva.
-
-Il modulo Finanze non viene più interpretato come semplice simulatore economico, ma come rappresentazione della relazione tra vita reale, resilienza e stabilità familiare.
-
----
-
-## EVOLUZIONE DEL MODULO FINANZE
-
-Passaggio strutturale:
-
-❌ popup economico della Home
-
-➡️ Centro Controllo Economico dedicato
-
-Il modulo acquisisce una propria identità visiva e funzionale, pur rimanendo integrato con il resto del sistema.
-
----
-
-## VERIFICA DEL PRINCIPIO "PREVISIONE ≠ REALTÀ"
-
-Durante questa fase viene effettuato un collaudo pratico completo.
-
-Scenario reale verificato:
-
-* creazione ricorrenza futura
-* saldo invariato
-* conferma manuale
-* aggiornamento saldo
-* annullamento conferma
-* ripristino saldo
-
-La prova conferma che il comportamento implementato coincide con il modello concettuale definito durante H2.
-
----
-
-## DISTINZIONE CONSOLIDATA
-
-### Saldo reale
-
-Risponde alla domanda:
-
-👉 "Quanti soldi possiedo realmente oggi?"
-
----
-
-### Pressione futura
-
-Risponde alla domanda:
-
-👉 "Come potrebbe evolvere la mia situazione economica?"
-
-Le due grandezze devono restare sempre separate.
-
----
-
-## COERENZA DELLA VERITÀ ECONOMICA
-
-Viene introdotta una nuova regola strutturale:
-
-La Home, il Centro Controllo Economico e le schermate Persona devono leggere la stessa identica realtà economica.
-
-Non possono esistere saldi differenti derivanti da interpretazioni diverse.
-
-La fonte di verità resta il motore economico centrale.
-
----
-
-## NUOVA FASE EVOLUTIVA
-
-Il progetto entra ufficialmente nella fase:
-
-### H3.5 — Consolidamento Vita Reale
-
-Obiettivo della fase:
-
-verificare che il comportamento del sistema coincida con il comportamento della vita quotidiana prima di introdurre simulazioni più profonde, IPS economico o automazioni avanzate.
-
-Il principio guida diventa:
-
-👉 prima consolidare la realtà,
-👉 poi espandere il modello.
-
----
-
-# CONSOLIDAMENTO MODULO SPESE REALE — GIUGNO 2026
-
-Durante il consolidamento del motore economico reale, il modulo Spese ha raggiunto la sua prima versione pienamente operativa nella vita quotidiana.
-
-Il sistema non è più limitato alla simulazione economica o alla sola previsione: inizia a costruire una memoria reale persistente del denaro vissuto dalla famiglia.
-
----
-
-## EVOLUZIONE DEL LAYER ECONOMICO
-
-Passaggio strutturale:
-
-❌ semplici movimenti dimostrativi
-
-➡️ registro reale dei movimenti economici vissuti.
-
-Il sistema supporta ora tre tipologie distinte di evento economico:
-
-* Spesa reale;
-* Prelievo contanti;
-* Entrata extra.
-
-Ogni evento viene memorizzato con la propria identità, il conto coinvolto e la propria collocazione temporale reale.
-
----
-
-## CONSOLIDAMENTO DEL PRINCIPIO "PREVISIONE ≠ REALTÀ"
-
-Viene verificata e confermata una delle regole fondative del progetto.
-
-Le ricorrenze e le simulazioni economiche continuano a vivere nel modulo Finanze.
-
-Il modulo Spese registra invece esclusivamente eventi realmente avvenuti e confermati dall'utente.
-
-Distinzione strutturale confermata:
-
-✔ Finanze = "Dove stiamo andando?"
-✔ Spese = "Che cosa è successo davvero?"
-
----
-
-## TEMPO REALE COME MEMORIA
-
-Ogni movimento economico possiede una propria data e ora reali.
-
-L'utente può:
-
-* registrare un evento nel momento in cui avviene;
-* inserire oggi un movimento avvenuto in passato;
-* correggere successivamente la data di un movimento già esistente.
-
-Lo storico viene automaticamente riordinato utilizzando la data reale del movimento e non quella dell'inserimento.
-
-Questa decisione introduce nel sistema il concetto di **memoria economica cronologica reale**.
-
----
-
-## FILOSOFIA DELLA MODIFICA CONTROLLATA
-
-La modifica di un movimento non è una semplice sovrascrittura.
-
-FrodoDesk mantiene la coerenza del sistema economico:
-
-* ripristina il saldo precedente;
-* apre il movimento già compilato;
-* permette la correzione dei dati;
-* registra il nuovo stato reale.
-
-L'utente percepisce una modifica semplice, mentre il motore preserva l'integrità di conti, portafogli e storico.
-
----
-
-## NUOVA PIETRA MILIARE DEL PROGETTO
-
-Con il completamento di:
-
-* CRUD completo Spese;
-* CRUD completo Prelievi;
-* CRUD completo Entrate extra;
-* gestione della data reale;
-* storico persistente e cronologico;
-
-FrodoDesk acquisisce una nuova capacità strutturale:
-
-👉 non solo simulare il futuro, ma ricordare fedelmente il passato.
-
-Questa memoria reale costituirà una delle sorgenti principali per l'evoluzione futura delle Statistiche Economiche e della lettura comportamentale della famiglia.
-
----
-
-## PRINCIPIO CONSOLIDATO
-
-Il progetto continua a evolvere secondo la regola:
-
-**una sola verità, molte letture.**
-
-I dati economici reali vengono generati dal modulo Spese e potranno essere interpretati, aggregati e confrontati dagli altri moduli senza duplicare la fonte della verità.
-
-━━━━━━━━━━━━━━━━━━
-
-# EVOLUZIONE MULTI-FAMIGLIA — GIUGNO 2026
-
-━━━━━━━━━━━━━━━━━━
-
-Durante le riunioni di Giugno 2026 è emersa una nuova direzione strategica del progetto.
-
-FrodoDesk non viene più visto soltanto come sistema per la famiglia Matteo-Chiara-Alice.
-
-Questa famiglia resta il primo laboratorio reale di sviluppo e collaudo.
-
-La direzione futura diventa:
-
-➡️ piattaforma di coordinamento della vita reale.
-
----
-
-## PRINCIPIO
-
-Ogni famiglia deve poter:
-
-- creare il proprio spazio
-- creare le proprie persone
-- configurare le proprie regole
-- mantenere privati i propri dati
-
-Nessuna famiglia deve vedere i dati delle altre.
-
----
-
-## FAMIGLIA COME UNITÀ LOGICA
-
-In futuro il sistema dovrà permettere:
-
-- creazione famiglia
-- inviti
-- ruoli
-- permessi
-- accessi differenziati
-
-Esempio:
-
-Famiglia Rossi
-Famiglia Bianchi
-Famiglia Verdi
-
-vivono nello stesso sistema ma restano indipendenti.
-
----
-
-## RUOLI FUTURI
-
-Possibili ruoli:
-
-- Amministratore
-- Adulto
-- Figlio
-- Supporto
-- Collaboratore esterno
-
-Ogni ruolo potrà avere permessi differenti.
-
----
-
-## ACCESSI INCROCIATI
-
-Una persona potrà appartenere a più contesti.
-
-Esempio reale:
-
-Sandra
-
-potrà avere:
-
-- la propria famiglia FrodoDesk
-- accesso limitato alla famiglia Matteo
-
-senza duplicare account.
-
----
-
-## PRINCIPIO ACCESSI
-
-Una persona esterna non riceve automaticamente accesso.
-
-Serve:
-
-- richiesta
-- autorizzazione
-- assegnazione permessi
-
-da parte dell'amministratore della famiglia.
-
----
-
-## EVENTI CONDIVISI
-
-In futuro il sistema potrà permettere:
-
-- allenatori
-- insegnanti
-- babysitter
-- associazioni
-- gruppi sportivi
-
-di proporre eventi.
-
-La famiglia riceve:
-
-- notifica
-- valutazione impatto
-- controllo conflitti
-- decisione finale
-
----
-
-## FILOSOFIA
-
-FrodoDesk continua a mantenere il principio:
-
-👉 il sistema suggerisce
-
-👉 la decisione resta umana
-
-Anche nella collaborazione tra famiglie e persone esterne.
-
----
-
-## DIREZIONE STRATEGICA
-
-La visione futura del progetto evolve da:
-
-❌ simulatore della singola famiglia
-
-a
-
-✔ ecosistema di coordinamento della vita reale
-
-mantenendo privacy, autonomia e controllo delle decisioni.
-
----
-
-# OSSERVATION ENGINE — NASCITA DEL CERVELLO DI FRODODESK (GIUGNO 2026)
-
-━━━━━━━━━━━━━━━━━━
-
-Durante il consolidamento del modulo Spese è emersa una delle evoluzioni architetturali più importanti dell'intero progetto.
-
-Il sistema ha superato il concetto di semplice lettura dei dati.
-
-Da questo momento FrodoDesk inizia a costruire un vero motore di osservazione della vita familiare.
-
----
-
-## CAMBIO DI FILOSOFIA
-
-Il progetto evolve da:
-
-❌ moduli che mostrano dati
-
-a
-
-✔ moduli che osservano la realtà.
-
-Ogni modulo non produce più semplici statistiche o riepiloghi.
-
-Produce osservazioni intelligenti.
-
----
-
-## NASCE IL CONCETTO DI OSSERVAZIONE
-
-Viene introdotto il modello strutturale:
-
-**FrodoObservation**
-
-Una osservazione rappresenta qualcosa che FrodoDesk ha compreso osservando la realtà della famiglia.
-
-Non è una notifica.
-
-Non è un messaggio.
-
-È una interpretazione.
-
----
-
-## OSSERVAZIONI VIVE
-
-Durante la progettazione viene presa una decisione fondamentale.
-
-Le osservazioni non sono oggetti statici.
-
-Sono oggetti vivi.
-
-Possono:
-
-✔ nascere
-
-✔ evolvere
-
-✔ aggiornarsi
-
-✔ risolversi
-
-✔ essere ignorate
-
-✔ scadere
-
-L'obiettivo è evitare la proliferazione di notifiche duplicate.
-
-La stessa osservazione deve poter accompagnare l'evoluzione della situazione reale.
-
----
-
-## IL PRINCIPIO DELLE DOMANDE
-
-Nasce una nuova filosofia progettuale.
-
-Ogni osservazione nasce dalla risposta ad una domanda.
-
-Esempi:
-
-* Alice è coperta?
-
-* Questo mese cosa ha caratterizzato le spese?
-
-* Il fondo auto è sufficiente?
-
-* C'è qualcosa che richiede attenzione?
-
-Il progetto non verrà più guidato esclusivamente dalle funzionalità.
-
-Verrà guidato dalle domande che FrodoDesk deve essere capace di porsi osservando la vita della famiglia.
-
----
-
-## NASCE L'OBSERVATION ENGINE
-
-Viene progettato un nuovo motore centrale.
+Store
 
 Responsabilità:
 
-✔ raccogliere osservazioni
+✔ conservare i dati
 
-✔ ordinarle
+✔ notificare modifiche
 
-✔ filtrarle
+✔ rappresentare la sorgente unica della verità
 
-✔ gestire il loro ciclo di vita
+Non deve:
 
-✔ consegnare alla Home solo ciò che è realmente importante.
+❌ interpretare i dati
 
-La Home perde progressivamente ogni responsabilità di analisi.
+❌ costruire UI
 
-Diventa un semplice consumatore delle osservazioni prodotte dai motori.
-
----
-
-## OBSERVATION PROVIDER
-
-Ogni modulo dovrà produrre osservazioni attraverso un proprio provider.
-
-Primo caso reale implementato:
-
-SpeseObservationProvider
-
-In futuro:
-
-* FinanceObservationProvider
-
-* CoverageObservationProvider
-
-* CalendarObservationProvider
-
-* HealthObservationProvider
-
-L'Observation Engine non dovrà conoscere direttamente i singoli moduli.
+❌ prendere decisioni
 
 ---
 
-## BOOTSTRAP
+Engine
 
-Durante questa fase viene introdotto anche il concetto di bootstrap centrale.
+Responsabilità:
 
-Il progetto non dovrà più inizializzare i motori in punti differenti.
+✔ interpretare la realtà
 
-La nascita dell'applicazione dovrà passare da un unico punto di avvio.
+✔ applicare le regole
 
----
+✔ prendere decisioni sul dominio
 
-## NUOVA IDENTITÀ DI FRODODESK
+✔ rispondere a domande reali
 
-Durante questa riunione emerge una nuova definizione del progetto.
+Non deve:
 
-FrodoDesk non è un insieme di moduli.
+❌ conoscere widget
 
-È un insieme di motori che osservano aspetti differenti della vita familiare.
+❌ conoscere schermate
 
-Ogni motore interpreta una parte della realtà.
-
-L'Observation Engine unisce queste interpretazioni.
+❌ costruire elementi grafici
 
 ---
 
-## PILASTRI DEL SISTEMA
+Builder
 
-Con questa evoluzione vengono riconosciuti come pilastri architetturali del progetto:
+Responsabilità:
 
-* Presence Engine
+✔ trasformare risultati complessi
 
-* Coverage Engine
+✔ preparare dati
 
-* Finance Engine
+✔ semplificare la UI
 
-* Observation Engine
+✔ creare Snapshot
 
-* Bootstrap
+✔ creare ViewModel
 
-Questi rappresentano il telaio sul quale dovrà evolvere tutto FrodoDesk.
+Non deve:
+
+❌ contenere logica di business principale
 
 ---
 
-## FRASE GUIDA
+ViewModel
 
-FrodoDesk non registra la vita.
+Responsabilità:
 
-La osserva.
+✔ rappresentare esattamente ciò che la UI deve mostrare
 
-La comprende.
+✔ eliminare logica dai widget
 
-E restituisce soltanto ciò che conta davvero.
+✔ migliorare leggibilità
+
+Non deve:
+
+❌ accedere agli Store
+
+❌ prendere decisioni
+
+---
+
+Widget
+
+Responsabilità:
+
+✔ mostrare informazioni
+
+✔ gestire input utente
+
+✔ inoltrare callback
+
+Non deve:
+
+❌ interpretare dati
+
+❌ conoscere il dominio
+
+❌ contenere logiche decisionali
+
+━━━━━━━━━━━━━━━━━━
+
+# LEZIONI APPRESE DURANTE H5
+
+━━━━━━━━━━━━━━━━━━
+
+H5 ha insegnato alcune regole che diventano parte del DNA del progetto.
+
+Lezione 1
+
+Mai fare refactoring "alla cieca".
+
+Prima comprendere.
+
+Poi modificare.
+
+---
+
+Lezione 2
+
+Una estrazione è corretta solo se riduce davvero una responsabilità.
+
+Non basta spostare codice.
+
+---
+
+Lezione 3
+
+I ViewModel devono nascere prima dei widget.
+
+Mai il contrario.
+
+---
+
+Lezione 4
+
+I Builder devono preparare dati.
+
+Non devono diventare nuovi Engine.
+
+---
+
+Lezione 5
+
+Ogni commit deve rappresentare un punto stabile.
+
+Mai lasciare il progetto in uno stato intermedio.
+
+---
+
+Lezione 6
+
+La semplicità è un risultato.
+
+Non un punto di partenza.
+
+━━━━━━━━━━━━━━━━━━
+
+# EVOLUZIONE DEL CALENDARIO
+
+━━━━━━━━━━━━━━━━━━
+
+Il Calendario rappresenta il primo modulo completamente rifattorizzato secondo la nuova filosofia.
+
+L'evoluzione è stata:
+
+Calendario monolitico
+
+↓
+
+Widget dedicati
+
+↓
+
+ViewModel
+
+↓
+
+Builder
+
+↓
+
+Schermata orchestratrice
+
+Il comportamento dell'applicazione è rimasto invariato.
+
+È cambiata solamente l'organizzazione del codice.
+
+Questo risultato rappresenta il modello da seguire per le future milestone.
+
+━━━━━━━━━━━━━━━━━━
+
+# H5 — RISULTATO STRATEGICO
+
+━━━━━━━━━━━━━━━━━━
+
+Il valore principale di H5 non consiste nel numero di file creati.
+
+Consiste nell'aver individuato il metodo corretto per evolvere FrodoDesk senza rompere il comportamento esistente.
+
+Da questo momento il progetto dispone di una metodologia di refactoring consolidata.
+
+Questo rappresenta uno dei patrimoni più importanti dell'intero progetto.
+
+━━━━━━━━━━━━━━━━━━
+
+# H6 — MEMORIA DI PROGETTAZIONE
+
+━━━━━━━━━━━━━━━━━━
+
+Con la conclusione di H5 viene presa una decisione importante.
+
+H6 NON rappresenta la continuazione del refactoring della UI.
+
+H6 rappresenta l'inizio del refactoring della business logic.
+
+Questa distinzione diventa ufficiale.
+
+H5
+
+↓
+
+ridurre la complessità delle schermate
+
+H6
+
+↓
+
+ridurre la complessità dei motori.
+
+━━━━━━━━━━━━━━━━━━
+
+# DECISIONE STRATEGICA
+
+━━━━━━━━━━━━━━━━━━
+
+Durante H5 è emersa una lezione fondamentale.
+
+Molti grandi metodi presenti nel progetto non devono essere spezzati semplicemente in altri metodi.
+
+Devono essere trasformati in motori autonomi.
+
+Il refactoring corretto non consiste nello spostare righe.
+
+Consiste nello spostare responsabilità.
+
+━━━━━━━━━━━━━━━━━━
+
+# DIREZIONE H6
+
+━━━━━━━━━━━━━━━━━━
+
+La milestone H6 seguirà un ordine preciso.
+
+Non verranno scelti i lavori "più facili".
+
+Verranno scelti quelli che riducono maggiormente la complessità del progetto.
+
+L'ordine ufficiale diventa:
+
+1.
+
+FamilyNow
+
+↓
+
+riduzione della logica del metodo
+_buildFamilyNowSnapshot()
+
+---
+
+2.
+
+Coverage Engine
+
+↓
+
+eliminazione delle ultime duplicazioni
+
+---
+
+3.
+
+Presence Engine
+
+↓
+
+pulizia definitiva
+
+---
+
+4.
+
+Business Builder
+
+↓
+
+centralizzazione della preparazione dati
+
+---
+
+5.
+
+Snapshot Builder
+
+↓
+
+riduzione ulteriore delle responsabilità delle schermate
+
+━━━━━━━━━━━━━━━━━━
+
+# REGOLE H6
+
+━━━━━━━━━━━━━━━━━━
+
+Durante H6 dovranno essere rispettate nuove regole.
+
+✔ nessun Builder viene creato senza sapere esattamente quale responsabilità avrà;
+
+✔ nessun file resta "mezzo iniziato";
+
+✔ una responsabilità viene completata prima di iniziarne un'altra;
+
+✔ ogni estrazione termina con compilazione verde;
+
+✔ ogni estrazione termina con commit Git;
+
+✔ nessuna modifica contemporanea a più moduli.
+
+━━━━━━━━━━━━━━━━━━
+
+# ERRORI DA NON RIPETERE
+
+━━━━━━━━━━━━━━━━━━
+
+H5 ha evidenziato alcuni errori metodologici.
+
+Essi diventano memoria permanente del progetto.
+
+Errore:
+
+creare componenti prima di aver definito l'architettura.
+
+Correzione:
+
+prima progettare,
+poi creare.
+
+---
+
+Errore:
+
+iniziare un Builder senza sapere dove terminerà.
+
+Correzione:
+
+ogni Builder nasce solo quando la sua collocazione è definitiva.
+
+---
+
+Errore:
+
+cambiare strategia durante una milestone.
+
+Correzione:
+
+la roadmap di una milestone viene fissata prima di iniziare.
+
+Eventuali modifiche vengono fatte solo all'inizio della milestone successiva.
+
+---
+
+Errore:
+
+spostare codice solamente per ridurre il numero di righe.
+
+Correzione:
+
+ogni estrazione deve diminuire realmente la responsabilità della schermata o del motore.
+
+━━━━━━━━━━━━━━━━━━
+
+# NUOVA FILOSOFIA DI LAVORO
+
+━━━━━━━━━━━━━━━━━━
+
+Il progetto non verrà più guidato dal numero di file.
+
+Sarà guidato dal numero di responsabilità.
+
+L'obiettivo non è avere tanti file.
+
+L'obiettivo è avere componenti semplici,
+leggibili,
+indipendenti
+e facilmente verificabili.
+
+La semplicità diventa una caratteristica strutturale del progetto,
+non un obiettivo estetico.
+
+━━━━━━━━━━━━━━━━━━
+
+# DNA DI SVILUPPO UFFICIALE
+
+━━━━━━━━━━━━━━━━━━
+
+Durante H5 il progetto ha raggiunto una maturità che modifica definitivamente il modo di sviluppare FrodoDesk.
+
+Non esiste più la distinzione tra:
+
+"scrivere codice"
+
+e
+
+"fare architettura".
+
+Ogni modifica deve rispettare contemporaneamente:
+
+✔ correttezza funzionale
+
+✔ semplicità
+
+✔ responsabilità unica
+
+✔ leggibilità
+
+✔ possibilità di evoluzione futura
+
+Il codice non deve semplicemente funzionare.
+
+Deve raccontare chiaramente cosa sta facendo.
+
+━━━━━━━━━━━━━━━━━━
+
+# PRINCIPI PERMANENTI
+
+━━━━━━━━━━━━━━━━━━
+
+Prima comprendere.
+
+Poi progettare.
+
+Poi modificare.
+
+Mai il contrario.
+
+---
+
+Ogni responsabilità deve avere una casa precisa.
+
+Se non è chiaro dove appartenga una logica,
+non va ancora estratta.
+
+---
+
+Ogni nuova classe deve poter essere descritta con una frase.
+
+Se servono più frasi,
+probabilmente contiene più responsabilità.
+
+---
+
+Ogni schermata deve tendere a diventare un orchestratore.
+
+Le schermate coordinano.
+
+I motori decidono.
+
+I Builder preparano.
+
+I ViewModel descrivono.
+
+I Widget mostrano.
+
+━━━━━━━━━━━━━━━━━━
+
+# DEFINIZIONE DI "COMPLETATO"
+
+━━━━━━━━━━━━━━━━━━
+
+Una milestone viene considerata conclusa solo quando sono vere tutte queste condizioni.
+
+✔ comportamento invariato
+
+✔ compilazione pulita
+
+✔ nessuna regressione
+
+✔ commit Git eseguito
+
+✔ codice più semplice rispetto all'inizio
+
+✔ responsabilità ridotte
+
+✔ documentazione aggiornata
+
+Se manca uno solo di questi punti,
+la milestone non è conclusa.
+
+━━━━━━━━━━━━━━━━━━
+
+# MEMORIA DEL METODO DI LAVORO
+
+━━━━━━━━━━━━━━━━━━
+
+Il metodo che ha prodotto i risultati migliori durante H5 diventa il metodo ufficiale del progetto.
+
+Sequenza operativa:
+
+1.
+
+Analizzare.
+
+2.
+
+Progettare.
+
+3.
+
+Effettuare una modifica molto piccola.
+
+4.
+
+Compilare.
+
+5.
+
+Verificare il comportamento.
+
+6.
+
+Commit Git.
+
+7.
+
+Solo dopo iniziare il passo successivo.
+
+Mai eseguire due refactoring importanti contemporaneamente.
+
+Mai lasciare lavoro incompleto.
+
+Mai interrompere una responsabilità a metà.
+
+━━━━━━━━━━━━━━━━━━
+
+# STATO DEL PROGETTO
+
+━━━━━━━━━━━━━━━━━━
+
+FrodoDesk è oggi un ecosistema composto da moduli indipendenti.
+
+Le fondamenta architetturali possono essere considerate stabili.
+
+Le evoluzioni future non dovranno aggiungere complessità.
+
+Dovranno ridurla.
+
+L'obiettivo non è aumentare il numero delle funzionalità.
+
+L'obiettivo è aumentare la qualità del sistema.
+
+━━━━━━━━━━━━━━━━━━
+
+# VISIONE FUTURA
+
+━━━━━━━━━━━━━━━━━━
+
+Il progetto continuerà a svilupparsi seguendo questo ordine.
+
+1.
+
+Consolidare.
+
+2.
+
+Semplificare.
+
+3.
+
+Generalizzare.
+
+4.
+
+Aprire il sistema a qualunque famiglia.
+
+La famiglia Matteo-Chiara-Alice rimane il laboratorio reale.
+
+Ma ogni nuova scelta dovrà essere compatibile con il futuro modello multi-famiglia.
+
+━━━━━━━━━━━━━━━━━━
+
+# FRASE UFFICIALE DI RIPARTENZA
+
+Ripartiamo da FrodoDesk.
+
+H5 è conclusa.
+
+L'architettura del Calendario è stata profondamente migliorata mantenendo il comportamento invariato.
+
+La milestone successiva sarà H6.
+
+H6 non introdurrà nuove funzionalità.
+
+Il suo obiettivo sarà trasferire progressivamente la business logic dai grandi metodi ai motori dedicati, seguendo rigorosamente il metodo consolidato durante H5:
+
+piccoli passi,
+una responsabilità alla volta,
+sempre verde,
+sempre verificato,
+sempre documentato.
+
+━━━━━━━━━━━━━━━━━━
+
+FINE DOCUMENTO

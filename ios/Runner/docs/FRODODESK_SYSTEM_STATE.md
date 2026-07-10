@@ -1,7 +1,7 @@
 # FRODODESK — SYSTEM STATE
 
-Ultimo aggiornamento: 5 Giugno 2026
-(Consolidamento Vita Reale + H3.5 Economico)
+Ultimo aggiornamento: Luglio 2026
+(Chiusura H5 — Refactoring Architetturale Calendario)
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -11,30 +11,98 @@ Ultimo aggiornamento: 5 Giugno 2026
 
 ## IDENTITÀ ATTUALE
 
-FrodoDesk è entrato nella fase:
+FrodoDesk è entrato nella fase di consolidamento architetturale.
 
-➡️ simulazione reale della stabilità familiare
+Il progetto non è più un insieme di schermate evolute ma un ecosistema composto da motori indipendenti, componenti UI modulari e livelli di responsabilità ben separati.
 
 Il sistema NON è più:
 
 ❌ prototipo calendario
-❌ semplice planner turni
-❌ semplice esperimento UI
-❌ semplice simulatore economico
 
-Il sistema è ormai composto da:
+❌ planner turni
 
-✔ calendario reale vivo
-✔ motore copertura reale
-✔ PresenceEngine
+❌ simulatore economico
+
+❌ raccolta di widget
+
+È invece composto da:
+
+✔ Calendario reale
+
+✔ Presence Engine
+
+✔ Coverage Engine
+
 ✔ Home operativa
+
 ✔ Eventi Globali
+
 ✔ Eventi Alice
-✔ rete supporto reale
+
+✔ Observation Engine
+
 ✔ Centro Controllo Economico
-✔ simulazione economica reale
-✔ pressione economica reale
-✔ modularizzazione stabile
+
+✔ Planner Decision Engine
+
+✔ Modulo Spese
+
+✔ Sistema Finanze
+
+✔ Modularizzazione stabile
+
+✔ Architettura a responsabilità separate
+
+━━━━━━━━━━━━━━━━━━
+
+# ARCHITETTURA UFFICIALE
+
+━━━━━━━━━━━━━━━━━━
+
+Durante H5 è stata consolidata definitivamente l'architettura del progetto.
+
+Ogni nuova funzionalità dovrà rispettare il seguente schema:
+
+Store
+
+↓
+
+Engine
+
+↓
+
+Builder
+
+↓
+
+ViewModel
+
+↓
+
+Widget
+
+Responsabilità:
+
+Store
+→ unica sorgente dati.
+
+Engine
+→ contiene la logica di business.
+
+Builder
+→ trasforma i dati dell'engine in oggetti utilizzabili dalla UI.
+
+ViewModel
+→ rappresentazione pronta per la visualizzazione.
+
+Widget
+→ sola responsabilità grafica.
+
+Regola fondamentale:
+
+La UI non deve più prendere decisioni.
+
+La UI visualizza esclusivamente informazioni preparate dal ViewModel.
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -42,1258 +110,664 @@ Il sistema è ormai composto da:
 
 ━━━━━━━━━━━━━━━━━━
 
-## STABILE
-
-✔ copertura reale funzionante
-
-✔ SchoolStore consolidato
-
-✔ override reali funzionanti
-
-✔ supporto temporale reale
-
-✔ gestione ferie/malattia
-
-✔ rete supporto separata da Sandra
-
-✔ Home coerente col calendario
-
-✔ refresh reale UI
-
-✔ post-notte corretto
-
-✔ presenza Alice segmentata temporalmente
-
----
-
-## REGOLE REALI ATTIVE
-
-✔ viaggio lavoro
-
-✔ post-notte fino 14:30
-
-✔ copertura completa obbligatoria
-
-✔ Alice non interpretata implicitamente
-
-✔ supporto valido solo se copre tutto il gap
-
-✔ Home e calendario leggono la stessa verità
-
-━━━━━━━━━━━━━━━━━━
-
-# PRESENCE ENGINE — STATO ATTUALE
-
-━━━━━━━━━━━━━━━━━━
-
-## ATTIVO
-
-File strutturale principale:
-
-- alice_presence_engine.dart
-
-Responsabilità attive:
-
-✔ determinare posizione reale Alice
-
-✔ determinare presenza reale
-
-✔ distinguere stati presenza
-
-✔ fornire una sola verità a:
-
-- CoverageEngine
-- Home
-- Calendario
-- IPS futuro
-
----
-
-## STATI ATTUALI
-
-✔ home
-
-✔ school
-
-✔ timedEvent
-
-✔ realEvent
-
-✔ summerCamp
-
-✔ accompanied
-
-✔ support
-
----
-
-## DIREZIONE ATTUALE
-
-⚠️ eliminazione progressiva residui legacy dal CoverageEngine.
-
-CoverageEngine deve diventare:
-
-✔ motore copertura puro
-
-✔ consumatore PresenceEngine
-
-NON:
-
-❌ interprete diretto Alice
-
-━━━━━━━━━━━━━━━━━━
-
-# COVERAGE ENGINE — STATO ATTUALE
-
-━━━━━━━━━━━━━━━━━━
-
 ## CONSOLIDATO
 
-✔ rilevazione buchi reale
+Il Calendario rappresenta oggi il modulo architetturalmente più evoluto del progetto.
 
-✔ supporti completi
+Sono stati eliminati numerosi blocchi monolitici attraverso estrazioni progressive senza modificare il comportamento funzionale.
 
-✔ spiegazione reale buchi
+Principio seguito durante H5:
 
-✔ Home coerente
+✔ una responsabilità per componente
 
-✔ popup coerenti
+✔ nessun refactoring aggressivo
 
-✔ eventi Alice integrati
+✔ nessuna modifica funzionale
 
-✔ eventi reali integrati
+✔ ogni estrazione deve mantenere comportamento identico
 
----
+✔ commit frequenti
 
-## BUG STRUTTURALI RISOLTI
-
-✔ falso buco durante eventi reali
-
-✔ falso buco Home
-
-✔ doppie segmentazioni Alice
-
-✔ supporti parziali invalidi
-
-✔ incoerenza Home ↔ Calendario
-
-✔ bug post centro estivo
-
----
-
-## DIREZIONE
-
-✔ cleanup progressivo legacy
-
-✔ centralizzazione totale presenza Alice
-
-✔ eliminazione logiche duplicate
+✔ applicazione sempre verde prima del commit
 
 ━━━━━━━━━━━━━━━━━━
 
-# HOME — STATO TECNICO
+## COMPONENTI ESTRATTI
+
+Durante H5 sono stati estratti e consolidati numerosi componenti.
+
+Tra quelli principali:
+
+✔ AliceStateBanner
+
+✔ AliceSchoolHeader
+
+✔ AliceEventsSection
+
+✔ AliceEventsHeader
+
+✔ AliceEventsList
+
+✔ AliceEventTile
+
+✔ AliceEventExpanded
+
+✔ AliceEventConflictBanner
+
+✔ HiddenAliceEventsLink
+
+✔ SchoolStatusBox
+
+✔ SchoolOutSummary
+
+✔ SchoolCoverageChoiceSection
+
+✔ DayOrganizationSection
+
+✔ FamilyNowCard
+
+Ogni componente possiede una responsabilità specifica.
+
+Il Calendario è diventato progressivamente un orchestratore della UI.
+
+━━━━━━━━━━━━━━━━━━
+
+# VIEWMODEL INTRODOTTI
+
+━━━━━━━━━━━━━━━━━━
+
+H5 ha introdotto ufficialmente il concetto di ViewModel.
+
+Attualmente consolidati:
+
+✔ FamilyNowViewModel
+
+✔ AliceEventTileViewModel
+
+Principio:
+
+Il ViewModel contiene tutto ciò che serve alla UI.
+
+La UI non deve conoscere direttamente la logica del dominio.
+
+━━━━━━━━━━━━━━━━━━
+
+# BUILDER CONSOLIDATI
+
+━━━━━━━━━━━━━━━━━━
+
+Durante H5 sono stati introdotti i primi Builder strutturali del Calendario.
+
+Attualmente consolidati:
+
+✔ AliceEventTileViewModelBuilder
+
+✔ AliceEventConflictBuilder (prima versione architetturale)
+
+Sono inoltre stati predisposti alcuni Builder che verranno completati nella milestone successiva.
+
+Principio consolidato:
+
+Il Builder prepara i dati.
+
+Non contiene codice UI.
+
+Non sostituisce l'Engine.
+
+Non sostituisce il ViewModel.
+
+━━━━━━━━━━━━━━━━━━
+
+# H5 — REFATTORIZZAZIONE CALENDARIO
+
+━━━━━━━━━━━━━━━━━━
+
+## STATO
+
+🟢 COMPLETATA
+
+L'obiettivo della milestone NON era aggiungere funzionalità.
+
+L'obiettivo era ridurre la complessità del Calendario mantenendo invariato il comportamento.
+
+Risultati ottenuti:
+
+✔ estrazione progressiva dei widget
+
+✔ introduzione dei ViewModel
+
+✔ introduzione dei Builder
+
+✔ riduzione delle responsabilità della schermata
+
+✔ maggiore leggibilità del codice
+
+✔ maggiore facilità di manutenzione
+
+✔ nessuna regressione funzionale
+
+━━━━━━━━━━━━━━━━━━
+
+## LEZIONI APPRESE
+
+Durante H5 sono state fissate alcune regole definitive.
+
+Regola 1
+
+Mai estrarre un widget che richiede decine di parametri.
+
+Prima si costruisce un ViewModel.
+
+Poi il widget.
+
+---
+
+Regola 2
+
+Ogni widget deve avere una sola responsabilità.
+
+---
+
+Regola 3
+
+Ogni estrazione deve lasciare l'app perfettamente funzionante.
+
+Mai accettare regressioni temporanee.
+
+---
+
+Regola 4
+
+Prima:
+
+codice funzionante.
+
+Poi:
+
+codice bello.
+
+Mai il contrario.
+
+---
+
+Regola 5
+
+Se una modifica introduce incertezza architetturale:
+
+ci si ferma.
+
+Si riprogetta.
+
+Non si forza il refactoring.
+
+━━━━━━━━━━━━━━━━━━
+
+# STATO HOME
 
 ━━━━━━━━━━━━━━━━━━
 
 ## CONSOLIDATA
 
-Home è stata stabilizzata come:
+La Home viene considerata architetturalmente stabile.
 
-✔ orchestratore
+Le estrazioni principali sono state completate.
 
-✔ hub operativo
+Le parti rimaste all'interno della schermata contengono:
 
-✔ lettura problemi reali
+✔ orchestrazione
 
-✔ accesso rapido sistema
+✔ callback
 
----
+✔ dialog
 
-## COMPONENTI ESTRATTI
+✔ business logic
 
-✔ HomeOverviewMetrics
-
-✔ MiniActionChip
-
-✔ SystemStatusHeader
-
-✔ FinanceInfoCard
-
-✔ GlobalEventEntryCard
-
-✔ DialogEmptyState
-
-✔ SectionTitle
-
----
-
-## DECISIONE STRUTTURALE
-
-⚠️ STOP modularizzazione aggressiva.
-
-Le parti rimaste dentro Home contengono:
-
-- callback
-- parsing
-- store
-- dialog complessi
-- comportamento reale
-- business logic
-
-Ulteriori estrazioni aumenterebbero il rischio.
+Ulteriori estrazioni non sono considerate prioritarie.
 
 ━━━━━━━━━━━━━━━━━━
 
-# EVENTI GLOBALI — STATO
+# FAMILY NOW
 
 ━━━━━━━━━━━━━━━━━━
 
-## ATTIVI
+FamilyNow rappresenta il prossimo candidato al refactoring logico.
 
-✔ timeline anno → mesi → eventi
+Situazione attuale:
 
-✔ dettaglio evento
+✔ FamilyNowCard estratta
 
-✔ memoria evento
+✔ FamilyNowViewModel consolidato
 
-✔ eventi multi-persona
+Il metodo:
 
-✔ navigazione reale
+_buildFamilyNowSnapshot()
 
----
+rimane volutamente ancora centrale.
 
-## DIREZIONE
+Decisione ufficiale:
 
-⬜ collegamento pressione economica
+NON verrà ulteriormente refattorizzato durante H5.
 
-⬜ lettura periodi critici
-
-⬜ collegamento finanze future
-
-⬜ evoluzione memoria storica familiare
+La sua evoluzione appartiene ad H6.
 
 ━━━━━━━━━━━━━━━━━━
 
-# EVENTI ALICE — STATO
+# H6 — DIREZIONE UFFICIALE
 
 ━━━━━━━━━━━━━━━━━━
 
-## ATTIVI
+H6 NON sarà una prosecuzione di H5.
 
-✔ eventi comportamentali
-
-✔ accompagnamento
-
-✔ integrazione copertura
-
-✔ segmentazione reale presenza
-
-✔ supporto eventi reali
-
----
-
-## DIREZIONE
-
-⬜ Alice al seguito
-
-⬜ conflitti avanzati
-
-⬜ autonomia futura
-
-⬜ età dinamica
-
-⬜ comportamento evolutivo Alice
-
-━━━━━━━━━━━━━━━━━━
-
-# MODULO STATISTICHE — STATO
-
-━━━━━━━━━━━━━━━━━━
-
-## AVVIATO
-
-Principio consolidato:
-
-❌ statistiche decorative
-
-✔ lettura reale del sistema
-
----
-
-## DIREZIONE
-
-⬜ trend familiari
-
-⬜ pressione evolutiva
-
-⬜ statistiche economiche
-
-⬜ lettura storica sistema
-
-⬜ confronto temporale reale
-
-━━━━━━━━━━━━━━━━━━
-
-# MODULO FINANZE — STATO ATTUALE
-
-━━━━━━━━━━━━━━━━━━
-
-## ATTIVO
-
-✔ FinanceStore reale
-
-✔ fondi
-
-✔ recurring items
-
-✔ snapshot economici
-
-✔ dashboard annuale
-
-✔ simulazione base
-
-✔ owner condivisi
-
-✔ timeline economica
-
-✔ pressure score iniziale
-
-✔ Centro Controllo Economico
-
-✔ schermata Finanze dedicata
-
-✔ conti bancari multipli
-
-✔ gestione prepagate
-
-✔ rapporti collegati
-
-✔ trasferimenti tra conti
-
-✔ gestione conferme
-
-✔ storico movimenti
-
-✔ dettaglio mesi
-
-✔ saldo reale separato dalla pressione futura
-
-✔ Home e Conti Persona sincronizzati
-
-✔ esclusione conti disattivati
-
----
-
-## H2 — STATO REALE
-
-🟢 CONCETTUALMENTE CONSOLIDATO
-
----
-
-## H3.5 — FASE ATTUALE
-
-🟡 CONSOLIDAMENTO VITA REALE
+H6 rappresenta una milestone completamente diversa.
 
 Obiettivo:
 
-✔ verificare comportamento reale conti
+estrazione dei motori.
 
-✔ verificare comportamento reale ricorrenze
+NON della UI.
 
-✔ verificare comportamento reale fondi
+Il focus diventa:
 
-✔ verificare sincronizzazione Home ↔ Finanze
+✔ Engine
 
-✔ verificare utilizzo quotidiano
+✔ Builder
 
----
+✔ Snapshot Builder
 
-## CONCETTI CONSOLIDATI
+✔ semplificazione della business logic
 
-✔ pressione prevedibile/imprevedibile
+NON:
 
-✔ pressione statica/dinamica
+❌ nuovi widget
 
-✔ rigidità economica
+❌ refactoring estetici
 
-✔ manovrabilità
-
-✔ sacrificabilità
-
-✔ conseguenze del non pagare
-
-✔ vicinanza temporale
-
-✔ liquidità operativa
-
-✔ affidabilità temporale
-
-✔ stato temporale voci
-
-✔ memoria economica evolutiva
-
-✔ ossigeno economico
-
-✔ resilienza
-
-✔ stress economico
-
-✔ debito resilienza
-
-✔ consumo resilienza futura
-
-✔ sistema stabile vs affaticato
-
-✔ sistema che sopravvive vs sistema che guarisce
-
-✔ saldo reale ≠ pressione futura
-
-✔ previsione ≠ realtà
-
----
-
-## DNA TECNICO GIÀ INTRODOTTO
-
-✔ FinanceBalanceType
-
-✔ balanceId separato da personId
-
-✔ operational balance
-
-✔ warning operativo
-
-✔ stress operativo
-
-✔ stress ratio
-
-✔ vitalityState iniziale
-
-✔ resilienza base
-
-✔ recupero economico
-
-✔ stress persistente
-
-✔ splits economici reali
-
-✔ supporto quote personalizzate
-
-✔ liquidità respirabile
-
-✔ conferma ricorrenze
-
-✔ annullamento conferme
-
-✔ trasferimenti reali
-
-✔ conti multipli
-
-✔ saldo reale verificato
-
----
-
-## DIREZIONE H3.5
-
-⚠️ NON espandere prematuramente.
-
-PRIMA:
-
-✔ verifiche vita reale
-
-✔ consolidamento comportamento
-
-✔ collaudi pratici
-
-✔ affidabilità sistema
-
-DOPO:
-
-➡️ H4 simulazione futura reale
-
-➡️ IPS economico
-
-➡️ automazioni future
+❌ modularizzazione della UI
 
 ━━━━━━━━━━━━━━━━━━
 
-# ROADMAP ECONOMICA — STATO
+# ROADMAP H6
 
 ━━━━━━━━━━━━━━━━━━
 
-## H1
+Ordine ufficiale:
 
-🟢 consolidato
+1.
 
----
+FamilyNow
 
-## H2
+↓
 
-🟢 consolidato concettualmente
+semplificazione del motore
 
----
+2.
 
-## H3
+Coverage Engine
 
-🟢 architettura economica consolidata
+↓
 
----
+riduzione logiche duplicate
 
-## H3.5
+3.
 
-🟡 consolidamento vita reale attivo
+Presence Engine
 
----
+↓
 
-## H4
+cleanup definitivo
 
-⬜ simulazione futura reale
+4.
 
----
+Business Builder
 
-## H5
+↓
 
-⬜ collegamento vita reale ↔ finanze
+centralizzazione della preparazione dati
 
----
+5.
 
-## H6
+Snapshot Builder
 
-⬜ IPS economico
+↓
 
----
-
-## H7
-
-⬜ evoluzioni profonde salvate per il futuro
+riduzione della complessità delle schermate
 
 ━━━━━━━━━━━━━━━━━━
 
-# STATO DOCUMENTALE
+# PRESENCE ENGINE
 
 ━━━━━━━━━━━━━━━━━━
 
-## CONSOLIDAMENTO COMPLETATO
+## STATO
 
-Separazione responsabilità documenti:
+🟢 CONSOLIDATO
 
-✔ ROADMAP = direzione viva
+PresenceEngine rappresenta la sorgente ufficiale della presenza reale delle persone.
 
-✔ PROJECT_MEMORY = memoria evolutiva
+Responsabilità consolidate:
 
-✔ SYSTEM_STATE = stato tecnico reale
+✔ determinazione presenza reale
 
-✔ RULES = sistema operativo filosofico/operativo
+✔ determinazione posizione Alice
 
----
+✔ integrazione Eventi Reali
 
-## REGOLA ATTIVA
+✔ integrazione Eventi Alice
 
-MASTER ROADMAP:
+✔ integrazione Centro Estivo
 
-✅ documento unico vivo ufficiale
+✔ integrazione accompagnamenti
 
-Sono vietati:
+✔ sorgente unica per Coverage Engine
 
-❌ duplicati
+Direzione futura:
 
-❌ patch parallele permanenti
+✔ ulteriore pulizia del codice
 
-❌ roadmap divergenti
+✔ eliminazione completa delle ultime logiche duplicate
+
+Nessuna espansione funzionale prevista prima di H6.
 
 ━━━━━━━━━━━━━━━━━━
 
-# DIREZIONE OPERATIVA ATTUALE
+# COVERAGE ENGINE
+
+━━━━━━━━━━━━━━━━━━
+
+## STATO
+
+🟢 CONSOLIDATO
+
+Coverage Engine è oggi considerato stabile.
+
+Responsabilità:
+
+✔ rilevazione buchi
+
+✔ spiegazione buchi
+
+✔ verifica copertura reale
+
+✔ integrazione Presence Engine
+
+✔ integrazione Eventi Alice
+
+✔ integrazione Eventi Reali
+
+✔ integrazione Supporti
+
+Direzione:
+
+H6 eliminerà definitivamente ogni residuo di logica duplicata.
+
+━━━━━━━━━━━━━━━━━━
+
+# EVENTI ALICE
+
+━━━━━━━━━━━━━━━━━━
+
+## STATO
+
+🟢 CONSOLIDATO
+
+Sistema eventi completamente operativo.
+
+Supporta:
+
+✔ eventi comportamentali
+
+✔ eventi logistici
+
+✔ eventi accompagnati
+
+✔ eventi passivi
+
+✔ eventi con supervisione
+
+✔ eventi con accompagnatore
+
+✔ integrazione Coverage
+
+✔ integrazione Presence
+
+Durante H5 sono stati introdotti:
+
+✔ AliceEventTile
+
+✔ AliceEventExpanded
+
+✔ AliceEventTileViewModel
+
+✔ AliceEventTileViewModelBuilder
+
+Il comportamento funzionale è rimasto invariato.
+
+È cambiata esclusivamente l'architettura.
+
+━━━━━━━━━━━━━━━━━━
+
+# HOME
+
+━━━━━━━━━━━━━━━━━━
+
+## STATO
+
+🟢 STABILE
+
+La Home è considerata conclusa dal punto di vista della modularizzazione.
+
+Ulteriori estrazioni sono sconsigliate.
+
+Le evoluzioni future riguarderanno esclusivamente:
+
+✔ nuove osservazioni
+
+✔ nuovi indicatori
+
+✔ integrazione con Observation Engine
+
+━━━━━━━━━━━━━━━━━━
+
+# OBSERVATION ENGINE
+
+━━━━━━━━━━━━━━━━━━
+
+## STATO
+
+🟢 FONDAMENTA COMPLETE
+
+Observation Engine è diventato il punto di raccolta delle analisi del sistema.
+
+Ogni modulo dovrà produrre osservazioni tramite provider dedicati.
+
+Direzione futura:
+
+✔ CoverageObservationProvider
+
+✔ CalendarObservationProvider
+
+✔ FinanceObservationProvider
+
+✔ HealthObservationProvider
+
+La Home diventerà progressivamente il punto di aggregazione di tutte le osservazioni.
+
+━━━━━━━━━━━━━━━━━━
+
+# MODULO FINANZE
+
+━━━━━━━━━━━━━━━━━━
+
+## STATO
+
+🟢 CONSOLIDATO
+
+Le funzionalità economiche introdotte nelle milestone precedenti sono considerate stabili.
+
+Il focus non è più costruire il motore.
+
+Il focus è verificarne il comportamento nella vita reale.
+
+Principio consolidato:
+
+La vita reale ha sempre priorità sulla simulazione.
+
+━━━━━━━━━━━━━━━━━━
+
+# MILESTONE COMPLETATE
+
+━━━━━━━━━━━━━━━━━━
+
+🟢 Calendario Reale
+
+🟢 Presence Engine
+
+🟢 Coverage Engine
+
+🟢 Home
+
+🟢 Eventi Globali
+
+🟢 Eventi Alice
+
+🟢 Observation Engine (fondazione)
+
+🟢 Planner Decision Engine
+
+🟢 Modulo Spese
+
+🟢 Centro Controllo Economico
+
+🟢 H5 — Refactoring Architetturale Calendario
+
+━━━━━━━━━━━━━━━━━━
+
+# REGOLE OPERATIVE UFFICIALI
+
+━━━━━━━━━━━━━━━━━━
+
+Le seguenti regole sono considerate definitive.
+
+Devono essere rispettate in tutte le milestone future.
+
+✔ Una sola responsabilità per ogni componente.
+
+✔ Prima il comportamento corretto.
+
+Poi il refactoring.
+
+✔ Nessuna regressione è accettabile.
+
+✔ Ogni estrazione deve lasciare il progetto completamente funzionante.
+
+✔ Sempre compilazione verde prima di ogni commit.
+
+✔ Commit piccoli e frequenti.
+
+✔ Nessuna modularizzazione fine a sé stessa.
+
+✔ Ogni nuovo file deve avere una responsabilità chiaramente definita.
+
+✔ Nessun Builder viene creato senza conoscere la sua destinazione architetturale.
+
+✔ Nessun ViewModel deve contenere logica di business.
+
+✔ Nessun Widget deve prendere decisioni.
+
+✔ Le schermate devono diventare progressivamente orchestratori.
+
+━━━━━━━━━━━━━━━━━━
+
+# STATO GIT
+
+━━━━━━━━━━━━━━━━━━
+
+Ultima milestone conclusa:
+
+H5 — Refactoring Calendario
+
+Stato repository:
+
+✔ compilazione pulita
+
+✔ nessun errore
+
+✔ nessuna regressione nota
+
+✔ commit incrementali completati durante tutta H5
+
+Il progetto è considerato stabile.
+
+━━━━━━━━━━━━━━━━━━
+
+# DIREZIONE OPERATIVA
 
 ━━━━━━━━━━━━━━━━━━
 
 NON fare:
 
-❌ mega-refactor
+❌ nuove funzionalità casuali
 
-❌ nuove aree casuali
+❌ refactoring aggressivi
 
-❌ automazioni premature
+❌ duplicazioni
 
-❌ IPS finale
+❌ widget monolitici
 
-❌ modularizzazione aggressiva
+❌ business logic nella UI
 
-❌ espansioni economiche premature
+❌ Builder senza responsabilità precisa
 
 Fare:
 
-✔ consolidamento H3.5
+✔ consolidamento architetturale
 
-✔ consolidamento economico reale
+✔ motori indipendenti
 
-✔ test pratici continui
+✔ business logic centralizzata
 
-✔ verifica comportamento reale
+✔ ViewModel puliti
 
-✔ eliminazione incoerenze UI
+✔ Builder specializzati
 
-✔ simulazione sempre più aderente alla vita
-
-━━━━━━━━━━━━━━━━━━
-
-# STATO REALE COMPLESSIVO
+✔ UI sempre più semplice
 
 ━━━━━━━━━━━━━━━━━━
 
-✔ Calendario stabile
-
-✔ PresenceEngine attivo
-
-✔ CoverageEngine stabile
-
-✔ Home consolidata
-
-✔ Eventi Globali vivi
-
-✔ Eventi Alice vivi
-
-✔ Statistiche strutturalmente avviate
-
-✔ Centro Controllo Economico attivo
-
-✔ Motore economico fondativo completato
-
-✔ H2 economico consolidato concettualmente
-
-✔ H3 architettura economica consolidata
-
-✔ H3.5 consolidamento vita reale avviato
-
-✔ roadmap unificata consolidata
-
-✔ struttura documentale consolidata
+# STATO REALE DEL PROGETTO
 
 ━━━━━━━━━━━━━━━━━━
 
-# FRASE DI RIPARTENZA UFFICIALE
+Il progetto FrodoDesk è oggi composto da moduli autonomi che collaborano attraverso responsabilità chiaramente separate.
 
-Ripartiamo da FrodoDesk — H3.5 Consolidamento Vita Reale.
+La milestone H5 ha rappresentato il passaggio definitivo da una struttura basata sulle schermate ad una struttura basata sull'architettura.
+
+La UI non costituisce più il centro del sistema.
+
+Il cuore del progetto diventa l'insieme dei motori (Engine), dei Builder e dei ViewModel.
+
+La direzione futura è orientata alla progressiva riduzione della complessità delle schermate e all'aumento della qualità architetturale del codice.
+
+━━━━━━━━━━━━━━━━━━
+
+# FRASE UFFICIALE DI RIPARTENZA
+
+Ripartiamo da FrodoDesk.
+
+H5 è ufficialmente conclusa.
+
+Il Calendario è stato rifattorizzato mantenendo il comportamento invariato e introducendo una separazione stabile tra Widget, ViewModel e Builder.
+
+La prossima milestone sarà H6.
 
 Priorità assoluta:
 
-verificare che il comportamento del motore economico coincida con il comportamento della vita quotidiana.
+trasferire progressivamente la business logic dai grandi metodi ai motori dedicati, mantenendo sempre il progetto completamente funzionante, con modifiche piccole, verificabili e accompagnate da commit frequenti.
 
-Prima:
+H6 non introdurrà nuove funzionalità.
 
-✔ conti reali
-
-✔ ricorrenze reali
-
-✔ fondi reali
-
-✔ sincronizzazione Home ↔ Finanze
-
-✔ collaudi pratici
-
-Solo dopo:
-
-➡️ H4 — simulazione futura reale
-
-➡️ H5 — collegamento vita reale ↔ finanze
-
-➡️ H6 — IPS economico
-
----
-
-# MODULO SPESE — STATO ATTUALE
+L'obiettivo sarà consolidare definitivamente l'architettura interna di FrodoDesk.
 
 ━━━━━━━━━━━━━━━━━━
 
-## ATTIVO
-
-✔ modulo Spese operativo nella vita reale
-
-✔ CRUD completo Spese reali
-
-✔ CRUD completo Prelievi contanti
-
-✔ CRUD completo Entrate extra
-
-✔ storico persistente dei movimenti
-
-✔ collegamento stabile con FinanceStore
-
-✔ collegamento stabile con Portafogli contanti
-
-✔ sincronizzazione automatica dei saldi
-
-✔ sincronizzazione automatica dei prelievi
-
-✔ aggiornamento immediato UI
-
----
-
-## FUNZIONALITÀ CONSOLIDATE
-
-Ogni movimento economico reale può essere:
-
-✔ creato
-
-✔ modificato
-
-✔ eliminato
-
-La modifica mantiene la coerenza del sistema attraverso il ripristino dello stato precedente e la ricostruzione del movimento aggiornato.
-
----
-
-## GESTIONE TEMPORALE REALE
-
-✔ data reale personalizzabile
-
-✔ ora reale personalizzabile
-
-✔ modifica della data anche su movimenti esistenti
-
-✔ ordinamento cronologico automatico
-
-✔ storico basato sulla data reale dell'evento
-
-Principio consolidato:
-
-👉 il sistema registra quando l'evento è realmente accaduto, non quando è stato inserito.
-
----
-
-## INTERFACCIA UTENTE
-
-✔ popup dettaglio movimento
-
-✔ modifica diretta dal dettaglio
-
-✔ conferma modifica con form precompilato
-
-✔ pulsante "Salva modifiche" nei movimenti esistenti
-
-✔ icone dedicate per:
-
-* Spesa reale;
-* Prelievo contanti;
-* Entrata extra.
-
-✔ data e ora visualizzate nello Storico
-
-✔ data e ora visualizzate nei "Movimenti del mese corrente"
-
----
-
-## DIREZIONE FUTURA
-
-Il modulo Spese viene considerato strutturalmente stabile e pronto a diventare una sorgente dati ufficiale per:
-
-⬜ Statistiche Economiche
-
-⬜ confronto previsione ↔ realtà
-
-⬜ analisi categorie
-
-⬜ analisi comportamenti economici
-
-⬜ lettura storica della vita familiare
-
----
-
-## STATO DI MATURITÀ
-
-🟢 V1 OPERATIVA CONSOLIDATA
-
-Il modulo è considerato utilizzabile nella vita quotidiana e idoneo al collaudo reale prolungato.
-
-La priorità non è aggiungere nuove funzionalità, ma verificarne il comportamento nell'uso reale e consolidare la coerenza tra Spese, Finanze, Home e Statistiche future.
-
-━━━━━━━━━━━━━━━━━━
-
-# EVOLUZIONE STRUTTURALE — MULTI FAMIGLIA
-
-━━━━━━━━━━━━━━━━━━
-
-## DECISIONE STRATEGICA CONSOLIDATA
-
-Durante le riunioni di Giugno 2026 è stata fissata una nuova direzione strutturale del progetto.
-
-FrodoDesk non deve evolvere come sistema costruito attorno alla famiglia Matteo.
-
-La famiglia Matteo resta la famiglia laboratorio utilizzata per sviluppare e validare il motore.
-
-L'obiettivo reale diventa:
-
-👉 permettere a qualsiasi famiglia di creare il proprio ecosistema FrodoDesk.
-
----
-
-## NUOVA IDENTITÀ FUTURA
-
-Ogni installazione dovrà poter:
-
-✔ creare una famiglia
-
-✔ creare le proprie persone
-
-✔ creare i propri conti
-
-✔ creare i propri eventi
-
-✔ creare le proprie regole operative
-
-senza modifiche al codice.
-
----
-
-## CONCETTO DI FAMIGLIA
-
-La famiglia diventa una nuova entità strutturale del sistema.
-
-Esempio:
-
-Famiglia Rossi
-
-- Marco
-- Sara
-- Luca
-
-Famiglia Bianchi
-
-- Paolo
-- Elena
-- Giulia
-
-Ogni famiglia possiede:
-
-✔ dati
-
-✔ calendario
-
-✔ finanze
-
-✔ coperture
-
-✔ notifiche
-
-✔ autorizzazioni
-
-indipendenti dalle altre.
-
----
-
-## MULTI DISPOSITIVO
-
-Decisione consolidata.
-
-L'attuale sincronizzazione tramite export/import JSON viene considerata una fase temporanea di sviluppo.
-
-La direzione ufficiale diventa:
-
-✔ una sola verità dati
-
-✔ sincronizzazione automatica
-
-✔ aggiornamento immediato tra dispositivi
-
----
-
-## OBIETTIVO FUTURO
-
-Una modifica effettuata da:
-
-- PC
-- telefono
-- tablet
-
-deve comparire automaticamente sugli altri dispositivi autorizzati.
-
----
-
-## SISTEMA INVITI
-
-Direzione approvata.
-
-Una famiglia deve poter invitare altre persone.
-
-Esempi:
-
-- compagno
-- compagna
-- figli
-- babysitter
-- nonni
-- allenatori
-- collaboratori esterni
-
----
-
-## RUOLI FUTURI
-
-Ruoli previsti:
-
-✔ amministratore
-
-✔ adulto
-
-✔ figlio
-
-✔ supporto
-
-✔ collaboratore esterno
-
----
-
-## ACCESSI PARZIALI
-
-Una persona esterna non deve vedere automaticamente tutto il sistema.
-
-L'amministratore decide:
-
-✔ cosa può vedere
-
-✔ cosa può modificare
-
-✔ quali notifiche riceve
-
----
-
-## ESEMPIO STRUTTURALE
-
-Sandra può:
-
-✔ avere la propria famiglia FrodoDesk
-
-✔ accedere alla famiglia Matteo
-
-✔ vedere soltanto le informazioni autorizzate
-
-✔ gestire soltanto le aree abilitate
-
----
-
-## EVENTI ESTERNI
-
-Direzione futura approvata.
-
-Soggetti esterni autorizzati potranno proporre eventi.
-
-Esempi:
-
-- scuole
-- allenatori
-- associazioni
-- babysitter
-
-L'evento resta sempre sotto controllo della famiglia.
-
----
-
-## STATO ATTUALE
-
-⚠️ Nessuna implementazione tecnica ancora iniziata.
-
-Questa sezione rappresenta una decisione strategica ufficiale che dovrà guidare l'evoluzione futura di:
-
-- Calendario
-- Persone
-- Eventi
-- Finanze
-- Notifiche
-- Sistema autorizzazioni
-- Cloud sincronizzato
-
----
-
-## PRIORITÀ ATTUALE
-
-Questa evoluzione NON sostituisce le priorità correnti.
-
-Restano prioritarie:
-
-✔ consolidamento calendario reale
-
-✔ utilizzo quotidiano reale
-
-✔ consolidamento motore economico
-
-✔ correzione comportamenti reali
-
-Solo dopo verrà avviata la trasformazione verso il modello multi-famiglia.
-
----
-
-# OBSERVATION ENGINE — STATO ATTUALE
-
-━━━━━━━━━━━━━━━━━━
-
-## NUOVO PILASTRO ARCHITETTURALE
-
-🟢 AVVIATO
-
-Durante il consolidamento del modulo Spese è stata individuata una nuova architettura trasversale destinata a diventare uno dei pilastri di FrodoDesk.
-
-L'obiettivo non è più mostrare semplici dati.
-
-Il sistema deve produrre osservazioni intelligenti sulla vita della famiglia.
-
----
-
-## STATO ATTUALE
-
-Creati:
-
-✔ `FrodoObservation`
-
-✔ `ObservationProvider`
-
-✔ `ObservationRegistry`
-
-✔ `ObservationEngine`
-
-✔ `FrodoDeskBootstrap`
-
-✔ primo provider reale:
-
-`SpeseObservationProvider`
-
----
-
-## MODULO SPESE
-
-Il modulo Spese è diventato il primo modulo collegato al nuovo sistema osservazioni.
-
-È stato introdotto:
-
-`SpeseMonthReader`
-
-che produce osservazioni quali:
-
-✔ destinazione principale delle spese
-
-✔ categoria predominante
-
-✔ confronto col mese precedente
-
-✔ concentrazione temporale
-
-✔ volume movimenti
-
-✔ riepilogo economico del mese
-
-La schermata Spese mostra ora le osservazioni più importanti ed è predisposta per l'espansione futura ("Mostra tutte le analisi").
-
----
-
-## OSSERVAZIONI
-
-Una osservazione rappresenta una interpretazione della situazione reale.
-
-Non è una notifica.
-
-Può essere:
-
-✔ attiva
-
-✔ risolta
-
-✔ ignorata
-
-✔ scaduta
-
-Ogni osservazione possiede:
-
-* livello
-* priorità
-* peso
-* categoria
-* stato
-* eventuale azione
-* collegamento al modulo sorgente
-
----
-
-## PRINCIPIO OPERATIVO
-
-Ogni modulo dovrà produrre osservazioni tramite il proprio provider.
-
-Esempi previsti:
-
-* FinanceObservationProvider
-* CoverageObservationProvider
-* CalendarObservationProvider
-* HealthObservationProvider
-
-L'Observation Engine raccoglie tutte le osservazioni e decide quali siano le più rilevanti.
-
-La Home non dovrà più effettuare analisi autonome.
-
----
-
-## NUOVA FILOSOFIA DEL SISTEMA
-
-Ogni osservazione nasce dalla risposta a una domanda reale.
-
-Esempi:
-
-* Alice è coperta?
-
-* Questo mese cosa ha caratterizzato le spese?
-
-* Il fondo auto è sufficiente?
-
-* C'è qualcosa che richiede attenzione?
-
-La progettazione futura dei moduli seguirà questo principio.
-
-Non verranno progettate semplici funzioni.
-
-Verranno progettate domande che FrodoDesk dovrà essere in grado di porsi autonomamente.
-
----
-
-## STATO DI MATURITÀ
-
-🟡 FASE FONDATIVA
-
-Il framework architetturale dell'Observation Engine è stato creato.
-
-La fase successiva sarà:
-
-✔ completare il ciclo di vita delle osservazioni vive;
-
-✔ collegare progressivamente tutti i moduli al nuovo sistema;
-
-✔ trasformare la Home nel punto di aggregazione delle osservazioni dell'intero ecosistema FrodoDesk.
-
----
-
-# H4 — FINANCE PLANNER DECISION ENGINE (GIUGNO 2026)
-
-━━━━━━━━━━━━━━━━━━
-
-# STATO ATTUALE
-
-━━━━━━━━━━━━━━━━━━
-
-## COMPLETATO
-
-🟢 Primo motore decisionale del Planner implementato.
-
-Il Planner finanziario non è più un insieme di logiche concentrate in un unico metodo.
-
-È stato trasformato in un sistema modulare composto da componenti specializzati.
-
----
-
-# NUOVA ARCHITETTURA
-
-FinancePlannerEngine
-
-↓
-
-PlannerDecisionEngine
-
-↓
-
-PlannerDecision
-
-↓
-
-PlannerScenarioBuilder
-
-↓
-
-PlannerRecommendationBuilder
-
-↓
-
-FinancePlannerResult
-
-↓
-
-FinanceObservationReader
-
-↓
-
-Observation Engine
-
-↓
-
-UI
-
----
-
-# COMPONENTI INTRODOTTI
-
-✔ PlannerDecision
-
-✔ PlannerDecisionEngine
-
-✔ PlannerScenarioBuilder
-
-✔ PlannerRecommendationBuilder
-
-✔ refactor completo di FinancePlannerEngine
-
----
-
-# PRIME REGOLE ATTIVE
-
-Il Planner applica già automaticamente:
-
-✔ RID non spostabili
-
-✔ addebiti automatici protetti
-
-✔ priorità delle spese critiche
-
-✔ distinzione tra spese rimandabili e non rimandabili
-
-✔ valutazione delle entrate imminenti
-
-✔ utilizzo dei fondi solo quando realmente necessario
-
----
-
-# NUOVO COMPORTAMENTO
-
-Il Planner non costruisce più scenari manualmente.
-
-Flusso operativo:
-
-1. analizza ogni ricorrenza;
-
-2. produce una decisione motivata;
-
-3. costruisce automaticamente gli scenari;
-
-4. genera automaticamente le raccomandazioni;
-
-5. produce il risultato finale per il sistema osservazioni.
-
----
-
-# STATO DI MATURITÀ
-
-🟢 H4 ARCHITETTURA COMPLETATA
-
-È stata completata la trasformazione architetturale del Planner.
-
-Le future evoluzioni dovranno concentrarsi sull'intelligenza delle regole e non più sulla struttura del motore.
-
----
-
-# PROSSIMA FASE
-
-H4.1 — Espansione del motore decisionale.
-
-Obiettivi:
-
-✔ aumentare progressivamente le regole decisionali;
-
-✔ migliorare la valutazione dei fondi;
-
-✔ introdurre simulazioni sempre più realistiche;
-
-✔ costruire spiegazioni dettagliate delle decisioni;
-
-✔ arrivare alla selezione automatica dello scenario migliore.
+FINE DOCUMENTO

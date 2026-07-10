@@ -15,7 +15,9 @@ class FamilyNowSnapshot {
   final String matteoNowLabel;
   final String chiaraNowLabel;
   final String aliceNowLabel;
+
   final String matteoTurnLabel;
+  final String chiaraTurnLabel;
 
   final CoverageResultStepA cov;
 
@@ -39,6 +41,7 @@ class FamilyNowSnapshot {
     required this.chiaraNowLabel,
     required this.aliceNowLabel,
     required this.matteoTurnLabel,
+    required this.chiaraTurnLabel,
     required this.cov,
     required this.isEmergency,
     required this.showSummerCampSpecialCard,

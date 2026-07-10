@@ -1,888 +1,989 @@
 # FRODODESK — ARCHITECTURE
 
-Ultimo aggiornamento: 14 Marzo 2026
-
-## PRINCIPIO ARCHITETTURALE
-
-FrodoDesk è costruito con architettura modulare.
-
-Ogni parte del sistema vive in moduli indipendenti.
-
-Obiettivo:
-modificare un blocco senza rompere gli altri.
-
-Regola fondamentale:
-la logica non deve vivere dentro la UI.
+Versione: 2.0  
+Ultimo aggiornamento: Luglio 2026
 
 ---
 
-# STRUTTURA GENERALE PROGETTO
+# SCOPO DEL DOCUMENTO
 
-Struttura principale del progetto:
+Questo documento rappresenta l'architettura ufficiale di FrodoDesk.
 
-lib/
- ├─ models
- ├─ logic
- │   ├─ engines
- │   └─ stores
- ├─ widgets
- ├─ screens
+Non descrive semplicemente come è organizzato il codice, ma definisce i principi, le responsabilità e le regole architetturali che guidano l'intero progetto.
 
-Nota:
-la cartella `logic` contiene sia i motori del sistema sia gli store che gestiscono lo stato.
+Ogni futura evoluzione dovrà essere coerente con quanto riportato in questo documento.
+
+L'architettura ha lo stesso valore della correttezza funzionale.
+
+Un sistema che funziona ma che cresce in modo disordinato viene considerato un errore progettuale.
 
 ---
 
-# NUOVA DIREZIONE ARCHITETTURALE — MULTI FAMIGLIA
+# FILOSOFIA DEL PROGETTO
 
-## DECISIONE UFFICIALE (GIUGNO 2026)
+FrodoDesk nasce come sistema reale per organizzare la vita quotidiana di una famiglia.
 
-FrodoDesk non viene più considerato esclusivamente il sistema della famiglia attuale.
+Con il tempo il progetto è evoluto fino a diventare un motore decisionale capace di:
 
-La famiglia:
+- osservare;
+- comprendere;
+- simulare;
+- organizzare;
+- aiutare nelle decisioni.
 
-* Matteo
-* Chiara
-* Alice
+L'obiettivo non è creare un semplice calendario o un gestionale economico.
 
-rappresenta il primo caso reale di utilizzo e collaudo.
+L'obiettivo è costruire un ecosistema modulare capace di evolvere per molti anni senza aumentare la complessità del codice.
 
-L'architettura futura dovrà supportare qualsiasi famiglia senza modifiche strutturali.
-
----
-
-## PRINCIPIO
-
-I motori del sistema non devono dipendere da:
-
-* nomi specifici
-* persone specifiche
-* strutture familiari fisse
-
-Devono lavorare tramite:
-
-* persone
-* ruoli
-* relazioni
-* permessi
+Ogni nuova funzionalità deve poter essere aggiunta senza compromettere quelle esistenti.
 
 ---
 
-## EVOLUZIONE PREVISTA
+# PRINCIPI FONDAMENTALI
 
-Direzione futura:
+## Responsabilità unica
 
-Famiglia
-↓
-Persone
-↓
-Ruoli
-↓
-Motori
+Ogni componente deve avere una sola responsabilità.
 
-E NON:
+Quando un file inizia a svolgere più ruoli significa che deve essere riprogettato.
 
-Matteo
-↓
-Chiara
-↓
-Alice
-↓
-Logiche dedicate
+Non si estraggono file per diminuire il numero di righe.
+
+Si estraggono responsabilità.
 
 ---
 
-## CLOUD
+## Separazione delle responsabilità
 
-L'architettura dovrà prevedere una futura sorgente dati condivisa.
+La logica non deve vivere nella UI.
 
-Obiettivo:
+Ogni livello del sistema ha uno scopo preciso.
 
-* PC
-* telefono
-* tablet
+Store conservano.
 
-devono leggere gli stessi dati.
+Engine elaborano.
 
-La sincronizzazione sostituirà le attuali procedure manuali di esportazione/importazione.
+Builder preparano.
 
----
+ViewModel rappresentano.
 
-## RUOLI FUTURI
+Widget mostrano.
 
-L'architettura dovrà supportare:
-
-### Amministratore
-
-* gestione famiglia
-* gestione utenti
-* gestione permessi
-
-### Adulto
-
-* utilizzo moduli autorizzati
-
-### Accesso limitato
-
-* accesso parziale ai moduli
-
-### Utente esterno autorizzato
-
-* accesso limitato a specifiche aree
-
-Esempi:
-
-* babysitter
-* allenatore
-* insegnante
-* commercialista
+Ogni violazione di questa regola aumenta l'accoppiamento del sistema.
 
 ---
 
-## OBIETTIVO
+## Progettazione prima del codice
 
-Trasformare progressivamente FrodoDesk da:
+Prima di creare qualsiasi nuovo componente è obbligatorio comprenderne la responsabilità.
 
-"sistema reale della famiglia attuale"
+Non vengono creati Builder, Engine o ViewModel "nel dubbio".
 
-a:
-
-"motore universale di organizzazione della vita familiare".
-
-
-# MODELS
-
-I models rappresentano le strutture dati del sistema.
-
-Contengono solo dati, senza logica complessa.
-
-Esempi:
-
-DayOverride  
-DiseasePeriod  
-RealEvent  
-WeekIdentity  
+Ogni nuovo componente nasce soltanto quando la sua funzione è chiaramente definita.
 
 ---
 
-# LOGIC
+## Evoluzione incrementale
 
-La cartella `logic` contiene la logica reale del sistema.
+Le modifiche importanti vengono sempre affrontate attraverso piccoli passi.
 
-Qui non deve vivere la UI.
+Ogni micro-step deve:
 
-La logica è divisa in due grandi gruppi:
+- compilare;
+- funzionare;
+- poter essere verificato nell'app;
+- terminare con un commit Git.
 
-- engines
-- stores
-
----
-
-# ENGINES (MOTORI)
-
-TurnEngine  
-CoverageEngine  
-EmergencyDayLogic  
-FourthShiftCycleLogic  
+Non sono ammessi grandi refactoring non verificabili.
 
 ---
 
-# STORES (STATO SISTEMA)
+## Continuità delle milestone
 
-OverrideStore  
-DiseasePeriodStore  
-FeriePeriodStore  
-SupportNetworkStore  
-RealEventStore  
-AliceEventStore  
+Ogni milestone ha un solo obiettivo.
 
----
+Durante una milestone non si cambia strategia.
 
-# UI
+Se emerge un'idea migliore:
 
-La UI collega i moduli senza mescolare la logica.
+- la milestone corrente viene completata;
+- la nuova idea viene pianificata nella milestone successiva.
 
-Schermata principale attuale:
-
-Calendario reale.
-
-File principale:
-
-lib/screens/calendario_screen_stepa.dart
+Questo garantisce stabilità evolutiva e semplicità di manutenzione.
 
 ---
 
-# 🔄 AGGIORNAMENTO 11 Maggio 2026
+# ARCHITETTURA UFFICIALE
 
-# NUOVA DIREZIONE ARCHITETTURALE — PRESENZA REALE
+A partire dalla milestone H6 tutta l'architettura di FrodoDesk segue ufficialmente questa gerarchia.
 
-## PRINCIPIO
+```text
+Store
+   ↓
+Engine
+   ↓
+Builder
+   ↓
+ViewModel
+   ↓
+Widget
+```
 
-Il sistema sta evolvendo da:
+Questa rappresenta la direzione del flusso delle responsabilità.
 
-❌ simulazione eventi
-
-👉 a
-
-✔ simulazione presenza reale della famiglia nel tempo
-
----
-
-# PROBLEMA ARCHITETTURALE IDENTIFICATO
-
-La presenza reale di Alice è oggi distribuita tra più moduli:
-
-- SchoolStore
-- AliceEventStore
-- RealEventStore
-- SupportNetworkStore
-- CoverageEngine
-- Home
-- Stato Ora
-
-Questo crea rischio futuro di:
-
-❌ duplicazioni logiche  
-❌ incoerenze  
-❌ falsi buchi  
-❌ divergenza Home ↔ Calendario ↔ Coverage  
+Non deve essere invertita.
 
 ---
 
-# NUOVA DIREZIONE DECISA
+# RESPONSABILITÀ DEI LIVELLI
 
-La presenza reale deve essere centralizzata.
+## Store
 
----
+Gli Store rappresentano la sorgente ufficiale dei dati.
 
-# NUOVO ENGINE PREVISTO
-
-## alice_presence_engine.dart
+Sono la "Single Source of Truth" del sistema.
 
 Responsabilità:
 
-✔ determinare dove si trova Alice realmente  
-✔ determinare se Alice è a casa  
-✔ determinare se Alice è dentro evento reale  
-✔ determinare se Alice è accompagnata  
-✔ determinare se Alice è coperta da supporto  
-✔ fornire una sola verità al sistema  
+- mantenere lo stato;
+- leggere i dati;
+- salvare i dati;
+- notificare le modifiche.
+
+Gli Store non devono conoscere la UI.
+
+Non preparano dati grafici.
+
+Non prendono decisioni di business.
 
 ---
 
-# PRINCIPIO ARCHITETTURALE NUOVO
+## Engine
 
-CoverageEngine NON deve continuare ad accumulare logiche presenza Alice.
+Gli Engine rappresentano il cervello del sistema.
 
-👉 deve leggere una sorgente unica.
+Applicano regole.
 
----
+Interpretano i dati.
 
-# FLUSSO FUTURO CORRETTO
+Producono risultati.
 
-SchoolStore
-↓
-AliceEventStore
-↓
-RealEventStore
-↓
-SupportNetworkStore
-↓
-alice_presence_engine.dart
-↓
-CoverageEngine / Home / IPS / UI
+Responsabilità:
+
+- business logic;
+- simulazioni;
+- calcoli;
+- interpretazione dello stato.
+
+Gli Engine non devono conoscere Widget o ViewModel.
 
 ---
 
-# NUOVO CONCETTO STRUTTURALE
+## Builder
 
-Il sistema deve distinguere:
+I Builder preparano dati già elaborati dai motori.
 
-- evento
-- posizione reale
-- copertura reale
+Responsabilità:
 
----
+- aggregazione;
+- trasformazione;
+- composizione;
+- eliminazione delle duplicazioni.
 
-# ESEMPIO IMPORTANTE
+Un Builder non prende decisioni.
 
-Evento reale:
-
-- Matteo
-- Chiara
-- Alice
-
-NON significa:
-
-❌ Alice a casa
-
-MA:
-
-✔ famiglia fuori insieme
+Riceve dati già validi e li prepara per la rappresentazione.
 
 ---
 
-# OBIETTIVO
+## ViewModel
 
-Una sola verità centrale sulla presenza reale di Alice.
+Il ViewModel rappresenta esclusivamente ciò che serve alla UI.
 
----
+Espone dati già pronti.
 
-# DIREZIONE FUTURA
+Non contiene logica di business.
 
-Questa architettura sarà la base per:
-
-- IPS reale
-- statistiche reali
-- timeline presenza
-- comportamento autonomo futuro
-- simulazione familiare avanzata
+Un Widget dovrebbe poter essere costruito leggendo soltanto il proprio ViewModel.
 
 ---
 
-# 🔄 AGGIORNAMENTO 12 Maggio 2026
+## Widget
 
-# MOTORE PRESENZA REALE ALICE — CONSOLIDAMENTO ARCHITETTURALE
+I Widget hanno una sola responsabilità:
 
-## STATO
+visualizzare.
 
-Il motore previsto `alice_presence_engine.dart` è stato creato ed è ora attivo.
+Non effettuano elaborazioni.
 
-Non è più solo una direzione teorica.
+Non recuperano dati complessi.
 
----
+Non prendono decisioni.
 
-# NUOVI COMPONENTI ARCHITETTURALI
-
-## `lib/logic/alice_presence_engine.dart`
-
-Responsabilità attuali:
-
-✔ determinare lo stato reale di Alice su una fascia temporale  
-✔ distinguere Alice a casa  
-✔ distinguere Alice a scuola  
-✔ distinguere Alice al centro estivo  
-✔ distinguere Alice dentro evento temporizzato  
-✔ distinguere Alice dentro evento reale  
-✔ distinguere Alice accompagnata  
-✔ distinguere Alice coperta da supporto reale  
+Ricevono informazioni già preparate e le mostrano all'utente.
 
 ---
 
-## `lib/models/alice_presence_state.dart`
+# PRINCIPIO DELLE DIPENDENZE
 
-Modello centrale degli stati presenza Alice.
+Ogni livello può conoscere esclusivamente il livello immediatamente sottostante.
 
-Stati attuali:
+Schema corretto:
 
-- home
-- school
-- timedEvent
-- realEvent
-- summerCamp
-- accompanied
-- support
+```text
+Widget
+    ↓
+ViewModel
+    ↓
+Builder
+    ↓
+Engine
+    ↓
+Store
+```
 
-Stati futuri previsti:
+Sono considerate violazioni architetturali:
 
-- outsideWithFamily
-- autonomousFuture
+- Widget → Store
+- Widget → Engine
+- ViewModel → Store
+- Builder → Widget
+- Store → UI
 
----
-
-# NUOVO FLUSSO ARCHITETTURALE REALE
-
-La direzione ora è:
-
-Store reali
-↓
-AlicePresenceEngine
-↓
-CoverageEngine
-↓
-Calendario / Home / IPS futuro
+Ridurre le dipendenze significa aumentare la manutenibilità del progetto.
 
 ---
 
-# CoverageEngine — NUOVO RUOLO
+# SCHERMATE ORCHESTRATRICI
 
-CoverageEngine sta passando da:
+Le schermate non devono contenere business logic.
 
-❌ proprietario della logica presenza Alice
+Il loro compito è esclusivamente coordinare i componenti.
 
-a:
+Una schermata deve:
 
-✔ consumatore della verità fornita da AlicePresenceEngine
+- richiedere i dati;
+- costruire i ViewModel;
+- comporre i Widget.
+
+Una schermata deve poter essere letta come la descrizione della pagina e non come un insieme di algoritmi.
+
+---
+# STRUTTURA DEL PROGETTO
+
+L'organizzazione del progetto deve riflettere la separazione delle responsabilità.
+
+Ogni cartella rappresenta uno specifico livello architetturale.
+
+```text
+lib/
+│
+├── core/
+│
+├── models/
+│
+├── logic/
+│   ├── stores/
+│   ├── engines/
+│   ├── builders/
+│   └── viewmodels/
+│
+├── widgets/
+│
+├── screens/
+│
+├── services/
+│
+└── utils/
+```
+
+La struttura potrà evolvere nel tempo, ma dovrà sempre rispettare la gerarchia architetturale definita in questo documento.
 
 ---
 
-# LOGICHE GIÀ CENTRALIZZATE NEL PRESENCE ENGINE
+# MODELS
 
-✔ giorno Alice a casa  
-✔ giorno scuola normale  
-✔ centro estivo operativo  
-✔ tipo evento Alice  
-✔ periodo centro estivo  
-✔ configurazione centro estivo  
-✔ evento speciale centro estivo  
-✔ eventi temporizzati Alice ordinati  
-✔ evento reale con Alice  
-✔ copertura rete supporto  
-✔ stato presenza su fascia tramite `stateForRange()`  
+I Model rappresentano esclusivamente strutture dati.
 
----
+Non contengono logiche decisionali.
 
-# BUG CENTRO ESTIVO RISOLTO
+Possono contenere semplici helper strettamente collegati ai dati, ma non devono conoscere il resto del sistema.
 
-È stato risolto un bug strutturale del centro estivo:
+Esempi:
 
-Prima:
+- DayOverride
+- DiseasePeriod
+- RealEvent
+- WeekIdentity
+- AlicePresenceState
+- FrodoObservation
 
-❌ uscita centro estivo mostrata fino alle 18:00  
-❌ mancava il buco casa dopo rientro  
-
-Ora:
-
-✔ uscita centro estivo 16:30–16:50  
-✔ Alice a casa dopo centro estivo 16:50–21:00  
-✔ fascia Sandra sera separata 21:00–22:35  
-✔ supporto reale spezza correttamente i buchi  
+I Model devono essere riutilizzabili da qualsiasi livello dell'applicazione.
 
 ---
 
-# PRINCIPIO ARCHITETTURALE CONSOLIDATO
+# STORE
 
-Alice non deve essere interpretata da UI o da logiche sparse.
+Gli Store rappresentano il punto centrale della persistenza dello stato.
+
+Sono la sorgente ufficiale delle informazioni.
+
+Ogni dato del sistema deve avere uno Store di riferimento.
+
+Esempi attuali:
+
+- OverrideStore
+- DiseasePeriodStore
+- FeriePeriodStore
+- SupportNetworkStore
+- RealEventStore
+- AliceEventStore
+- SchoolStore
+- FinanceStore (futuro consolidamento)
+
+Gli Store non devono contenere codice dedicato alla UI.
+
+---
+
+# ENGINE
+
+Gli Engine rappresentano il livello di business.
+
+Ogni Engine deve essere indipendente dall'interfaccia grafica.
+
+Gli Engine possono utilizzare più Store contemporaneamente ma non devono conoscere Widget o schermate.
+
+Principali Engine attualmente presenti:
+
+- CoverageEngine
+- TurnEngine
+- AlicePresenceEngine
+- ObservationEngine
+- FinancePlannerEngine
+- EmergencyDayLogic
+- FourthShiftCycleLogic
+
+Ogni nuovo Engine deve risolvere un problema ben definito.
+
+---
+
+# BUILDER
+
+I Builder rappresentano uno dei pilastri introdotti durante la milestone H5.
+
+La loro responsabilità consiste nel preparare dati già elaborati dai motori.
+
+Non prendono decisioni.
+
+Non implementano business logic.
+
+Aggregano informazioni provenienti da più Engine e costruiscono strutture coerenti per uno specifico utilizzo.
+
+Esempi:
+
+- AliceEventTileViewModelBuilder
+- FamilyNowBuilder
+- SnapshotBuilder (previsto)
+- BusinessBuilder (previsto)
+
+Un Builder nasce soltanto quando esiste una responsabilità chiaramente identificata.
+
+Non vengono creati Builder "preventivi".
+
+---
+
+# VIEWMODEL
+
+I ViewModel rappresentano il contratto tra logica e interfaccia grafica.
+
+Devono contenere esclusivamente i dati necessari alla visualizzazione.
+
+Non devono conoscere Store.
+
+Non devono interrogare Engine.
+
+Non devono prendere decisioni.
+
+Esempi:
+
+- FamilyNowViewModel
+- AliceEventTileViewModel
+
+La UI deve poter essere costruita leggendo soltanto il ViewModel.
+
+---
+
+# WIDGET
+
+I Widget rappresentano l'ultimo livello dell'architettura.
+
+Ogni Widget dovrebbe avere una responsabilità molto limitata.
+
+Durante H5 il progetto è stato progressivamente suddiviso in Widget specializzati.
+
+Tra i principali:
+
+- AliceEventTile
+- AliceEventExpanded
+- AliceEventsHeader
+- AliceEventsList
+- AliceStateBanner
+- AliceSchoolHeader
+- HiddenAliceEventsLink
+- SchoolStatusBox
+- SchoolOutSummary
+- SchoolCoverageChoiceSection
+- DayOrganizationSection
+- FamilyNowCard
+
+L'obiettivo è ottenere componenti piccoli, riutilizzabili e facilmente testabili.
+
+---
+
+# SCREEN
+
+Le schermate rappresentano esclusivamente il punto di composizione della pagina.
+
+Una Screen deve:
+
+- richiedere dati;
+- coordinare Builder;
+- costruire ViewModel;
+- comporre Widget.
+
+Non deve contenere logiche di business.
+
+Il calendario reale rappresenta oggi il modello architetturale di riferimento del progetto.
+
+La milestone H5 ha trasformato il Calendario nel modulo più evoluto dal punto di vista architetturale.
+
+---
+
+# FLUSSO ARCHITETTURALE
+
+Il flusso ufficiale delle informazioni è il seguente.
+
+```text
+Store
+        ↓
+Engine
+        ↓
+Builder
+        ↓
+ViewModel
+        ↓
+Widget
+        ↓
+Screen
+```
+
+La Screen orchestra.
+
+Il Widget visualizza.
+
+Il ViewModel rappresenta.
+
+Il Builder prepara.
+
+L'Engine decide.
+
+Lo Store conserva.
+
+Ogni livello possiede una responsabilità precisa e non deve invadere quella degli altri.
+
+---
+# EVOLUZIONE ARCHITETTURALE
+
+L'architettura di FrodoDesk non è considerata definitiva.
+
+Ogni evoluzione deve perseguire un unico obiettivo:
+
+ridurre la complessità complessiva del progetto.
+
+Ogni nuova funzionalità deve aumentare le capacità del sistema senza aumentare il numero di responsabilità dei componenti esistenti.
+
+Quando questo non è possibile significa che è necessario introdurre un nuovo livello architetturale.
+
+---
+
+# ARCHITETTURA MULTI-FAMIGLIA
+
+## Decisione ufficiale
+
+A partire da giugno 2026 FrodoDesk non viene più considerato il software dedicato esclusivamente alla famiglia di sviluppo.
+
+La famiglia reale rappresenta semplicemente il primo caso di utilizzo.
+
+L'architettura deve essere progettata per funzionare con qualsiasi nucleo familiare.
+
+---
+
+## Principio
+
+I motori non devono conoscere persone specifiche.
+
+Devono ragionare tramite concetti astratti.
+
+Ad esempio:
+
+- persona;
+- ruolo;
+- relazione;
+- permessi;
+- gruppo familiare.
+
+Mai tramite nomi fissi.
+
+Schema corretto:
+
+```text
+Famiglia
+      ↓
+Persone
+      ↓
+Ruoli
+      ↓
+Motori
+```
+
+e non:
+
+```text
+Matteo
+      ↓
+Chiara
+      ↓
+Alice
+      ↓
+Business Logic
+```
+
+Questa separazione permetterà al sistema di adattarsi a qualsiasi famiglia senza modifiche strutturali.
+
+---
+
+# PERSISTENZA E CLOUD
+
+L'attuale sistema utilizza una persistenza locale con procedure di esportazione e importazione.
+
+L'architettura è però predisposta per una futura sincronizzazione centralizzata.
+
+Obiettivo:
+
+- PC;
+- smartphone;
+- tablet;
+
+devono condividere la stessa sorgente dati.
+
+Il cloud dovrà sostituire progressivamente le attuali procedure manuali mantenendo invariata l'architettura dei livelli superiori.
+
+---
+
+# GESTIONE RUOLI
+
+L'architettura è predisposta per supportare differenti tipologie di utenti.
+
+Ruoli previsti:
+
+### Amministratore
+
+Gestisce:
+
+- famiglia;
+- configurazione;
+- utenti;
+- permessi.
+
+---
+
+### Adulto
+
+Può utilizzare tutti i moduli autorizzati.
+
+---
+
+### Accesso limitato
+
+Può consultare esclusivamente una parte delle informazioni.
+
+---
+
+### Utente esterno
+
+Accesso limitato a specifici moduli.
+
+Esempi:
+
+- babysitter;
+- insegnante;
+- allenatore;
+- commercialista;
+- consulenti.
+
+L'intero sistema dovrà basarsi sui permessi e non su verifiche distribuite nei singoli moduli.
+
+---
+
+# PRESENCE ENGINE
+
+Il Presence Engine rappresenta uno dei pilastri principali di FrodoDesk.
+
+Il suo obiettivo è fornire una sola verità sulla posizione reale dei membri della famiglia.
 
 La domanda:
 
-👉 “Dove si trova realmente Alice in questa fascia?”
+> "Dove si trova realmente una persona in questo momento?"
 
-deve essere gestita da una sorgente centrale:
-
-👉 `AlicePresenceEngine`
+deve ricevere una sola risposta valida per tutto il sistema.
 
 ---
 
-# PROSSIMA DIREZIONE ARCHITETTURALE
+## AlicePresenceEngine
 
-Continuare la pulizia progressiva di CoverageEngine:
+Attualmente il primo motore completamente consolidato riguarda Alice.
 
-⬜ eliminare residui legacy  
-⬜ valutare spostamento segmentazione eventi Alice  
-⬜ valutare spostamento tagli temporali  
-⬜ solo dopo collegare Home direttamente alla stessa verità  
-⬜ IPS solo dopo consolidamento completo  
+Responsabilità:
 
----
+- presenza a casa;
+- scuola;
+- centro estivo;
+- eventi temporizzati;
+- eventi reali;
+- accompagnamento;
+- rete di supporto.
 
-# 🔄 AGGIORNAMENTO GIUGNO 2026
-
-# OBSERVATION ENGINE — NUOVO PILASTRO ARCHITETTURALE
-
-## PRINCIPIO
-
-FrodoDesk non deve limitarsi a registrare dati.
-
-FrodoDesk deve:
-
-✔ osservare
-✔ interpretare
-✔ ordinare
-✔ raccontare
-✔ aiutare a decidere
+Tutti gli altri moduli devono leggere questa informazione senza reinterpretarla.
 
 ---
 
-# NUOVO CONCETTO CENTRALE
+## Principio
 
-È stato introdotto il concetto di:
+La presenza reale viene determinata una sola volta.
 
-## `FrodoObservation`
+Successivamente viene semplicemente consumata da:
 
-Una osservazione non è una notifica.
+- Coverage Engine;
+- Home;
+- Calendario;
+- statistiche;
+- futuri moduli.
 
-È un oggetto vivo che rappresenta qualcosa che FrodoDesk ha capito dalla vita reale della famiglia.
-
----
-
-# OSSERVAZIONI VIVE
-
-Una osservazione può essere:
-
-* attiva
-* risolta
-* ignorata
-* scaduta
-
-Può avere:
-
-* priorità
-* peso
-* livello
-* categoria
-* motivazione
-* scadenza
-* azione collegata
-* tag
-* collegamento al modulo sorgente
+Questo elimina duplicazioni e riduce il rischio di incoerenze.
 
 ---
 
-# LIVELLI OSSERVAZIONE
+# COVERAGE ENGINE
 
-Livelli ufficiali:
+Il Coverage Engine rappresenta il motore che verifica la copertura della famiglia.
 
-* info
-* attention
-* problem
-* opportunity
-* success
+Con H5 il suo ruolo è stato progressivamente ridotto.
 
----
+Non deve più interpretare direttamente la presenza reale.
 
-# NUOVI COMPONENTI ARCHITETTURALI
+Il suo compito consiste nel leggere le informazioni prodotte dal Presence Engine e valutare esclusivamente la copertura.
 
-Creati:
-
-```text
-lib/models/frodo_observation.dart
-lib/engines/observation/observation_engine.dart
-lib/engines/observation/observation_provider.dart
-lib/engines/observation/observation_registry.dart
-lib/engines/observation/modules/spese_observation_provider.dart
-lib/core/frododesk_bootstrap.dart
-```
+Questa separazione rappresenta una delle decisioni architetturali più importanti del progetto.
 
 ---
 
 # OBSERVATION ENGINE
 
-Responsabilità iniziali:
+L'Observation Engine costituisce un nuovo pilastro dell'architettura.
 
-✔ raccogliere osservazioni dai provider registrati
-✔ filtrare osservazioni attive
-✔ ignorare osservazioni scadute
-✔ ordinare per livello, priorità e peso
-✔ selezionare le osservazioni migliori per la Home
+FrodoDesk non deve limitarsi a registrare dati.
 
----
+Deve interpretarli.
 
-# OBSERVATION PROVIDER
+Ogni osservazione nasce dalla risposta a una domanda significativa sulla vita reale della famiglia.
 
-Ogni modulo futuro potrà produrre osservazioni tramite un provider.
+Le osservazioni vengono prodotte dai singoli moduli tramite Provider dedicati.
 
-Esempi previsti:
-
-```text
-SpeseObservationProvider
-FinanceObservationProvider
-CoverageObservationProvider
-CalendarObservationProvider
-HealthObservationProvider
-```
-
-Il motore centrale non deve conoscere direttamente i singoli moduli.
-
----
-
-# OBSERVATION REGISTRY
-
-È stato introdotto un registro centrale dei provider.
-
-Principio:
+Schema:
 
 ```text
 Modulo
-↓
-Provider
-↓
-ObservationRegistry
-↓
-ObservationEngine
-↓
-Home / Dashboard / Moduli
+      ↓
+Observation Provider
+      ↓
+Observation Registry
+      ↓
+Observation Engine
+      ↓
+Home
 ```
+
+La Home non interpreta.
+
+Visualizza esclusivamente osservazioni già elaborate.
 
 ---
 
 # BOOTSTRAP
 
-È stato introdotto il concetto di bootstrap centrale:
-
-```text
-FrodoDeskBootstrap
-```
+L'inizializzazione dei motori viene centralizzata nel bootstrap del sistema.
 
 Responsabilità:
 
-✔ inizializzare registri
-✔ registrare provider
-✔ preparare i motori centrali
-✔ evitare inizializzazioni sparse nel progetto
+- registrazione provider;
+- inizializzazione motori;
+- configurazione servizi comuni.
+
+L'obiettivo è eliminare inizializzazioni distribuite all'interno delle schermate.
 
 ---
 
-# MODULO SPESE COME PRIMO CASO REALE
+# FINANCE PLANNER
 
-Il modulo Spese è il primo modulo collegato al nuovo sistema osservazioni.
+Il modulo Finanze sta evolvendo verso un motore decisionale.
 
-Creato:
+L'architettura prevista è la seguente.
 
 ```text
-SpeseMonthReader
-SpeseObservationProvider
-```
-
-Il modulo Spese ora può produrre osservazioni come:
-
-* destinazione principale delle spese
-* categoria più pesante
-* confronto con mese precedente
-* concentrazione temporale delle spese
-* volume movimenti registrati
-* totale mese
-
----
-
-# NUOVO PRINCIPIO ARCHITETTURALE
-
-La Home NON deve analizzare.
-
-La Home deve leggere osservazioni già prodotte dai motori.
-
-Principio corretto:
-
-```text
-Motori reali
-↓
-ObservationProvider
-↓
-ObservationEngine
-↓
-Home
-```
-
-E NON:
-
-```text
-Home
-↓
-logiche proprie
-↓
-interpretazioni duplicate
-```
-
----
-
-# PRINCIPIO DELLE DOMANDE
-
-Ogni osservazione nasce dalla risposta a una domanda reale.
-
-Esempi:
-
-* Alice è coperta?
-* Questo mese cosa ha pesato di più?
-* Il fondo auto è sufficiente?
-* Ci sono anomalie?
-* La famiglia sta migliorando o peggiorando?
-* Cosa richiede attenzione oggi?
-
-Da ora FrodoDesk non deve progettare solo funzioni.
-
-Deve progettare domande utili alla vita reale.
-
----
-
-# SIGNIFICATO STRUTTURALE
-
-L’Observation Engine diventa un nuovo pilastro di FrodoDesk insieme a:
-
-* Coverage Engine
-* Finance Engine
-* Presence Engine
-* Persistence / Bootstrap
-* Observation Engine
-
----
-
-# FRASE GUIDA
-
-FrodoDesk non registra la vita.
-
-La osserva, la comprende e la restituisce in forma utile.
-
----
-
-# 🔄 AGGIORNAMENTO GIUGNO 2026
-
-# FINANCE PLANNER ENGINE — NUOVO PILASTRO DECISIONALE
-
-## PRINCIPIO
-
-Il modulo Finanze evolve da semplice simulatore economico a motore decisionale.
-
-Il Planner non genera più direttamente scenari e raccomandazioni.
-
-Analizza prima ogni singola voce economica e costruisce successivamente le proposte per l'utente.
-
----
-
-# NUOVA ARCHITETTURA
-
-Il Planner viene suddiviso in componenti indipendenti.
-
-Struttura ufficiale:
-
 FinancePlannerEngine
-
-↓
-
+            ↓
 PlannerDecisionEngine
-
-↓
-
+            ↓
 PlannerDecision
-
-↓
-
+            ↓
 PlannerScenarioBuilder
-
-↓
-
+            ↓
 PlannerRecommendationBuilder
-
-↓
-
+            ↓
 FinancePlannerResult
-
-↓
-
-FinanceObservationReader
-
-↓
-
+            ↓
 Observation Engine
-
-↓
-
+            ↓
 UI
+```
 
----
+Ogni componente svolge una sola responsabilità.
 
-# PLANNER DECISION
+Le decisioni economiche vengono prese prima della costruzione degli scenari.
 
-Viene introdotto il concetto di decisione economica.
-
-Ogni ricorrenza viene trasformata in una decisione motivata.
-
-Una decisione rappresenta il comportamento che il Planner ritiene più corretto per quella specifica voce economica.
-
-Esempi:
-
-* payNow
-* keepCovered
-* waitIncome
-* delay
-* useFunds
-* blocked
-* monitor
-
----
-
-# DECISION ENGINE
-
-Il Decision Engine rappresenta il cervello del Planner.
-
-Responsabilità:
-
-✔ analizzare ogni ricorrenza singolarmente
-
-✔ applicare regole economiche
-
-✔ attribuire priorità
-
-✔ produrre decisioni spiegabili
-
-Il Decision Engine NON costruisce scenari.
-
-Produce esclusivamente decisioni.
-
----
-
-# SCENARIO BUILDER
-
-Lo Scenario Builder non contiene logiche economiche.
-
-Riceve le decisioni prodotte dal Decision Engine e costruisce automaticamente:
-
-* scenario consigliato
-* scenario alternativo
-* passi operativi
-
-In questo modo gli scenari non sono più scritti manualmente.
-
----
-
-# RECOMMENDATION BUILDER
-
-Le raccomandazioni vengono generate automaticamente a partire dalle decisioni.
-
-Il builder traduce il ragionamento del Planner in suggerimenti leggibili dall'utente.
-
----
-
-# SEPARAZIONE DELLE RESPONSABILITÀ
-
-Decisione architetturale ufficiale:
-
-FinancePlannerEngine
-
-coordina il processo.
-
-PlannerDecisionEngine
-
-decide.
-
-PlannerScenarioBuilder
-
-racconta gli scenari.
-
-PlannerRecommendationBuilder
-
-genera le raccomandazioni.
-
-Ogni componente possiede una sola responsabilità.
-
----
-
-# PRIME REGOLE DECISIONALI
-
-La prima versione del motore introduce:
-
-* RID non spostabili;
-* priorità delle spese critiche;
-* valutazione delle entrate imminenti;
-* distinzione tra spese rimandabili e non rimandabili.
-
-Le regole sono indipendenti dall'interfaccia grafica.
+Gli scenari rappresentano una conseguenza delle decisioni e non il contrario.
 
 ---
 
 # DIREZIONE FUTURA
 
-L'architettura è predisposta per una crescita progressiva del Planner.
+Le prossime milestone dovranno consolidare ulteriormente l'architettura introducendo progressivamente:
 
-Ogni nuova regola dovrà essere aggiunta senza modificare i componenti già esistenti.
+- Business Builder;
+- Snapshot Builder;
+- FamilyNow Builder;
+- ulteriore alleggerimento delle Screen;
+- riduzione definitiva delle responsabilità dei motori più complessi.
 
-L'obiettivo è costruire un motore decisionale estensibile, spiegabile e facilmente manutenibile.
+Ogni nuovo componente dovrà nascere esclusivamente da una responsabilità chiaramente individuata.
+
+---
+# CRONOLOGIA EVOLUTIVA
+
+L'architettura di FrodoDesk è cresciuta progressivamente.
+
+Le decisioni riportate di seguito rappresentano l'evoluzione reale del progetto e costituiscono parte integrante della sua storia.
 
 ---
 
-# NUOVO PRINCIPIO ARCHITETTURALE
+# MARZO 2026
 
-Il Planner non deve più ragionare sul mese.
+## Architettura modulare
 
-Deve ragionare sulle singole entità economiche.
+La prima architettura ufficiale introduce la separazione tra:
 
-Le simulazioni del mese diventano una conseguenza delle decisioni prese sulle singole voci economiche.
+- Models
+- Logic
+- Widgets
+- Screens
+
+Viene definito un primo principio fondamentale:
+
+la logica non deve vivere nella UI.
+
+La cartella `logic` raccoglie sia gli Engine che gli Store.
+
+L'obiettivo principale è permettere la modifica di un modulo senza compromettere gli altri.
+
+Questa rappresenta la base dell'intero progetto.
+
+---
+
+# MAGGIO 2026
+
+## Presenza reale
+
+Durante lo sviluppo emerge un nuovo problema architetturale.
+
+La presenza reale di Alice viene calcolata da numerosi moduli differenti.
+
+Questo genera:
+
+- duplicazioni;
+- incoerenze;
+- punti di manutenzione multipli.
+
+Nasce così il concetto di **Presence Engine**.
+
+La presenza viene centralizzata.
+
+Il Coverage Engine smette progressivamente di interpretare la posizione di Alice e diventa consumatore di una sorgente unica.
+
+Questo rappresenta il primo grande processo di centralizzazione della logica del progetto.
+
+---
+
+# MAGGIO 2026
+
+## AlicePresenceEngine
+
+Il motore di presenza viene implementato.
+
+Nascono:
+
+- AlicePresenceEngine;
+- AlicePresenceState.
+
+Da questo momento ogni domanda relativa alla posizione reale di Alice deve ricevere una sola risposta valida per tutto il sistema.
+
+La presenza non viene più ricostruita dalla UI o da logiche distribuite.
+
+---
+
+# GIUGNO 2026
+
+## Observation Engine
+
+Il progetto evolve ulteriormente.
+
+FrodoDesk non deve più limitarsi a registrare informazioni.
+
+Deve comprenderle.
+
+Nasce il concetto di:
+
+**FrodoObservation**
+
+Ogni modulo può produrre osservazioni tramite Provider dedicati.
+
+L'Observation Engine raccoglie, ordina e restituisce alla Home esclusivamente le osservazioni più rilevanti.
+
+Viene introdotto anche il Bootstrap centrale del progetto.
+
+Questa evoluzione segna il passaggio da gestionale a sistema decisionale.
+
+---
+
+# GIUGNO 2026
+
+## Finance Planner
+
+Il modulo Finanze evolve verso un motore decisionale.
+
+Le simulazioni non vengono più costruite direttamente.
+
+Prima vengono prodotte decisioni economiche.
+
+Successivamente vengono costruiti:
+
+- scenari;
+- raccomandazioni;
+- osservazioni.
+
+Questo consente al Planner di crescere senza aumentare la complessità.
+
+---
+
+# H5 — GIUGNO/LUGLIO 2026
+
+## Rifattorizzazione architetturale
+
+La milestone H5 rappresenta il più importante intervento architetturale realizzato fino a oggi.
+
+L'obiettivo non era introdurre nuove funzionalità.
+
+L'obiettivo era ridurre le responsabilità dei componenti mantenendo invariato il comportamento dell'applicazione.
+
+Durante H5 vengono introdotti stabilmente:
+
+- Builder;
+- ViewModel;
+- Widget dedicati;
+- schermate orchestratrici;
+- separazione rigorosa delle responsabilità.
+
+Il Calendario diventa il modulo architetturalmente più evoluto dell'intero progetto.
+
+L'applicazione mantiene lo stesso comportamento funzionale, ma con una struttura molto più semplice da comprendere ed evolvere.
+
+---
+
+# H6 — DIREZIONE UFFICIALE
+
+Con H5 conclusa, il progetto entra ufficialmente nella milestone H6.
+
+L'obiettivo non è più rifattorizzare la UI.
+
+L'attenzione si sposta sui motori.
+
+Le principali attività previste sono:
+
+- completamento del refactoring di FamilyNow;
+- riduzione delle responsabilità residue del Coverage Engine;
+- consolidamento del Presence Engine;
+- introduzione dei Business Builder;
+- introduzione degli Snapshot Builder;
+- ulteriore alleggerimento delle schermate.
+
+Ogni modifica dovrà seguire rigorosamente il metodo consolidato durante H5.
+
+---
+
+# METODO DI LAVORO UFFICIALE
+
+Ogni futura evoluzione del progetto dovrà seguire questa sequenza.
+
+1. Analisi.
+
+2. Progettazione.
+
+3. Un solo micro-step.
+
+4. Compilazione.
+
+5. Verifica nell'app.
+
+6. Commit Git.
+
+7. Passo successivo.
+
+Non sono ammessi:
+
+- grandi modifiche contemporanee;
+- Builder lasciati incompleti;
+- file creati senza responsabilità definita;
+- cambi di strategia durante una milestone.
+
+---
+
+# OBIETTIVO ARCHITETTURALE
+
+FrodoDesk non deve diventare un progetto grande.
+
+Deve diventare un progetto ordinato.
+
+Ogni nuova funzionalità dovrà ridurre la complessità percepita del sistema.
+
+L'architettura rappresenta un patrimonio del progetto e dovrà essere trattata con la stessa cura riservata al codice.
+
+---
+
+# FRASE GUIDA
+
+> **La qualità architetturale ha lo stesso valore della correttezza funzionale.**
+
+Un sistema che funziona ma non è in grado di evolvere non può essere considerato completato.
+
+---
+
+**FINE DOCUMENTO**

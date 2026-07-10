@@ -1456,3 +1456,200 @@ Anche nel sistema multi-famiglia resta valida la regola storica:
 👉 il sistema suggerisce
 
 👉 la decisione resta sempre umana
+
+---
+
+# 🔴 CONSOLIDAMENTO METODOLOGICO — H5 (LUGLIO 2026)
+
+## PRINCIPIO
+
+Durante H5 è stato consolidato il metodo ufficiale di sviluppo di FrodoDesk.
+
+L'obiettivo non è più soltanto scrivere codice funzionante.
+
+L'obiettivo è costruire un'architettura che possa evolvere per anni mantenendo il comportamento stabile.
+
+---
+
+## REGOLA — UNA RESPONSABILITÀ
+
+Ogni nuova classe deve avere una sola responsabilità.
+
+Se una classe richiede più di una frase per essere descritta, probabilmente contiene più responsabilità e deve essere ripensata.
+
+---
+
+## REGOLA — GERARCHIA ARCHITETTURALE
+
+Ogni nuova funzionalità deve rispettare il seguente schema:
+
+Store
+
+↓
+
+Engine
+
+↓
+
+Builder
+
+↓
+
+ViewModel
+
+↓
+
+Widget
+
+Responsabilità:
+
+Store
+→ sorgente della verità.
+
+Engine
+→ logica di business.
+
+Builder
+→ preparazione dei dati.
+
+ViewModel
+→ rappresentazione pronta per la UI.
+
+Widget
+→ sola visualizzazione.
+
+È vietato invertire queste responsabilità.
+
+---
+
+## REGOLA — SCHERMATE ORCHESTRATRICI
+
+Le schermate non devono contenere logiche di business.
+
+Devono limitarsi a:
+
+✔ coordinare i componenti;
+
+✔ gestire callback;
+
+✔ comporre la UI.
+
+Ogni nuova logica deve essere valutata prima nei motori dedicati.
+
+---
+
+## REGOLA — VIEWMODEL
+
+Quando un widget necessita di molti parametri o di trasformazioni dei dati, deve essere introdotto un ViewModel.
+
+Il ViewModel rappresenta tutto ciò che il widget deve mostrare.
+
+Non deve contenere logica di business.
+
+---
+
+## REGOLA — BUILDER
+
+Un Builder non nasce per spostare codice.
+
+Nasce per preparare dati.
+
+È vietato creare Builder privi di una responsabilità chiaramente definita.
+
+---
+
+## REGOLA — REFATTORIZZAZIONE
+
+Una estrazione è considerata corretta solo quando:
+
+✔ riduce realmente una responsabilità;
+
+✔ mantiene il comportamento invariato;
+
+✔ migliora la leggibilità del progetto.
+
+Ridurre il numero di righe non costituisce, da solo, un motivo sufficiente.
+
+---
+
+## REGOLA — ANALISI PREVENTIVA
+
+Prima di intervenire su una sezione complessa:
+
+1. analizzare il file reale;
+
+2. individuare le responsabilità;
+
+3. definire il punto di arrivo;
+
+4. solo dopo iniziare il primo micro-step.
+
+È preferibile investire tempo nell'analisi piuttosto che introdurre modifiche impulsive.
+
+---
+
+## REGOLA — MICRO STEP
+
+Ogni modifica deve seguire il ciclo:
+
+Analisi
+
+↓
+
+Una modifica
+
+↓
+
+Compilazione
+
+↓
+
+Verifica nell'app
+
+↓
+
+Commit Git
+
+↓
+
+Passo successivo
+
+È vietato accumulare modifiche non verificate.
+
+---
+
+## REGOLA — MILESTONE
+
+Una milestone viene considerata conclusa solo quando:
+
+✔ comportamento invariato;
+
+✔ compilazione pulita;
+
+✔ commit completato;
+
+✔ documentazione aggiornata.
+
+---
+
+## REGOLA — CONTINUITÀ ARCHITETTURALE
+
+Una milestone non deve cambiare direzione durante il proprio svolgimento.
+
+Se emerge una strategia migliore:
+
+✔ si conclude la milestone corrente;
+
+✔ la nuova strategia viene applicata dalla milestone successiva.
+
+Questo evita refactoring incompleti e perdita del filo logico.
+
+---
+
+## PRINCIPIO FINALE
+
+FrodoDesk deve evolvere aumentando la qualità dell'architettura e diminuendo progressivamente la complessità del codice.
+
+La semplicità non rappresenta un obiettivo estetico.
+
+Rappresenta una caratteristica strutturale del progetto.
