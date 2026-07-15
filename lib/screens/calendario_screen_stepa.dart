@@ -74,6 +74,9 @@ import '../logic/calendar/builders/family_now_view_model_builder.dart';
 import '../widgets/calendar/family_now_card.dart';
 import '../logic/calendar/builders/family_adult_now_details_builder.dart';
 import '../widgets/calendar/family_adult_now_dialog.dart';
+import '../logic/calendar/builders/alice_day_context_builder.dart';
+import '../logic/calendar/builders/alice_now_details_builder.dart';
+import '../widgets/calendar/alice_now_dialog.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -3926,6 +3929,18 @@ class _CalendarioScreenStepAStabileState
       events: selectedDayEvents,
     );
 
+    final aliceDayContext = AliceDayContextBuilder(
+      coreStore,
+    ).build(_selectedDay);
+
+    final aliceDetails = const AliceNowDetailsBuilder().build(
+      context: aliceDayContext,
+      day: _selectedDay,
+      now: familyNowSnapshot.now,
+      nowLabel: familyNowViewModel.alice.label,
+      visual: familyNowViewModel.alice.visual,
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: InkWell(
@@ -3981,291 +3996,7 @@ class _CalendarioScreenStepAStabileState
                 showDialog(
                   context: context,
                   builder: (context) {
-                    final aliceSpecialEvents = coreStore.aliceSpecialEventStore
-                        .eventsForDay(_selectedDay);
-
-                    final aliceRealEvents = coreStore.realEventStore
-                        .eventsForDay(_selectedDay)
-                        .where((e) => e.personKey == 'alice')
-                        .toList();
-
-                    final alicePeriod = coreStore.aliceEventStore
-                        .getEventForDay(_selectedDay);
-
-                    String fmtTime(TimeOfDay? t) {
-                      if (t == null) return '--:--';
-                      final hh = t.hour.toString().padLeft(2, '0');
-                      final mm = t.minute.toString().padLeft(2, '0');
-                      return '$hh:$mm';
-                    }
-
-                    String periodLabel(AliceEventType type) {
-                      switch (type) {
-                        case AliceEventType.schoolNormal:
-                          return "Scuola";
-                        case AliceEventType.vacation:
-                          return "Vacanza";
-                        case AliceEventType.schoolClosure:
-                          return "Scuola chiusa";
-                        case AliceEventType.sickness:
-                          return "Malattia";
-                        case AliceEventType.summerCamp:
-                          return "Centro estivo";
-                      }
-                    }
-
-                    final List<Map<String, dynamic>> aliceDayEvents = [];
-
-                    if (alicePeriod != null) {
-                      if (alicePeriod.type == AliceEventType.schoolNormal) {
-                        final isRealSchoolDay = coreStore.schoolStore
-                            .hasSchoolOn(_selectedDay);
-
-                        if (isRealSchoolDay) {
-                          final schoolStart = _scuolaStart;
-                          final schoolEnd =
-                              _effUscitaAnticipataAt(_selectedDay) ??
-                              _effSchoolOutEnd(_selectedDay);
-
-                          aliceDayEvents.add({
-                            'title': "Scuola",
-                            'start': schoolStart,
-                            'end': schoolEnd,
-                          });
-                        }
-                      } else if (alicePeriod.type ==
-                          AliceEventType.summerCamp) {
-                        aliceDayEvents.add({
-                          'title': "Centro estivo",
-                          'start':
-                              alicePeriod.summerCampStart ??
-                              const TimeOfDay(hour: 8, minute: 30),
-                          'end':
-                              alicePeriod.summerCampEnd ??
-                              const TimeOfDay(hour: 16, minute: 30),
-                        });
-                      }
-                    } else {
-                      final isRealSchoolDay =
-                          coreStore.schoolStore
-                              .activePeriodForDay(_selectedDay)
-                              ?.weekConfig
-                              .forWeekday(_selectedDay.weekday)
-                              .enabled ??
-                          false;
-
-                      if (isRealSchoolDay) {
-                        final schoolStart = _scuolaStart;
-                        final schoolEnd =
-                            _effUscitaAnticipataAt(_selectedDay) ??
-                            _effSchoolOutEnd(_selectedDay);
-
-                        aliceDayEvents.add({
-                          'title': "Scuola",
-                          'start': schoolStart,
-                          'end': schoolEnd,
-                        });
-                      }
-                    }
-
-                    for (final e in aliceSpecialEvents) {
-                      aliceDayEvents.add({
-                        'title': e.label,
-                        'start': e.start,
-                        'end': e.end,
-                      });
-                    }
-
-                    for (final e in aliceRealEvents) {
-                      aliceDayEvents.add({
-                        'title': e.title,
-                        'start': e.startTime,
-                        'end': e.endTime,
-                      });
-                    }
-
-                    aliceDayEvents.sort((a, b) {
-                      final aStart = a['start'] as TimeOfDay?;
-                      final bStart = b['start'] as TimeOfDay?;
-
-                      final aMin = aStart == null
-                          ? 9999
-                          : aStart.hour * 60 + aStart.minute;
-                      final bMin = bStart == null
-                          ? 9999
-                          : bStart.hour * 60 + bStart.minute;
-
-                      return aMin.compareTo(bMin);
-                    });
-
-                    DateTime toDateTime(TimeOfDay? t, {bool endOfDay = false}) {
-                      if (t == null) {
-                        return DateTime(
-                          _selectedDay.year,
-                          _selectedDay.month,
-                          _selectedDay.day,
-                          endOfDay ? 23 : 0,
-                          endOfDay ? 59 : 0,
-                        );
-                      }
-
-                      return DateTime(
-                        _selectedDay.year,
-                        _selectedDay.month,
-                        _selectedDay.day,
-                        t.hour,
-                        t.minute,
-                      );
-                    }
-
-                    final alicePastEvents = aliceDayEvents.where((e) {
-                      final end = toDateTime(
-                        e['end'] as TimeOfDay?,
-                        endOfDay: true,
-                      );
-                      return familyNowSnapshot.now.isAfter(end);
-                    }).toList();
-
-                    final aliceNowEvents = aliceDayEvents.where((e) {
-                      final start = toDateTime(e['start'] as TimeOfDay?);
-                      final end = toDateTime(
-                        e['end'] as TimeOfDay?,
-                        endOfDay: true,
-                      );
-                      return familyNowSnapshot.now.isAfter(start) &&
-                          familyNowSnapshot.now.isBefore(end);
-                    }).toList();
-
-                    final aliceFutureEvents = aliceDayEvents.where((e) {
-                      final start = toDateTime(e['start'] as TimeOfDay?);
-                      return familyNowSnapshot.now.isBefore(start);
-                    }).toList();
-
-                    Widget buildEventLine({
-                      required String prefix,
-                      required Map<String, dynamic> event,
-                      Color? color,
-                      FontWeight fontWeight = FontWeight.normal,
-                    }) {
-                      final start = event['start'] as TimeOfDay?;
-                      final end = event['end'] as TimeOfDay?;
-                      final title = event['title'] as String;
-
-                      final timeText = (start != null || end != null)
-                          ? " ${fmtTime(start)} - ${fmtTime(end)}"
-                          : "";
-
-                      return Text(
-                        "$prefix$title$timeText",
-                        style: TextStyle(color: color, fontWeight: fontWeight),
-                      );
-                    }
-
-                    return AlertDialog(
-                      title: const Text("Alice"),
-                      content: SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "Stato attuale",
-                              style: TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              familyNowSnapshot.aliceNowLabel,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                color: familyNowSnapshot.aliceVisual.color,
-                              ),
-                            ),
-                            if (alicePeriod != null &&
-                                alicePeriod.type !=
-                                    AliceEventType.schoolNormal) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                "Stato giorno: ${periodLabel(alicePeriod.type)}",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.black.withOpacity(0.7),
-                                ),
-                              ),
-                            ],
-                            const SizedBox(height: 16),
-                            const Text(
-                              "Eventi della giornata",
-                              style: TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                            const SizedBox(height: 10),
-                            const Text(
-                              "Prima",
-                              style: TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                            const SizedBox(height: 4),
-                            if (alicePastEvents.isEmpty)
-                              Text(
-                                "• Nessun evento già concluso",
-                                style: TextStyle(
-                                  color: Colors.grey.shade700,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              )
-                            else
-                              ...alicePastEvents.map(
-                                (e) => buildEventLine(prefix: "✓ ", event: e),
-                              ),
-                            const SizedBox(height: 10),
-                            const Text(
-                              "Adesso",
-                              style: TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                            const SizedBox(height: 4),
-                            if (aliceNowEvents.isEmpty)
-                              Text(
-                                "• Nessun evento in corso",
-                                style: TextStyle(
-                                  color: Colors.grey.shade700,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              )
-                            else
-                              ...aliceNowEvents.map(
-                                (e) => buildEventLine(
-                                  prefix: "👉 ",
-                                  event: e,
-                                  color: Colors.orange,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                            const SizedBox(height: 10),
-                            const Text(
-                              "Dopo",
-                              style: TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                            const SizedBox(height: 4),
-                            if (aliceFutureEvents.isEmpty)
-                              Text(
-                                "• Nessun evento successivo",
-                                style: TextStyle(
-                                  color: Colors.grey.shade700,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              )
-                            else
-                              ...aliceFutureEvents.map(
-                                (e) => buildEventLine(prefix: "• ", event: e),
-                              ),
-                          ],
-                        ),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text("Chiudi"),
-                        ),
-                      ],
-                    );
+                    return AliceNowDialog(model: aliceDetails);
                   },
                 );
               },
