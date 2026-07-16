@@ -4244,6 +4244,14 @@ class _CalendarioScreenStepAStabileState
 
     final familyEvents = _familyEventsOnDay(_selectedDay);
 
+    final turnDay = turnDayBuilder.buildDay(
+      day: _selectedDay,
+      turnConflict: conflict,
+      matteo: matteoDay,
+      chiara: chiaraDay,
+      familyEvents: familyEvents,
+    );
+
     return _card(
       title: "Turni",
       subtitle:
@@ -4251,46 +4259,46 @@ class _CalendarioScreenStepAStabileState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (conflict.hasConflict) ...[
-            _turnConflictBox(conflict),
+          if (turnDay.turnConflict.hasConflict) ...[
+            _turnConflictBox(turnDay.turnConflict),
             const SizedBox(height: 12),
           ],
-          if (matteoDay.conflicts.isNotEmpty) ...[
+          if (turnDay.matteo.conflicts.isNotEmpty) ...[
             _turnEventConflictBox(
-              personName: matteoDay.displayName,
-              personKey: matteoDay.personKey,
-              conflicts: matteoDay.conflicts,
+              personName: turnDay.matteo.displayName,
+              personKey: turnDay.matteo.personKey,
+              conflicts: turnDay.matteo.conflicts,
             ),
             const SizedBox(height: 12),
           ],
-          if (chiaraDay.conflicts.isNotEmpty) ...[
+          if (turnDay.chiara.conflicts.isNotEmpty) ...[
             _turnEventConflictBox(
-              personName: chiaraDay.displayName,
-              personKey: chiaraDay.personKey,
-              conflicts: chiaraDay.conflicts,
+              personName: turnDay.chiara.displayName,
+              personKey: turnDay.chiara.personKey,
+              conflicts: turnDay.chiara.conflicts,
             ),
             const SizedBox(height: 12),
           ],
-          if (familyEvents.isNotEmpty) ...[
-            _familyEventsBlock(familyEvents),
+          if (turnDay.familyEvents.isNotEmpty) ...[
+            _familyEventsBlock(turnDay.familyEvents),
             const SizedBox(height: 12),
           ],
           _turnRow(
-            matteoDay.displayName,
-            matteoDay.plan,
-            statusText: matteoDay.statusText,
-            sourceText: matteoDay.sourceText,
-            events: matteoDay.events,
-            conflicts: matteoDay.conflicts,
+            turnDay.matteo.displayName,
+            turnDay.matteo.plan,
+            statusText: turnDay.matteo.statusText,
+            sourceText: turnDay.matteo.sourceText,
+            events: turnDay.matteo.events,
+            conflicts: turnDay.matteo.conflicts,
           ),
           const SizedBox(height: 10),
           _turnRow(
-            chiaraDay.displayName,
-            chiaraDay.plan,
-            statusText: chiaraDay.statusText,
-            sourceText: chiaraDay.sourceText,
-            events: chiaraDay.events,
-            conflicts: chiaraDay.conflicts,
+            turnDay.chiara.displayName,
+            turnDay.chiara.plan,
+            statusText: turnDay.chiara.statusText,
+            sourceText: turnDay.chiara.sourceText,
+            events: turnDay.chiara.events,
+            conflicts: turnDay.chiara.conflicts,
           ),
           const SizedBox(height: 12),
 
