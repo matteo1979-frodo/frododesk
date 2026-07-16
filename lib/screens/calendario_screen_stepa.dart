@@ -77,7 +77,7 @@ import '../widgets/calendar/family_adult_now_dialog.dart';
 import '../logic/calendar/builders/alice_day_context_builder.dart';
 import '../logic/calendar/builders/alice_now_details_builder.dart';
 import '../widgets/calendar/alice_now_dialog.dart';
-import '../logic/calendar/builders/turn_event_conflict_builder.dart';
+
 import '../logic/calendar/builders/turn_day_builder.dart';
 import '../logic/calendar/view_models/turn_day_view_model.dart';
 
@@ -4148,7 +4148,6 @@ class _CalendarioScreenStepAStabileState
       _onlyDate(_selectedDay),
     );
 
-    final conflictBuilder = const TurnEventConflictBuilder();
     final turnDayBuilder = const TurnDayBuilder();
 
     final matteoDisease = coreStore.diseasePeriodStore.getPeriodForDay(
@@ -4211,12 +4210,27 @@ class _CalendarioScreenStepAStabileState
       allDayEvents: selectedDayEvents,
     );
 
-    final chiaraEventConflicts = conflictBuilder.build(
+    final chiaraDay = turnDayBuilder.buildPerson(
+      person: TurnPerson.chiara,
       personKey: 'chiara',
+      displayName: 'Chiara',
       day: _selectedDay,
-      turnPlan: c,
+      plan: c,
       turnSummary: _turnPlanSummary(c),
       manualOverride: ov.chiara,
+      statusText: chiaraStatus,
+      sourceKind: chiaraSource == null
+          ? TurnSourceKind.standard
+          : chiaraSource.toLowerCase().contains('solo oggi')
+          ? TurnSourceKind.dailyOverride
+          : chiaraSource.toLowerCase().contains('periodo')
+          ? TurnSourceKind.periodOverride
+          : chiaraSource.toLowerCase().contains('nuova rotazione')
+          ? TurnSourceKind.rotationOverride
+          : chiaraSource.toLowerCase().contains('quarta squadra')
+          ? TurnSourceKind.fourthShift
+          : TurnSourceKind.standard,
+      sourceText: chiaraSource,
       isOnHoliday: _isPersonOnFerie(
         personKey: 'chiara',
         manualOverride: ov.chiara,
@@ -4224,7 +4238,8 @@ class _CalendarioScreenStepAStabileState
       ),
       isSick: chiaraIsSick,
       isBedSick: chiaraIsBedSick,
-      events: selectedDayEvents,
+      personEvents: chiaraEvents,
+      allDayEvents: selectedDayEvents,
     );
 
     final familyEvents = _familyEventsOnDay(_selectedDay);
@@ -4248,11 +4263,11 @@ class _CalendarioScreenStepAStabileState
             ),
             const SizedBox(height: 12),
           ],
-          if (chiaraEventConflicts.isNotEmpty) ...[
+          if (chiaraDay.conflicts.isNotEmpty) ...[
             _turnEventConflictBox(
-              personName: "Chiara",
-              personKey: "chiara",
-              conflicts: chiaraEventConflicts,
+              personName: chiaraDay.displayName,
+              personKey: chiaraDay.personKey,
+              conflicts: chiaraDay.conflicts,
             ),
             const SizedBox(height: 12),
           ],
@@ -4270,12 +4285,12 @@ class _CalendarioScreenStepAStabileState
           ),
           const SizedBox(height: 10),
           _turnRow(
-            "Chiara",
-            c,
-            statusText: chiaraStatus,
-            sourceText: chiaraSource,
-            events: chiaraEvents,
-            conflicts: chiaraEventConflicts,
+            chiaraDay.displayName,
+            chiaraDay.plan,
+            statusText: chiaraDay.statusText,
+            sourceText: chiaraDay.sourceText,
+            events: chiaraDay.events,
+            conflicts: chiaraDay.conflicts,
           ),
           const SizedBox(height: 12),
 
