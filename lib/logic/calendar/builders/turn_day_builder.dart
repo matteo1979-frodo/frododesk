@@ -55,4 +55,20 @@ class TurnDayBuilder {
       conflicts: List.unmodifiable(conflicts),
     );
   }
+
+  TurnDayViewModel buildDay({
+    required DateTime day,
+    required TurnConflictInfo turnConflict,
+    required TurnPersonDayViewModel matteo,
+    required TurnPersonDayViewModel chiara,
+    required List<RealEvent> familyEvents,
+  }) {
+    return TurnDayViewModel(
+      day: DateTime(day.year, day.month, day.day),
+      turnConflict: turnConflict,
+      matteo: matteo,
+      chiara: chiara,
+      familyEvents: List<RealEvent>.unmodifiable(familyEvents),
+    );
+  }
 }
