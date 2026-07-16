@@ -80,7 +80,6 @@ import '../widgets/calendar/alice_now_dialog.dart';
 
 import '../logic/calendar/builders/turn_day_builder.dart';
 
-
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
   final DateTime? initialSelectedDay;
@@ -4134,15 +4133,6 @@ class _CalendarioScreenStepAStabileState
       day: _selectedDay,
     );
 
-    final matteoEvents = _eventsForPersonOnDay(
-      personKey: 'matteo',
-      day: _selectedDay,
-    );
-
-    final chiaraEvents = _eventsForPersonOnDay(
-      personKey: 'chiara',
-      day: _selectedDay,
-    );
 
     final selectedDayEvents = coreStore.realEventStore.eventsForDay(
       _onlyDate(_selectedDay),
@@ -4196,7 +4186,6 @@ class _CalendarioScreenStepAStabileState
       ),
       isSick: matteoIsSick,
       isBedSick: matteoIsBedSick,
-      personEvents: matteoEvents,
       allDayEvents: selectedDayEvents,
     );
 
@@ -4218,7 +4207,6 @@ class _CalendarioScreenStepAStabileState
       ),
       isSick: chiaraIsSick,
       isBedSick: chiaraIsBedSick,
-      personEvents: chiaraEvents,
       allDayEvents: selectedDayEvents,
     );
 

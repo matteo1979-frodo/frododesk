@@ -37,6 +37,29 @@ class TurnDayBuilder {
     return TurnSourceKind.standard;
   }
 
+  List<RealEvent> _eventsForPerson({
+    required String personKey,
+    required List<RealEvent> allDayEvents,
+  }) {
+    final events = allDayEvents
+        .where((event) => event.personKey == personKey)
+        .toList();
+
+    events.sort((a, b) {
+      final aMinutes = a.startTime == null
+          ? 9999
+          : a.startTime!.hour * 60 + a.startTime!.minute;
+
+      final bMinutes = b.startTime == null
+          ? 9999
+          : b.startTime!.hour * 60 + b.startTime!.minute;
+
+      return aMinutes.compareTo(bMinutes);
+    });
+
+    return events;
+  }
+
   TurnPersonDayViewModel buildPerson({
     required TurnPerson person,
     required String personKey,
@@ -50,7 +73,6 @@ class TurnDayBuilder {
     required bool isOnHoliday,
     required bool isSick,
     required bool isBedSick,
-    required List<RealEvent> personEvents,
     required List<RealEvent> allDayEvents,
   }) {
     final conflicts = conflictBuilder.build(
@@ -64,7 +86,10 @@ class TurnDayBuilder {
       isBedSick: isBedSick,
       events: allDayEvents,
     );
-
+    final personEvents = _eventsForPerson(
+      personKey: personKey,
+      allDayEvents: allDayEvents,
+    );
     return TurnPersonDayViewModel(
       person: person,
       personKey: personKey,
