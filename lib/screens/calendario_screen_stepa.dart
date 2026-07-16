@@ -50,7 +50,7 @@ import '../logic/alice_events/alice_event_behavior.dart';
 import '../logic/alice_events/alice_event_engine.dart';
 import '../logic/calendar/models/family_now_snapshot.dart';
 import '../logic/calendar/models/coverage_result_step_a.dart';
-import '../logic/calendar/models/date_range.dart';
+
 import '../logic/calendar/models/turn_event_conflict.dart';
 
 import '../widgets/calendar/sandra_coverage_card.dart';
@@ -77,6 +77,7 @@ import '../widgets/calendar/family_adult_now_dialog.dart';
 import '../logic/calendar/builders/alice_day_context_builder.dart';
 import '../logic/calendar/builders/alice_now_details_builder.dart';
 import '../widgets/calendar/alice_now_dialog.dart';
+import '../logic/calendar/builders/turn_event_conflict_builder.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -970,48 +971,6 @@ class _CalendarioScreenStepAStabileState
         disease?.type == DiseaseType.bed;
   }
 
-  String _buildBlockingStateConflictDetail({required DateRange overlap}) {
-    return "Evento incompatibile con stato reale bloccante.\n"
-        "Stato reale: malattia a letto\n"
-        "Fascia in conflitto: ${_rangeLabel(overlap)}";
-  }
-
-  List<TurnEventConflictResolution> _blockingStateEventResolutionsForPerson({
-    required String personKey,
-    required PersonDayOverride? manualOverride,
-    required DateTime day,
-  }) {
-    final isBedSick = _isBedSickForPerson(
-      personKey: personKey,
-      manualOverride: manualOverride,
-      day: day,
-    );
-
-    if (!isBedSick) return const [];
-
-    final personEvents = _eventsForPersonOnDay(personKey: personKey, day: day);
-    if (personEvents.isEmpty) return const [];
-
-    final resolutions = <TurnEventConflictResolution>[];
-
-    for (final event in personEvents) {
-      final eventRange = _eventRangeForConflict(event, day);
-      if (eventRange == null) continue;
-
-      resolutions.add(
-        TurnEventConflictResolution(
-          event: event,
-          state: TurnEventConflictState.open,
-          overlapRange: eventRange,
-          detailText: _buildBlockingStateConflictDetail(overlap: eventRange),
-          hasTurnContext: false,
-        ),
-      );
-    }
-
-    return resolutions;
-  }
-
   void _showTurnEventConflictActionsSheet({
     required String personName,
     required String personKey,
@@ -1228,45 +1187,6 @@ class _CalendarioScreenStepAStabileState
 
   DateTime _onlyDate(DateTime d) => DateTime(d.year, d.month, d.day);
 
-  DateTime _atDayTime(DateTime day, TimeOfDay t) {
-    final d0 = _onlyDate(day);
-    return DateTime(d0.year, d0.month, d0.day, t.hour, t.minute);
-  }
-
-  TimeOfDay? _parseTimeOfDayFromText(String text) {
-    final m = RegExp(r'(\d{1,2}):(\d{2})').firstMatch(text);
-    if (m == null) return null;
-
-    final h = int.tryParse(m.group(1)!);
-    final min = int.tryParse(m.group(2)!);
-    if (h == null || min == null) return null;
-    if (h < 0 || h > 23 || min < 0 || min > 59) return null;
-
-    return TimeOfDay(hour: h, minute: min);
-  }
-
-  DateRange? _permessoRangeFromDisplayString(dynamic pr, DateTime day) {
-    try {
-      final dynamic displayDyn = pr.toDisplayString();
-      if (displayDyn is! String) return null;
-
-      final parts = displayDyn.split(RegExp(r'[–-]'));
-      if (parts.length != 2) return null;
-
-      final start = _parseTimeOfDayFromText(parts[0].trim());
-      final end = _parseTimeOfDayFromText(parts[1].trim());
-      if (start == null || end == null) return null;
-
-      final startDT = _atDayTime(day, start);
-      final endDT = _atDayTime(day, end);
-      if (!endDT.isAfter(startDT)) return null;
-
-      return DateRange(start: startDT, end: endDT);
-    } catch (_) {
-      return null;
-    }
-  }
-
   bool _isSchoolInGapLabel(String label) {
     final lower = label.toLowerCase();
     return lower.contains('alice ingresso') ||
@@ -1369,126 +1289,6 @@ class _CalendarioScreenStepAStabileState
     return existing ? "Togli Alice da $who" : "Porta Alice con $who";
   }
 
-  DateRange? _rangeOverlap(DateRange a, DateRange b) {
-    final start = a.start.isAfter(b.start) ? a.start : b.start;
-    final end = a.end.isBefore(b.end) ? a.end : b.end;
-
-    if (!end.isAfter(start)) return null;
-    return DateRange(start: start, end: end);
-  }
-
-  DateRange? _eventRangeForConflict(RealEvent event, DateTime day) {
-    final d0 = _onlyDate(day);
-
-    if (event.startTime == null && event.endTime == null) {
-      return DateRange(
-        start: DateTime(d0.year, d0.month, d0.day, 0, 0),
-        end: DateTime(d0.year, d0.month, d0.day, 23, 59),
-      );
-    }
-
-    if (event.startTime != null && event.endTime != null) {
-      final start = _atDayTime(d0, event.startTime!);
-      final end = _atDayTime(d0, event.endTime!);
-
-      if (!end.isAfter(start)) return null;
-
-      return DateRange(start: start, end: end);
-    }
-
-    if (event.startTime != null) {
-      final start = _atDayTime(d0, event.startTime!);
-      return DateRange(
-        start: start,
-        end: start.add(const Duration(minutes: 1)),
-      );
-    }
-
-    final end = _atDayTime(d0, event.endTime!);
-    return DateRange(start: end.subtract(const Duration(minutes: 1)), end: end);
-  }
-
-  DateRange? _permessoRangeFromOverride(
-    PersonDayOverride? manualOverride,
-    DateTime day,
-  ) {
-    if (manualOverride == null) return null;
-    if (manualOverride.status != OverrideStatus.permesso) return null;
-
-    final dynamic pr = manualOverride.permessoRange;
-    if (pr == null) return null;
-
-    final parsedFromDisplay = _permessoRangeFromDisplayString(pr, day);
-    if (parsedFromDisplay != null) return parsedFromDisplay;
-
-    TimeOfDay? start;
-    TimeOfDay? end;
-
-    if (pr is Map) {
-      final dynamic s1 = pr['start'];
-      final dynamic e1 = pr['end'];
-      final dynamic s2 = pr['from'];
-      final dynamic e2 = pr['to'];
-      final dynamic s3 = pr['startTime'];
-      final dynamic e3 = pr['endTime'];
-
-      if (s1 is TimeOfDay && e1 is TimeOfDay) {
-        start = s1;
-        end = e1;
-      } else if (s2 is TimeOfDay && e2 is TimeOfDay) {
-        start = s2;
-        end = e2;
-      } else if (s3 is TimeOfDay && e3 is TimeOfDay) {
-        start = s3;
-        end = e3;
-      }
-    } else {
-      try {
-        final dynamic s1 = pr.start;
-        final dynamic e1 = pr.end;
-        if (s1 is TimeOfDay && e1 is TimeOfDay) {
-          start = s1;
-          end = e1;
-        }
-      } catch (_) {}
-
-      if (start == null || end == null) {
-        try {
-          final dynamic s2 = pr.from;
-          final dynamic e2 = pr.to;
-          if (s2 is TimeOfDay && e2 is TimeOfDay) {
-            start = s2;
-            end = e2;
-          }
-        } catch (_) {}
-      }
-
-      if (start == null || end == null) {
-        try {
-          final dynamic s3 = pr.startTime;
-          final dynamic e3 = pr.endTime;
-          if (s3 is TimeOfDay && e3 is TimeOfDay) {
-            start = s3;
-            end = e3;
-          }
-        } catch (_) {}
-      }
-    }
-
-    if (start == null || end == null) return null;
-
-    final startDT = _atDayTime(day, start);
-    final endDT = _atDayTime(day, end);
-
-    if (!endDT.isAfter(startDT)) return null;
-
-    return DateRange(start: startDT, end: endDT);
-  }
-
-  String _rangeLabel(DateRange range) {
-    return "${fmtDateTimeHHmm(range.start)}-${fmtDateTimeHHmm(range.end)}";
-  }
-
   bool _isPersonOnFerie({
     required String personKey,
     required PersonDayOverride? manualOverride,
@@ -1511,49 +1311,6 @@ class _CalendarioScreenStepAStabileState
     final label = _turnLabel(plan.type);
     if (plan.isOff) return "OFF";
     return "$label ${fmtTimeOfDay(plan.start)} ${fmtTimeOfDay(plan.end)}";
-  }
-
-  String _buildOpenConflictDetail({
-    required TurnPlan turnPlan,
-    required DateRange overlap,
-  }) {
-    return "Evento dentro il turno di lavoro.\n"
-        "Turno: ${_turnPlanSummary(turnPlan)}\n"
-        "Fascia in conflitto: ${_rangeLabel(overlap)}";
-  }
-
-  String _buildPartialConflictDetail({
-    required TurnPlan turnPlan,
-    required DateRange overlap,
-    required DateRange covered,
-    required List<String> uncoveredParts,
-  }) {
-    return "Evento dentro il turno di lavoro.\n"
-        "Turno: ${_turnPlanSummary(turnPlan)}\n"
-        "Fascia in conflitto: ${_rangeLabel(overlap)}\n"
-        "Permesso copre: ${_rangeLabel(covered)}\n"
-        "Resta scoperto: ${uncoveredParts.join(" + ")}";
-  }
-
-  String _buildResolvedConflictDetail({
-    required TurnPlan turnPlan,
-    required DateRange overlap,
-    required DateRange covered,
-  }) {
-    return "Evento dentro il turno di lavoro.\n"
-        "Turno: ${_turnPlanSummary(turnPlan)}\n"
-        "Fascia in conflitto: ${_rangeLabel(overlap)}\n"
-        "Causa risoluzione: permesso ${_rangeLabel(covered)}";
-  }
-
-  String _buildResolvedConflictDetailFerie({
-    required TurnPlan turnPlan,
-    required DateRange overlap,
-  }) {
-    return "Evento dentro il turno di lavoro.\n"
-        "Turno: ${_turnPlanSummary(turnPlan)}\n"
-        "Fascia in conflitto: ${_rangeLabel(overlap)}\n"
-        "Causa risoluzione: ferie";
   }
 
   TurnEventConflictState _worstConflictState(
@@ -1677,145 +1434,6 @@ class _CalendarioScreenStepAStabileState
     }
 
     return Colors.blueGrey;
-  }
-
-  List<TurnEventConflictResolution> _turnEventResolutionsForPerson({
-    required String personKey,
-    required TurnPlan turnPlan,
-    required PersonDayOverride? manualOverride,
-    required DateTime day,
-  }) {
-    if (turnPlan.isOff) return const [];
-    final isSick =
-        manualOverride?.status == OverrideStatus.malattiaLeggera ||
-        manualOverride?.status == OverrideStatus.malattiaALetto ||
-        coreStore.diseasePeriodStore.getPeriodForDay(personKey, day) != null;
-
-    if (isSick) return const [];
-
-    final turnRange = DateRange(
-      start: _atDayTime(day, turnPlan.start),
-      end: _atDayTime(day, turnPlan.end),
-    );
-
-    final permessoRange = _permessoRangeFromOverride(manualOverride, day);
-    final isOnFerie = _isPersonOnFerie(
-      personKey: personKey,
-      manualOverride: manualOverride,
-      day: day,
-    );
-    final personEvents = _eventsForPersonOnDay(personKey: personKey, day: day);
-
-    final resolutions = <TurnEventConflictResolution>[];
-
-    for (final event in personEvents) {
-      final eventRange = _eventRangeForConflict(event, day);
-      if (eventRange == null) continue;
-
-      final overlap = _rangeOverlap(turnRange, eventRange);
-      if (overlap == null) continue;
-
-      if (isOnFerie) {
-        resolutions.add(
-          TurnEventConflictResolution(
-            event: event,
-            state: TurnEventConflictState.resolved,
-            overlapRange: overlap,
-            detailText: _buildResolvedConflictDetailFerie(
-              turnPlan: turnPlan,
-              overlap: overlap,
-            ),
-          ),
-        );
-        continue;
-      }
-
-      if (permessoRange == null) {
-        resolutions.add(
-          TurnEventConflictResolution(
-            event: event,
-            state: TurnEventConflictState.open,
-            overlapRange: overlap,
-            detailText: _buildOpenConflictDetail(
-              turnPlan: turnPlan,
-              overlap: overlap,
-            ),
-          ),
-        );
-        continue;
-      }
-
-      final covered = _rangeOverlap(overlap, permessoRange);
-
-      if (covered == null) {
-        resolutions.add(
-          TurnEventConflictResolution(
-            event: event,
-            state: TurnEventConflictState.open,
-            overlapRange: overlap,
-            detailText: _buildOpenConflictDetail(
-              turnPlan: turnPlan,
-              overlap: overlap,
-            ),
-          ),
-        );
-        continue;
-      }
-
-      final fullyCovered =
-          covered.start.isAtSameMomentAs(overlap.start) &&
-          covered.end.isAtSameMomentAs(overlap.end);
-
-      if (fullyCovered) {
-        resolutions.add(
-          TurnEventConflictResolution(
-            event: event,
-            state: TurnEventConflictState.resolved,
-            overlapRange: overlap,
-            detailText: _buildResolvedConflictDetail(
-              turnPlan: turnPlan,
-              overlap: overlap,
-              covered: covered,
-            ),
-          ),
-        );
-        continue;
-      }
-
-      DateRange? uncoveredBefore;
-      DateRange? uncoveredAfter;
-
-      if (covered.start.isAfter(overlap.start)) {
-        uncoveredBefore = DateRange(start: overlap.start, end: covered.start);
-      }
-      if (covered.end.isBefore(overlap.end)) {
-        uncoveredAfter = DateRange(start: covered.end, end: overlap.end);
-      }
-
-      final uncoveredParts = <String>[];
-      if (uncoveredBefore != null) {
-        uncoveredParts.add(_rangeLabel(uncoveredBefore));
-      }
-      if (uncoveredAfter != null) {
-        uncoveredParts.add(_rangeLabel(uncoveredAfter));
-      }
-
-      resolutions.add(
-        TurnEventConflictResolution(
-          event: event,
-          state: TurnEventConflictState.partial,
-          overlapRange: overlap,
-          detailText: _buildPartialConflictDetail(
-            turnPlan: turnPlan,
-            overlap: overlap,
-            covered: covered,
-            uncoveredParts: uncoveredParts,
-          ),
-        ),
-      );
-    }
-
-    return resolutions;
   }
 
   List<RealEvent> _eventsForPersonOnDay({
@@ -4524,43 +4142,71 @@ class _CalendarioScreenStepAStabileState
       day: _selectedDay,
     );
 
-    final matteoTurnEventConflicts = _turnEventResolutionsForPerson(
+    final selectedDayEvents = coreStore.realEventStore.eventsForDay(
+      _onlyDate(_selectedDay),
+    );
+
+    final conflictBuilder = const TurnEventConflictBuilder();
+
+    final matteoDisease = coreStore.diseasePeriodStore.getPeriodForDay(
+      'matteo',
+      _onlyDate(_selectedDay),
+    );
+
+    final chiaraDisease = coreStore.diseasePeriodStore.getPeriodForDay(
+      'chiara',
+      _onlyDate(_selectedDay),
+    );
+
+    final matteoIsBedSick =
+        ov.matteo?.status == OverrideStatus.malattiaALetto ||
+        matteoDisease?.type == DiseaseType.bed;
+
+    final chiaraIsBedSick =
+        ov.chiara?.status == OverrideStatus.malattiaALetto ||
+        chiaraDisease?.type == DiseaseType.bed;
+
+    final matteoIsSick =
+        ov.matteo?.status == OverrideStatus.malattiaLeggera ||
+        ov.matteo?.status == OverrideStatus.malattiaALetto ||
+        matteoDisease != null;
+
+    final chiaraIsSick =
+        ov.chiara?.status == OverrideStatus.malattiaLeggera ||
+        ov.chiara?.status == OverrideStatus.malattiaALetto ||
+        chiaraDisease != null;
+
+    final matteoEventConflicts = conflictBuilder.build(
       personKey: 'matteo',
+      day: _selectedDay,
       turnPlan: m,
+      turnSummary: _turnPlanSummary(m),
       manualOverride: ov.matteo,
-      day: _selectedDay,
+      isOnHoliday: _isPersonOnFerie(
+        personKey: 'matteo',
+        manualOverride: ov.matteo,
+        day: _selectedDay,
+      ),
+      isSick: matteoIsSick,
+      isBedSick: matteoIsBedSick,
+      events: selectedDayEvents,
     );
 
-    final chiaraTurnEventConflicts = _turnEventResolutionsForPerson(
+    final chiaraEventConflicts = conflictBuilder.build(
       personKey: 'chiara',
-      turnPlan: c,
-      manualOverride: ov.chiara,
       day: _selectedDay,
+      turnPlan: c,
+      turnSummary: _turnPlanSummary(c),
+      manualOverride: ov.chiara,
+      isOnHoliday: _isPersonOnFerie(
+        personKey: 'chiara',
+        manualOverride: ov.chiara,
+        day: _selectedDay,
+      ),
+      isSick: chiaraIsSick,
+      isBedSick: chiaraIsBedSick,
+      events: selectedDayEvents,
     );
-
-    final matteoBlockingStateConflicts =
-        _blockingStateEventResolutionsForPerson(
-          personKey: 'matteo',
-          manualOverride: ov.matteo,
-          day: _selectedDay,
-        );
-
-    final chiaraBlockingStateConflicts =
-        _blockingStateEventResolutionsForPerson(
-          personKey: 'chiara',
-          manualOverride: ov.chiara,
-          day: _selectedDay,
-        );
-
-    final matteoEventConflicts = [
-      ...matteoTurnEventConflicts,
-      ...matteoBlockingStateConflicts,
-    ];
-
-    final chiaraEventConflicts = [
-      ...chiaraTurnEventConflicts,
-      ...chiaraBlockingStateConflicts,
-    ];
 
     final familyEvents = _familyEventsOnDay(_selectedDay);
 
