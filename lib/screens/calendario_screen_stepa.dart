@@ -78,6 +78,8 @@ import '../logic/calendar/builders/alice_day_context_builder.dart';
 import '../logic/calendar/builders/alice_now_details_builder.dart';
 import '../widgets/calendar/alice_now_dialog.dart';
 import '../logic/calendar/builders/turn_event_conflict_builder.dart';
+import '../logic/calendar/builders/turn_day_builder.dart';
+import '../logic/calendar/view_models/turn_day_view_model.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -4147,6 +4149,7 @@ class _CalendarioScreenStepAStabileState
     );
 
     final conflictBuilder = const TurnEventConflictBuilder();
+    final turnDayBuilder = const TurnDayBuilder();
 
     final matteoDisease = coreStore.diseasePeriodStore.getPeriodForDay(
       'matteo',
@@ -4176,12 +4179,27 @@ class _CalendarioScreenStepAStabileState
         ov.chiara?.status == OverrideStatus.malattiaALetto ||
         chiaraDisease != null;
 
-    final matteoEventConflicts = conflictBuilder.build(
+    final matteoDay = turnDayBuilder.buildPerson(
+      person: TurnPerson.matteo,
       personKey: 'matteo',
+      displayName: 'Matteo',
       day: _selectedDay,
-      turnPlan: m,
+      plan: m,
       turnSummary: _turnPlanSummary(m),
       manualOverride: ov.matteo,
+      statusText: matteoStatus,
+      sourceKind: matteoSource == null
+          ? TurnSourceKind.standard
+          : matteoSource.toLowerCase().contains('solo oggi')
+          ? TurnSourceKind.dailyOverride
+          : matteoSource.toLowerCase().contains('periodo')
+          ? TurnSourceKind.periodOverride
+          : matteoSource.toLowerCase().contains('nuova rotazione')
+          ? TurnSourceKind.rotationOverride
+          : matteoSource.toLowerCase().contains('quarta squadra')
+          ? TurnSourceKind.fourthShift
+          : TurnSourceKind.standard,
+      sourceText: matteoSource,
       isOnHoliday: _isPersonOnFerie(
         personKey: 'matteo',
         manualOverride: ov.matteo,
@@ -4189,7 +4207,8 @@ class _CalendarioScreenStepAStabileState
       ),
       isSick: matteoIsSick,
       isBedSick: matteoIsBedSick,
-      events: selectedDayEvents,
+      personEvents: matteoEvents,
+      allDayEvents: selectedDayEvents,
     );
 
     final chiaraEventConflicts = conflictBuilder.build(
@@ -4221,11 +4240,11 @@ class _CalendarioScreenStepAStabileState
             _turnConflictBox(conflict),
             const SizedBox(height: 12),
           ],
-          if (matteoEventConflicts.isNotEmpty) ...[
+          if (matteoDay.conflicts.isNotEmpty) ...[
             _turnEventConflictBox(
-              personName: "Matteo",
-              personKey: "matteo",
-              conflicts: matteoEventConflicts,
+              personName: matteoDay.displayName,
+              personKey: matteoDay.personKey,
+              conflicts: matteoDay.conflicts,
             ),
             const SizedBox(height: 12),
           ],
@@ -4242,12 +4261,12 @@ class _CalendarioScreenStepAStabileState
             const SizedBox(height: 12),
           ],
           _turnRow(
-            "Matteo",
-            m,
-            statusText: matteoStatus,
-            sourceText: matteoSource,
-            events: matteoEvents,
-            conflicts: matteoEventConflicts,
+            matteoDay.displayName,
+            matteoDay.plan,
+            statusText: matteoDay.statusText,
+            sourceText: matteoDay.sourceText,
+            events: matteoDay.events,
+            conflicts: matteoDay.conflicts,
           ),
           const SizedBox(height: 10),
           _turnRow(
