@@ -79,7 +79,7 @@ import '../logic/calendar/builders/alice_now_details_builder.dart';
 import '../widgets/calendar/alice_now_dialog.dart';
 
 import '../logic/calendar/builders/turn_day_builder.dart';
-import '../logic/calendar/view_models/turn_day_view_model.dart';
+
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -4187,17 +4187,7 @@ class _CalendarioScreenStepAStabileState
       turnSummary: _turnPlanSummary(m),
       manualOverride: ov.matteo,
       statusText: matteoStatus,
-      sourceKind: matteoSource == null
-          ? TurnSourceKind.standard
-          : matteoSource.toLowerCase().contains('solo oggi')
-          ? TurnSourceKind.dailyOverride
-          : matteoSource.toLowerCase().contains('periodo')
-          ? TurnSourceKind.periodOverride
-          : matteoSource.toLowerCase().contains('nuova rotazione')
-          ? TurnSourceKind.rotationOverride
-          : matteoSource.toLowerCase().contains('quarta squadra')
-          ? TurnSourceKind.fourthShift
-          : TurnSourceKind.standard,
+
       sourceText: matteoSource,
       isOnHoliday: _isPersonOnFerie(
         personKey: 'matteo',
@@ -4219,17 +4209,7 @@ class _CalendarioScreenStepAStabileState
       turnSummary: _turnPlanSummary(c),
       manualOverride: ov.chiara,
       statusText: chiaraStatus,
-      sourceKind: chiaraSource == null
-          ? TurnSourceKind.standard
-          : chiaraSource.toLowerCase().contains('solo oggi')
-          ? TurnSourceKind.dailyOverride
-          : chiaraSource.toLowerCase().contains('periodo')
-          ? TurnSourceKind.periodOverride
-          : chiaraSource.toLowerCase().contains('nuova rotazione')
-          ? TurnSourceKind.rotationOverride
-          : chiaraSource.toLowerCase().contains('quarta squadra')
-          ? TurnSourceKind.fourthShift
-          : TurnSourceKind.standard,
+
       sourceText: chiaraSource,
       isOnHoliday: _isPersonOnFerie(
         personKey: 'chiara',

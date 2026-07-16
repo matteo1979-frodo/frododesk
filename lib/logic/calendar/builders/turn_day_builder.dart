@@ -11,6 +11,32 @@ class TurnDayBuilder {
     this.conflictBuilder = const TurnEventConflictBuilder(),
   });
 
+  TurnSourceKind _sourceKindFromText(String? sourceText) {
+    if (sourceText == null) {
+      return TurnSourceKind.standard;
+    }
+
+    final lower = sourceText.toLowerCase();
+
+    if (lower.contains('solo oggi')) {
+      return TurnSourceKind.dailyOverride;
+    }
+
+    if (lower.contains('periodo')) {
+      return TurnSourceKind.periodOverride;
+    }
+
+    if (lower.contains('nuova rotazione')) {
+      return TurnSourceKind.rotationOverride;
+    }
+
+    if (lower.contains('quarta squadra')) {
+      return TurnSourceKind.fourthShift;
+    }
+
+    return TurnSourceKind.standard;
+  }
+
   TurnPersonDayViewModel buildPerson({
     required TurnPerson person,
     required String personKey,
@@ -20,7 +46,6 @@ class TurnDayBuilder {
     required String turnSummary,
     required PersonDayOverride? manualOverride,
     required String? statusText,
-    required TurnSourceKind sourceKind,
     required String? sourceText,
     required bool isOnHoliday,
     required bool isSick,
@@ -46,7 +71,7 @@ class TurnDayBuilder {
       displayName: displayName,
       plan: plan,
       statusText: statusText,
-      sourceKind: sourceKind,
+      sourceKind: _sourceKindFromText(sourceText),
       sourceText: sourceText,
       isOnHoliday: isOnHoliday,
       isSick: isSick,
