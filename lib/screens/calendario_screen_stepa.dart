@@ -1458,84 +1458,6 @@ class _CalendarioScreenStepAStabileState
     return filtered;
   }
 
-  List<RealEvent> _familyEventsOnDay(DateTime day) {
-    final events = coreStore.realEventStore.eventsForDay(_onlyDate(day));
-
-    final filtered = events
-        .where(
-          (e) =>
-              (e.personKey?.toLowerCase() == 'family') ||
-              (e.personKey?.toLowerCase() == 'generale'),
-        )
-        .toList();
-
-    filtered.sort((a, b) {
-      final aMin = a.startTime == null
-          ? 9999
-          : a.startTime!.hour * 60 + a.startTime!.minute;
-      final bMin = b.startTime == null
-          ? 9999
-          : b.startTime!.hour * 60 + b.startTime!.minute;
-      return aMin.compareTo(bMin);
-    });
-
-    return filtered;
-  }
-
-  String? _personRealStatusText({
-    required String personKey,
-    required PersonDayOverride? manualOverride,
-    required DateTime day,
-  }) {
-    final d0 = _onlyDate(day);
-
-    final turnOverrideText = _turnOverrideStatusTextForPerson(
-      personKey: personKey,
-      day: d0,
-    );
-    if (turnOverrideText != null) return turnOverrideText;
-
-    if (manualOverride != null) {
-      switch (manualOverride.status) {
-        case OverrideStatus.normal:
-          break;
-        case OverrideStatus.permesso:
-          final range = manualOverride.permessoRange;
-          if (range != null) {
-            return "Permesso ${range.toDisplayString()}";
-          }
-          return "Permesso";
-        case OverrideStatus.ferie:
-          return "Ferie";
-        case OverrideStatus.malattiaLeggera:
-          return "Malattia leggera";
-        case OverrideStatus.malattiaALetto:
-          return "Malattia a letto";
-      }
-    }
-
-    final disease = coreStore.diseasePeriodStore.getPeriodForDay(personKey, d0);
-    if (disease != null) {
-      switch (disease.type) {
-        case DiseaseType.mild:
-          return "Malattia leggera";
-        case DiseaseType.bed:
-          return "Malattia a letto";
-      }
-    }
-
-    FeriePerson? feriePerson;
-    if (personKey == 'matteo') feriePerson = FeriePerson.matteo;
-    if (personKey == 'chiara') feriePerson = FeriePerson.chiara;
-
-    if (feriePerson != null &&
-        coreStore.feriePeriodStore.isOnHoliday(feriePerson, d0)) {
-      return "Ferie";
-    }
-
-    return null;
-  }
-
   CoverageResultStepA _computeCoverageStepA(DateTime day) {
     final d0 = _onlyDate(day);
 
@@ -4111,18 +4033,6 @@ class _CalendarioScreenStepAStabileState
     final conflict = _turns.sameDayConflictFor(_selectedDay);
     final ov = _getOverridesForDay(_selectedDay);
 
-    final matteoStatus = _personRealStatusText(
-      personKey: 'matteo',
-      manualOverride: ov.matteo,
-      day: _selectedDay,
-    );
-
-    final chiaraStatus = _personRealStatusText(
-      personKey: 'chiara',
-      manualOverride: ov.chiara,
-      day: _selectedDay,
-    );
-
     final matteoSource = _turnSourceTextForPerson(
       personKey: 'matteo',
       day: _selectedDay,
@@ -4132,7 +4042,6 @@ class _CalendarioScreenStepAStabileState
       personKey: 'chiara',
       day: _selectedDay,
     );
-
 
     final selectedDayEvents = coreStore.realEventStore.eventsForDay(
       _onlyDate(_selectedDay),
@@ -4176,8 +4085,11 @@ class _CalendarioScreenStepAStabileState
       plan: m,
       turnSummary: _turnPlanSummary(m),
       manualOverride: ov.matteo,
-      statusText: matteoStatus,
-
+      diseasePeriod: matteoDisease,
+      turnOverrideStatusText: _turnOverrideStatusTextForPerson(
+        personKey: 'matteo',
+        day: _onlyDate(_selectedDay),
+      ),
       sourceText: matteoSource,
       isOnHoliday: _isPersonOnFerie(
         personKey: 'matteo',
@@ -4197,8 +4109,11 @@ class _CalendarioScreenStepAStabileState
       plan: c,
       turnSummary: _turnPlanSummary(c),
       manualOverride: ov.chiara,
-      statusText: chiaraStatus,
-
+      diseasePeriod: chiaraDisease,
+      turnOverrideStatusText: _turnOverrideStatusTextForPerson(
+        personKey: 'chiara',
+        day: _onlyDate(_selectedDay),
+      ),
       sourceText: chiaraSource,
       isOnHoliday: _isPersonOnFerie(
         personKey: 'chiara',
@@ -4210,14 +4125,12 @@ class _CalendarioScreenStepAStabileState
       allDayEvents: selectedDayEvents,
     );
 
-    final familyEvents = _familyEventsOnDay(_selectedDay);
-
     final turnDay = turnDayBuilder.buildDay(
       day: _selectedDay,
       turnConflict: conflict,
       matteo: matteoDay,
       chiara: chiaraDay,
-      familyEvents: familyEvents,
+      allDayEvents: selectedDayEvents,
     );
 
     return _card(

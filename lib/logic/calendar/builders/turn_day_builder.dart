@@ -1,14 +1,18 @@
 import '../../../models/day_override.dart';
+import '../../../models/disease_period.dart';
 import '../../../models/real_event.dart';
 import '../../turn_engine.dart';
 import '../view_models/turn_day_view_model.dart';
 import 'turn_event_conflict_builder.dart';
+import 'turn_person_status_builder.dart';
 
 class TurnDayBuilder {
   final TurnEventConflictBuilder conflictBuilder;
+  final TurnPersonStatusBuilder statusBuilder;
 
   const TurnDayBuilder({
     this.conflictBuilder = const TurnEventConflictBuilder(),
+    this.statusBuilder = const TurnPersonStatusBuilder(),
   });
 
   TurnSourceKind _sourceKindFromText(String? sourceText) {
@@ -60,6 +64,30 @@ class TurnDayBuilder {
     return events;
   }
 
+  List<RealEvent> _familyEvents({required List<RealEvent> allDayEvents}) {
+    final events = allDayEvents
+        .where(
+          (event) =>
+              event.personKey?.toLowerCase() == 'family' ||
+              event.personKey?.toLowerCase() == 'generale',
+        )
+        .toList();
+
+    events.sort((a, b) {
+      final aMinutes = a.startTime == null
+          ? 9999
+          : a.startTime!.hour * 60 + a.startTime!.minute;
+
+      final bMinutes = b.startTime == null
+          ? 9999
+          : b.startTime!.hour * 60 + b.startTime!.minute;
+
+      return aMinutes.compareTo(bMinutes);
+    });
+
+    return events;
+  }
+
   TurnPersonDayViewModel buildPerson({
     required TurnPerson person,
     required String personKey,
@@ -68,13 +96,21 @@ class TurnDayBuilder {
     required TurnPlan plan,
     required String turnSummary,
     required PersonDayOverride? manualOverride,
-    required String? statusText,
+    required DiseasePeriod? diseasePeriod,
+    required String? turnOverrideStatusText,
     required String? sourceText,
     required bool isOnHoliday,
     required bool isSick,
     required bool isBedSick,
     required List<RealEvent> allDayEvents,
   }) {
+    final statusText = statusBuilder.build(
+      manualOverride: manualOverride,
+      diseasePeriod: diseasePeriod,
+      isOnHoliday: isOnHoliday,
+      turnOverrideStatusText: turnOverrideStatusText,
+    );
+
     final conflicts = conflictBuilder.build(
       personKey: personKey,
       day: day,
@@ -86,10 +122,12 @@ class TurnDayBuilder {
       isBedSick: isBedSick,
       events: allDayEvents,
     );
+
     final personEvents = _eventsForPerson(
       personKey: personKey,
       allDayEvents: allDayEvents,
     );
+
     return TurnPersonDayViewModel(
       person: person,
       personKey: personKey,
@@ -111,8 +149,10 @@ class TurnDayBuilder {
     required TurnConflictInfo turnConflict,
     required TurnPersonDayViewModel matteo,
     required TurnPersonDayViewModel chiara,
-    required List<RealEvent> familyEvents,
+    required List<RealEvent> allDayEvents,
   }) {
+    final familyEvents = _familyEvents(allDayEvents: allDayEvents);
+
     return TurnDayViewModel(
       day: DateTime(day.year, day.month, day.day),
       turnConflict: turnConflict,
