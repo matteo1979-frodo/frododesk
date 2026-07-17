@@ -80,6 +80,7 @@ import '../widgets/calendar/alice_now_dialog.dart';
 import '../logic/calendar/builders/turn_day_builder.dart';
 import '../logic/calendar/builders/turn_person_source_builder.dart';
 import '../logic/calendar/builders/coverage_gap_filter.dart';
+import '../logic/calendar/builders/coverage_summary_builder.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -134,6 +135,9 @@ class _CalendarioScreenStepAStabileState
       const TurnPersonSourceBuilder();
 
   final CoverageGapFilter _coverageGapFilter = const CoverageGapFilter();
+
+  final CoverageSummaryBuilder _coverageSummaryBuilder =
+      const CoverageSummaryBuilder();
 
   final TextEditingController _aliceEventNameController =
       TextEditingController();
@@ -1402,32 +1406,19 @@ class _CalendarioScreenStepAStabileState
     final gaps = filteredGapDetails.map((d) => d.label).toList();
     final ok = gaps.isEmpty;
 
-    final summaryDetails = <String>[];
-    if (sandraDecision.serveSandraMattina) {
-      summaryDetails.add("Sandra serve in fascia mattina.");
-    }
-    if (sandraDecision.serveSandraPranzo) {
-      summaryDetails.add("Sandra serve in fascia pranzo.");
-    }
-    if (sandraDecision.serveSandraSera) {
-      summaryDetails.add("Sandra serve in fascia sera.");
-    }
-
-    if (ok) {
-      summaryDetails.add("OK Nessun buco rilevato dal motore.");
-    } else {
-      summaryDetails.add("Il motore ha rilevato ${gaps.length} buco/i reali.");
-    }
-
-    final bannerText = ok
-        ? "Copertura OK"
-        : "BUCO (${gaps.length}): ${gaps.join(' • ')}";
+    final summary = _coverageSummaryBuilder.build(
+      serveSandraMattina: sandraDecision.serveSandraMattina,
+      serveSandraPranzo: sandraDecision.serveSandraPranzo,
+      serveSandraSera: sandraDecision.serveSandraSera,
+      coverageOk: ok,
+      gaps: gaps,
+    );
 
     return CoverageResultStepA(
       ok: ok,
-      details: summaryDetails,
+      details: summary.details,
       gapDetails: filteredGapDetails,
-      bannerText: bannerText,
+      bannerText: summary.bannerText,
     );
   }
 
