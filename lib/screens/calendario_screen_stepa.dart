@@ -77,8 +77,8 @@ import '../widgets/calendar/family_adult_now_dialog.dart';
 import '../logic/calendar/builders/alice_day_context_builder.dart';
 import '../logic/calendar/builders/alice_now_details_builder.dart';
 import '../widgets/calendar/alice_now_dialog.dart';
-
 import '../logic/calendar/builders/turn_day_builder.dart';
+import '../logic/calendar/builders/turn_person_source_builder.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -128,6 +128,9 @@ class _CalendarioScreenStepAStabileState
   final Set<String> _expandedAliceEventIds = <String>{};
 
   final AliceEventEngine _aliceEventEngine = const AliceEventEngine();
+
+  final TurnPersonSourceBuilder _turnPersonSourceBuilder =
+      const TurnPersonSourceBuilder();
 
   final TextEditingController _aliceEventNameController =
       TextEditingController();
@@ -1326,97 +1329,6 @@ class _CalendarioScreenStepAStabileState
     }
 
     return TurnEventConflictState.resolved;
-  }
-
-  TurnPersonId? _personIdFromKey(String personKey) {
-    switch (personKey) {
-      case 'matteo':
-        return TurnPersonId.matteo;
-      case 'chiara':
-        return TurnPersonId.chiara;
-      default:
-        return null;
-    }
-  }
-
-  String _turnOverrideShiftLabel(TurnOverrideShift shift) {
-    switch (shift) {
-      case TurnOverrideShift.mattina:
-        return "Mattina";
-      case TurnOverrideShift.pomeriggio:
-        return "Pomeriggio";
-      case TurnOverrideShift.notte:
-        return "Notte";
-      case TurnOverrideShift.off:
-        return "Off";
-    }
-  }
-
-  String? _turnOverrideStatusTextForPerson({
-    required String personKey,
-    required DateTime day,
-  }) {
-    final person = _personIdFromKey(personKey);
-    if (person == null) return null;
-
-    final daily = coreStore.turnOverrideStore.dailyOverrideFor(
-      person: person,
-      day: day,
-    );
-    if (daily != null && daily.shift != null) {
-      return "Turno cambiato manualmente • ${_turnOverrideShiftLabel(daily.shift!)} (solo oggi)";
-    }
-
-    final period = coreStore.turnOverrideStore.periodOverrideFor(
-      person: person,
-      day: day,
-    );
-    if (period != null && period.shift != null && period.endDate != null) {
-      return "Turno cambiato manualmente • ${_turnOverrideShiftLabel(period.shift!)} (${fmtShortDate(period.startDate)} → ${fmtShortDate(period.endDate!)})";
-    }
-
-    return null;
-  }
-
-  // 🆕 Fonte strutturale del turno mostrato oggi
-  String? _turnSourceTextForPerson({
-    required String personKey,
-    required DateTime day,
-  }) {
-    final person = _personIdFromKey(personKey);
-    if (person == null) return null;
-
-    final daily = coreStore.turnOverrideStore.dailyOverrideFor(
-      person: person,
-      day: day,
-    );
-    if (daily != null && daily.shift != null) {
-      return "Cambio turno (solo oggi)";
-    }
-
-    final period = coreStore.turnOverrideStore.periodOverrideFor(
-      person: person,
-      day: day,
-    );
-    if (period != null && period.shift != null) {
-      return "Cambio turno (periodo)";
-    }
-
-    final activeRotation = coreStore.rotationOverrideStore.activeFor(
-      person: person,
-      day: day,
-    );
-    if (activeRotation != null) {
-      return "Nuova rotazione";
-    }
-
-    final isFourthShiftActive = coreStore.fourthShiftStore
-        .isActiveForPersonOnDay(person.name, _onlyDate(day));
-    if (isFourthShiftActive) {
-      return "Quarta squadra";
-    }
-
-    return null;
   }
 
   Color _turnSourceColor(String sourceText) {
@@ -4033,14 +3945,16 @@ class _CalendarioScreenStepAStabileState
     final conflict = _turns.sameDayConflictFor(_selectedDay);
     final ov = _getOverridesForDay(_selectedDay);
 
-    final matteoSource = _turnSourceTextForPerson(
+    final matteoSourceResult = _turnPersonSourceBuilder.build(
+      coreStore: coreStore,
       personKey: 'matteo',
-      day: _selectedDay,
+      day: _onlyDate(_selectedDay),
     );
 
-    final chiaraSource = _turnSourceTextForPerson(
+    final chiaraSourceResult = _turnPersonSourceBuilder.build(
+      coreStore: coreStore,
       personKey: 'chiara',
-      day: _selectedDay,
+      day: _onlyDate(_selectedDay),
     );
 
     final selectedDayEvents = coreStore.realEventStore.eventsForDay(
@@ -4086,11 +4000,8 @@ class _CalendarioScreenStepAStabileState
       turnSummary: _turnPlanSummary(m),
       manualOverride: ov.matteo,
       diseasePeriod: matteoDisease,
-      turnOverrideStatusText: _turnOverrideStatusTextForPerson(
-        personKey: 'matteo',
-        day: _onlyDate(_selectedDay),
-      ),
-      sourceText: matteoSource,
+      turnOverrideStatusText: matteoSourceResult.turnOverrideStatusText,
+      sourceText: matteoSourceResult.sourceText,
       isOnHoliday: _isPersonOnFerie(
         personKey: 'matteo',
         manualOverride: ov.matteo,
@@ -4110,11 +4021,8 @@ class _CalendarioScreenStepAStabileState
       turnSummary: _turnPlanSummary(c),
       manualOverride: ov.chiara,
       diseasePeriod: chiaraDisease,
-      turnOverrideStatusText: _turnOverrideStatusTextForPerson(
-        personKey: 'chiara',
-        day: _onlyDate(_selectedDay),
-      ),
-      sourceText: chiaraSource,
+      turnOverrideStatusText: chiaraSourceResult.turnOverrideStatusText,
+      sourceText: chiaraSourceResult.sourceText,
       isOnHoliday: _isPersonOnFerie(
         personKey: 'chiara',
         manualOverride: ov.chiara,
