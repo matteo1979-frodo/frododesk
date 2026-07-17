@@ -79,6 +79,7 @@ import '../logic/calendar/builders/alice_now_details_builder.dart';
 import '../widgets/calendar/alice_now_dialog.dart';
 import '../logic/calendar/builders/turn_day_builder.dart';
 import '../logic/calendar/builders/turn_person_source_builder.dart';
+import '../logic/calendar/builders/coverage_gap_filter.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -131,6 +132,8 @@ class _CalendarioScreenStepAStabileState
 
   final TurnPersonSourceBuilder _turnPersonSourceBuilder =
       const TurnPersonSourceBuilder();
+
+  final CoverageGapFilter _coverageGapFilter = const CoverageGapFilter();
 
   final TextEditingController _aliceEventNameController =
       TextEditingController();
@@ -1191,22 +1194,6 @@ class _CalendarioScreenStepAStabileState
 
   DateTime _onlyDate(DateTime d) => DateTime(d.year, d.month, d.day);
 
-  bool _isSchoolInGapLabel(String label) {
-    final lower = label.toLowerCase();
-    return lower.contains('alice ingresso') ||
-        lower.contains('ingresso scuola');
-  }
-
-  bool _isSchoolOutGapLabel(String label) {
-    final lower = label.toLowerCase();
-    return lower.contains('alice uscita') || lower.contains('uscita scuola');
-  }
-
-  bool _isLunchGapLabel(String label) {
-    final lower = label.toLowerCase();
-    return lower.contains('pranzo');
-  }
-
   String _gapTitleWithAliceState(String label) {
     final lower = label.toLowerCase();
 
@@ -1402,39 +1389,15 @@ class _CalendarioScreenStepAStabileState
       uscitaAnticipataAt: uscitaAt,
     );
 
-    final realNow = DateTime.now();
-    final selectedIsToday = _onlyDate(d0) == _onlyDate(realNow);
-    final nowMinutes = realNow.hour * 60 + realNow.minute;
-
-    final filteredGapDetails = analysis.details.where((d) {
-      if (selectedIsToday) {
-        final endMinutes = d.end.hour * 60 + d.end.minute;
-        if (endMinutes <= nowMinutes) {
-          return false;
-        }
-      }
-
-      final label = d.label;
-
-      if (schoolInCover != SchoolCoverChoice.none &&
-          _isSchoolInGapLabel(label)) {
-        return false;
-      }
-
-      if (!uscita13Eff &&
-          schoolOutCover != SchoolCoverChoice.none &&
-          _isSchoolOutGapLabel(label)) {
-        return false;
-      }
-
-      if (uscita13Eff &&
-          lunchCover != SchoolCoverChoice.none &&
-          _isLunchGapLabel(label)) {
-        return false;
-      }
-
-      return true;
-    }).toList();
+    final filteredGapDetails = _coverageGapFilter.filter(
+      details: analysis.details,
+      selectedDay: d0,
+      now: DateTime.now(),
+      uscitaAnticipataActive: uscita13Eff,
+      schoolInCover: schoolInCover,
+      schoolOutCover: schoolOutCover,
+      lunchCover: lunchCover,
+    );
 
     final gaps = filteredGapDetails.map((d) => d.label).toList();
     final ok = gaps.isEmpty;
