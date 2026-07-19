@@ -50,6 +50,7 @@ import '../logic/alice_events/alice_event_behavior.dart';
 import '../logic/alice_events/alice_event_engine.dart';
 import '../logic/calendar/models/family_now_snapshot.dart';
 import '../logic/calendar/models/coverage_result_step_a.dart';
+import '../logic/calendar/models/day_gap_visual_state.dart';
 
 import '../logic/calendar/models/turn_event_conflict.dart';
 
@@ -84,6 +85,7 @@ import '../logic/calendar/builders/coverage_summary_builder.dart';
 import '../logic/calendar/builders/coverage_support_network_builder.dart';
 import '../logic/calendar/builders/alice_logistics_status_builder.dart';
 import '../logic/calendar/builders/alice_event_logistics_builder.dart';
+import '../logic/calendar/builders/day_gap_visual_state_builder.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -150,6 +152,9 @@ class _CalendarioScreenStepAStabileState
 
   final AliceEventLogisticsBuilder _aliceEventLogisticsBuilder =
       const AliceEventLogisticsBuilder();
+
+  final DayGapVisualStateBuilder _dayGapVisualStateBuilder =
+      const DayGapVisualStateBuilder();
 
   final TextEditingController _aliceEventNameController =
       TextEditingController();
@@ -1705,13 +1710,16 @@ class _CalendarioScreenStepAStabileState
     final hasLogisticConflict = aliceLogisticsStatus.hasLogisticConflict;
     final hasRealCoverageGap = cov.gapDetails.isNotEmpty;
 
-    final effectiveState = hasLogisticConflict || hasRealCoverageGap
-        ? DayGapVisualState.realGap
-        : hasIncompleteLogistics
-        ? DayGapVisualState.coveredNeed
-        : state == DayGapVisualState.coveredNeed
-        ? DayGapVisualState.coveredNeed
-        : DayGapVisualState.noProblem;
+    final visual = _dayGapVisualStateBuilder.build(
+      baseState: state,
+      baseColor: color,
+      baseIcon: icon,
+      baseHeadline: headline,
+      baseSubline: subline,
+      hasLogisticConflict: hasLogisticConflict,
+      hasIncompleteLogistics: hasIncompleteLogistics,
+      hasRealCoverageGap: hasRealCoverageGap,
+    );
 
     final visibleGapDetails = cov.gapDetails.isNotEmpty
         ? cov.gapDetails
@@ -1729,29 +1737,10 @@ class _CalendarioScreenStepAStabileState
             );
           }).toList();
 
-    final effectiveColor = effectiveState == DayGapVisualState.realGap
-        ? Colors.red
-        : effectiveState == DayGapVisualState.coveredNeed
-        ? Colors.orange
-        : color;
-
-    final effectiveIcon = effectiveState == DayGapVisualState.realGap
-        ? Icons.error
-        : effectiveState == DayGapVisualState.coveredNeed
-        ? Icons.warning_amber_rounded
-        : icon;
-
-    final effectiveHeadline = hasLogisticConflict
-        ? "❗ Conflitto logistico Alice"
-        : hasIncompleteLogistics
-        ? "⚠ Logistica Alice incompleta"
-        : headline;
-
-    final effectiveSubline = hasLogisticConflict
-        ? "Un evento Alice ha accompagnamento o ritiro assegnato a una persona non disponibile."
-        : hasIncompleteLogistics
-        ? "Un evento Alice richiede accompagnamento o ritiro, ma manca ancora una persona assegnata."
-        : subline;
+    final effectiveColor = visual.color;
+    final effectiveIcon = visual.icon;
+    final effectiveHeadline = visual.headline;
+    final effectiveSubline = visual.subline;
 
     return GestureDetector(
       onTap: () {
@@ -1816,7 +1805,7 @@ class _CalendarioScreenStepAStabileState
                 ),
               ],
             ),
-            if (state == DayGapVisualState.coveredNeed) ...[
+            if (visual.state == DayGapVisualState.coveredNeed) ...[
               const SizedBox(height: 10),
               if (sandraDecision.serveSandraMattina &&
                   _effSandraMattina(_selectedDay))
@@ -6963,5 +6952,3 @@ class _CalendarioScreenStepAStabileState
     );
   }
 }
-
-enum DayGapVisualState { noProblem, coveredNeed, realGap }
