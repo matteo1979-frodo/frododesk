@@ -339,53 +339,6 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
-  List<String> _supportNetworkCoverageLines({
-    required DateTime day,
-    required TimeOfDay start,
-    required TimeOfDay end,
-    required String contextLabel,
-  }) {
-    final matches = _coverageSupportNetworkBuilder.matchesForRange(
-      coreStore: coreStore,
-      daySettingsStore: daySettingsStore,
-      day: day,
-      start: start,
-      end: end,
-    );
-
-    return matches
-        .map(
-          (match) =>
-              ". Supporto $contextLabel: ${match.personName} "
-              "${fmtTimeOfDay(match.start)}-${fmtTimeOfDay(match.end)}",
-        )
-        .toList();
-  }
-
-  String? _supportCoverageSummaryLine({
-    required List<String> lines,
-    required String label,
-  }) {
-    if (lines.isEmpty) return null;
-
-    final first = lines.first;
-    final prefixEnd = first.indexOf(':');
-    if (prefixEnd == -1 || prefixEnd + 1 >= first.length) return null;
-
-    final payload = first.substring(prefixEnd + 1).trim();
-    final parts = payload.split(' ');
-    if (parts.length < 2) return null;
-
-    final name = parts.first;
-    final time = parts.sublist(1).join(' ');
-
-    final prettyName = name.isEmpty
-        ? name
-        : "${name[0].toUpperCase()}${name.substring(1)}";
-
-    return "• $label coperto da $prettyName ($time)";
-  }
-
   SchoolCoverChoice _effectiveSchoolInCover(DateTime day) {
     final saved = daySettingsStore.schoolInCoverForDay(day);
     if (saved != SchoolCoverChoice.none) return saved;
@@ -1682,43 +1635,34 @@ class _CalendarioScreenStepAStabileState
       minute: (ingressoReale.hour * 60 + ingressoReale.minute - 20) % 60,
     );
 
-    final supportInLines = _supportNetworkCoverageLines(
+    final inSupportSummary = _coverageSupportNetworkBuilder.summaryForRange(
+      coreStore: coreStore,
+      daySettingsStore: daySettingsStore,
       day: d0,
       start: ingressoInizio,
       end: _scuolaStart,
-      contextLabel: "ingresso",
-    );
-
-    final supportOutLines = _supportNetworkCoverageLines(
-      day: d0,
-      start: _effSchoolOutStart(d0),
-      end: _effSchoolOutEnd(d0),
-      contextLabel: "uscita",
-    );
-
-    final supportLunchLines = uscita13Eff
-        ? _supportNetworkCoverageLines(
-            day: d0,
-            start: _effUscitaAnticipataAt(d0)!,
-            end: _engine.sandraPranzoEnd,
-            contextLabel: "pranzo",
-          )
-        : <String>[];
-
-    final inSupportSummary = _supportCoverageSummaryLine(
-      lines: supportInLines,
       label: "Ingresso scuola",
     );
 
-    final outSupportSummary = _supportCoverageSummaryLine(
-      lines: supportOutLines,
+    final outSupportSummary = _coverageSupportNetworkBuilder.summaryForRange(
+      coreStore: coreStore,
+      daySettingsStore: daySettingsStore,
+      day: d0,
+      start: _effSchoolOutStart(d0),
+      end: _effSchoolOutEnd(d0),
       label: "Uscita scuola",
     );
 
-    final lunchSupportSummary = _supportCoverageSummaryLine(
-      lines: supportLunchLines,
-      label: "Pranzo",
-    );
+    final lunchSupportSummary = uscita13Eff
+        ? _coverageSupportNetworkBuilder.summaryForRange(
+            coreStore: coreStore,
+            daySettingsStore: daySettingsStore,
+            day: d0,
+            start: _effUscitaAnticipataAt(d0)!,
+            end: _engine.sandraPranzoEnd,
+            label: "Pranzo",
+          )
+        : null;
 
     final logisticAliceEvents = coreStore.aliceSpecialEventStore
         .eventsForDay(_selectedDay)
