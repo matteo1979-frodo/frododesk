@@ -86,6 +86,7 @@ import '../logic/calendar/builders/coverage_support_network_builder.dart';
 import '../logic/calendar/builders/alice_logistics_status_builder.dart';
 import '../logic/calendar/builders/alice_event_logistics_builder.dart';
 import '../logic/calendar/builders/day_gap_visual_state_builder.dart';
+import '../logic/calendar/builders/visible_gap_details_builder.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -155,6 +156,9 @@ class _CalendarioScreenStepAStabileState
 
   final DayGapVisualStateBuilder _dayGapVisualStateBuilder =
       const DayGapVisualStateBuilder();
+
+  final VisibleGapDetailsBuilder _visibleGapDetailsBuilder =
+      const VisibleGapDetailsBuilder();
 
   final TextEditingController _aliceEventNameController =
       TextEditingController();
@@ -1721,21 +1725,13 @@ class _CalendarioScreenStepAStabileState
       hasRealCoverageGap: hasRealCoverageGap,
     );
 
-    final visibleGapDetails = cov.gapDetails.isNotEmpty
-        ? cov.gapDetails
-        : coreStore.aliceCompanionStore.entriesForDay(_selectedDay).map((e) {
-            final who = e.person == AliceCompanionPerson.matteo
-                ? "Matteo"
-                : "Chiara";
-
-            return CoverageGapDetail(
-              label:
-                  "Alice con $who: ${fmtTimeOfDay(TimeOfDay(hour: e.start.hour, minute: e.start.minute))}–${fmtTimeOfDay(TimeOfDay(hour: e.end.hour, minute: e.end.minute))}",
-              lines: const [],
-              start: TimeOfDay(hour: e.start.hour, minute: e.start.minute),
-              end: TimeOfDay(hour: e.end.hour, minute: e.end.minute),
-            );
-          }).toList();
+    final visibleGapDetails = _visibleGapDetailsBuilder.build(
+      realGapDetails: cov.gapDetails,
+      companionEntries: coreStore.aliceCompanionStore.entriesForDay(
+        _selectedDay,
+      ),
+      formatTime: fmtTimeOfDay,
+    );
 
     final effectiveColor = visual.color;
     final effectiveIcon = visual.icon;
