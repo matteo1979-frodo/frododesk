@@ -82,6 +82,7 @@ import '../logic/calendar/builders/turn_person_source_builder.dart';
 import '../logic/calendar/builders/coverage_gap_filter.dart';
 import '../logic/calendar/builders/coverage_summary_builder.dart';
 import '../logic/calendar/builders/coverage_support_network_builder.dart';
+import '../logic/calendar/builders/alice_logistics_status_builder.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -142,6 +143,9 @@ class _CalendarioScreenStepAStabileState
 
   final CoverageSupportNetworkBuilder _coverageSupportNetworkBuilder =
       const CoverageSupportNetworkBuilder();
+
+  final AliceLogisticsStatusBuilder _aliceLogisticsStatusBuilder =
+      const AliceLogisticsStatusBuilder();
 
   final TextEditingController _aliceEventNameController =
       TextEditingController();
@@ -1669,6 +1673,14 @@ class _CalendarioScreenStepAStabileState
         .where((e) => e.behavior == AliceEventBehavior.logistic)
         .toList();
 
+    final aliceLogisticsStatus = _aliceLogisticsStatusBuilder.build(
+      day: _selectedDay,
+      logisticEvents: logisticAliceEvents,
+      aliceEventEngine: _aliceEventEngine,
+      isMatteoBusy: (start, end) => _engine.isMatteoBusyBetween(start, end),
+      isChiaraBusy: (start, end) => _engine.isChiaraBusyBetween(start, end),
+    );
+
     String adultLabel(String? key) {
       switch (key) {
         case 'matteo':
@@ -1684,65 +1696,9 @@ class _CalendarioScreenStepAStabileState
       }
     }
 
-    final hasIncompleteLogistics = logisticAliceEvents.any(
-      (e) =>
-          !_aliceEventEngine.hasDropOffAssigned(e) ||
-          !_aliceEventEngine.hasPickUpAssigned(e),
-    );
+    final hasIncompleteLogistics = aliceLogisticsStatus.hasIncompleteLogistics;
 
-    bool isAdultBusyForRange({
-      required String? adultKey,
-      required DateTime start,
-      required DateTime end,
-    }) {
-      if (adultKey == 'matteo') {
-        return _engine.isMatteoBusyBetween(start, end);
-      }
-
-      if (adultKey == 'chiara') {
-        return _engine.isChiaraBusyBetween(start, end);
-      }
-
-      return false;
-    }
-
-    final hasLogisticConflict = logisticAliceEvents.any((e) {
-      final eventStart = DateTime(
-        _selectedDay.year,
-        _selectedDay.month,
-        _selectedDay.day,
-        e.start.hour,
-        e.start.minute,
-      );
-
-      final eventEnd = DateTime(
-        _selectedDay.year,
-        _selectedDay.month,
-        _selectedDay.day,
-        e.end.hour,
-        e.end.minute,
-      );
-
-      final dropOffStart = eventStart.subtract(const Duration(minutes: 20));
-      final dropOffEnd = eventStart;
-
-      final pickUpStart = eventEnd;
-      final pickUpEnd = eventEnd.add(const Duration(minutes: 20));
-
-      final dropOffBusy = isAdultBusyForRange(
-        adultKey: e.dropOffAdultKey,
-        start: dropOffStart,
-        end: dropOffEnd,
-      );
-
-      final pickUpBusy = isAdultBusyForRange(
-        adultKey: e.pickUpAdultKey,
-        start: pickUpStart,
-        end: pickUpEnd,
-      );
-
-      return dropOffBusy || pickUpBusy;
-    });
+    final hasLogisticConflict = aliceLogisticsStatus.hasLogisticConflict;
     final hasRealCoverageGap = cov.gapDetails.isNotEmpty;
 
     final effectiveState = hasLogisticConflict || hasRealCoverageGap
