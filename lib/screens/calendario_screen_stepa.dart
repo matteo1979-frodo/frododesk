@@ -85,6 +85,7 @@ import '../logic/calendar/builders/coverage_summary_builder.dart';
 import '../logic/calendar/builders/coverage_support_network_builder.dart';
 import '../logic/calendar/builders/alice_logistics_status_builder.dart';
 import '../logic/calendar/builders/alice_event_logistics_builder.dart';
+import '../logic/calendar/builders/alice_event_logistics_text_builder.dart';
 import '../logic/calendar/builders/day_gap_visual_state_builder.dart';
 import '../logic/calendar/builders/visible_gap_details_builder.dart';
 
@@ -153,6 +154,9 @@ class _CalendarioScreenStepAStabileState
 
   final AliceEventLogisticsBuilder _aliceEventLogisticsBuilder =
       const AliceEventLogisticsBuilder();
+
+  final AliceEventLogisticsTextBuilder _aliceEventLogisticsTextBuilder =
+      const AliceEventLogisticsTextBuilder();
 
   final DayGapVisualStateBuilder _dayGapVisualStateBuilder =
       const DayGapVisualStateBuilder();
@@ -1919,20 +1923,9 @@ class _CalendarioScreenStepAStabileState
                       (p) => p.enabled,
                     ),
                   );
-
-                  final sameAdult = logistics.sameAdult;
-                  final missingDropOff = logistics.missingDropOff;
-                  final missingPickUp = logistics.missingPickUp;
-                  final usesMatteo = logistics.usesMatteo;
-                  final usesChiara = logistics.usesChiara;
-                  final matteoBusy = logistics.matteoBusy;
-                  final chiaraBusy = logistics.chiaraBusy;
-                  final canSuggestSupport = logistics.canSuggestSupport;
-                  final singleAdultManagesEvent =
-                      logistics.singleAdultManagesEvent;
-                  final splitLogistics = logistics.splitLogistics;
-                  final dropOffConflict = logistics.dropOffConflict;
-                  final pickUpConflict = logistics.pickUpConflict;
+                  final logisticsText = _aliceEventLogisticsTextBuilder.build(
+                    logistics,
+                  );
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 6),
@@ -1950,11 +1943,11 @@ class _CalendarioScreenStepAStabileState
                           ),
                         ),
 
-                        if (sameAdult)
+                        if (logisticsText.sameAdultText != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(
-                              "Stessa persona gestisce accompagnamento e ritiro",
+                              logisticsText.sameAdultText!,
                               style: TextStyle(
                                 color: Colors.orange.shade700,
                                 fontWeight: FontWeight.w700,
@@ -1962,15 +1955,12 @@ class _CalendarioScreenStepAStabileState
                               ),
                             ),
                           ),
-                        if (missingDropOff || missingPickUp)
+
+                        if (logisticsText.incompleteText != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(
-                              missingDropOff && missingPickUp
-                                  ? "Logistica incompleta: manca accompagnamento e ritiro"
-                                  : missingDropOff
-                                  ? "Logistica incompleta: manca chi accompagna"
-                                  : "Logistica incompleta: manca chi ritira",
+                              logisticsText.incompleteText!,
                               style: TextStyle(
                                 color: Colors.red.shade700,
                                 fontWeight: FontWeight.w800,
@@ -1978,15 +1968,12 @@ class _CalendarioScreenStepAStabileState
                               ),
                             ),
                           ),
-                        if (usesMatteo || usesChiara)
+
+                        if (logisticsText.involvedAdultsText != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(
-                              usesMatteo && usesChiara
-                                  ? "Coinvolti: Matteo e Chiara"
-                                  : usesMatteo
-                                  ? "Coinvolto: Matteo"
-                                  : "Coinvolta: Chiara",
+                              logisticsText.involvedAdultsText!,
                               style: TextStyle(
                                 color: Colors.blue.shade700,
                                 fontWeight: FontWeight.w800,
@@ -1994,15 +1981,12 @@ class _CalendarioScreenStepAStabileState
                               ),
                             ),
                           ),
-                        if (matteoBusy || chiaraBusy)
+
+                        if (logisticsText.busyWarningText != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(
-                              matteoBusy && chiaraBusy
-                                  ? "Possibile conflitto logistico: Matteo e Chiara potrebbero non riuscire a gestire accompagnamento o ritiro"
-                                  : matteoBusy
-                                  ? "Possibile conflitto logistico: Matteo potrebbe non riuscire a gestire accompagnamento o ritiro"
-                                  : "Possibile conflitto logistico: Chiara potrebbe non riuscire a gestire accompagnamento o ritiro",
+                              logisticsText.busyWarningText!,
                               style: TextStyle(
                                 color: Colors.red.shade700,
                                 fontWeight: FontWeight.w900,
@@ -2010,15 +1994,12 @@ class _CalendarioScreenStepAStabileState
                               ),
                             ),
                           ),
-                        if (dropOffConflict || pickUpConflict)
+
+                        if (logisticsText.conflictText != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(
-                              dropOffConflict && pickUpConflict
-                                  ? "Conflitto su accompagnamento e ritiro"
-                                  : dropOffConflict
-                                  ? "Conflitto su accompagnamento"
-                                  : "Conflitto su ritiro",
+                              logisticsText.conflictText!,
                               style: TextStyle(
                                 color: Colors.red.shade900,
                                 fontWeight: FontWeight.w900,
@@ -2026,11 +2007,12 @@ class _CalendarioScreenStepAStabileState
                               ),
                             ),
                           ),
-                        if (canSuggestSupport)
+
+                        if (logisticsText.supportSuggestionText != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(
-                              "Suggerimento: verifica supporto disponibile per accompagnamento o ritiro",
+                              logisticsText.supportSuggestionText!,
                               style: TextStyle(
                                 color: Colors.orange.shade700,
                                 fontWeight: FontWeight.w800,
@@ -2038,11 +2020,12 @@ class _CalendarioScreenStepAStabileState
                               ),
                             ),
                           ),
-                        if (singleAdultManagesEvent)
+
+                        if (logisticsText.singleAdultText != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(
-                              "Nota: un solo adulto gestisce tutta la logistica dell’evento",
+                              logisticsText.singleAdultText!,
                               style: TextStyle(
                                 color: Colors.purple.shade700,
                                 fontWeight: FontWeight.w800,
@@ -2050,11 +2033,12 @@ class _CalendarioScreenStepAStabileState
                               ),
                             ),
                           ),
-                        if (splitLogistics)
+
+                        if (logisticsText.splitLogisticsText != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(
-                              "Logistica divisa: accompagnamento e ritiro sono gestiti da persone diverse",
+                              logisticsText.splitLogisticsText!,
                               style: TextStyle(
                                 color: Colors.teal.shade700,
                                 fontWeight: FontWeight.w800,
