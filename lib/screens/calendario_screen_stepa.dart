@@ -83,6 +83,7 @@ import '../logic/calendar/builders/coverage_gap_filter.dart';
 import '../logic/calendar/builders/coverage_summary_builder.dart';
 import '../logic/calendar/builders/coverage_support_network_builder.dart';
 import '../logic/calendar/builders/alice_logistics_status_builder.dart';
+import '../logic/calendar/builders/alice_event_logistics_builder.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -146,6 +147,9 @@ class _CalendarioScreenStepAStabileState
 
   final AliceLogisticsStatusBuilder _aliceLogisticsStatusBuilder =
       const AliceLogisticsStatusBuilder();
+
+  final AliceEventLogisticsBuilder _aliceEventLogisticsBuilder =
+      const AliceEventLogisticsBuilder();
 
   final TextEditingController _aliceEventNameController =
       TextEditingController();
@@ -1918,78 +1922,32 @@ class _CalendarioScreenStepAStabileState
                 const SizedBox(height: 6),
 
                 ...logisticAliceEvents.map((e) {
-                  final sameAdult = _aliceEventEngine
-                      .hasSameAdultForDropOffAndPickUp(e);
-
-                  final missingDropOff = !_aliceEventEngine.hasDropOffAssigned(
-                    e,
-                  );
-                  final missingPickUp = !_aliceEventEngine.hasPickUpAssigned(e);
-
-                  final usesMatteo = _aliceEventEngine.usesMatteo(e);
-                  final usesChiara = _aliceEventEngine.usesChiara(e);
-
-                  final eventStart = DateTime(
-                    _selectedDay.year,
-                    _selectedDay.month,
-                    _selectedDay.day,
-                    e.start.hour,
-                    e.start.minute,
+                  final logistics = _aliceEventLogisticsBuilder.build(
+                    day: _selectedDay,
+                    event: e,
+                    aliceEventEngine: _aliceEventEngine,
+                    isMatteoBusy: (start, end) =>
+                        _engine.isMatteoBusyBetween(start, end),
+                    isChiaraBusy: (start, end) =>
+                        _engine.isChiaraBusyBetween(start, end),
+                    hasEnabledSupport: coreStore.supportNetworkStore.people.any(
+                      (p) => p.enabled,
+                    ),
                   );
 
-                  final eventEnd = DateTime(
-                    _selectedDay.year,
-                    _selectedDay.month,
-                    _selectedDay.day,
-                    e.end.hour,
-                    e.end.minute,
-                  );
-
-                  final dropOffEnd = eventStart.add(
-                    const Duration(minutes: 20),
-                  );
-
-                  final pickUpStart = eventEnd.subtract(
-                    const Duration(minutes: 20),
-                  );
-
-                  final matteoDropOffBusy =
-                      e.dropOffAdultKey == 'matteo' &&
-                      _engine.isMatteoBusyBetween(eventStart, dropOffEnd);
-
-                  final matteoPickUpBusy =
-                      e.pickUpAdultKey == 'matteo' &&
-                      _engine.isMatteoBusyBetween(pickUpStart, eventEnd);
-
-                  final chiaraDropOffBusy =
-                      e.dropOffAdultKey == 'chiara' &&
-                      _engine.isChiaraBusyBetween(eventStart, dropOffEnd);
-
-                  final chiaraPickUpBusy =
-                      e.pickUpAdultKey == 'chiara' &&
-                      _engine.isChiaraBusyBetween(pickUpStart, eventEnd);
-
-                  final matteoBusy = matteoDropOffBusy || matteoPickUpBusy;
-                  final chiaraBusy = chiaraDropOffBusy || chiaraPickUpBusy;
-
-                  final canSuggestSupport =
-                      (matteoBusy || chiaraBusy) &&
-                      coreStore.supportNetworkStore.people.any(
-                        (p) => p.enabled,
-                      );
-
-                  final singleAdultManagesEvent = _aliceEventEngine
-                      .isManagedBySingleAdult(e);
-
-                  final splitLogistics = _aliceEventEngine.hasSplitLogistics(e);
-
-                  final dropOffConflict =
-                      (e.dropOffAdultKey == 'matteo' && matteoBusy) ||
-                      (e.dropOffAdultKey == 'chiara' && chiaraBusy);
-
-                  final pickUpConflict =
-                      (e.pickUpAdultKey == 'matteo' && matteoBusy) ||
-                      (e.pickUpAdultKey == 'chiara' && chiaraBusy);
+                  final sameAdult = logistics.sameAdult;
+                  final missingDropOff = logistics.missingDropOff;
+                  final missingPickUp = logistics.missingPickUp;
+                  final usesMatteo = logistics.usesMatteo;
+                  final usesChiara = logistics.usesChiara;
+                  final matteoBusy = logistics.matteoBusy;
+                  final chiaraBusy = logistics.chiaraBusy;
+                  final canSuggestSupport = logistics.canSuggestSupport;
+                  final singleAdultManagesEvent =
+                      logistics.singleAdultManagesEvent;
+                  final splitLogistics = logistics.splitLogistics;
+                  final dropOffConflict = logistics.dropOffConflict;
+                  final pickUpConflict = logistics.pickUpConflict;
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 6),
