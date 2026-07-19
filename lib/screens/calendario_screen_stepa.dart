@@ -81,6 +81,7 @@ import '../logic/calendar/builders/turn_day_builder.dart';
 import '../logic/calendar/builders/turn_person_source_builder.dart';
 import '../logic/calendar/builders/coverage_gap_filter.dart';
 import '../logic/calendar/builders/coverage_summary_builder.dart';
+import '../logic/calendar/builders/coverage_support_network_builder.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -138,6 +139,9 @@ class _CalendarioScreenStepAStabileState
 
   final CoverageSummaryBuilder _coverageSummaryBuilder =
       const CoverageSummaryBuilder();
+
+  final CoverageSupportNetworkBuilder _coverageSupportNetworkBuilder =
+      const CoverageSupportNetworkBuilder();
 
   final TextEditingController _aliceEventNameController =
       TextEditingController();
@@ -326,50 +330,13 @@ class _CalendarioScreenStepAStabileState
     required TimeOfDay start,
     required TimeOfDay end,
   }) {
-    final d0 = _onlyDate(day);
-
-    final fasciaStart = DateTime(
-      d0.year,
-      d0.month,
-      d0.day,
-      start.hour,
-      start.minute,
+    return _coverageSupportNetworkBuilder.coversRange(
+      coreStore: coreStore,
+      daySettingsStore: daySettingsStore,
+      day: day,
+      start: start,
+      end: end,
     );
-
-    final fasciaEnd = DateTime(d0.year, d0.month, d0.day, end.hour, end.minute);
-
-    for (final person in coreStore.supportNetworkStore.people) {
-      if (!person.enabled) continue;
-
-      final enabledForDay = daySettingsStore.isSupportPersonEnabledForDay(
-        d0,
-        person.id,
-      );
-      if (!enabledForDay) continue;
-
-      final supportStart = DateTime(
-        d0.year,
-        d0.month,
-        d0.day,
-        person.start.hour,
-        person.start.minute,
-      );
-
-      final supportEnd = DateTime(
-        d0.year,
-        d0.month,
-        d0.day,
-        person.end.hour,
-        person.end.minute,
-      );
-
-      final coversFullRange =
-          !supportStart.isAfter(fasciaStart) && !supportEnd.isBefore(fasciaEnd);
-
-      if (coversFullRange) return true;
-    }
-
-    return false;
   }
 
   List<String> _supportNetworkCoverageLines({
@@ -378,56 +345,21 @@ class _CalendarioScreenStepAStabileState
     required TimeOfDay end,
     required String contextLabel,
   }) {
-    final d0 = _onlyDate(day);
-
-    final fasciaStart = DateTime(
-      d0.year,
-      d0.month,
-      d0.day,
-      start.hour,
-      start.minute,
+    final matches = _coverageSupportNetworkBuilder.matchesForRange(
+      coreStore: coreStore,
+      daySettingsStore: daySettingsStore,
+      day: day,
+      start: start,
+      end: end,
     );
 
-    final fasciaEnd = DateTime(d0.year, d0.month, d0.day, end.hour, end.minute);
-
-    final lines = <String>[];
-
-    for (final person in coreStore.supportNetworkStore.people) {
-      if (!person.enabled) continue;
-
-      final enabledForDay = daySettingsStore.isSupportPersonEnabledForDay(
-        d0,
-        person.id,
-      );
-      if (!enabledForDay) continue;
-
-      final supportStart = DateTime(
-        d0.year,
-        d0.month,
-        d0.day,
-        person.start.hour,
-        person.start.minute,
-      );
-
-      final supportEnd = DateTime(
-        d0.year,
-        d0.month,
-        d0.day,
-        person.end.hour,
-        person.end.minute,
-      );
-
-      final coversFullRange =
-          !supportStart.isAfter(fasciaStart) && !supportEnd.isBefore(fasciaEnd);
-
-      if (!coversFullRange) continue;
-
-      lines.add(
-        ". Supporto $contextLabel: ${person.name} ${fmtTimeOfDay(person.start)}-${fmtTimeOfDay(person.end)}",
-      );
-    }
-
-    return lines;
+    return matches
+        .map(
+          (match) =>
+              ". Supporto $contextLabel: ${match.personName} "
+              "${fmtTimeOfDay(match.start)}-${fmtTimeOfDay(match.end)}",
+        )
+        .toList();
   }
 
   String? _supportCoverageSummaryLine({
