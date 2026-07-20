@@ -1,7 +1,7 @@
 FRODODESK — RULES
 
-Ultimo aggiornamento: 13 Maggio 2026
-(PresenceEngine attivo + consolidamento CoverageEngine)
+Ultimo aggiornamento: 20 Luglio 2026
+(Allineamento Metodo CNC — definizione operativa completa)
 
 ---
 
@@ -58,7 +58,22 @@ prima stabilità poi estensione
 
 Ogni blocco deve essere stabile prima di passare al successivo.
 
-Il progetto segue la logica CNC (Costruzione Non Caotica).
+Il progetto segue ufficialmente il Metodo CNC (Costruzione Non Caotica).
+
+Il Metodo CNC non significa soltanto procedere per micro-step.
+
+Deriva dal modello dei programmi e sottoprogrammi delle macchine CNC:
+
+- il programma principale coordina il flusso;
+- ogni responsabilità complessa, autonoma o riutilizzabile appartiene a un modulo specializzato;
+- ciò che esiste già viene richiamato, non riscritto o duplicato;
+- le schermate orchestrano e presentano, mentre logica, decisioni e trasformazioni vivono nei livelli responsabili;
+- non si creano moduli inutili: una responsabilità viene estratta solo quando è coerente, riconoscibile e realmente separabile;
+- ogni evoluzione viene applicata attraverso micro-step verificabili, mantenendo il comportamento invariato durante i refactoring salvo modifica funzionale esplicitamente richiesta.
+
+La definizione architetturale completa del Metodo CNC è mantenuta in FRODODESK_ARCHITECTURE.md.
+
+Questa regola operativa ne applica il principio durante lo sviluppo: una responsabilità alla volta, un micro-step alla volta, verifica reale prima di proseguire.
 
 ---
 
@@ -1615,6 +1630,49 @@ Commit Git
 Passo successivo
 
 È vietato accumulare modifiche non verificate.
+
+---
+
+## REGOLA — FILE GRANDI E PREVENZIONE TIMEOUT
+
+Quando si lavora su file molto grandi, il Metodo CNC deve proteggere anche la continuità operativa della chat e ridurre il rischio di errori dovuti a risposte eccessivamente lunghe.
+
+Prima di proporre una modifica, Frodo deve distinguere tra:
+
+### Modifica chirurgica
+
+Se la modifica riguarda un punto preciso e chiaramente identificabile:
+
+- individuare il blocco reale nel file;
+- modificare solo quel blocco;
+- evitare di riscrivere inutilmente l'intero file;
+- fornire riferimenti chiari per apertura e chiusura del blocco da sostituire.
+
+### Modifica strutturale
+
+Se la modifica coinvolge una parte ampia o più responsabilità collegate:
+
+- dividere il lavoro in micro-step autonomi;
+- completare e verificare un blocco prima di passare al successivo;
+- non accumulare grandi quantità di codice in una singola risposta;
+- mantenere sempre il progetto compilabile tra un micro-step e l'altro.
+
+### Principio
+
+Il file reale completo resta la fonte di verità.
+
+La suddivisione in blocchi serve esclusivamente a rendere sicura la modifica.
+
+Non deve mai diventare una scusa per:
+
+- ricostruire parti mancanti a memoria;
+- lavorare su versioni incomplete;
+- perdere il contesto del file reale;
+- introdurre modifiche non verificate.
+
+Obiettivo:
+
+modifiche piccole, controllabili e verificabili anche quando il file sorgente è molto grande.
 
 ---
 

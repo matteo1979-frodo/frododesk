@@ -809,3 +809,138 @@ La Home deve diventare:
 👉 la porta d'ingresso della vita reale della famiglia
 
 non della famiglia Matteo-Chiara-Alice.
+
+---
+
+# 🚀 EVOLUZIONE FUTURA — HOME AZIONABILE
+
+## PRINCIPIO
+
+La Home attuale ha il compito di:
+
+osservare
+↓
+segnalare
+↓
+portare l’utente nel punto corretto
+
+La Home NON deve duplicare le logiche dei moduli proprietari.
+
+---
+
+## EVOLUZIONE FUTURA
+
+In futuro la Home potrà diventare progressivamente azionabile.
+
+Questo significa che, quando FrodoDesk rileva un problema reale, la Home potrà proporre azioni contestuali già determinate dai moduli competenti.
+
+Esempio:
+
+Problema copertura
+↓
+FrodoDesk mostra le possibilità reali disponibili
+↓
+l’utente sceglie
+↓
+il modulo proprietario esegue la decisione
+
+La decisione finale resta sempre umana.
+
+---
+
+## SISTEMA RISOLVI
+
+Direzione futura:
+
+creare un sistema “RISOLVI” capace di funzionare progressivamente su problemi provenienti da moduli diversi.
+
+Esempi futuri:
+
+- copertura
+- calendario
+- finanze
+- banca
+- assicurazioni
+- auto
+- salute
+- scadenze
+- altri moduli futuri
+
+La Home non deve conoscere internamente come risolvere questi problemi.
+
+Deve:
+
+- ricevere il problema reale;
+- mostrarlo con priorità corretta;
+- ricevere eventuali azioni disponibili dal modulo proprietario;
+- permettere all’utente di scegliere;
+- delegare l’esecuzione al modulo corretto.
+
+---
+
+## REGOLA ARCHITETTURALE
+
+HOME = ORCHESTRATORE VISIVO
+
+MODULI = PROPRIETARI DELLE LOGICHE E DELLE AZIONI
+
+La Home non deve diventare un nuovo “mostro” centrale.
+
+Secondo il Metodo CNC, ogni responsabilità deve restare nel proprio sottoprogramma.
+
+Esempio:
+
+Coverage
+↓
+determina problema e possibili soluzioni
+
+Home
+↓
+mostra problema e possibilità
+
+Utente
+↓
+decide
+
+Coverage
+↓
+esegue la decisione
+
+---
+
+## OBIETTIVO FUTURO
+
+Portare gradualmente FrodoDesk da:
+
+“Qui c’è un problema”
+
+a:
+
+“Qui c’è un problema.
+Queste sono le possibilità reali.
+Cosa vuoi fare?”
+
+senza mai arrivare a:
+
+“Ho deciso e modificato la tua vita al posto tuo.”
+
+Principio invariato:
+
+Il sistema suggerisce.
+
+La decisione resta umana.
+
+---
+
+## PRIORITÀ
+
+Questa evoluzione NON è prioritaria nella fase attuale.
+
+Prima devono essere:
+
+- stabilizzati i moduli proprietari;
+- eliminate le duplicazioni logiche;
+- consolidate le sorgenti uniche di verità;
+- completato il refactoring architetturale dei moduli principali.
+
+Solo successivamente la Home potrà diventare progressivamente azionabile senza duplicare logiche o creare nuove responsabilità improprie.

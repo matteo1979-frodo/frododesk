@@ -1,6 +1,6 @@
 # FRODODESK — ARCHITECTURE
 
-Versione: 2.0  
+Versione: 2.1  
 Ultimo aggiornamento: Luglio 2026
 
 ---
@@ -40,6 +40,43 @@ Ogni nuova funzionalità deve poter essere aggiunta senza compromettere quelle e
 ---
 
 # PRINCIPI FONDAMENTALI
+
+## Metodo CNC — principio architetturale ufficiale
+
+Il Metodo CNC è il principio guida con cui FrodoDesk deve essere progettato, sviluppato e refattorizzato.
+
+Il concetto nasce dalla logica dei programmi a controllo numerico: il programma principale coordina il lavoro, mentre le lavorazioni specializzate vengono affidate a sottoprogrammi dedicati che possono essere richiamati quando servono.
+
+Applicato a FrodoDesk significa:
+
+- la Screen o il componente principale orchestra il flusso, ma non deve contenere direttamente tutte le lavorazioni del sistema;
+- ogni responsabilità complessa, autonoma o riutilizzabile deve vivere nel componente architetturale più adatto: Store, Engine, Builder, ViewModel, Widget o altro modulo dedicato;
+- una logica già esistente non deve essere riscritta o duplicata: deve essere richiamata dal componente che ne è proprietario;
+- i componenti specializzati devono avere responsabilità chiare, confini riconoscibili e poter essere modificati senza obbligare a riscrivere il programma principale;
+- il programma principale deve poter essere letto come una sequenza di coordinamento, nello stesso modo in cui un programma CNC richiama i propri sottoprogrammi;
+- il Metodo CNC non significa creare un file o un sottoprogramma per ogni piccola istruzione: si estrae soltanto quando esiste una responsabilità reale, coerente e sufficientemente autonoma;
+- ogni modifica viene eseguita attraverso micro-step verificabili, mantenendo il sistema compilabile, testabile e stabile a ogni passaggio.
+
+Formula sintetica:
+
+```text
+PROGRAMMA PRINCIPALE
+        ↓
+ORCHESTRA
+        ↓
+RICHIAMA RESPONSABILITÀ SPECIALIZZATE
+        ↓
+COMPONENTI AUTONOMI E RIUTILIZZABILI
+```
+
+Il Metodo CNC unisce quindi due principi inseparabili:
+
+1. architettura modulare a responsabilità separate;
+2. evoluzione incrementale, un micro-step verificabile alla volta.
+
+Un refactoring è coerente con il Metodo CNC soltanto se riduce realmente una responsabilità del componente principale senza creare frammentazione inutile o duplicazioni.
+
+---
 
 ## Responsabilità unica
 

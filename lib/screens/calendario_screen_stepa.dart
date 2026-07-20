@@ -88,6 +88,7 @@ import '../logic/calendar/builders/alice_event_logistics_builder.dart';
 import '../logic/calendar/builders/alice_event_logistics_text_builder.dart';
 import '../logic/calendar/builders/day_gap_visual_state_builder.dart';
 import '../logic/calendar/builders/visible_gap_details_builder.dart';
+import '../logic/calendar/builders/day_support_summaries_builder.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -1656,34 +1657,19 @@ class _CalendarioScreenStepAStabileState
       minute: (ingressoReale.hour * 60 + ingressoReale.minute - 20) % 60,
     );
 
-    final inSupportSummary = _coverageSupportNetworkBuilder.summaryForRange(
+    final supportSummaries = const DaySupportSummariesBuilder().build(
+      coverageSupportNetworkBuilder: _coverageSupportNetworkBuilder,
       coreStore: coreStore,
       daySettingsStore: daySettingsStore,
       day: d0,
-      start: ingressoInizio,
-      end: _scuolaStart,
-      label: "Ingresso scuola",
+      schoolInStart: ingressoInizio,
+      schoolInEnd: _scuolaStart,
+      schoolOutStart: _effSchoolOutStart(d0),
+      schoolOutEnd: _effSchoolOutEnd(d0),
+      earlySchoolExitActive: uscita13Eff,
+      earlySchoolExitAt: _effUscitaAnticipataAt(d0),
+      lunchEnd: _engine.sandraPranzoEnd,
     );
-
-    final outSupportSummary = _coverageSupportNetworkBuilder.summaryForRange(
-      coreStore: coreStore,
-      daySettingsStore: daySettingsStore,
-      day: d0,
-      start: _effSchoolOutStart(d0),
-      end: _effSchoolOutEnd(d0),
-      label: "Uscita scuola",
-    );
-
-    final lunchSupportSummary = uscita13Eff
-        ? _coverageSupportNetworkBuilder.summaryForRange(
-            coreStore: coreStore,
-            daySettingsStore: daySettingsStore,
-            day: d0,
-            start: _effUscitaAnticipataAt(d0)!,
-            end: _engine.sandraPranzoEnd,
-            label: "Pranzo",
-          )
-        : null;
 
     final logisticAliceEvents = coreStore.aliceSpecialEventStore
         .eventsForDay(_selectedDay)
@@ -1844,11 +1830,11 @@ class _CalendarioScreenStepAStabileState
                   ),
                 ),
               if (inCover == SchoolCoverChoice.altro &&
-                  inSupportSummary != null)
+                  supportSummaries.schoolIn != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
-                    inSupportSummary,
+                    supportSummaries.schoolIn!,
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -1864,11 +1850,11 @@ class _CalendarioScreenStepAStabileState
                 ),
               if (!uscita13Eff &&
                   outCover == SchoolCoverChoice.altro &&
-                  outSupportSummary != null)
+                  supportSummaries.schoolOut != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
-                    outSupportSummary,
+                    supportSummaries.schoolOut!,
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -1884,11 +1870,11 @@ class _CalendarioScreenStepAStabileState
                 ),
               if (uscita13Eff &&
                   lunchCover == SchoolCoverChoice.altro &&
-                  lunchSupportSummary != null)
+                  supportSummaries.lunch != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
-                    lunchSupportSummary,
+                    supportSummaries.lunch!,
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),

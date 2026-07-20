@@ -1676,3 +1676,231 @@ Tra le evoluzioni previste:
 Decisione architetturale ufficiale:
 
 Il Planner evolve da insieme di condizioni statiche a motore decisionale modulare.
+
+---
+
+# H2 — PRESSIONI A DURATA DEFINITA E TIPI ECONOMICI
+
+Decisioni concettuali consolidate — Maggio/Giugno 2026
+
+Questa sezione consolida due concetti strutturali emersi durante la popolazione reale del modulo Finanze.
+
+Non rappresentano necessariamente funzionalità già implementate.
+
+Rappresentano direzioni ufficiali da preservare nell’evoluzione futura del motore economico.
+
+---
+
+## PRESSIONI A DURATA DEFINITA
+
+Alcune pressioni economiche non devono essere interpretate come semplici spese ricorrenti permanenti.
+
+Esempi:
+
+- mutui;
+- finanziamenti;
+- prestiti;
+- cessioni del quinto;
+- prestiti auto;
+- rateizzazioni importanti.
+
+Queste pressioni possiedono una caratteristica fondamentale:
+
+👉 hanno una durata definita e, quando terminano, liberano capacità economica.
+
+Il sistema dovrà poter considerare progressivamente:
+
+- data di inizio;
+- data di fine;
+- tempo residuo;
+- impatto economico periodico;
+- capacità economica recuperata alla conclusione.
+
+---
+
+## TEMPO RESIDUO
+
+Per una pressione a durata definita, la sola data finale non rappresenta necessariamente l'informazione più utile per la persona.
+
+Il sistema dovrà privilegiare anche una lettura comprensibile del tempo residuo.
+
+Esempio:
+
+"Mancano 14 mesi alla fine del finanziamento."
+
+può essere più significativo di una semplice data di scadenza.
+
+Il tempo residuo permette di leggere la pressione come qualcosa che evolve nel tempo e non come una spesa permanente.
+
+---
+
+## CAPACITÀ ECONOMICA RECUPERATA
+
+Quando una pressione a durata definita termina, il sistema familiare recupera capacità economica periodica.
+
+Esempio:
+
+Finanziamento:
+
+280 €/mese
+
+Fine prevista:
+
+fra 14 mesi
+
+Capacità economica recuperata alla fine:
+
++280 €/mese
+
+Questa liberazione futura può influenzare:
+
+- ossigeno economico;
+- capacità di risparmio;
+- ricostruzione dei fondi;
+- resilienza;
+- sostenibilità futura;
+- direzione del sistema.
+
+---
+
+## CASO SPECIALE — CESSIONE DEL QUINTO
+
+La cessione del quinto non deve essere interpretata soltanto come una normale spesa.
+
+Può essere letta concettualmente come:
+
+Reddito potenziale
+↓
+Vincolo temporaneo
+↓
+Reddito disponibile reale
+
+Quando il vincolo termina:
+
+- aumenta il reddito disponibile;
+- aumenta la capacità economica mensile;
+- può aumentare l'ossigeno economico;
+- aumenta la possibilità di ricostruire protezioni e resilienza.
+
+---
+
+# TIPI ECONOMICI
+
+Durante la popolazione reale del modulo Finanze è emersa la necessità futura di distinguere:
+
+TIPO ECONOMICO
+
+da
+
+RICORRENZA REALE
+
+Principio:
+
+👉 il Tipo Economico descrive COS'È un fenomeno economico.
+
+👉 la Ricorrenza Reale descrive COME quel fenomeno esiste concretamente nella vita di una specifica famiglia.
+
+---
+
+## ESEMPI DI TIPI ECONOMICI
+
+Entrate:
+
+- Stipendio;
+- Assegno Unico;
+- Pensione;
+- Rimborso 730;
+- Bonus;
+- Entrata straordinaria.
+
+Uscite:
+
+- Mutuo;
+- Prestito;
+- Cessione del Quinto;
+- Assicurazione;
+- Tassa;
+- Utenza;
+- Abbonamento.
+
+Questi esempi non rappresentano voci economiche precompilate obbligatorie.
+
+Restano valido il principio dell'inserimento manuale dell'utente e la configurabilità del sistema.
+
+---
+
+## TIPO ECONOMICO ≠ RICORRENZA REALE
+
+Esempio concettuale:
+
+Stipendio
++
+Persona
++
+Origine / rapporto economico
++
+Conto
++
+Parametri specifici
+
+↓
+
+Ricorrenza reale della famiglia
+
+Il Tipo Economico fornisce significato e comportamento.
+
+La Ricorrenza Reale rappresenta l'istanza concreta configurata dalla famiglia.
+
+Questa distinzione potrà permettere in futuro:
+
+- maggiore coerenza dei dati;
+- statistiche più intelligenti;
+- comportamenti economici riutilizzabili;
+- cambio di lavoro o fornitore senza perdere il significato economico;
+- distinzione tra categoria concettuale e singola voce reale;
+- evoluzione multi-famiglia senza dipendere da nomi specifici.
+
+---
+
+## PRINCIPIO MULTI-FAMIGLIA
+
+I Tipi Economici non devono dipendere dalla famiglia laboratorio attuale.
+
+Il modello futuro deve poter funzionare allo stesso modo per qualsiasi famiglia.
+
+Non:
+
+"Stipendio Matteo - Panna" come tipo universale.
+
+Ma:
+
+Tipo Economico: Stipendio
+
+↓
+
+istanza configurata dalla famiglia
+
+↓
+
+persona + origine + conto + parametri
+
+La famiglia attuale rimane il caso reale di collaudo, non la struttura definitiva del modello.
+
+---
+
+## STATO DI IMPLEMENTAZIONE
+
+Questi concetti sono decisioni architetturali e concettuali consolidate.
+
+Non implicano che esistano già nel codice:
+
+- un modello `PressioneDurataDefinita`;
+- un archivio `TipoEconomico`;
+- nuovi engine dedicati;
+- nuove strutture persistenti.
+
+Regola:
+
+👉 non anticipare implementazioni finché l'architettura reale e la roadmap non richiederanno questi componenti.
+
+La fonte di verità operativa resta sempre il codice reale del progetto.

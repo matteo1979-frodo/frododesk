@@ -1,7 +1,7 @@
 # FRODODESK — MASTER ROADMAP V5
 
 Versione: 5.0
-Ultimo aggiornamento: Luglio 2026
+Ultimo aggiornamento: 20 Luglio 2026
 
 ---
 
@@ -254,7 +254,7 @@ Il Calendario diventa il modulo di riferimento per tutta l'architettura futura.
 
 # MILESTONE ATTUALE
 
-# H6 — CONSOLIDAMENTO DEI MOTORI
+# H6 — CONSOLIDAMENTO ARCHITETTURALE
 
 🟡 IN CORSO
 
@@ -319,7 +319,29 @@ Introduce qualità strutturale.
 
 Le milestone riportate di seguito rappresentano la direzione strategica del progetto.
 
-L'ordine potrà essere modificato soltanto attraverso una decisione architetturale ufficiale.
+L'ordine rappresenta una direzione strategica. Ogni passo operativo deve però essere validato sullo stato reale del codice; se il progetto è già evoluto oltre una previsione precedente, la roadmap viene riallineata esplicitamente prima di proseguire.
+
+---
+
+# RIALLINEAMENTO H6 — 20 LUGLIO 2026
+
+H6 applica in modo sistematico il Metodo CNC all'architettura reale del progetto.
+
+Il piano operativo non deve essere seguito meccanicamente quando il codice reale è già evoluto oltre una previsione precedente: prima si analizza lo stato corrente, poi si sceglie la responsabilità coesa a maggior valore architetturale.
+
+Stato corrente:
+
+- il refactoring incrementale del Calendario è ancora in corso;
+- `_buildDayGapsBox()` è uno dei principali blocchi ancora in consolidamento;
+- numerose responsabilità sono già state estratte in Builder dedicati;
+- tra le estrazioni più recenti rientra `DaySupportSummariesBuilder`;
+- ogni estrazione deve mantenere invariato il comportamento salvo modifica funzionale esplicitamente richiesta;
+- analyzer/app devono restare verdi;
+- i checkpoint Git separano i micro-step stabili.
+
+H6 non è conclusa.
+
+La roadmap indica la direzione strategica; il codice reale aggiornato determina sempre il prossimo micro-step operativo.
 
 ---
 

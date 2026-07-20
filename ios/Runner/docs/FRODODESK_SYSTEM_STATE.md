@@ -1,7 +1,7 @@
 # FRODODESK — SYSTEM STATE
 
-Ultimo aggiornamento: Luglio 2026
-(Chiusura H5 — Refactoring Architetturale Calendario)
+Ultimo aggiornamento: 20 Luglio 2026
+(H6 in corso — consolidamento architetturale Calendario)
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -52,6 +52,7 @@ Il sistema NON è più:
 ✔ Modularizzazione stabile
 
 ✔ Architettura a responsabilità separate
+✔ Metodo CNC formalizzato come principio architetturale: Screen/orchestratore e moduli specializzati per responsabilità
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -110,9 +111,9 @@ La UI visualizza esclusivamente informazioni preparate dal ViewModel.
 
 ━━━━━━━━━━━━━━━━━━
 
-## CONSOLIDATO
+## CONSOLIDATO E IN ULTERIORE RAFFINAMENTO H6
 
-Il Calendario rappresenta oggi il modulo architetturalmente più evoluto del progetto.
+Il Calendario rappresenta oggi il modulo architetturalmente più evoluto del progetto, ma H6 sta ancora riducendo responsabilità residue presenti nella Screen e nei grandi metodi.
 
 Sono stati eliminati numerosi blocchi monolitici attraverso estrazioni progressive senza modificare il comportamento funzionale.
 
@@ -129,6 +130,16 @@ Principio seguito durante H5:
 ✔ commit frequenti
 
 ✔ applicazione sempre verde prima del commit
+
+Stato H6 al 20 luglio 2026:
+
+✔ refactoring incrementale di `_buildDayGapsBox()` in corso;
+✔ estrazione progressiva di responsabilità in Builder dedicati;
+✔ `AliceLogisticsStatusBuilder`, `AliceEventLogisticsBuilder`, `AliceEventLogisticsTextBuilder`, `DayGapVisualStateBuilder` e `VisibleGapDetailsBuilder` collegati;
+✔ preparazione dei riepiloghi della rete di supporto estratta in `DaySupportSummariesBuilder`;
+✔ comportamento dell'app mantenuto invariato durante le estrazioni;
+✔ analyzer mantenuto pulito e checkpoint Git eseguiti tra i micro-step;
+⚠ il Calendario non è ancora dichiarato definitivamente concluso: H6 prosegue finché le responsabilità residue ad alto valore architetturale non saranno separate in modo coerente.
 
 ━━━━━━━━━━━━━━━━━━
 

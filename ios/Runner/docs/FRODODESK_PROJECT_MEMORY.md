@@ -1,7 +1,7 @@
 # FRODODESK — PROJECT MEMORY
 
-Ultimo aggiornamento: Luglio 2026
-(Chiusura H5 — Consolidamento Architetturale)
+Ultimo aggiornamento: 20 Luglio 2026
+(H6 in corso — memoria architetturale e formalizzazione Metodo CNC)
 
 ━━━━━━━━━━━━━━━━━━
 
@@ -220,6 +220,53 @@ Il principio più importante emerso durante questa fase è:
 Non pensa."
 
 Questo rappresenta uno dei cambiamenti architetturali più importanti dalla nascita del progetto.
+
+━━━━━━━━━━━━━━━━━━
+
+# ORIGINE DEL METODO CNC
+
+━━━━━━━━━━━━━━━━━━
+
+Il Metodo CNC nasce da un'intuizione originaria del progetto ispirata all'esperienza reale con la programmazione delle macchine a controllo numerico.
+
+Nel modello CNC, il programma principale non riscrive ogni lavorazione nel proprio flusso.
+
+Coordina invece sottoprogrammi specializzati, richiamati quando servono.
+
+Esempio concettuale:
+
+programma principale
+↓
+richiama lavorazione specializzata
+↓
+centratura
+↓
+foratura
+↓
+filettatura
+
+Lo stesso principio diventa parte permanente dell'identità architetturale di FrodoDesk:
+
+- la Screen o il componente principale orchestra;
+- le responsabilità autonome appartengono a moduli specializzati;
+- una logica già esistente viene richiamata e non duplicata;
+- i moduli devono avere confini chiari e responsabilità riconoscibili;
+- non si frammenta il codice senza motivo;
+- l'evoluzione avviene attraverso micro-step verificabili.
+
+La memoria storica importante è che il Metodo CNC non ha mai significato soltanto "un passo alla volta".
+
+Il micro-step rappresenta il metodo operativo.
+
+Il modello programma principale + sottoprogrammi rappresenta invece il suo principio architetturale.
+
+Durante H5 e soprattutto H6, FrodoDesk ha progressivamente trasformato questa intuizione originaria in architettura concreta attraverso Store, Engine, Builder, ViewModel, Widget e Screen orchestratrici.
+
+La definizione tecnica ufficiale del Metodo CNC appartiene a `FRODODESK_ARCHITECTURE.md`.
+
+Le regole operative appartengono a `FRODODESK_RULES.md`.
+
+Questa sezione conserva invece l'origine, il significato e la memoria storica del principio.
 
 ━━━━━━━━━━━━━━━━━━
 
