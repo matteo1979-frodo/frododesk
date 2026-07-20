@@ -90,6 +90,7 @@ import '../logic/calendar/builders/day_gap_visual_state_builder.dart';
 import '../logic/calendar/builders/visible_gap_details_builder.dart';
 import '../logic/calendar/builders/day_support_summaries_builder.dart';
 import '../logic/calendar/builders/alice_companion_for_gap_builder.dart';
+import '../logic/calendar/builders/gap_title_with_alice_state_builder.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -159,6 +160,9 @@ class _CalendarioScreenStepAStabileState
 
   final AliceCompanionForGapBuilder _aliceCompanionForGapBuilder =
       const AliceCompanionForGapBuilder();
+
+  final GapTitleWithAliceStateBuilder _gapTitleWithAliceStateBuilder =
+      const GapTitleWithAliceStateBuilder();
 
   final AliceEventLogisticsTextBuilder _aliceEventLogisticsTextBuilder =
       const AliceEventLogisticsTextBuilder();
@@ -1110,55 +1114,13 @@ class _CalendarioScreenStepAStabileState
   DateTime _onlyDate(DateTime d) => DateTime(d.year, d.month, d.day);
 
   String _gapTitleWithAliceState(String label) {
-    final lower = label.toLowerCase();
-
-    if (lower.startsWith('alice pranzo:') ||
-        lower.startsWith('alice ingresso:') ||
-        lower.startsWith('alice uscita:') ||
-        lower.startsWith('alice centro estivo ingresso:') ||
-        lower.startsWith('alice centro estivo uscita:')) {
-      return label;
-    }
-
-    final clean = cleanGapTitle(label);
-
-    if (!clean.toLowerCase().startsWith('alice a casa')) {
-      return clean;
-    }
-
     final aliceEvent = coreStore.aliceEventStore.getEventForDay(_selectedDay);
-    if (aliceEvent == null) return clean;
 
-    String? stateLabel;
-    switch (aliceEvent.type) {
-      case AliceEventType.schoolNormal:
-        stateLabel = null;
-        break;
-      case AliceEventType.vacation:
-        stateLabel = "Vacanza";
-        break;
-      case AliceEventType.schoolClosure:
-        stateLabel = "Scuola chiusa";
-        break;
-      case AliceEventType.sickness:
-        stateLabel = "Malattia";
-        break;
-      case AliceEventType.summerCamp:
-        stateLabel = "Centro estivo";
-        break;
-    }
-
-    if (stateLabel == null || stateLabel.isEmpty) return clean;
-
-    final parts = clean.split(':');
-    if (parts.length < 2) {
-      return "Alice a casa ($stateLabel)";
-    }
-
-    final left = parts.first.trim();
-    final right = parts.sublist(1).join(':').trim();
-
-    return "$left ($stateLabel): $right";
+    return _gapTitleWithAliceStateBuilder.build(
+      label: label,
+      aliceEventType: aliceEvent?.type,
+      cleanGapTitle: cleanGapTitle,
+    );
   }
 
   String _companionActionTextForGap(CoverageGapDetail gap) {
@@ -1508,69 +1470,69 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
-AliceCompanionPerson _whoCanBringAliceForGap({
-  required TimeOfDay start,
-  required TimeOfDay end,
-}) {
-  final day = _selectedDay;
+  AliceCompanionPerson _whoCanBringAliceForGap({
+    required TimeOfDay start,
+    required TimeOfDay end,
+  }) {
+    final day = _selectedDay;
 
-  final ov = _getOverridesForDay(day);
+    final ov = _getOverridesForDay(day);
 
-  final matteoDisease = coreStore.diseasePeriodStore.getPeriodForDay(
-    'matteo',
-    _onlyDate(day),
-  );
+    final matteoDisease = coreStore.diseasePeriodStore.getPeriodForDay(
+      'matteo',
+      _onlyDate(day),
+    );
 
-  final chiaraDisease = coreStore.diseasePeriodStore.getPeriodForDay(
-    'chiara',
-    _onlyDate(day),
-  );
+    final chiaraDisease = coreStore.diseasePeriodStore.getPeriodForDay(
+      'chiara',
+      _onlyDate(day),
+    );
 
-  final matteoSick =
-      ov.matteo?.status == OverrideStatus.malattiaLeggera ||
-      ov.matteo?.status == OverrideStatus.malattiaALetto ||
-      matteoDisease != null;
+    final matteoSick =
+        ov.matteo?.status == OverrideStatus.malattiaLeggera ||
+        ov.matteo?.status == OverrideStatus.malattiaALetto ||
+        matteoDisease != null;
 
-  final chiaraSick =
-      ov.chiara?.status == OverrideStatus.malattiaLeggera ||
-      ov.chiara?.status == OverrideStatus.malattiaALetto ||
-      chiaraDisease != null;
+    final chiaraSick =
+        ov.chiara?.status == OverrideStatus.malattiaLeggera ||
+        ov.chiara?.status == OverrideStatus.malattiaALetto ||
+        chiaraDisease != null;
 
-  final matteoPlan = _turns.turnPlanForPersonDay(
-    person: TurnPerson.matteo,
-    day: day,
-  );
+    final matteoPlan = _turns.turnPlanForPersonDay(
+      person: TurnPerson.matteo,
+      day: day,
+    );
 
-  final chiaraPlan = _turns.turnPlanForPersonDay(
-    person: TurnPerson.chiara,
-    day: day,
-  );
+    final chiaraPlan = _turns.turnPlanForPersonDay(
+      person: TurnPerson.chiara,
+      day: day,
+    );
 
-  final events = coreStore.realEventStore
-      .eventsForDay(_onlyDate(day))
-      .where((e) => e.startTime != null && e.endTime != null)
-      .map(
-        (e) => AliceCompanionBusyEvent(
-          personKey: e.personKey,
-          start: e.startTime!,
-          end: e.endTime!,
-        ),
-      )
-      .toList();
+    final events = coreStore.realEventStore
+        .eventsForDay(_onlyDate(day))
+        .where((e) => e.startTime != null && e.endTime != null)
+        .map(
+          (e) => AliceCompanionBusyEvent(
+            personKey: e.personKey,
+            start: e.startTime!,
+            end: e.endTime!,
+          ),
+        )
+        .toList();
 
-  return _aliceCompanionForGapBuilder.build(
-    day: day,
-    start: start,
-    end: end,
-    matteoSick: matteoSick,
-    chiaraSick: chiaraSick,
-    matteoWorkStart: matteoPlan.isOff ? null : matteoPlan.start,
-    matteoWorkEnd: matteoPlan.isOff ? null : matteoPlan.end,
-    chiaraWorkStart: chiaraPlan.isOff ? null : chiaraPlan.start,
-    chiaraWorkEnd: chiaraPlan.isOff ? null : chiaraPlan.end,
-    events: events,
-  );
-}
+    return _aliceCompanionForGapBuilder.build(
+      day: day,
+      start: start,
+      end: end,
+      matteoSick: matteoSick,
+      chiaraSick: chiaraSick,
+      matteoWorkStart: matteoPlan.isOff ? null : matteoPlan.start,
+      matteoWorkEnd: matteoPlan.isOff ? null : matteoPlan.end,
+      chiaraWorkStart: chiaraPlan.isOff ? null : chiaraPlan.start,
+      chiaraWorkEnd: chiaraPlan.isOff ? null : chiaraPlan.end,
+      events: events,
+    );
+  }
 
   Widget _buildDayGapsBox(CoverageResultStepA cov) {
     final d0 = _selectedDay;
@@ -1947,41 +1909,27 @@ AliceCompanionPerson _whoCanBringAliceForGap({
                   ),
                 const SizedBox(height: 6),
 
-                if (!companionEntries.any(
-                  (e) =>
-                      e.sourceEventId != null &&
-                      e.start.hour == visibleGapDetails[i].start.hour &&
-                      e.start.minute == visibleGapDetails[i].start.minute &&
-                      e.end.hour == visibleGapDetails[i].end.hour &&
-                      e.end.minute == visibleGapDetails[i].end.minute,
-                ))
+                if (!coreStore.aliceCompanionStore
+                    .hasSourceEventEntryForExactRange(
+                      day: d0,
+                      start: visibleGapDetails[i].start,
+                      end: visibleGapDetails[i].end,
+                    ))
                   ElevatedButton(
                     onPressed: () {
                       final gap = visibleGapDetails[i];
 
-                      final entry = AliceCompanionEntry(
-                        day: d0,
-                        start: gap.start,
-                        end: gap.end,
-                        person: _whoCanBringAliceForGap(
+                      coreStore.aliceCompanionStore.toggleEntryForExactRange(
+                        AliceCompanionEntry(
+                          day: d0,
                           start: gap.start,
                           end: gap.end,
+                          person: _whoCanBringAliceForGap(
+                            start: gap.start,
+                            end: gap.end,
+                          ),
                         ),
                       );
-
-                      final existing = companionEntries.any(
-                        (e) =>
-                            e.start.hour == gap.start.hour &&
-                            e.start.minute == gap.start.minute &&
-                            e.end.hour == gap.end.hour &&
-                            e.end.minute == gap.end.minute,
-                      );
-
-                      if (existing) {
-                        coreStore.aliceCompanionStore.removeEntry(entry);
-                      } else {
-                        coreStore.aliceCompanionStore.addEntry(entry);
-                      }
 
                       setState(() {
                         // trigger rebuild

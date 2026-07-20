@@ -40,6 +40,49 @@ class AliceCompanionStore {
     return List.unmodifiable(list);
   }
 
+  bool hasEntryForExactRange({
+    required DateTime day,
+    required TimeOfDay start,
+    required TimeOfDay end,
+  }) {
+    return entriesForDay(day).any(
+      (e) =>
+          e.start.hour == start.hour &&
+          e.start.minute == start.minute &&
+          e.end.hour == end.hour &&
+          e.end.minute == end.minute,
+    );
+  }
+
+  void toggleEntryForExactRange(AliceCompanionEntry entry) {
+    final existing = hasEntryForExactRange(
+      day: entry.day,
+      start: entry.start,
+      end: entry.end,
+    );
+
+    if (existing) {
+      removeEntry(entry);
+    } else {
+      addEntry(entry);
+    }
+  }
+
+  bool hasSourceEventEntryForExactRange({
+    required DateTime day,
+    required TimeOfDay start,
+    required TimeOfDay end,
+  }) {
+    return entriesForDay(day).any(
+      (e) =>
+          e.sourceEventId != null &&
+          e.start.hour == start.hour &&
+          e.start.minute == start.minute &&
+          e.end.hour == end.hour &&
+          e.end.minute == end.minute,
+    );
+  }
+
   void addEntry(AliceCompanionEntry entry) {
     final key = _dayKey(entry.day);
     final list = _items.putIfAbsent(key, () => <AliceCompanionEntry>[]);
