@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../models/work_shift.dart';
 import '../models/real_event.dart';
-import '../screens/calendario_screen_stepa.dart';
 import '../logic/calendar/models/turn_event_conflict.dart';
 
 String fmtTimeOfDay(TimeOfDay t) =>
@@ -17,6 +15,7 @@ DateTime atDayTime(DateTime day, TimeOfDay t) {
   final d0 = DateTime(day.year, day.month, day.day);
   return DateTime(d0.year, d0.month, d0.day, t.hour, t.minute);
 }
+
 String cleanGapTitle(String label) {
   final lower = label.toLowerCase();
 
@@ -42,6 +41,7 @@ String cleanGapTitle(String label) {
 
   return label;
 }
+
 String realEventText(RealEvent event) {
   if (event.startTime != null && event.endTime != null) {
     return "${event.title} ${fmtTimeOfDay(event.startTime!)}–${fmtTimeOfDay(event.endTime!)}";
@@ -53,6 +53,7 @@ String realEventText(RealEvent event) {
 
   return "${event.title} • Tutto il giorno";
 }
+
 String conflictStateLabel(TurnEventConflictState state) {
   switch (state) {
     case TurnEventConflictState.open:
@@ -63,6 +64,14 @@ String conflictStateLabel(TurnEventConflictState state) {
       return "Risolto";
   }
 }
+
+String effectiveConflictStateLabel({
+  required TurnEventConflictState state,
+  required bool isForced,
+}) {
+  return isForced ? "Uscita imprescindibile" : conflictStateLabel(state);
+}
+
 Color conflictStateColor(TurnEventConflictState state) {
   switch (state) {
     case TurnEventConflictState.open:

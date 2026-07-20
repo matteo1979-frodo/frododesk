@@ -16,9 +16,7 @@ class VisibleGapDetailsBuilder {
     }
 
     return companionEntries.map((entry) {
-      final who = entry.person == AliceCompanionPerson.matteo
-          ? 'Matteo'
-          : 'Chiara';
+      final who = entry.person.displayName;
 
       final start = TimeOfDay(
         hour: entry.start.hour,

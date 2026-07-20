@@ -2,6 +2,19 @@ import 'package:flutter/material.dart';
 
 enum AliceCompanionPerson { matteo, chiara, nessuno }
 
+extension AliceCompanionPersonLabel on AliceCompanionPerson {
+  String get displayName {
+    switch (this) {
+      case AliceCompanionPerson.matteo:
+        return 'Matteo';
+      case AliceCompanionPerson.chiara:
+        return 'Chiara';
+      case AliceCompanionPerson.nessuno:
+        return 'Nessuno';
+    }
+  }
+}
+
 class AliceCompanionEntry {
   final DateTime day;
   final TimeOfDay start;
@@ -52,6 +65,40 @@ class AliceCompanionStore {
           e.end.hour == end.hour &&
           e.end.minute == end.minute,
     );
+  }
+
+  bool hasEntryForExactRangeAndPerson({
+    required DateTime day,
+    required TimeOfDay start,
+    required TimeOfDay end,
+    required AliceCompanionPerson person,
+  }) {
+    return entriesForDay(day).any(
+      (e) =>
+          e.person == person &&
+          e.start.hour == start.hour &&
+          e.start.minute == start.minute &&
+          e.end.hour == end.hour &&
+          e.end.minute == end.minute,
+    );
+  }
+
+  String companionActionTextForExactRange({
+    required DateTime day,
+    required TimeOfDay start,
+    required TimeOfDay end,
+    required AliceCompanionPerson person,
+  }) {
+    final existing = hasEntryForExactRangeAndPerson(
+      day: day,
+      start: start,
+      end: end,
+      person: person,
+    );
+
+    return existing
+        ? 'Togli Alice da ${person.displayName}'
+        : 'Porta Alice con ${person.displayName}';
   }
 
   void toggleEntryForExactRange(AliceCompanionEntry entry) {

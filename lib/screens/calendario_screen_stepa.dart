@@ -35,6 +35,7 @@ import '../widgets/fourth_shift_panel.dart';
 import '../widgets/ferie_period_panel.dart';
 import '../widgets/disease_period_panel.dart';
 import '../widgets/extra_events_dialog.dart';
+import '../widgets/calendar/alice_event_logistics_details.dart';
 import '../logic/calendar/view_models/sandra_coverage_view_model.dart';
 
 // ✅ NEW: Eventi speciali centro estivo
@@ -91,6 +92,8 @@ import '../logic/calendar/builders/visible_gap_details_builder.dart';
 import '../logic/calendar/builders/day_support_summaries_builder.dart';
 import '../logic/calendar/builders/alice_companion_for_gap_builder.dart';
 import '../logic/calendar/builders/gap_title_with_alice_state_builder.dart';
+import '../logic/calendar/builders/person_effective_status_builder.dart';
+import '../logic/calendar/builders/turn_event_conflict_visual_state_builder.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -163,6 +166,13 @@ class _CalendarioScreenStepAStabileState
 
   final GapTitleWithAliceStateBuilder _gapTitleWithAliceStateBuilder =
       const GapTitleWithAliceStateBuilder();
+
+  final PersonEffectiveStatusBuilder _personEffectiveStatusBuilder =
+      const PersonEffectiveStatusBuilder();
+
+  final TurnEventConflictVisualStateBuilder
+  _turnEventConflictVisualStateBuilder =
+      const TurnEventConflictVisualStateBuilder();
 
   final AliceEventLogisticsTextBuilder _aliceEventLogisticsTextBuilder =
       const AliceEventLogisticsTextBuilder();
@@ -856,12 +866,10 @@ class _CalendarioScreenStepAStabileState
     required String personKey,
     required List<TurnEventConflictResolution> conflicts,
   }) {
-    final eventIds = conflicts.map((c) => c.event.id).toList();
-
     return overrideStore.isForcedConflictForDay(
       day: _selectedDay,
       personKey: personKey,
-      eventIds: eventIds,
+      eventIds: conflicts.eventIds,
     );
   }
 
@@ -870,31 +878,15 @@ class _CalendarioScreenStepAStabileState
     required List<TurnEventConflictResolution> conflicts,
     required bool forced,
   }) {
-    final eventIds = conflicts.map((c) => c.event.id).toList();
-
     overrideStore.setForcedConflictForDay(
       day: _selectedDay,
       personKey: personKey,
-      eventIds: eventIds,
+      eventIds: conflicts.eventIds,
       forced: forced,
     );
 
     setState(() {});
     ipsStore.refresh(now: _selectedDay);
-  }
-
-  bool _isBedSickForPerson({
-    required String personKey,
-    required PersonDayOverride? manualOverride,
-    required DateTime day,
-  }) {
-    final disease = coreStore.diseasePeriodStore.getPeriodForDay(
-      personKey,
-      day,
-    );
-
-    return manualOverride?.status == OverrideStatus.malattiaALetto ||
-        disease?.type == DiseaseType.bed;
   }
 
   void _showTurnEventConflictActionsSheet({
@@ -908,13 +900,17 @@ class _CalendarioScreenStepAStabileState
         ? override.matteo
         : override.chiara;
 
-    final isBedSick = _isBedSickForPerson(
-      personKey: personKey,
-      manualOverride: personOverride,
-      day: _selectedDay,
+    final disease = coreStore.diseasePeriodStore.getPeriodForDay(
+      personKey,
+      _selectedDay,
     );
 
-    final hasTurnContext = conflicts.any((c) => c.hasTurnContext);
+    final isBedSick = _personEffectiveStatusBuilder.isBedSick(
+      manualOverride: personOverride,
+      diseasePeriod: disease,
+    );
+
+    final hasTurnContext = conflicts.hasTurnContext;
     final isForced = _isForcedConflict(
       personKey: personKey,
       conflicts: conflicts,
@@ -954,7 +950,7 @@ class _CalendarioScreenStepAStabileState
                   (r) => Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
-                      "• ${realEventText(r.event)} — ${isForced ? "Uscita imprescindibile" : conflictStateLabel(r.state)}${r.detailText == null ? "" : "\n${r.detailText}"}",
+                      "• ${realEventText(r.event)} — ${effectiveConflictStateLabel(state: r.state, isForced: isForced)}${r.detailText == null ? "" : "\n${r.detailText}"}",
                       style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
                   ),
@@ -1114,47 +1110,27 @@ class _CalendarioScreenStepAStabileState
   DateTime _onlyDate(DateTime d) => DateTime(d.year, d.month, d.day);
 
   String _gapTitleWithAliceState(String label) {
-    final aliceEvent = coreStore.aliceEventStore.getEventForDay(_selectedDay);
-
     return _gapTitleWithAliceStateBuilder.build(
       label: label,
-      aliceEventType: aliceEvent?.type,
+      aliceEventType: coreStore.aliceEventStore.getEventTypeForDay(
+        _selectedDay,
+      ),
       cleanGapTitle: cleanGapTitle,
     );
   }
 
   String _companionActionTextForGap(CoverageGapDetail gap) {
-    final match = RegExp(r'(\d{2}:\d{2})–(\d{2}:\d{2})').firstMatch(gap.label);
-    if (match == null) return "Porta Alice con te";
-
-    TimeOfDay parse(String t) {
-      final p = t.split(":");
-      return TimeOfDay(hour: int.parse(p[0]), minute: int.parse(p[1]));
-    }
-
-    final start = parse(match.group(1)!);
-    final end = parse(match.group(2)!);
+    final start = gap.start;
+    final end = gap.end;
 
     final person = _whoCanBringAliceForGap(start: start, end: end);
 
-    final existing = coreStore.aliceCompanionStore
-        .entriesForDay(_selectedDay)
-        .any(
-          (e) =>
-              e.person == person &&
-              e.start.hour == start.hour &&
-              e.start.minute == start.minute &&
-              e.end.hour == end.hour &&
-              e.end.minute == end.minute,
-        );
-
-    final who = person == AliceCompanionPerson.matteo
-        ? "Matteo"
-        : person == AliceCompanionPerson.chiara
-        ? "Chiara"
-        : "Nessuno";
-
-    return existing ? "Togli Alice da $who" : "Porta Alice con $who";
+    return coreStore.aliceCompanionStore.companionActionTextForExactRange(
+      day: _selectedDay,
+      start: start,
+      end: end,
+      person: person,
+    );
   }
 
   bool _isPersonOnFerie({
@@ -1179,20 +1155,6 @@ class _CalendarioScreenStepAStabileState
     final label = _turnLabel(plan.type);
     if (plan.isOff) return "OFF";
     return "$label ${fmtTimeOfDay(plan.start)} ${fmtTimeOfDay(plan.end)}";
-  }
-
-  TurnEventConflictState _worstConflictState(
-    List<TurnEventConflictResolution> conflicts,
-  ) {
-    if (conflicts.any((c) => c.state == TurnEventConflictState.open)) {
-      return TurnEventConflictState.open;
-    }
-
-    if (conflicts.any((c) => c.state == TurnEventConflictState.partial)) {
-      return TurnEventConflictState.partial;
-    }
-
-    return TurnEventConflictState.resolved;
   }
 
   Color _turnSourceColor(String sourceText) {
@@ -1784,109 +1746,9 @@ class _CalendarioScreenStepAStabileState
                           ),
                         ),
 
-                        if (logisticsText.sameAdultText != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              logisticsText.sameAdultText!,
-                              style: TextStyle(
-                                color: Colors.orange.shade700,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-
-                        if (logisticsText.incompleteText != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              logisticsText.incompleteText!,
-                              style: TextStyle(
-                                color: Colors.red.shade700,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-
-                        if (logisticsText.involvedAdultsText != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              logisticsText.involvedAdultsText!,
-                              style: TextStyle(
-                                color: Colors.blue.shade700,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-
-                        if (logisticsText.busyWarningText != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              logisticsText.busyWarningText!,
-                              style: TextStyle(
-                                color: Colors.red.shade700,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-
-                        if (logisticsText.conflictText != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              logisticsText.conflictText!,
-                              style: TextStyle(
-                                color: Colors.red.shade900,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-
-                        if (logisticsText.supportSuggestionText != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              logisticsText.supportSuggestionText!,
-                              style: TextStyle(
-                                color: Colors.orange.shade700,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-
-                        if (logisticsText.singleAdultText != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              logisticsText.singleAdultText!,
-                              style: TextStyle(
-                                color: Colors.purple.shade700,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-
-                        if (logisticsText.splitLogisticsText != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              logisticsText.splitLogisticsText!,
-                              style: TextStyle(
-                                color: Colors.teal.shade700,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
+                        AliceEventLogisticsDetails(
+                          logisticsText: logisticsText,
+                        ),
                       ],
                     ),
                   );
@@ -4014,60 +3876,40 @@ class _CalendarioScreenStepAStabileState
       _selectedDay,
     );
 
-    final isBedSick =
-        personOverride?.status == OverrideStatus.malattiaALetto ||
-        disease?.type == DiseaseType.bed;
-
-    final worst = _worstConflictState(conflicts);
+    final isBedSick = _personEffectiveStatusBuilder.isBedSick(
+      manualOverride: personOverride,
+      diseasePeriod: disease,
+    );
 
     final now = DateTime.now();
-    final selectedIsToday = _onlyDate(_selectedDay) == _onlyDate(now);
 
-    final visibleConflicts = conflicts.where((c) {
-      if (!selectedIsToday) return true;
-
-      final end = c.overlapRange.end;
-      return end.isAfter(now);
-    }).toList();
+    final visibleConflicts = conflicts.visibleAt(
+      selectedDay: _selectedDay,
+      now: now,
+    );
 
     if (visibleConflicts.isEmpty) {
       return const SizedBox.shrink();
     }
+
+    final worst = conflicts.worstState;
 
     final isForced = _isForcedConflict(
       personKey: personKey,
       conflicts: conflicts,
     );
 
-    final color = isForced ? Colors.orange : conflictStateColor(worst);
+    final visualState = _turnEventConflictVisualStateBuilder.build(
+      worst: worst,
+      isForced: isForced,
+      isBedSick: isBedSick,
+      personName: personName,
+    );
 
-    final String title;
-    final String subtitle;
+    final color = visualState.color;
 
-    switch (worst) {
-      case TurnEventConflictState.open:
-        if (isForced) {
-          title = "⚠ Uscita imprescindibile — $personName";
-          subtitle =
-              "Hai forzato l'uscita nonostante il conflitto. Il sistema non la blocca ma la considera rischio.";
-        } else if (isBedSick) {
-          title = "⚠ Conflitto reale — $personName";
-          subtitle =
-              "Evento incompatibile con malattia a letto (uscita non possibile).";
-        } else {
-          title = "Conflitto turno / evento — $personName";
-          subtitle = "Serve una decisione operativa.";
-        }
-        break;
-      case TurnEventConflictState.partial:
-        title = "Conflitto turno / evento — $personName";
-        subtitle = "Esiste una copertura parziale.";
-        break;
-      case TurnEventConflictState.resolved:
-        title = "Conflitto turno / evento — $personName";
-        subtitle = "Conflitto risolto da una decisione valida.";
-        break;
-    }
+    final String title = visualState.title;
+    final String subtitle = visualState.subtitle;
 
     return InkWell(
       borderRadius: BorderRadius.circular(12),
@@ -4130,7 +3972,7 @@ class _CalendarioScreenStepAStabileState
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "Stato: ${isForced ? "Uscita imprescindibile" : conflictStateLabel(r.state)}",
+                        "Stato: ${effectiveConflictStateLabel(state: r.state, isForced: isForced)}",
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
                           color: conflictStateColor(r.state),

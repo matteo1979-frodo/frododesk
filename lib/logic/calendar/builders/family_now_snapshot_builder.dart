@@ -5,6 +5,7 @@ import '../../../logic/turn_engine.dart';
 import '../../../models/day_override.dart';
 import '../../../models/disease_period.dart';
 import '../../../utils/calendario_formatters.dart';
+import 'person_effective_status_builder.dart';
 import '../models/family_now_snapshot.dart';
 import '../models/person_now_status.dart';
 
@@ -32,9 +33,10 @@ class FamilyNowSnapshotBuilder {
       nowDay,
     );
 
-    final matteoBedSick =
-        matteoOverride?.status == OverrideStatus.malattiaALetto ||
-        matteoDisease?.type == DiseaseType.bed;
+    final matteoBedSick = const PersonEffectiveStatusBuilder().isBedSick(
+      manualOverride: matteoOverride,
+      diseasePeriod: matteoDisease,
+    );
 
     final matteoEventsNow = coreStore.realEventStore
         .eventsForDay(nowDay)
