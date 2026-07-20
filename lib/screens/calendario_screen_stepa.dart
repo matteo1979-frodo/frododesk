@@ -89,6 +89,7 @@ import '../logic/calendar/builders/alice_event_logistics_text_builder.dart';
 import '../logic/calendar/builders/day_gap_visual_state_builder.dart';
 import '../logic/calendar/builders/visible_gap_details_builder.dart';
 import '../logic/calendar/builders/day_support_summaries_builder.dart';
+import '../logic/calendar/builders/alice_companion_for_gap_builder.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -155,6 +156,9 @@ class _CalendarioScreenStepAStabileState
 
   final AliceEventLogisticsBuilder _aliceEventLogisticsBuilder =
       const AliceEventLogisticsBuilder();
+
+  final AliceCompanionForGapBuilder _aliceCompanionForGapBuilder =
+      const AliceCompanionForGapBuilder();
 
   final AliceEventLogisticsTextBuilder _aliceEventLogisticsTextBuilder =
       const AliceEventLogisticsTextBuilder();
@@ -1504,111 +1508,69 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
-  AliceCompanionPerson _whoCanBringAliceForGap({
-    required TimeOfDay start,
-    required TimeOfDay end,
-  }) {
-    final day = _selectedDay;
+AliceCompanionPerson _whoCanBringAliceForGap({
+  required TimeOfDay start,
+  required TimeOfDay end,
+}) {
+  final day = _selectedDay;
 
-    DateTime toDT(TimeOfDay t) =>
-        DateTime(day.year, day.month, day.day, t.hour, t.minute);
+  final ov = _getOverridesForDay(day);
 
-    final gapStart = toDT(start);
-    final gapEnd = toDT(end);
+  final matteoDisease = coreStore.diseasePeriodStore.getPeriodForDay(
+    'matteo',
+    _onlyDate(day),
+  );
 
-    bool overlaps(
-      DateTime aStart,
-      DateTime aEnd,
-      DateTime bStart,
-      DateTime bEnd,
-    ) {
-      return aStart.isBefore(bEnd) && aEnd.isAfter(bStart);
-    }
+  final chiaraDisease = coreStore.diseasePeriodStore.getPeriodForDay(
+    'chiara',
+    _onlyDate(day),
+  );
 
-    bool matteoBusy = false;
-    bool chiaraBusy = false;
+  final matteoSick =
+      ov.matteo?.status == OverrideStatus.malattiaLeggera ||
+      ov.matteo?.status == OverrideStatus.malattiaALetto ||
+      matteoDisease != null;
 
-    final ov = _getOverridesForDay(day);
+  final chiaraSick =
+      ov.chiara?.status == OverrideStatus.malattiaLeggera ||
+      ov.chiara?.status == OverrideStatus.malattiaALetto ||
+      chiaraDisease != null;
 
-    final matteoDisease = coreStore.diseasePeriodStore.getPeriodForDay(
-      'matteo',
-      _onlyDate(day),
-    );
+  final matteoPlan = _turns.turnPlanForPersonDay(
+    person: TurnPerson.matteo,
+    day: day,
+  );
 
-    final chiaraDisease = coreStore.diseasePeriodStore.getPeriodForDay(
-      'chiara',
-      _onlyDate(day),
-    );
+  final chiaraPlan = _turns.turnPlanForPersonDay(
+    person: TurnPerson.chiara,
+    day: day,
+  );
 
-    final matteoSick =
-        ov.matteo?.status == OverrideStatus.malattiaLeggera ||
-        ov.matteo?.status == OverrideStatus.malattiaALetto ||
-        matteoDisease != null;
+  final events = coreStore.realEventStore
+      .eventsForDay(_onlyDate(day))
+      .where((e) => e.startTime != null && e.endTime != null)
+      .map(
+        (e) => AliceCompanionBusyEvent(
+          personKey: e.personKey,
+          start: e.startTime!,
+          end: e.endTime!,
+        ),
+      )
+      .toList();
 
-    final chiaraSick =
-        ov.chiara?.status == OverrideStatus.malattiaLeggera ||
-        ov.chiara?.status == OverrideStatus.malattiaALetto ||
-        chiaraDisease != null;
-
-    if (matteoSick) matteoBusy = false;
-    if (chiaraSick) chiaraBusy = false;
-
-    final matteoPlan = _turns.turnPlanForPersonDay(
-      person: TurnPerson.matteo,
-      day: day,
-    );
-    if (!matteoPlan.isOff) {
-      final workStart = toDT(matteoPlan.start);
-      final workEnd = toDT(matteoPlan.end);
-      matteoBusy = matteoBusy || overlaps(workStart, workEnd, gapStart, gapEnd);
-    }
-
-    final chiaraPlan = _turns.turnPlanForPersonDay(
-      person: TurnPerson.chiara,
-      day: day,
-    );
-    if (!chiaraPlan.isOff) {
-      final workStart = toDT(chiaraPlan.start);
-      final workEnd = toDT(chiaraPlan.end);
-      chiaraBusy = chiaraBusy || overlaps(workStart, workEnd, gapStart, gapEnd);
-    }
-
-    final events = coreStore.realEventStore.eventsForDay(_onlyDate(day));
-    for (final e in events) {
-      if (e.startTime == null || e.endTime == null) continue;
-
-      final eventStart = toDT(e.startTime!);
-      final eventEnd = toDT(e.endTime!);
-      final hit = overlaps(eventStart, eventEnd, gapStart, gapEnd);
-
-      if (!hit) continue;
-
-      if (e.personKey == 'matteo') matteoBusy = true;
-      if (e.personKey == 'chiara') chiaraBusy = true;
-    }
-
-    for (final e in events) {
-      if (e.startTime == null || e.endTime == null) continue;
-
-      final eventStart = toDT(e.startTime!);
-      final eventEnd = toDT(e.endTime!);
-      final hit = overlaps(eventStart, eventEnd, gapStart, gapEnd);
-
-      if (!hit) continue;
-
-      if (e.personKey == 'chiara') return AliceCompanionPerson.chiara;
-      if (e.personKey == 'matteo') return AliceCompanionPerson.matteo;
-    }
-
-    if (!matteoBusy && chiaraBusy) return AliceCompanionPerson.matteo;
-    if (!chiaraBusy && matteoBusy) return AliceCompanionPerson.chiara;
-
-    // entrambi disponibili → scegli Matteo (ok)
-    if (!matteoBusy && !chiaraBusy) return AliceCompanionPerson.matteo;
-
-    // entrambi occupati → nessuno può portarla
-    return AliceCompanionPerson.nessuno;
-  }
+  return _aliceCompanionForGapBuilder.build(
+    day: day,
+    start: start,
+    end: end,
+    matteoSick: matteoSick,
+    chiaraSick: chiaraSick,
+    matteoWorkStart: matteoPlan.isOff ? null : matteoPlan.start,
+    matteoWorkEnd: matteoPlan.isOff ? null : matteoPlan.end,
+    chiaraWorkStart: chiaraPlan.isOff ? null : chiaraPlan.start,
+    chiaraWorkEnd: chiaraPlan.isOff ? null : chiaraPlan.end,
+    events: events,
+  );
+}
 
   Widget _buildDayGapsBox(CoverageResultStepA cov) {
     final d0 = _selectedDay;
@@ -1997,40 +1959,23 @@ class _CalendarioScreenStepAStabileState
                     onPressed: () {
                       final gap = visibleGapDetails[i];
 
-                      final match = RegExp(
-                        r'(\d{2}:\d{2})–(\d{2}:\d{2})',
-                      ).firstMatch(gap.label);
-                      if (match == null) return;
-
-                      final times = [match.group(1)!, match.group(2)!];
-
-                      TimeOfDay parse(String t) {
-                        final p = t.split(":");
-                        return TimeOfDay(
-                          hour: int.parse(p[0]),
-                          minute: int.parse(p[1]),
-                        );
-                      }
-
-                      final start = parse(times[0]);
-                      final end = parse(times[1]);
-
                       final entry = AliceCompanionEntry(
                         day: d0,
-                        start: start,
-                        end: end,
-                        person: _whoCanBringAliceForGap(start: start, end: end),
+                        start: gap.start,
+                        end: gap.end,
+                        person: _whoCanBringAliceForGap(
+                          start: gap.start,
+                          end: gap.end,
+                        ),
                       );
 
-                      final existing = coreStore.aliceCompanionStore
-                          .entriesForDay(d0)
-                          .any(
-                            (e) =>
-                                e.start.hour == start.hour &&
-                                e.start.minute == start.minute &&
-                                e.end.hour == end.hour &&
-                                e.end.minute == end.minute,
-                          );
+                      final existing = companionEntries.any(
+                        (e) =>
+                            e.start.hour == gap.start.hour &&
+                            e.start.minute == gap.start.minute &&
+                            e.end.hour == gap.end.hour &&
+                            e.end.minute == gap.end.minute,
+                      );
 
                       if (existing) {
                         coreStore.aliceCompanionStore.removeEntry(entry);
