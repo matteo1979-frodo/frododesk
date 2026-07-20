@@ -22,53 +22,54 @@ class DayGapVisualStateBuilder {
   const DayGapVisualStateBuilder();
 
   DayGapVisualResult build({
-    required DayGapVisualState baseState,
-    required Color baseColor,
-    required IconData baseIcon,
-    required String baseHeadline,
-    required String baseSubline,
     required bool hasLogisticConflict,
     required bool hasIncompleteLogistics,
     required bool hasRealCoverageGap,
   }) {
-    final effectiveState = hasLogisticConflict || hasRealCoverageGap
+    final state = hasLogisticConflict || hasRealCoverageGap
         ? DayGapVisualState.realGap
         : hasIncompleteLogistics
         ? DayGapVisualState.coveredNeed
-        : baseState == DayGapVisualState.coveredNeed
-        ? DayGapVisualState.coveredNeed
         : DayGapVisualState.noProblem;
 
-    final effectiveColor = effectiveState == DayGapVisualState.realGap
+    final color = state == DayGapVisualState.realGap
         ? Colors.red
-        : effectiveState == DayGapVisualState.coveredNeed
+        : state == DayGapVisualState.coveredNeed
         ? Colors.orange
-        : baseColor;
+        : Colors.green;
 
-    final effectiveIcon = effectiveState == DayGapVisualState.realGap
+    final icon = state == DayGapVisualState.realGap
         ? Icons.error
-        : effectiveState == DayGapVisualState.coveredNeed
+        : state == DayGapVisualState.coveredNeed
         ? Icons.warning_amber_rounded
-        : baseIcon;
+        : Icons.check_circle;
 
-    final effectiveHeadline = hasLogisticConflict
+    final headline = hasLogisticConflict
         ? "❗ Conflitto logistico Alice"
         : hasIncompleteLogistics
         ? "⚠ Logistica Alice incompleta"
-        : baseHeadline;
+        : state == DayGapVisualState.realGap
+        ? "❗ Buco reale da risolvere"
+        : state == DayGapVisualState.coveredNeed
+        ? "⚠ Copertura necessaria ma risolta"
+        : "✓ Nessun problema oggi";
 
-    final effectiveSubline = hasLogisticConflict
+    final subline = hasLogisticConflict
         ? "Un evento Alice ha accompagnamento o ritiro assegnato a una persona non disponibile."
         : hasIncompleteLogistics
         ? "Un evento Alice richiede accompagnamento o ritiro, ma manca ancora una persona assegnata."
-        : baseSubline;
+        : state == DayGapVisualState.realGap
+        ? "Esistono fasce senza copertura reale."
+        : state == DayGapVisualState.coveredNeed
+        ? "La giornata è coperta, ma solo grazie a supporti o decisioni manuali."
+        : "Nessun buco rilevato dal motore.";
 
     return DayGapVisualResult(
-      state: effectiveState,
-      color: effectiveColor,
-      icon: effectiveIcon,
-      headline: effectiveHeadline,
-      subline: effectiveSubline,
+      state: state,
+      color: color,
+      icon: icon,
+      headline: headline,
+      subline: subline,
     );
   }
 }

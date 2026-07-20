@@ -85,4 +85,19 @@ class AliceEventLogisticsTextBuilder {
       splitLogisticsText: splitLogisticsText,
     );
   }
+
+  String adultLabel(String? key) {
+    switch (key) {
+      case 'matteo':
+        return 'Matteo';
+      case 'chiara':
+        return 'Chiara';
+      case 'sandra':
+        return 'Sandra';
+      case 'supporto':
+        return 'Supporto';
+      default:
+        return 'Non assegnato';
+    }
+  }
 }

@@ -1611,39 +1611,6 @@ class _CalendarioScreenStepAStabileState
   }
 
   Widget _buildDayGapsBox(CoverageResultStepA cov) {
-    final state = cov.gapDetails.isNotEmpty
-        ? DayGapVisualState.realGap
-        : DayGapVisualState.noProblem;
-
-    late final Color color;
-    late final IconData icon;
-    late final String headline;
-    late final String subline;
-
-    switch (state) {
-      case DayGapVisualState.noProblem:
-        color = Colors.green;
-        icon = Icons.check_circle;
-        headline = "✓ Nessun problema oggi";
-        subline = "Nessun buco rilevato dal motore.";
-        break;
-
-      case DayGapVisualState.coveredNeed:
-        color = Colors.orange;
-        icon = Icons.warning_amber_rounded;
-        headline = "⚠ Copertura necessaria ma risolta";
-        subline =
-            "La giornata è coperta, ma solo grazie a supporti o decisioni manuali.";
-        break;
-
-      case DayGapVisualState.realGap:
-        color = Colors.red;
-        icon = Icons.error;
-        headline = "❗ Buco reale da risolvere";
-        subline = "Esistono fasce senza copertura reale.";
-        break;
-    }
-
     final d0 = _selectedDay;
     final sandraDecision = _sandraDecisionForDay(d0);
     final uscita13Eff = _effUscita13(d0);
@@ -1651,10 +1618,9 @@ class _CalendarioScreenStepAStabileState
     final outCover = _effectiveSchoolOutCover(d0);
     final lunchCover = _effectiveLunchCover(d0);
 
-    final ingressoReale = _scuolaStart;
     final ingressoInizio = TimeOfDay(
-      hour: ((ingressoReale.hour * 60 + ingressoReale.minute - 20) ~/ 60) % 24,
-      minute: (ingressoReale.hour * 60 + ingressoReale.minute - 20) % 60,
+      hour: ((_scuolaStart.hour * 60 + _scuolaStart.minute - 20) ~/ 60) % 24,
+      minute: (_scuolaStart.hour * 60 + _scuolaStart.minute - 20) % 60,
     );
 
     final supportSummaries = const DaySupportSummariesBuilder().build(
@@ -1672,61 +1638,31 @@ class _CalendarioScreenStepAStabileState
     );
 
     final logisticAliceEvents = coreStore.aliceSpecialEventStore
-        .eventsForDay(_selectedDay)
+        .eventsForDay(d0)
         .where((e) => e.behavior == AliceEventBehavior.logistic)
         .toList();
 
     final aliceLogisticsStatus = _aliceLogisticsStatusBuilder.build(
-      day: _selectedDay,
+      day: d0,
       logisticEvents: logisticAliceEvents,
       aliceEventEngine: _aliceEventEngine,
       isMatteoBusy: (start, end) => _engine.isMatteoBusyBetween(start, end),
       isChiaraBusy: (start, end) => _engine.isChiaraBusyBetween(start, end),
     );
 
-    String adultLabel(String? key) {
-      switch (key) {
-        case 'matteo':
-          return 'Matteo';
-        case 'chiara':
-          return 'Chiara';
-        case 'sandra':
-          return 'Sandra';
-        case 'supporto':
-          return 'Supporto';
-        default:
-          return 'Non assegnato';
-      }
-    }
-
-    final hasIncompleteLogistics = aliceLogisticsStatus.hasIncompleteLogistics;
-
-    final hasLogisticConflict = aliceLogisticsStatus.hasLogisticConflict;
-    final hasRealCoverageGap = cov.gapDetails.isNotEmpty;
-
     final visual = _dayGapVisualStateBuilder.build(
-      baseState: state,
-      baseColor: color,
-      baseIcon: icon,
-      baseHeadline: headline,
-      baseSubline: subline,
-      hasLogisticConflict: hasLogisticConflict,
-      hasIncompleteLogistics: hasIncompleteLogistics,
-      hasRealCoverageGap: hasRealCoverageGap,
+      hasLogisticConflict: aliceLogisticsStatus.hasLogisticConflict,
+      hasIncompleteLogistics: aliceLogisticsStatus.hasIncompleteLogistics,
+      hasRealCoverageGap: cov.gapDetails.isNotEmpty,
     );
+
+    final companionEntries = coreStore.aliceCompanionStore.entriesForDay(d0);
 
     final visibleGapDetails = _visibleGapDetailsBuilder.build(
       realGapDetails: cov.gapDetails,
-      companionEntries: coreStore.aliceCompanionStore.entriesForDay(
-        _selectedDay,
-      ),
+      companionEntries: companionEntries,
       formatTime: fmtTimeOfDay,
     );
-
-    final effectiveColor = visual.color;
-    final effectiveIcon = visual.icon;
-    final effectiveHeadline = visual.headline;
-    final effectiveSubline = visual.subline;
 
     return GestureDetector(
       onTap: () {
@@ -1753,9 +1689,9 @@ class _CalendarioScreenStepAStabileState
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: effectiveColor.withOpacity(0.10),
+          color: visual.color.withOpacity(0.10),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: effectiveColor.withOpacity(0.35)),
+          border: Border.all(color: visual.color.withOpacity(0.35)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1768,19 +1704,19 @@ class _CalendarioScreenStepAStabileState
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(effectiveIcon, color: effectiveColor, size: 20),
+                Icon(visual.icon, color: visual.color, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        effectiveHeadline,
+                        visual.headline,
                         style: const TextStyle(fontWeight: FontWeight.w900),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        effectiveSubline,
+                        visual.subline,
                         style: TextStyle(
                           color: Colors.black.withOpacity(0.68),
                           fontWeight: FontWeight.w600,
@@ -1793,8 +1729,7 @@ class _CalendarioScreenStepAStabileState
             ),
             if (visual.state == DayGapVisualState.coveredNeed) ...[
               const SizedBox(height: 10),
-              if (sandraDecision.serveSandraMattina &&
-                  _effSandraMattina(_selectedDay))
+              if (sandraDecision.serveSandraMattina && _effSandraMattina(d0))
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
@@ -1802,8 +1737,7 @@ class _CalendarioScreenStepAStabileState
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
-              if (sandraDecision.serveSandraPranzo &&
-                  _effSandraPranzo(_selectedDay))
+              if (sandraDecision.serveSandraPranzo && _effSandraPranzo(d0))
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
@@ -1811,8 +1745,7 @@ class _CalendarioScreenStepAStabileState
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
-              if (sandraDecision.serveSandraSera &&
-                  _effSandraSera(_selectedDay))
+              if (sandraDecision.serveSandraSera && _effSandraSera(d0))
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
@@ -1879,11 +1812,9 @@ class _CalendarioScreenStepAStabileState
                   ),
                 ),
             ],
-            if (state == DayGapVisualState.realGap ||
+            if (visual.state == DayGapVisualState.realGap ||
                 logisticAliceEvents.isNotEmpty ||
-                coreStore.aliceCompanionStore
-                    .entriesForDay(_selectedDay)
-                    .isNotEmpty) ...[
+                companionEntries.isNotEmpty) ...[
               const SizedBox(height: 10),
 
               if (logisticAliceEvents.isNotEmpty) ...[
@@ -1898,7 +1829,7 @@ class _CalendarioScreenStepAStabileState
 
                 ...logisticAliceEvents.map((e) {
                   final logistics = _aliceEventLogisticsBuilder.build(
-                    day: _selectedDay,
+                    day: d0,
                     event: e,
                     aliceEventEngine: _aliceEventEngine,
                     isMatteoBusy: (start, end) =>
@@ -1921,8 +1852,8 @@ class _CalendarioScreenStepAStabileState
                         Text(
                           "${e.label} "
                           "(${fmtTimeOfDay(e.start)}–${fmtTimeOfDay(e.end)}) • "
-                          "Accompagna: ${adultLabel(e.dropOffAdultKey)} • "
-                          "Ritiro: ${adultLabel(e.pickUpAdultKey)}",
+                          "Accompagna: ${_aliceEventLogisticsTextBuilder.adultLabel(e.dropOffAdultKey)} • "
+                          "Ritiro: ${_aliceEventLogisticsTextBuilder.adultLabel(e.pickUpAdultKey)}",
                           style: TextStyle(
                             color: Colors.blueGrey.shade700,
                             fontWeight: FontWeight.w700,
@@ -2054,21 +1985,17 @@ class _CalendarioScreenStepAStabileState
                   ),
                 const SizedBox(height: 6),
 
-                if (!coreStore.aliceCompanionStore
-                    .entriesForDay(_selectedDay)
-                    .any(
-                      (e) =>
-                          e.sourceEventId != null &&
-                          e.start.hour == visibleGapDetails[i].start.hour &&
-                          e.start.minute == visibleGapDetails[i].start.minute &&
-                          e.end.hour == visibleGapDetails[i].end.hour &&
-                          e.end.minute == visibleGapDetails[i].end.minute,
-                    ))
+                if (!companionEntries.any(
+                  (e) =>
+                      e.sourceEventId != null &&
+                      e.start.hour == visibleGapDetails[i].start.hour &&
+                      e.start.minute == visibleGapDetails[i].start.minute &&
+                      e.end.hour == visibleGapDetails[i].end.hour &&
+                      e.end.minute == visibleGapDetails[i].end.minute,
+                ))
                   ElevatedButton(
                     onPressed: () {
                       final gap = visibleGapDetails[i];
-
-                      final nowDay = _selectedDay;
 
                       final match = RegExp(
                         r'(\d{2}:\d{2})–(\d{2}:\d{2})',
@@ -2089,14 +2016,14 @@ class _CalendarioScreenStepAStabileState
                       final end = parse(times[1]);
 
                       final entry = AliceCompanionEntry(
-                        day: nowDay,
+                        day: d0,
                         start: start,
                         end: end,
                         person: _whoCanBringAliceForGap(start: start, end: end),
                       );
 
                       final existing = coreStore.aliceCompanionStore
-                          .entriesForDay(nowDay)
+                          .entriesForDay(d0)
                           .any(
                             (e) =>
                                 e.start.hour == start.hour &&
