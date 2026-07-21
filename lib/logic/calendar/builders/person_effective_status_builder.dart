@@ -79,4 +79,12 @@ class PersonEffectiveStatusBuilder {
 
     return "Turno $startText–$endText";
   }
+
+  bool isBusyNow({
+    required bool isBedSick,
+    required bool isBusyForEvent,
+    required bool isBusyForTurn,
+  }) {
+    return isBedSick || isBusyForEvent || isBusyForTurn;
+  }
 }

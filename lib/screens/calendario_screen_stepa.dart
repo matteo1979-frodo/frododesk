@@ -93,6 +93,7 @@ import '../logic/calendar/builders/alice_companion_for_gap_builder.dart';
 import '../logic/calendar/builders/gap_title_with_alice_state_builder.dart';
 import '../logic/calendar/builders/person_effective_status_builder.dart';
 import '../logic/calendar/builders/turn_event_conflict_visual_state_builder.dart';
+import '../logic/calendar/builders/adult_now_state_builder.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -1196,6 +1197,45 @@ class _CalendarioScreenStepAStabileState
     return filtered;
   }
 
+  bool _isPersonBusyForEventNow({
+    required String personKey,
+    required DateTime now,
+  }) {
+    final events = coreStore.realEventStore
+        .eventsForDay(_onlyDate(now))
+        .where((e) => e.personKey == personKey);
+
+    for (final event in events) {
+      final eventStart = DateTime(
+        event.startDate.year,
+        event.startDate.month,
+        event.startDate.day,
+        event.startTime?.hour ?? 0,
+        event.startTime?.minute ?? 0,
+      );
+
+      DateTime eventEnd = DateTime(
+        event.endDate.year,
+        event.endDate.month,
+        event.endDate.day,
+        event.endTime?.hour ?? 23,
+        event.endTime?.minute ?? 59,
+      );
+
+      if (!eventEnd.isAfter(eventStart)) {
+        eventEnd = eventEnd.add(const Duration(days: 1));
+      }
+
+      final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
+
+      if (isNowInside) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   CoverageResultStepA _computeCoverageStepA(DateTime day) {
     final d0 = _onlyDate(day);
 
@@ -2226,8 +2266,9 @@ class _CalendarioScreenStepAStabileState
 
     final realEventStore = coreStore.realEventStore;
     final nowDay = _onlyDate(now);
+    final dayOverrides = _getOverridesForDay(nowDay);
 
-    final matteoOverride = _getOverridesForDay(nowDay).matteo;
+    final matteoOverride = dayOverrides.matteo;
     final matteoDisease = coreStore.diseasePeriodStore.getPeriodForDay(
       'matteo',
       nowDay,
@@ -2244,40 +2285,10 @@ class _CalendarioScreenStepAStabileState
       diseasePeriod: matteoDisease,
     );
 
-    final matteoEventsNow = coreStore.realEventStore
-        .eventsForDay(nowDay)
-        .where((e) => e.personKey == 'matteo');
-
-    bool matteoBusyForEventNow = false;
-
-    for (final event in matteoEventsNow) {
-      final eventStart = DateTime(
-        event.startDate.year,
-        event.startDate.month,
-        event.startDate.day,
-        event.startTime?.hour ?? 0,
-        event.startTime?.minute ?? 0,
-      );
-
-      DateTime eventEnd = DateTime(
-        event.endDate.year,
-        event.endDate.month,
-        event.endDate.day,
-        event.endTime?.hour ?? 23,
-        event.endTime?.minute ?? 59,
-      );
-
-      if (!eventEnd.isAfter(eventStart)) {
-        eventEnd = eventEnd.add(const Duration(days: 1));
-      }
-
-      final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
-
-      if (isNowInside) {
-        matteoBusyForEventNow = true;
-        break;
-      }
-    }
+    final matteoBusyForEventNow = _isPersonBusyForEventNow(
+      personKey: 'matteo',
+      now: now,
+    );
 
     final matteoBusyForTurn = _engine.isMatteoBusyBetween(
       now,
@@ -2295,21 +2306,19 @@ class _CalendarioScreenStepAStabileState
       endText: fmtTimeOfDay(matteoPlan.end),
     );
 
-    final matteoBusyNow =
-        matteoBedSick || matteoBusyForTurn || matteoBusyForEventNow;
-
-    final matteoNowLabel = _personEffectiveStatusBuilder.buildNowLabel(
+    final matteoNowState = const AdultNowStateBuilder().build(
       isMildSick: _personEffectiveStatusBuilder.isMildSick(
         manualOverride: matteoOverride,
         diseasePeriod: matteoDisease,
       ),
+      isBusyForEventNow: matteoBusyForEventNow,
+      isBusyForTurn: matteoBusyForTurn,
       isBedSick: matteoBedSick,
       isOnHoliday: matteoOnHoliday,
-      isBusyForEvent: matteoBusyForEventNow,
-      isBusyForTurn: matteoBusyForTurn,
+      turnLabel: matteoTurnLabel,
     );
 
-    final chiaraOverride = _getOverridesForDay(nowDay).chiara;
+    final chiaraOverride = dayOverrides.chiara;
     final chiaraDisease = coreStore.diseasePeriodStore.getPeriodForDay(
       'chiara',
       nowDay,
@@ -2326,40 +2335,10 @@ class _CalendarioScreenStepAStabileState
       diseasePeriod: chiaraDisease,
     );
 
-    final chiaraEventsNow = coreStore.realEventStore
-        .eventsForDay(nowDay)
-        .where((e) => e.personKey == 'chiara');
-
-    bool chiaraBusyForEventNow = false;
-
-    for (final event in chiaraEventsNow) {
-      final eventStart = DateTime(
-        event.startDate.year,
-        event.startDate.month,
-        event.startDate.day,
-        event.startTime?.hour ?? 0,
-        event.startTime?.minute ?? 0,
-      );
-
-      DateTime eventEnd = DateTime(
-        event.endDate.year,
-        event.endDate.month,
-        event.endDate.day,
-        event.endTime?.hour ?? 23,
-        event.endTime?.minute ?? 59,
-      );
-
-      if (!eventEnd.isAfter(eventStart)) {
-        eventEnd = eventEnd.add(const Duration(days: 1));
-      }
-
-      final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
-
-      if (isNowInside) {
-        chiaraBusyForEventNow = true;
-        break;
-      }
-    }
+    final chiaraBusyForEventNow = _isPersonBusyForEventNow(
+      personKey: 'chiara',
+      now: now,
+    );
 
     final chiaraBusyForTurn = _engine.isChiaraBusyBetween(
       now,
@@ -2377,18 +2356,16 @@ class _CalendarioScreenStepAStabileState
       endText: fmtTimeOfDay(chiaraPlan.end),
     );
 
-    final chiaraBusyNow =
-        chiaraBedSick || chiaraBusyForTurn || chiaraBusyForEventNow;
-
-    final chiaraNowLabel = _personEffectiveStatusBuilder.buildNowLabel(
+    final chiaraNowState = const AdultNowStateBuilder().build(
       isMildSick: _personEffectiveStatusBuilder.isMildSick(
         manualOverride: chiaraOverride,
         diseasePeriod: chiaraDisease,
       ),
+      isBusyForEventNow: chiaraBusyForEventNow,
+      isBusyForTurn: chiaraBusyForTurn,
       isBedSick: chiaraBedSick,
       isOnHoliday: chiaraOnHoliday,
-      isBusyForEvent: chiaraBusyForEventNow,
-      isBusyForTurn: chiaraBusyForTurn,
+      turnLabel: chiaraTurnLabel,
     );
 
     final alicePeriodNow = coreStore.aliceEventStore.getEventForDay(nowDay);
@@ -2680,8 +2657,8 @@ class _CalendarioScreenStepAStabileState
 
     final int ipsCoverage30 = (baseIpsCoverage30 + forcedPenalty).clamp(0, 100);
 
-    final matteoVisual = getStatusVisual(matteoNowLabel);
-    final chiaraVisual = getStatusVisual(chiaraNowLabel);
+    final matteoVisual = getStatusVisual(matteoNowState.nowLabel);
+    final chiaraVisual = getStatusVisual(chiaraNowState.nowLabel);
     final aliceVisual = getStatusVisual(aliceNowLabel);
 
     return FamilyNowSnapshot(
@@ -2689,14 +2666,14 @@ class _CalendarioScreenStepAStabileState
       now: now,
       realEventStore: realEventStore,
       nowDay: nowDay,
-      matteoBusyNow: matteoBusyNow,
-      chiaraBusyNow: chiaraBusyNow,
+      matteoBusyNow: matteoNowState.isBusyNow,
+      chiaraBusyNow: chiaraNowState.isBusyNow,
       aliceIsOutNow: aliceIsOutNow,
-      matteoNowLabel: matteoNowLabel,
-      chiaraNowLabel: chiaraNowLabel,
+      matteoNowLabel: matteoNowState.nowLabel,
+      chiaraNowLabel: chiaraNowState.nowLabel,
       aliceNowLabel: aliceNowLabel,
-      matteoTurnLabel: matteoTurnLabel,
-      chiaraTurnLabel: chiaraTurnLabel,
+      matteoTurnLabel: matteoNowState.turnLabel,
+      chiaraTurnLabel: chiaraNowState.turnLabel,
       cov: cov,
       isEmergency: isEmergency,
       showSummerCampSpecialCard: showSummerCampSpecialCard,
