@@ -12,7 +12,6 @@ import '../logic/ferie_period_store.dart';
 import '../logic/alice_companion_store.dart';
 
 import '../models/day_override.dart';
-import '../models/disease_period.dart';
 import '../models/real_event.dart';
 import '../models/turn_override.dart';
 import '../models/work_shift.dart';
@@ -1138,17 +1137,18 @@ class _CalendarioScreenStepAStabileState
     required PersonDayOverride? manualOverride,
     required DateTime day,
   }) {
-    if (manualOverride?.status == OverrideStatus.ferie) {
-      return true;
-    }
-
     FeriePerson? feriePerson;
     if (personKey == 'matteo') feriePerson = FeriePerson.matteo;
     if (personKey == 'chiara') feriePerson = FeriePerson.chiara;
 
-    if (feriePerson == null) return false;
+    final isInHolidayPeriod =
+        feriePerson != null &&
+        coreStore.feriePeriodStore.isOnHoliday(feriePerson, _onlyDate(day));
 
-    return coreStore.feriePeriodStore.isOnHoliday(feriePerson, _onlyDate(day));
+    return _personEffectiveStatusBuilder.isOnHoliday(
+      manualOverride: manualOverride,
+      isInHolidayPeriod: isInHolidayPeriod,
+    );
   }
 
   String _turnPlanSummary(TurnPlan plan) {
@@ -1307,17 +1307,9 @@ class _CalendarioScreenStepAStabileState
   Widget _buildEmergencyPanelPlaceholder() {
     final settings = emergencyStore.getForDay(_selectedDay);
 
-    final ov = _getOverridesForDay(_selectedDay);
-    final matteo = ov.matteo?.status ?? OverrideStatus.normal;
-    final chiara = ov.chiara?.status ?? OverrideStatus.normal;
-
-    final forced = emergencyLogic.isForcedEmergency(
-      matteo: matteo,
-      chiara: chiara,
-    );
-    final enabled = settings.effectiveEnabled(forced: forced);
-
-    if (!enabled) return const SizedBox.shrink();
+    if (!_isEmergencyActive()) {
+      return const SizedBox.shrink();
+    }
 
     return Card(
       color: const Color(0xFFFFF3E0),
@@ -1450,15 +1442,15 @@ class _CalendarioScreenStepAStabileState
       _onlyDate(day),
     );
 
-    final matteoSick =
-        ov.matteo?.status == OverrideStatus.malattiaLeggera ||
-        ov.matteo?.status == OverrideStatus.malattiaALetto ||
-        matteoDisease != null;
+    final matteoSick = _personEffectiveStatusBuilder.isSick(
+      manualOverride: ov.matteo,
+      diseasePeriod: matteoDisease,
+    );
 
-    final chiaraSick =
-        ov.chiara?.status == OverrideStatus.malattiaLeggera ||
-        ov.chiara?.status == OverrideStatus.malattiaALetto ||
-        chiaraDisease != null;
+    final chiaraSick = _personEffectiveStatusBuilder.isSick(
+      manualOverride: ov.chiara,
+      diseasePeriod: chiaraDisease,
+    );
 
     final matteoPlan = _turns.turnPlanForPersonDay(
       person: TurnPerson.matteo,
@@ -2241,14 +2233,16 @@ class _CalendarioScreenStepAStabileState
       nowDay,
     );
 
-    final matteoOnHoliday = coreStore.feriePeriodStore.isOnHoliday(
-      FeriePerson.matteo,
-      nowDay,
+    final matteoOnHoliday = _isPersonOnFerie(
+      personKey: 'matteo',
+      manualOverride: matteoOverride,
+      day: nowDay,
     );
 
-    final matteoBedSick =
-        matteoOverride?.status == OverrideStatus.malattiaALetto ||
-        matteoDisease?.type == DiseaseType.bed;
+    final matteoBedSick = _personEffectiveStatusBuilder.isBedSick(
+      manualOverride: matteoOverride,
+      diseasePeriod: matteoDisease,
+    );
 
     final matteoEventsNow = coreStore.realEventStore
         .eventsForDay(nowDay)
@@ -2295,31 +2289,25 @@ class _CalendarioScreenStepAStabileState
       day: _selectedDay,
     );
 
-    String matteoTurnLabel = "Turno non previsto";
-
-    if (!matteoPlan.isOff) {
-      matteoTurnLabel =
-          "Turno ${fmtTimeOfDay(matteoPlan.start)}–${fmtTimeOfDay(matteoPlan.end)}";
-    }
+    final matteoTurnLabel = _personEffectiveStatusBuilder.buildNowTurnLabel(
+      isOff: matteoPlan.isOff,
+      startText: fmtTimeOfDay(matteoPlan.start),
+      endText: fmtTimeOfDay(matteoPlan.end),
+    );
 
     final matteoBusyNow =
         matteoBedSick || matteoBusyForTurn || matteoBusyForEventNow;
 
-    final String matteoNowLabel;
-
-    if (matteoDisease?.type == DiseaseType.mild) {
-      matteoNowLabel = "malattia leggera";
-    } else if (matteoBedSick) {
-      matteoNowLabel = "occupato • malattia a letto";
-    } else if (matteoOnHoliday) {
-      matteoNowLabel = "libero • ferie";
-    } else if (matteoBusyForEventNow) {
-      matteoNowLabel = "occupato • evento";
-    } else if (matteoBusyForTurn) {
-      matteoNowLabel = "occupato • turno";
-    } else {
-      matteoNowLabel = "libero";
-    }
+    final matteoNowLabel = _personEffectiveStatusBuilder.buildNowLabel(
+      isMildSick: _personEffectiveStatusBuilder.isMildSick(
+        manualOverride: matteoOverride,
+        diseasePeriod: matteoDisease,
+      ),
+      isBedSick: matteoBedSick,
+      isOnHoliday: matteoOnHoliday,
+      isBusyForEvent: matteoBusyForEventNow,
+      isBusyForTurn: matteoBusyForTurn,
+    );
 
     final chiaraOverride = _getOverridesForDay(nowDay).chiara;
     final chiaraDisease = coreStore.diseasePeriodStore.getPeriodForDay(
@@ -2327,14 +2315,16 @@ class _CalendarioScreenStepAStabileState
       nowDay,
     );
 
-    final chiaraOnHoliday = coreStore.feriePeriodStore.isOnHoliday(
-      FeriePerson.chiara,
-      nowDay,
+    final chiaraOnHoliday = _isPersonOnFerie(
+      personKey: 'chiara',
+      manualOverride: chiaraOverride,
+      day: nowDay,
     );
 
-    final chiaraBedSick =
-        chiaraOverride?.status == OverrideStatus.malattiaALetto ||
-        chiaraDisease?.type == DiseaseType.bed;
+    final chiaraBedSick = _personEffectiveStatusBuilder.isBedSick(
+      manualOverride: chiaraOverride,
+      diseasePeriod: chiaraDisease,
+    );
 
     final chiaraEventsNow = coreStore.realEventStore
         .eventsForDay(nowDay)
@@ -2381,31 +2371,25 @@ class _CalendarioScreenStepAStabileState
       day: _selectedDay,
     );
 
-    String chiaraTurnLabel = "Turno non previsto";
-
-    if (!chiaraPlan.isOff) {
-      chiaraTurnLabel =
-          "Turno ${fmtTimeOfDay(chiaraPlan.start)}–${fmtTimeOfDay(chiaraPlan.end)}";
-    }
+    final chiaraTurnLabel = _personEffectiveStatusBuilder.buildNowTurnLabel(
+      isOff: chiaraPlan.isOff,
+      startText: fmtTimeOfDay(chiaraPlan.start),
+      endText: fmtTimeOfDay(chiaraPlan.end),
+    );
 
     final chiaraBusyNow =
         chiaraBedSick || chiaraBusyForTurn || chiaraBusyForEventNow;
 
-    final String chiaraNowLabel;
-
-    if (chiaraDisease?.type == DiseaseType.mild) {
-      chiaraNowLabel = "malattia leggera";
-    } else if (chiaraBedSick) {
-      chiaraNowLabel = "occupato • malattia a letto";
-    } else if (chiaraOnHoliday) {
-      chiaraNowLabel = "libero • ferie";
-    } else if (chiaraBusyForEventNow) {
-      chiaraNowLabel = "occupato • evento";
-    } else if (chiaraBusyForTurn) {
-      chiaraNowLabel = "occupato • turno";
-    } else {
-      chiaraNowLabel = "libero";
-    }
+    final chiaraNowLabel = _personEffectiveStatusBuilder.buildNowLabel(
+      isMildSick: _personEffectiveStatusBuilder.isMildSick(
+        manualOverride: chiaraOverride,
+        diseasePeriod: chiaraDisease,
+      ),
+      isBedSick: chiaraBedSick,
+      isOnHoliday: chiaraOnHoliday,
+      isBusyForEvent: chiaraBusyForEventNow,
+      isBusyForTurn: chiaraBusyForTurn,
+    );
 
     final alicePeriodNow = coreStore.aliceEventStore.getEventForDay(nowDay);
     final aliceSpecialEventsNow = coreStore.aliceSpecialEventStore.eventsForDay(
@@ -3354,23 +3338,25 @@ class _CalendarioScreenStepAStabileState
       _onlyDate(_selectedDay),
     );
 
-    final matteoIsBedSick =
-        ov.matteo?.status == OverrideStatus.malattiaALetto ||
-        matteoDisease?.type == DiseaseType.bed;
+    final matteoIsBedSick = _personEffectiveStatusBuilder.isBedSick(
+      manualOverride: ov.matteo,
+      diseasePeriod: matteoDisease,
+    );
 
-    final chiaraIsBedSick =
-        ov.chiara?.status == OverrideStatus.malattiaALetto ||
-        chiaraDisease?.type == DiseaseType.bed;
+    final chiaraIsBedSick = _personEffectiveStatusBuilder.isBedSick(
+      manualOverride: ov.chiara,
+      diseasePeriod: chiaraDisease,
+    );
 
-    final matteoIsSick =
-        ov.matteo?.status == OverrideStatus.malattiaLeggera ||
-        ov.matteo?.status == OverrideStatus.malattiaALetto ||
-        matteoDisease != null;
+    final matteoIsSick = _personEffectiveStatusBuilder.isSick(
+      manualOverride: ov.matteo,
+      diseasePeriod: matteoDisease,
+    );
 
-    final chiaraIsSick =
-        ov.chiara?.status == OverrideStatus.malattiaLeggera ||
-        ov.chiara?.status == OverrideStatus.malattiaALetto ||
-        chiaraDisease != null;
+    final chiaraIsSick = _personEffectiveStatusBuilder.isSick(
+      manualOverride: ov.chiara,
+      diseasePeriod: chiaraDisease,
+    );
 
     final matteoDay = turnDayBuilder.buildPerson(
       person: TurnPerson.matteo,
