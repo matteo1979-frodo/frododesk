@@ -1,8 +1,37 @@
 import '../../../models/day_override.dart';
 import '../../../models/disease_period.dart';
+import '../models/person_effective_status.dart';
 
 class PersonEffectiveStatusBuilder {
   const PersonEffectiveStatusBuilder();
+
+  PersonEffectiveStatus build({
+    required PersonDayOverride? manualOverride,
+    required DiseasePeriod? diseasePeriod,
+    required bool isInHolidayPeriod,
+  }) {
+    final mildSick = isMildSick(
+      manualOverride: manualOverride,
+      diseasePeriod: diseasePeriod,
+    );
+
+    final bedSick = isBedSick(
+      manualOverride: manualOverride,
+      diseasePeriod: diseasePeriod,
+    );
+
+    final onHoliday = isOnHoliday(
+      manualOverride: manualOverride,
+      isInHolidayPeriod: isInHolidayPeriod,
+    );
+
+    return PersonEffectiveStatus(
+      isMildSick: mildSick,
+      isBedSick: bedSick,
+      isSick: mildSick || bedSick,
+      isOnHoliday: onHoliday,
+    );
+  }
 
   bool isBedSick({
     required PersonDayOverride? manualOverride,

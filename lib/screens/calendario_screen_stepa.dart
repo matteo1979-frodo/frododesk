@@ -905,10 +905,22 @@ class _CalendarioScreenStepAStabileState
       _selectedDay,
     );
 
-    final isBedSick = _personEffectiveStatusBuilder.isBedSick(
+    final feriePerson = personKey == 'matteo'
+        ? FeriePerson.matteo
+        : FeriePerson.chiara;
+
+    final isInHolidayPeriod = coreStore.feriePeriodStore.isOnHoliday(
+      feriePerson,
+      _onlyDate(_selectedDay),
+    );
+
+    final effectiveStatus = _personEffectiveStatusBuilder.build(
       manualOverride: personOverride,
       diseasePeriod: disease,
+      isInHolidayPeriod: isInHolidayPeriod,
     );
+
+    final isBedSick = effectiveStatus.isBedSick;
 
     final hasTurnContext = conflicts.hasTurnContext;
     final isForced = _isForcedConflict(
@@ -1130,25 +1142,6 @@ class _CalendarioScreenStepAStabileState
       start: start,
       end: end,
       person: person,
-    );
-  }
-
-  bool _isPersonOnFerie({
-    required String personKey,
-    required PersonDayOverride? manualOverride,
-    required DateTime day,
-  }) {
-    FeriePerson? feriePerson;
-    if (personKey == 'matteo') feriePerson = FeriePerson.matteo;
-    if (personKey == 'chiara') feriePerson = FeriePerson.chiara;
-
-    final isInHolidayPeriod =
-        feriePerson != null &&
-        coreStore.feriePeriodStore.isOnHoliday(feriePerson, _onlyDate(day));
-
-    return _personEffectiveStatusBuilder.isOnHoliday(
-      manualOverride: manualOverride,
-      isInHolidayPeriod: isInHolidayPeriod,
     );
   }
 
@@ -1477,20 +1470,36 @@ class _CalendarioScreenStepAStabileState
       _onlyDate(day),
     );
 
+    final matteoIsInHolidayPeriod = coreStore.feriePeriodStore.isOnHoliday(
+      FeriePerson.matteo,
+      _onlyDate(day),
+    );
+
+    final matteoEffectiveStatus = _personEffectiveStatusBuilder.build(
+      manualOverride: ov.matteo,
+      diseasePeriod: matteoDisease,
+      isInHolidayPeriod: matteoIsInHolidayPeriod,
+    );
+
     final chiaraDisease = coreStore.diseasePeriodStore.getPeriodForDay(
       'chiara',
       _onlyDate(day),
     );
 
-    final matteoSick = _personEffectiveStatusBuilder.isSick(
-      manualOverride: ov.matteo,
-      diseasePeriod: matteoDisease,
+    final chiaraIsInHolidayPeriod = coreStore.feriePeriodStore.isOnHoliday(
+      FeriePerson.chiara,
+      _onlyDate(day),
     );
 
-    final chiaraSick = _personEffectiveStatusBuilder.isSick(
+    final chiaraEffectiveStatus = _personEffectiveStatusBuilder.build(
       manualOverride: ov.chiara,
       diseasePeriod: chiaraDisease,
+      isInHolidayPeriod: chiaraIsInHolidayPeriod,
     );
+
+    final matteoSick = matteoEffectiveStatus.isSick;
+
+    final chiaraSick = chiaraEffectiveStatus.isSick;
 
     final matteoPlan = _turns.turnPlanForPersonDay(
       person: TurnPerson.matteo,
@@ -2274,15 +2283,15 @@ class _CalendarioScreenStepAStabileState
       nowDay,
     );
 
-    final matteoOnHoliday = _isPersonOnFerie(
-      personKey: 'matteo',
-      manualOverride: matteoOverride,
-      day: nowDay,
+    final matteoIsInHolidayPeriod = coreStore.feriePeriodStore.isOnHoliday(
+      FeriePerson.matteo,
+      _onlyDate(nowDay),
     );
 
-    final matteoBedSick = _personEffectiveStatusBuilder.isBedSick(
+    final matteoEffectiveStatus = _personEffectiveStatusBuilder.build(
       manualOverride: matteoOverride,
       diseasePeriod: matteoDisease,
+      isInHolidayPeriod: matteoIsInHolidayPeriod,
     );
 
     final matteoBusyForEventNow = _isPersonBusyForEventNow(
@@ -2307,14 +2316,9 @@ class _CalendarioScreenStepAStabileState
     );
 
     final matteoNowState = const AdultNowStateBuilder().build(
-      isMildSick: _personEffectiveStatusBuilder.isMildSick(
-        manualOverride: matteoOverride,
-        diseasePeriod: matteoDisease,
-      ),
+      effectiveStatus: matteoEffectiveStatus,
       isBusyForEventNow: matteoBusyForEventNow,
       isBusyForTurn: matteoBusyForTurn,
-      isBedSick: matteoBedSick,
-      isOnHoliday: matteoOnHoliday,
       turnLabel: matteoTurnLabel,
     );
 
@@ -2324,15 +2328,15 @@ class _CalendarioScreenStepAStabileState
       nowDay,
     );
 
-    final chiaraOnHoliday = _isPersonOnFerie(
-      personKey: 'chiara',
-      manualOverride: chiaraOverride,
-      day: nowDay,
+    final chiaraIsInHolidayPeriod = coreStore.feriePeriodStore.isOnHoliday(
+      FeriePerson.chiara,
+      nowDay,
     );
 
-    final chiaraBedSick = _personEffectiveStatusBuilder.isBedSick(
+    final chiaraEffectiveStatus = _personEffectiveStatusBuilder.build(
       manualOverride: chiaraOverride,
       diseasePeriod: chiaraDisease,
+      isInHolidayPeriod: chiaraIsInHolidayPeriod,
     );
 
     final chiaraBusyForEventNow = _isPersonBusyForEventNow(
@@ -2357,14 +2361,9 @@ class _CalendarioScreenStepAStabileState
     );
 
     final chiaraNowState = const AdultNowStateBuilder().build(
-      isMildSick: _personEffectiveStatusBuilder.isMildSick(
-        manualOverride: chiaraOverride,
-        diseasePeriod: chiaraDisease,
-      ),
+      effectiveStatus: chiaraEffectiveStatus,
       isBusyForEventNow: chiaraBusyForEventNow,
       isBusyForTurn: chiaraBusyForTurn,
-      isBedSick: chiaraBedSick,
-      isOnHoliday: chiaraOnHoliday,
       turnLabel: chiaraTurnLabel,
     );
 
@@ -3310,30 +3309,40 @@ class _CalendarioScreenStepAStabileState
       _onlyDate(_selectedDay),
     );
 
+    final matteoIsInHolidayPeriod = coreStore.feriePeriodStore.isOnHoliday(
+      FeriePerson.matteo,
+      _onlyDate(_selectedDay),
+    );
+
+    final matteoEffectiveStatus = _personEffectiveStatusBuilder.build(
+      manualOverride: ov.matteo,
+      diseasePeriod: matteoDisease,
+      isInHolidayPeriod: matteoIsInHolidayPeriod,
+    );
+
     final chiaraDisease = coreStore.diseasePeriodStore.getPeriodForDay(
       'chiara',
       _onlyDate(_selectedDay),
     );
 
-    final matteoIsBedSick = _personEffectiveStatusBuilder.isBedSick(
-      manualOverride: ov.matteo,
-      diseasePeriod: matteoDisease,
+    final chiaraIsInHolidayPeriod = coreStore.feriePeriodStore.isOnHoliday(
+      FeriePerson.chiara,
+      _onlyDate(_selectedDay),
     );
 
-    final chiaraIsBedSick = _personEffectiveStatusBuilder.isBedSick(
+    final chiaraEffectiveStatus = _personEffectiveStatusBuilder.build(
       manualOverride: ov.chiara,
       diseasePeriod: chiaraDisease,
+      isInHolidayPeriod: chiaraIsInHolidayPeriod,
     );
 
-    final matteoIsSick = _personEffectiveStatusBuilder.isSick(
-      manualOverride: ov.matteo,
-      diseasePeriod: matteoDisease,
-    );
+    final matteoIsBedSick = matteoEffectiveStatus.isBedSick;
 
-    final chiaraIsSick = _personEffectiveStatusBuilder.isSick(
-      manualOverride: ov.chiara,
-      diseasePeriod: chiaraDisease,
-    );
+    final chiaraIsBedSick = chiaraEffectiveStatus.isBedSick;
+
+    final matteoIsSick = matteoEffectiveStatus.isSick;
+
+    final chiaraIsSick = chiaraEffectiveStatus.isSick;
 
     final matteoDay = turnDayBuilder.buildPerson(
       person: TurnPerson.matteo,
@@ -3346,11 +3355,7 @@ class _CalendarioScreenStepAStabileState
       diseasePeriod: matteoDisease,
       turnOverrideStatusText: matteoSourceResult.turnOverrideStatusText,
       sourceText: matteoSourceResult.sourceText,
-      isOnHoliday: _isPersonOnFerie(
-        personKey: 'matteo',
-        manualOverride: ov.matteo,
-        day: _selectedDay,
-      ),
+      isOnHoliday: matteoEffectiveStatus.isOnHoliday,
       isSick: matteoIsSick,
       isBedSick: matteoIsBedSick,
       allDayEvents: selectedDayEvents,
@@ -3367,11 +3372,7 @@ class _CalendarioScreenStepAStabileState
       diseasePeriod: chiaraDisease,
       turnOverrideStatusText: chiaraSourceResult.turnOverrideStatusText,
       sourceText: chiaraSourceResult.sourceText,
-      isOnHoliday: _isPersonOnFerie(
-        personKey: 'chiara',
-        manualOverride: ov.chiara,
-        day: _selectedDay,
-      ),
+      isOnHoliday: chiaraEffectiveStatus.isOnHoliday,
       isSick: chiaraIsSick,
       isBedSick: chiaraIsBedSick,
       allDayEvents: selectedDayEvents,
@@ -3839,10 +3840,22 @@ class _CalendarioScreenStepAStabileState
       _selectedDay,
     );
 
-    final isBedSick = _personEffectiveStatusBuilder.isBedSick(
+    final feriePerson = personKey == 'matteo'
+        ? FeriePerson.matteo
+        : FeriePerson.chiara;
+
+    final isInHolidayPeriod = coreStore.feriePeriodStore.isOnHoliday(
+      feriePerson,
+      _onlyDate(_selectedDay),
+    );
+
+    final effectiveStatus = _personEffectiveStatusBuilder.build(
       manualOverride: personOverride,
       diseasePeriod: disease,
+      isInHolidayPeriod: isInHolidayPeriod,
     );
+
+    final isBedSick = effectiveStatus.isBedSick;
 
     final now = DateTime.now();
 

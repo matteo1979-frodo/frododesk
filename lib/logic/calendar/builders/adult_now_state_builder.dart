@@ -1,29 +1,28 @@
 import '../models/adult_now_state.dart';
 import 'person_effective_status_builder.dart';
+import '../models/person_effective_status.dart';
 
 class AdultNowStateBuilder {
   const AdultNowStateBuilder();
 
   AdultNowState build({
-    required bool isMildSick,
     required bool isBusyForEventNow,
     required bool isBusyForTurn,
-    required bool isBedSick,
-    required bool isOnHoliday,
+    required PersonEffectiveStatus effectiveStatus,
     required String turnLabel,
   }) {
     const effectiveStatusBuilder = PersonEffectiveStatusBuilder();
 
     final isBusyNow = effectiveStatusBuilder.isBusyNow(
-      isBedSick: isBedSick,
+      isBedSick: effectiveStatus.isBedSick,
       isBusyForEvent: isBusyForEventNow,
       isBusyForTurn: isBusyForTurn,
     );
 
     final nowLabel = effectiveStatusBuilder.buildNowLabel(
-      isMildSick: isMildSick,
-      isBedSick: isBedSick,
-      isOnHoliday: isOnHoliday,
+      isMildSick: effectiveStatus.isMildSick,
+      isBedSick: effectiveStatus.isBedSick,
+      isOnHoliday: effectiveStatus.isOnHoliday,
       isBusyForEvent: isBusyForEventNow,
       isBusyForTurn: isBusyForTurn,
     );
@@ -32,8 +31,8 @@ class AdultNowStateBuilder {
       isBusyNow: isBusyNow,
       isBusyForEventNow: isBusyForEventNow,
       isBusyForTurn: isBusyForTurn,
-      isBedSick: isBedSick,
-      isOnHoliday: isOnHoliday,
+      isBedSick: effectiveStatus.isBedSick,
+      isOnHoliday: effectiveStatus.isOnHoliday,
       nowLabel: nowLabel,
       turnLabel: turnLabel,
     );
