@@ -2408,233 +2408,32 @@ class _CalendarioScreenStepAStabileState
       nowDay,
     );
 
-
-
-    bool aliceIsOutNow = false;
-
-    final aliceEventsNow = coreStore.realEventStore
+    final aliceRealEventsNow = coreStore.realEventStore
         .eventsForDay(nowDay)
-        .where((e) => e.personKey == 'alice');
-
-    final aliceBusyForEventNow = const AliceNowResolver().isBusyForRealEventNow(
-      events: aliceEventsNow,
-      now: effectiveNow,
-    );
+        .where((event) => event.personKey == 'alice')
+        .toList();
 
     final isRealSchoolDay = coreStore.schoolStore.hasSchoolOn(nowDay);
 
-    if (aliceBusyForEventNow) {
-      aliceIsOutNow = true;
-    } else {
-      if (alicePeriodNow == null) {
-        if (!isRealSchoolDay) {
-          aliceIsOutNow = false;
-        } else {
-          final uscitaAt = _effUscitaAnticipataAt(nowDay);
-          final schoolEnd = uscitaAt ?? _effSchoolOutEnd(nowDay);
-          final schoolStart = _scuolaStart;
+    final uscitaAt = _effUscitaAnticipataAt(nowDay);
+    final schoolEnd = uscitaAt ?? _effSchoolOutEnd(nowDay);
+    final schoolStart = _scuolaStart;
 
-          aliceIsOutNow = const AliceNowResolver().isNowInsideTimeRange(
-            day: nowDay,
-            now: effectiveNow,
-            start: schoolStart,
-            end: schoolEnd,
-          );
-        }
-      } else {
-        switch (alicePeriodNow.type) {
-          case AliceEventType.schoolNormal:
-            if (!isRealSchoolDay) {
-              aliceIsOutNow = false;
-              break;
-            }
-
-            final uscitaAt = _effUscitaAnticipataAt(nowDay);
-            final schoolEnd = uscitaAt ?? _effSchoolOutEnd(nowDay);
-            final schoolStart = _scuolaStart;
-
-            aliceIsOutNow = const AliceNowResolver().isNowInsideTimeRange(
-              day: nowDay,
-              now: effectiveNow,
-              start: schoolStart,
-              end: schoolEnd,
-            );
-            break;
-
-          case AliceEventType.summerCamp:
-            final campStart =
-                alicePeriodNow.summerCampStart ??
-                const TimeOfDay(hour: 8, minute: 30);
-
-            final campEnd =
-                alicePeriodNow.summerCampEnd ??
-                const TimeOfDay(hour: 16, minute: 30);
-
-            aliceIsOutNow = const AliceNowResolver().isNowInsideTimeRange(
-              day: nowDay,
-              now: effectiveNow,
-              start: campStart,
-              end: campEnd,
-            );
-            break;
-
-          case AliceEventType.vacation:
-          case AliceEventType.schoolClosure:
-          case AliceEventType.sickness:
-            aliceIsOutNow = false;
-            break;
-        }
-      }
-    }
-
-    for (final event in aliceSpecialEventsNow) {
-      final eventStart = DateTime(
-        nowDay.year,
-        nowDay.month,
-        nowDay.day,
-        event.start.hour,
-        event.start.minute,
-      );
-
-      final eventEnd = DateTime(
-        nowDay.year,
-        nowDay.month,
-        nowDay.day,
-        event.end.hour,
-        event.end.minute,
-      );
-
-      final isActiveNow =
-          effectiveNow.isAfter(eventStart) && effectiveNow.isBefore(eventEnd);
-
-      if (isActiveNow && _aliceEventEngine.isAliceOutDuringEvent(event)) {
-        aliceIsOutNow = true;
-        break;
-      }
-    }
-
-    final isAliceSick = alicePeriodNow?.type == AliceEventType.sickness;
-
-    AliceSpecialEvent? activeAliceSpecialEventNow;
-    for (final event in aliceSpecialEventsNow) {
-      final eventStart = DateTime(
-        nowDay.year,
-        nowDay.month,
-        nowDay.day,
-        event.start.hour,
-        event.start.minute,
-      );
-
-      final eventEnd = DateTime(
-        nowDay.year,
-        nowDay.month,
-        nowDay.day,
-        event.end.hour,
-        event.end.minute,
-      );
-
-      final isActiveNow =
-          effectiveNow.isAfter(eventStart) && effectiveNow.isBefore(eventEnd);
-
-      if (isActiveNow) {
-        activeAliceSpecialEventNow = event;
-        break;
-      }
-    }
-
-    RealEvent? activeAliceRealEventNow;
-    final aliceRealEventsNow = coreStore.realEventStore
-        .eventsForDay(nowDay)
-        .where((e) => e.personKey == 'alice');
-
-    for (final event in aliceRealEventsNow) {
-      final eventStart = DateTime(
-        event.startDate.year,
-        event.startDate.month,
-        event.startDate.day,
-        event.startTime?.hour ?? 0,
-        event.startTime?.minute ?? 0,
-      );
-
-      DateTime eventEnd = DateTime(
-        event.endDate.year,
-        event.endDate.month,
-        event.endDate.day,
-        event.endTime?.hour ?? 23,
-        event.endTime?.minute ?? 59,
-      );
-
-      if (!eventEnd.isAfter(eventStart)) {
-        eventEnd = eventEnd.add(const Duration(days: 1));
-      }
-
-      final isNowInside =
-          effectiveNow.isAfter(eventStart) && effectiveNow.isBefore(eventEnd);
-
-      if (isNowInside) {
-        activeAliceRealEventNow = event;
-        break;
-      }
-    }
-
-    String aliceOutsideLabelFromText(
-      String text, {
-      AliceSpecialEventCategory? category,
-    }) {
-      switch (category) {
-        case AliceSpecialEventCategory.school:
-          return "fuori • scuola";
-        case AliceSpecialEventCategory.health:
-          return "fuori • visita";
-        case AliceSpecialEventCategory.sport:
-          return "fuori • sport";
-        case AliceSpecialEventCategory.activity:
-          return "fuori • attività";
-        case AliceSpecialEventCategory.other:
-        case null:
-          break;
-      }
-
-      final lower = text.toLowerCase();
-
-      if (lower.contains('centro estivo')) return "fuori • centro estivo";
-      if (lower.contains('gita')) return "fuori • gita";
-      if (lower.contains('visita') ||
-          lower.contains('dentista') ||
-          lower.contains('medic') ||
-          lower.contains('pediatra')) {
-        return "fuori • visita";
-      }
-      if (lower.contains('scuola')) return "fuori • scuola";
-      if (lower.contains('danza') ||
-          lower.contains('ballo') ||
-          lower.contains('pallavolo') ||
-          lower.contains('sport')) {
-        return "fuori • sport";
-      }
-      if (lower.contains('teatro') ||
-          lower.contains('ripetizioni') ||
-          lower.contains('corso')) {
-        return "fuori • attività";
-      }
-
-      return "fuori";
-    }
-
-    final String aliceNowLabel = aliceIsOutNow
-        ? (activeAliceSpecialEventNow != null
-              ? aliceOutsideLabelFromText(
-                  activeAliceSpecialEventNow.label,
-                  category: activeAliceSpecialEventNow.category,
-                )
-              : activeAliceRealEventNow != null
-              ? aliceOutsideLabelFromText(activeAliceRealEventNow.title)
-              : (alicePeriodNow?.type == AliceEventType.summerCamp
-                    ? "fuori • centro estivo"
-                    : (coreStore.aliceEventStore.isSchoolNormalDay(_selectedDay)
-                          ? "fuori • scuola"
-                          : "fuori • casa")))
-        : (isAliceSick ? "a casa • malata" : "a casa");
+    final aliceNowState = const AliceNowResolver().build(
+      day: nowDay,
+      now: effectiveNow,
+      realEvents: aliceRealEventsNow,
+      specialEvents: aliceSpecialEventsNow,
+      dayType: alicePeriodNow?.type,
+      isRealSchoolDay: isRealSchoolDay,
+      isSchoolNormalDay: coreStore.aliceEventStore.isSchoolNormalDay(
+        _selectedDay,
+      ),
+      schoolStart: schoolStart,
+      schoolEnd: schoolEnd,
+      summerCampStart: alicePeriodNow?.summerCampStart,
+      summerCampEnd: alicePeriodNow?.summerCampEnd,
+    );
 
     final cov = _computeCoverageStepA(_selectedDay);
     final isEmergency = _isEmergencyActive();
@@ -2668,7 +2467,6 @@ class _CalendarioScreenStepAStabileState
 
     final matteoVisual = getStatusVisual(matteoNowState.nowLabel);
     final chiaraVisual = getStatusVisual(chiaraNowState.nowLabel);
-    final aliceVisual = getStatusVisual(aliceNowLabel);
 
     return FamilyNowSnapshot(
       realNow: realNow,
@@ -2677,10 +2475,10 @@ class _CalendarioScreenStepAStabileState
       nowDay: nowDay,
       matteoBusyNow: matteoNowState.isBusyNow,
       chiaraBusyNow: chiaraNowState.isBusyNow,
-      aliceIsOutNow: aliceIsOutNow,
+      aliceIsOutNow: aliceNowState.isOutNow,
       matteoNowLabel: matteoNowState.nowLabel,
       chiaraNowLabel: chiaraNowState.nowLabel,
-      aliceNowLabel: aliceNowLabel,
+      aliceNowLabel: aliceNowState.nowLabel,
       matteoTurnLabel: matteoNowState.turnLabel,
       chiaraTurnLabel: chiaraNowState.turnLabel,
       cov: cov,
@@ -2689,7 +2487,7 @@ class _CalendarioScreenStepAStabileState
       ipsCoverage30: ipsCoverage30,
       matteoVisual: matteoVisual,
       chiaraVisual: chiaraVisual,
-      aliceVisual: aliceVisual,
+      aliceVisual: aliceNowState.visual,
     );
   }
 
