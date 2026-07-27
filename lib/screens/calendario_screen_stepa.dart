@@ -2466,9 +2466,6 @@ class _CalendarioScreenStepAStabileState
 
     final int ipsCoverage30 = (baseIpsCoverage30 + forcedPenalty).clamp(0, 100);
 
-    final matteoVisual = getStatusVisual(matteoNowState.nowLabel);
-    final chiaraVisual = getStatusVisual(chiaraNowState.nowLabel);
-
     return const FamilyNowSnapshotBuilder().build(
       realNow: realNow,
       now: effectiveNow,
@@ -2481,8 +2478,6 @@ class _CalendarioScreenStepAStabileState
       isEmergency: isEmergency,
       showSummerCampSpecialCard: showSummerCampSpecialCard,
       ipsCoverage30: ipsCoverage30,
-      matteoVisual: matteoVisual,
-      chiaraVisual: chiaraVisual,
     );
   }
 

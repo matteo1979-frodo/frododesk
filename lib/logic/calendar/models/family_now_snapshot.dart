@@ -1,4 +1,3 @@
-import '../../../utils/status_visual.dart';
 import 'coverage_result_step_a.dart';
 import '../../real_event_store.dart';
 
@@ -25,10 +24,6 @@ class FamilyNowSnapshot {
   final bool showSummerCampSpecialCard;
   final int ipsCoverage30;
 
-  final StatusVisual matteoVisual;
-  final StatusVisual chiaraVisual;
-  final StatusVisual aliceVisual;
-
   const FamilyNowSnapshot({
     required this.realNow,
     required this.now,
@@ -46,8 +41,5 @@ class FamilyNowSnapshot {
     required this.isEmergency,
     required this.showSummerCampSpecialCard,
     required this.ipsCoverage30,
-    required this.matteoVisual,
-    required this.chiaraVisual,
-    required this.aliceVisual,
   });
 }

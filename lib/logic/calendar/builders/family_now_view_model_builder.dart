@@ -1,3 +1,4 @@
+import '../../../utils/status_visual.dart';
 import '../models/family_now_snapshot.dart';
 import '../view_models/family_member_now_view_model.dart';
 import '../view_models/family_now_view_model.dart';
@@ -10,7 +11,7 @@ class FamilyNowViewModelBuilder {
       matteo: FamilyMemberNowViewModel(
         name: 'Matteo',
         label: snapshot.matteoNowLabel,
-        visual: snapshot.matteoVisual,
+        visual: getStatusVisual(snapshot.matteoNowLabel),
         busy: snapshot.matteoBusyNow,
         isAlice: false,
         turnLabel: snapshot.matteoTurnLabel,
@@ -18,7 +19,7 @@ class FamilyNowViewModelBuilder {
       chiara: FamilyMemberNowViewModel(
         name: 'Chiara',
         label: snapshot.chiaraNowLabel,
-        visual: snapshot.chiaraVisual,
+        visual: getStatusVisual(snapshot.chiaraNowLabel),
         busy: snapshot.chiaraBusyNow,
         isAlice: false,
         turnLabel: snapshot.chiaraTurnLabel,
@@ -26,7 +27,7 @@ class FamilyNowViewModelBuilder {
       alice: FamilyMemberNowViewModel(
         name: 'Alice',
         label: snapshot.aliceNowLabel,
-        visual: snapshot.aliceVisual,
+        visual: getStatusVisual(snapshot.aliceNowLabel),
         busy: snapshot.aliceIsOutNow,
         isAlice: true,
       ),

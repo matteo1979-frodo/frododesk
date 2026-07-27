@@ -1,4 +1,3 @@
-import '../../../utils/status_visual.dart';
 import '../../real_event_store.dart';
 import '../models/adult_now_state.dart';
 import '../models/alice_now_state.dart';
@@ -20,8 +19,6 @@ class FamilyNowSnapshotBuilder {
     required bool isEmergency,
     required bool showSummerCampSpecialCard,
     required int ipsCoverage30,
-    required StatusVisual matteoVisual,
-    required StatusVisual chiaraVisual,
   }) {
     return FamilyNowSnapshot(
       realNow: realNow,
@@ -40,9 +37,6 @@ class FamilyNowSnapshotBuilder {
       isEmergency: isEmergency,
       showSummerCampSpecialCard: showSummerCampSpecialCard,
       ipsCoverage30: ipsCoverage30,
-      matteoVisual: matteoVisual,
-      chiaraVisual: chiaraVisual,
-      aliceVisual: alice.visual,
     );
   }
 }
