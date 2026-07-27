@@ -72,6 +72,7 @@ import '../logic/calendar/builders/alice_event_tile_view_model_builder.dart';
 import '../logic/calendar/builders/alice_event_conflict_builder.dart';
 import '../logic/calendar/view_models/alice_event_tile_view_model.dart';
 import '../logic/calendar/builders/family_now_view_model_builder.dart';
+import '../logic/calendar/builders/family_now_snapshot_builder.dart';
 import '../widgets/calendar/family_now_card.dart';
 import '../widgets/calendar/family_day_overview_card.dart';
 import '../logic/calendar/builders/family_adult_now_details_builder.dart';
@@ -2468,26 +2469,20 @@ class _CalendarioScreenStepAStabileState
     final matteoVisual = getStatusVisual(matteoNowState.nowLabel);
     final chiaraVisual = getStatusVisual(chiaraNowState.nowLabel);
 
-    return FamilyNowSnapshot(
+    return const FamilyNowSnapshotBuilder().build(
       realNow: realNow,
       now: effectiveNow,
-      realEventStore: realEventStore,
       nowDay: nowDay,
-      matteoBusyNow: matteoNowState.isBusyNow,
-      chiaraBusyNow: chiaraNowState.isBusyNow,
-      aliceIsOutNow: aliceNowState.isOutNow,
-      matteoNowLabel: matteoNowState.nowLabel,
-      chiaraNowLabel: chiaraNowState.nowLabel,
-      aliceNowLabel: aliceNowState.nowLabel,
-      matteoTurnLabel: matteoNowState.turnLabel,
-      chiaraTurnLabel: chiaraNowState.turnLabel,
-      cov: cov,
+      realEventStore: realEventStore,
+      matteo: matteoNowState,
+      chiara: chiaraNowState,
+      alice: aliceNowState,
+      coverage: cov,
       isEmergency: isEmergency,
       showSummerCampSpecialCard: showSummerCampSpecialCard,
       ipsCoverage30: ipsCoverage30,
       matteoVisual: matteoVisual,
       chiaraVisual: chiaraVisual,
-      aliceVisual: aliceNowState.visual,
     );
   }
 

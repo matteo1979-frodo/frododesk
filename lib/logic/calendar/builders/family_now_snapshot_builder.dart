@@ -1,124 +1,48 @@
-import '../../../logic/core_store.dart';
-import '../../../logic/coverage_engine.dart';
-import '../../../logic/ferie_period_store.dart';
-import '../../../logic/turn_engine.dart';
-import '../../../models/day_override.dart';
-import '../../../models/disease_period.dart';
-import '../../../utils/calendario_formatters.dart';
-import 'person_effective_status_builder.dart';
+import '../../../utils/status_visual.dart';
+import '../../real_event_store.dart';
+import '../models/adult_now_state.dart';
+import '../models/alice_now_state.dart';
+import '../models/coverage_result_step_a.dart';
 import '../models/family_now_snapshot.dart';
-import '../models/person_now_status.dart';
 
 class FamilyNowSnapshotBuilder {
   const FamilyNowSnapshotBuilder();
 
-  PersonNowStatus buildMatteoStatus({
-    required CoreStore coreStore,
-    required DateTime selectedDay,
+  FamilyNowSnapshot build({
+    required DateTime realNow,
     required DateTime now,
-    required DayOverrides overrides,
-    required CoverageEngine engine,
-    required TurnEngine turns,
+    required DateTime nowDay,
+    required RealEventStore realEventStore,
+    required AdultNowState matteo,
+    required AdultNowState chiara,
+    required AliceNowState alice,
+    required CoverageResultStepA coverage,
+    required bool isEmergency,
+    required bool showSummerCampSpecialCard,
+    required int ipsCoverage30,
+    required StatusVisual matteoVisual,
+    required StatusVisual chiaraVisual,
   }) {
-    final nowDay = DateTime(now.year, now.month, now.day);
-
-    final matteoOverride = overrides.matteo;
-    final matteoDisease = coreStore.diseasePeriodStore.getPeriodForDay(
-      'matteo',
-      nowDay,
-    );
-
-    final matteoOnHoliday = coreStore.feriePeriodStore.isOnHoliday(
-      FeriePerson.matteo,
-      nowDay,
-    );
-
-    final matteoBedSick = const PersonEffectiveStatusBuilder().isBedSick(
-      manualOverride: matteoOverride,
-      diseasePeriod: matteoDisease,
-    );
-
-    final matteoEventsNow = coreStore.realEventStore
-        .eventsForDay(nowDay)
-        .where((e) => e.personKey == 'matteo');
-
-    bool matteoBusyForEventNow = false;
-
-    for (final event in matteoEventsNow) {
-      final eventStart = DateTime(
-        event.startDate.year,
-        event.startDate.month,
-        event.startDate.day,
-        event.startTime?.hour ?? 0,
-        event.startTime?.minute ?? 0,
-      );
-
-      DateTime eventEnd = DateTime(
-        event.endDate.year,
-        event.endDate.month,
-        event.endDate.day,
-        event.endTime?.hour ?? 23,
-        event.endTime?.minute ?? 59,
-      );
-
-      if (!eventEnd.isAfter(eventStart)) {
-        eventEnd = eventEnd.add(const Duration(days: 1));
-      }
-
-      final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
-
-      if (isNowInside) {
-        matteoBusyForEventNow = true;
-        break;
-      }
-    }
-
-    final matteoBusyForTurn = engine.isMatteoBusyBetween(
-      now,
-      now.add(const Duration(minutes: 1)),
-    );
-
-    final matteoPlan = turns.turnPlanForPersonDay(
-      person: TurnPerson.matteo,
-      day: selectedDay,
-    );
-
-    String matteoTurnLabel = "Turno non previsto";
-
-    if (!matteoPlan.isOff) {
-      matteoTurnLabel =
-          "Turno ${fmtTimeOfDay(matteoPlan.start)}–${fmtTimeOfDay(matteoPlan.end)}";
-    }
-
-    final matteoBusyNow =
-        matteoBedSick || matteoBusyForTurn || matteoBusyForEventNow;
-
-    final String matteoNowLabel;
-
-    if (matteoDisease?.type == DiseaseType.mild) {
-      matteoNowLabel = "malattia leggera";
-    } else if (matteoBedSick) {
-      matteoNowLabel = "occupato • malattia a letto";
-    } else if (matteoOnHoliday) {
-      matteoNowLabel = "libero • ferie";
-    } else if (matteoBusyForEventNow) {
-      matteoNowLabel = "occupato • evento";
-    } else if (matteoBusyForTurn) {
-      matteoNowLabel = "occupato • turno";
-    } else {
-      matteoNowLabel = "libero";
-    }
-
-    return PersonNowStatus(
-      busyNow: matteoBusyNow,
-      label: matteoNowLabel,
-      turnLabel: matteoTurnLabel,
-    );
-  }
-
-  FamilyNowSnapshot build() {
-    throw UnimplementedError(
-      'FamilyNowSnapshotBuilder non è ancora collegato al calendario.',
+    return FamilyNowSnapshot(
+      realNow: realNow,
+      now: now,
+      realEventStore: realEventStore,
+      nowDay: nowDay,
+      matteoBusyNow: matteo.isBusyNow,
+      chiaraBusyNow: chiara.isBusyNow,
+      aliceIsOutNow: alice.isOutNow,
+      matteoNowLabel: matteo.nowLabel,
+      chiaraNowLabel: chiara.nowLabel,
+      aliceNowLabel: alice.nowLabel,
+      matteoTurnLabel: matteo.turnLabel,
+      chiaraTurnLabel: chiara.turnLabel,
+      cov: coverage,
+      isEmergency: isEmergency,
+      showSummerCampSpecialCard: showSummerCampSpecialCard,
+      ipsCoverage30: ipsCoverage30,
+      matteoVisual: matteoVisual,
+      chiaraVisual: chiaraVisual,
+      aliceVisual: alice.visual,
     );
   }
 }
