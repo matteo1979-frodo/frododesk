@@ -1,5 +1,6 @@
 import '../models/family_day_overview_snapshot.dart';
 import '../models/person_effective_status.dart';
+import '../view_models/alice_day_overview_view_model.dart';
 import '../view_models/family_day_overview_view_model.dart';
 import '../view_models/family_member_day_overview_view_model.dart';
 
@@ -18,6 +19,11 @@ class FamilyDayOverviewViewModelBuilder {
         name: 'Chiara',
         statusLabel: _statusLabel(snapshot.chiaraEffectiveStatus),
         turnLabel: snapshot.chiaraTurnLabel,
+      ),
+      alice: AliceDayOverviewViewModel(
+        name: 'Alice',
+        statusLabel:
+            snapshot.aliceDayContext.dayStateLabel ?? 'Giornata ordinaria',
       ),
     );
   }

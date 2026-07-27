@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../logic/calendar/view_models/alice_day_overview_view_model.dart';
 import '../../logic/calendar/view_models/family_day_overview_view_model.dart';
 import '../../logic/calendar/view_models/family_member_day_overview_view_model.dart';
 
@@ -64,6 +65,8 @@ class FamilyDayOverviewCard extends StatelessWidget {
           _FamilyDayOverviewRow(model: model.matteo),
           const SizedBox(height: 8),
           _FamilyDayOverviewRow(model: model.chiara),
+          const SizedBox(height: 8),
+          _AliceDayOverviewRow(model: model.alice),
         ],
       ),
     );
@@ -112,6 +115,42 @@ class _FamilyDayOverviewRow extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AliceDayOverviewRow extends StatelessWidget {
+  final AliceDayOverviewViewModel model;
+
+  const _AliceDayOverviewRow({required this.model});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.55),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.indigo.withOpacity(0.18)),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 62,
+            child: Text(
+              model.name,
+              style: const TextStyle(fontWeight: FontWeight.w900),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              model.statusLabel,
+              style: const TextStyle(fontWeight: FontWeight.w800),
             ),
           ),
         ],

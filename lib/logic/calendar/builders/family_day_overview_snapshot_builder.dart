@@ -5,6 +5,7 @@ import '../../ferie_period_store.dart';
 import '../../turn_engine.dart';
 import '../models/family_day_overview_snapshot.dart';
 import 'person_effective_status_builder.dart';
+import 'alice_day_context_builder.dart';
 
 class FamilyDayOverviewSnapshotBuilder {
   const FamilyDayOverviewSnapshotBuilder();
@@ -70,12 +71,17 @@ class FamilyDayOverviewSnapshotBuilder {
       endText: fmtTimeOfDay(chiaraPlan.end),
     );
 
+    final aliceDayContext = AliceDayContextBuilder(
+      coreStore,
+    ).build(selectedDay);
+
     return FamilyDayOverviewSnapshot(
       day: selectedDay,
       matteoEffectiveStatus: matteoEffectiveStatus,
       chiaraEffectiveStatus: chiaraEffectiveStatus,
       matteoTurnLabel: matteoTurnLabel,
       chiaraTurnLabel: chiaraTurnLabel,
+      aliceDayContext: aliceDayContext,
     );
   }
 }

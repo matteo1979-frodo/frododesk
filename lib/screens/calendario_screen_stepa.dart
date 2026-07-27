@@ -98,6 +98,8 @@ import '../logic/calendar/builders/adult_now_state_builder.dart';
 import '../logic/calendar/builders/family_day_overview_snapshot_builder.dart';
 import '../logic/calendar/models/family_day_overview_snapshot.dart';
 import '../logic/calendar/builders/family_day_overview_view_model_builder.dart';
+import '../logic/calendar/builders/time_range_matcher.dart';
+import '../logic/calendar/builders/alice_now_resolver.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -2407,25 +2409,15 @@ class _CalendarioScreenStepAStabileState
       nowDay,
     );
 
+    final timeRangeMatcher = const TimeRangeMatcher();
+
     bool isNowInsideRange(TimeOfDay start, TimeOfDay end) {
-      final rangeStart = DateTime(
-        nowDay.year,
-        nowDay.month,
-        nowDay.day,
-        start.hour,
-        start.minute,
+      return timeRangeMatcher.isNowInside(
+        day: nowDay,
+        now: effectiveNow,
+        start: start,
+        end: end,
       );
-
-      final rangeEnd = DateTime(
-        nowDay.year,
-        nowDay.month,
-        nowDay.day,
-        end.hour,
-        end.minute,
-      );
-
-      return effectiveNow.isAfter(rangeStart) &&
-          effectiveNow.isBefore(rangeEnd);
     }
 
     bool aliceIsOutNow = false;
@@ -2434,37 +2426,10 @@ class _CalendarioScreenStepAStabileState
         .eventsForDay(nowDay)
         .where((e) => e.personKey == 'alice');
 
-    bool aliceBusyForEventNow = false;
-
-    for (final event in aliceEventsNow) {
-      final eventStart = DateTime(
-        event.startDate.year,
-        event.startDate.month,
-        event.startDate.day,
-        event.startTime?.hour ?? 0,
-        event.startTime?.minute ?? 0,
-      );
-
-      DateTime eventEnd = DateTime(
-        event.endDate.year,
-        event.endDate.month,
-        event.endDate.day,
-        event.endTime?.hour ?? 23,
-        event.endTime?.minute ?? 59,
-      );
-
-      if (!eventEnd.isAfter(eventStart)) {
-        eventEnd = eventEnd.add(const Duration(days: 1));
-      }
-
-      final isNowInside =
-          effectiveNow.isAfter(eventStart) && effectiveNow.isBefore(eventEnd);
-
-      if (isNowInside) {
-        aliceBusyForEventNow = true;
-        break;
-      }
-    }
+    final aliceBusyForEventNow = const AliceNowResolver().isBusyForRealEventNow(
+      events: aliceEventsNow,
+      now: effectiveNow,
+    );
 
     final isRealSchoolDay = coreStore.schoolStore.hasSchoolOn(nowDay);
 
