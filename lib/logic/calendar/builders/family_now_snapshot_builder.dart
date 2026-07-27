@@ -1,7 +1,5 @@
-
 import '../models/adult_now_state.dart';
 import '../models/alice_now_state.dart';
-import '../models/coverage_result_step_a.dart';
 import '../models/family_now_snapshot.dart';
 
 class FamilyNowSnapshotBuilder {
@@ -14,7 +12,6 @@ class FamilyNowSnapshotBuilder {
     required AdultNowState matteo,
     required AdultNowState chiara,
     required AliceNowState alice,
-    required CoverageResultStepA coverage,
     required bool isEmergency,
     required bool showSummerCampSpecialCard,
     required int ipsCoverage30,
@@ -31,7 +28,6 @@ class FamilyNowSnapshotBuilder {
       aliceNowLabel: alice.nowLabel,
       matteoTurnLabel: matteo.turnLabel,
       chiaraTurnLabel: chiara.turnLabel,
-      cov: coverage,
       isEmergency: isEmergency,
       showSummerCampSpecialCard: showSummerCampSpecialCard,
       ipsCoverage30: ipsCoverage30,

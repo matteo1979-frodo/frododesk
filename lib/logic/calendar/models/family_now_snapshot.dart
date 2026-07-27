@@ -1,9 +1,6 @@
-import 'coverage_result_step_a.dart';
-
 class FamilyNowSnapshot {
   final DateTime realNow;
   final DateTime now;
-
   final DateTime nowDay;
 
   final bool matteoBusyNow;
@@ -16,8 +13,6 @@ class FamilyNowSnapshot {
 
   final String matteoTurnLabel;
   final String chiaraTurnLabel;
-
-  final CoverageResultStepA cov;
 
   final bool isEmergency;
   final bool showSummerCampSpecialCard;
@@ -35,7 +30,6 @@ class FamilyNowSnapshot {
     required this.aliceNowLabel,
     required this.matteoTurnLabel,
     required this.chiaraTurnLabel,
-    required this.cov,
     required this.isEmergency,
     required this.showSummerCampSpecialCard,
     required this.ipsCoverage30,

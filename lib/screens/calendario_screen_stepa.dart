@@ -2429,7 +2429,6 @@ class _CalendarioScreenStepAStabileState
       summerCampEnd: alicePeriodNow?.summerCampEnd,
     );
 
-    final cov = _computeCoverageStepA(_selectedDay);
     final isEmergency = _isEmergencyActive();
     final bool showSummerCampSpecialCard = _selectedDayIsSummerCampDay();
 
@@ -2466,7 +2465,6 @@ class _CalendarioScreenStepAStabileState
       matteo: matteoNowState,
       chiara: chiaraNowState,
       alice: aliceNowState,
-      coverage: cov,
       isEmergency: isEmergency,
       showSummerCampSpecialCard: showSummerCampSpecialCard,
       ipsCoverage30: ipsCoverage30,
@@ -2494,7 +2492,7 @@ class _CalendarioScreenStepAStabileState
           )
         : null;
     final familyNowSnapshot = _buildFamilyNowSnapshot();
-    final cov = familyNowSnapshot.cov;
+    final cov = _computeCoverageStepA(_selectedDay);
     final isEmergency = familyNowSnapshot.isEmergency;
     final showSummerCampSpecialCard =
         familyNowSnapshot.showSummerCampSpecialCard;
