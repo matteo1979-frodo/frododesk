@@ -73,6 +73,7 @@ import '../logic/calendar/builders/alice_event_conflict_builder.dart';
 import '../logic/calendar/view_models/alice_event_tile_view_model.dart';
 import '../logic/calendar/builders/family_now_view_model_builder.dart';
 import '../widgets/calendar/family_now_card.dart';
+import '../widgets/calendar/family_day_overview_card.dart';
 import '../logic/calendar/builders/family_adult_now_details_builder.dart';
 import '../widgets/calendar/family_adult_now_dialog.dart';
 import '../logic/calendar/builders/alice_day_context_builder.dart';
@@ -94,6 +95,9 @@ import '../logic/calendar/builders/gap_title_with_alice_state_builder.dart';
 import '../logic/calendar/builders/person_effective_status_builder.dart';
 import '../logic/calendar/builders/turn_event_conflict_visual_state_builder.dart';
 import '../logic/calendar/builders/adult_now_state_builder.dart';
+import '../logic/calendar/builders/family_day_overview_snapshot_builder.dart';
+import '../logic/calendar/models/family_day_overview_snapshot.dart';
+import '../logic/calendar/builders/family_day_overview_view_model_builder.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -109,6 +113,8 @@ class CalendarioScreenStepAStabile extends StatefulWidget {
   State<CalendarioScreenStepAStabile> createState() =>
       _CalendarioScreenStepAStabileState();
 }
+
+enum CalendarTemporalMode { now, dayOverview }
 
 class _CalendarioScreenStepAStabileState
     extends State<CalendarioScreenStepAStabile> {
@@ -127,6 +133,18 @@ class _CalendarioScreenStepAStabileState
   TurnEngine get _turns => coreStore.turnEngine;
 
   late DateTime _selectedDay;
+
+  CalendarTemporalMode _temporalModeFor({
+    required DateTime selectedDay,
+    required DateTime realNow,
+  }) {
+    final selectedDate = _onlyDate(selectedDay);
+    final today = _onlyDate(realNow);
+
+    return selectedDate == today
+        ? CalendarTemporalMode.now
+        : CalendarTemporalMode.dayOverview;
+  }
 
   final GlobalKey _turniKey = GlobalKey();
   final GlobalKey _overrideKey = GlobalKey();
@@ -2259,22 +2277,39 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
+  FamilyDayOverviewSnapshot _buildFamilyDayOverviewSnapshot() {
+    return const FamilyDayOverviewSnapshotBuilder().build(
+      coreStore: coreStore,
+      day: _selectedDay,
+      overrides: _getOverridesForDay(_selectedDay),
+    );
+  }
+
   FamilyNowSnapshot _buildFamilyNowSnapshot() {
     final realNow = DateTime.now();
 
-    final now = DateTime(
-      _selectedDay.year,
-      _selectedDay.month,
-      _selectedDay.day,
-      realNow.hour,
-      realNow.minute,
-      realNow.second,
-      realNow.millisecond,
-      realNow.microsecond,
+    final temporalMode = _temporalModeFor(
+      selectedDay: _selectedDay,
+      realNow: realNow,
     );
 
+    final isNowMode = temporalMode == CalendarTemporalMode.now;
+
+    final effectiveNow = isNowMode
+        ? realNow
+        : DateTime(
+            _selectedDay.year,
+            _selectedDay.month,
+            _selectedDay.day,
+            realNow.hour,
+            realNow.minute,
+            realNow.second,
+            realNow.millisecond,
+            realNow.microsecond,
+          );
+
     final realEventStore = coreStore.realEventStore;
-    final nowDay = _onlyDate(now);
+    final nowDay = _onlyDate(effectiveNow);
     final dayOverrides = _getOverridesForDay(nowDay);
 
     final matteoOverride = dayOverrides.matteo;
@@ -2296,12 +2331,12 @@ class _CalendarioScreenStepAStabileState
 
     final matteoBusyForEventNow = _isPersonBusyForEventNow(
       personKey: 'matteo',
-      now: now,
+      now: effectiveNow,
     );
 
     final matteoBusyForTurn = _engine.isMatteoBusyBetween(
-      now,
-      now.add(const Duration(minutes: 1)),
+      effectiveNow,
+      effectiveNow.add(const Duration(minutes: 1)),
     );
 
     final matteoPlan = _turns.turnPlanForPersonDay(
@@ -2309,7 +2344,7 @@ class _CalendarioScreenStepAStabileState
       day: _selectedDay,
     );
 
-    final matteoTurnLabel = _personEffectiveStatusBuilder.buildNowTurnLabel(
+    final matteoTurnLabel = _personEffectiveStatusBuilder.buildTurnLabel(
       isOff: matteoPlan.isOff,
       startText: fmtTimeOfDay(matteoPlan.start),
       endText: fmtTimeOfDay(matteoPlan.end),
@@ -2341,12 +2376,12 @@ class _CalendarioScreenStepAStabileState
 
     final chiaraBusyForEventNow = _isPersonBusyForEventNow(
       personKey: 'chiara',
-      now: now,
+      now: effectiveNow,
     );
 
     final chiaraBusyForTurn = _engine.isChiaraBusyBetween(
-      now,
-      now.add(const Duration(minutes: 1)),
+      effectiveNow,
+      effectiveNow.add(const Duration(minutes: 1)),
     );
 
     final chiaraPlan = _turns.turnPlanForPersonDay(
@@ -2354,7 +2389,7 @@ class _CalendarioScreenStepAStabileState
       day: _selectedDay,
     );
 
-    final chiaraTurnLabel = _personEffectiveStatusBuilder.buildNowTurnLabel(
+    final chiaraTurnLabel = _personEffectiveStatusBuilder.buildTurnLabel(
       isOff: chiaraPlan.isOff,
       startText: fmtTimeOfDay(chiaraPlan.start),
       endText: fmtTimeOfDay(chiaraPlan.end),
@@ -2389,7 +2424,8 @@ class _CalendarioScreenStepAStabileState
         end.minute,
       );
 
-      return now.isAfter(rangeStart) && now.isBefore(rangeEnd);
+      return effectiveNow.isAfter(rangeStart) &&
+          effectiveNow.isBefore(rangeEnd);
     }
 
     bool aliceIsOutNow = false;
@@ -2421,7 +2457,8 @@ class _CalendarioScreenStepAStabileState
         eventEnd = eventEnd.add(const Duration(days: 1));
       }
 
-      final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
+      final isNowInside =
+          effectiveNow.isAfter(eventStart) && effectiveNow.isBefore(eventEnd);
 
       if (isNowInside) {
         aliceBusyForEventNow = true;
@@ -2497,7 +2534,8 @@ class _CalendarioScreenStepAStabileState
         event.end.minute,
       );
 
-      final isActiveNow = now.isAfter(eventStart) && now.isBefore(eventEnd);
+      final isActiveNow =
+          effectiveNow.isAfter(eventStart) && effectiveNow.isBefore(eventEnd);
 
       if (isActiveNow && _aliceEventEngine.isAliceOutDuringEvent(event)) {
         aliceIsOutNow = true;
@@ -2525,7 +2563,8 @@ class _CalendarioScreenStepAStabileState
         event.end.minute,
       );
 
-      final isActiveNow = now.isAfter(eventStart) && now.isBefore(eventEnd);
+      final isActiveNow =
+          effectiveNow.isAfter(eventStart) && effectiveNow.isBefore(eventEnd);
 
       if (isActiveNow) {
         activeAliceSpecialEventNow = event;
@@ -2559,7 +2598,8 @@ class _CalendarioScreenStepAStabileState
         eventEnd = eventEnd.add(const Duration(days: 1));
       }
 
-      final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
+      final isNowInside =
+          effectiveNow.isAfter(eventStart) && effectiveNow.isBefore(eventEnd);
 
       if (isNowInside) {
         activeAliceRealEventNow = event;
@@ -2662,7 +2702,7 @@ class _CalendarioScreenStepAStabileState
 
     return FamilyNowSnapshot(
       realNow: realNow,
-      now: now,
+      now: effectiveNow,
       realEventStore: realEventStore,
       nowDay: nowDay,
       matteoBusyNow: matteoNowState.isBusyNow,
@@ -2685,6 +2725,24 @@ class _CalendarioScreenStepAStabileState
 
   @override
   Widget build(BuildContext context) {
+    final realNow = DateTime.now();
+
+    final temporalMode = _temporalModeFor(
+      selectedDay: _selectedDay,
+      realNow: realNow,
+    );
+
+    final familyDayOverviewSnapshot =
+        temporalMode == CalendarTemporalMode.dayOverview
+        ? _buildFamilyDayOverviewSnapshot()
+        : null;
+    final isDayOverviewMode = temporalMode == CalendarTemporalMode.dayOverview;
+    assert(!isDayOverviewMode || familyDayOverviewSnapshot != null);
+    final familyDayOverviewViewModel = familyDayOverviewSnapshot != null
+        ? const FamilyDayOverviewViewModelBuilder().build(
+            familyDayOverviewSnapshot,
+          )
+        : null;
     final familyNowSnapshot = _buildFamilyNowSnapshot();
     final cov = familyNowSnapshot.cov;
     final isEmergency = familyNowSnapshot.isEmergency;
@@ -2767,34 +2825,37 @@ class _CalendarioScreenStepAStabileState
           children: [
             const SizedBox(height: 8),
             _buildIpsPressureLine(familyNowSnapshot.ipsCoverage30),
-            FamilyNowCard(
-              model: familyNowViewModel,
-              realNow: familyNowSnapshot.realNow,
-              onTapMatteo: () {
-                showDialog(
-                  context: context,
-                  builder: (context) {
-                    return FamilyAdultNowDialog(model: matteoDetails);
-                  },
-                );
-              },
-              onTapChiara: () {
-                showDialog(
-                  context: context,
-                  builder: (context) {
-                    return FamilyAdultNowDialog(model: chiaraDetails);
-                  },
-                );
-              },
-              onTapAlice: () {
-                showDialog(
-                  context: context,
-                  builder: (context) {
-                    return AliceNowDialog(model: aliceDetails);
-                  },
-                );
-              },
-            ),
+            if (isDayOverviewMode)
+              FamilyDayOverviewCard(model: familyDayOverviewViewModel!)
+            else
+              FamilyNowCard(
+                model: familyNowViewModel,
+                realNow: familyNowSnapshot.realNow,
+                onTapMatteo: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return FamilyAdultNowDialog(model: matteoDetails);
+                    },
+                  );
+                },
+                onTapChiara: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return FamilyAdultNowDialog(model: chiaraDetails);
+                    },
+                  );
+                },
+                onTapAlice: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return AliceNowDialog(model: aliceDetails);
+                    },
+                  );
+                },
+              ),
             const SizedBox(height: 8),
             _weekNavBar(),
             _buildTaskSectionMock(),

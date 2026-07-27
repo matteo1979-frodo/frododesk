@@ -97,7 +97,7 @@ class PersonEffectiveStatusBuilder {
     return "libero";
   }
 
-  String buildNowTurnLabel({
+  String buildTurnLabel({
     required bool isOff,
     required String startText,
     required String endText,
