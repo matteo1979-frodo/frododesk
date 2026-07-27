@@ -2304,7 +2304,6 @@ class _CalendarioScreenStepAStabileState
             realNow.microsecond,
           );
 
-    final realEventStore = coreStore.realEventStore;
     final nowDay = _onlyDate(effectiveNow);
     final dayOverrides = _getOverridesForDay(nowDay);
 
@@ -2464,7 +2463,6 @@ class _CalendarioScreenStepAStabileState
       realNow: realNow,
       now: effectiveNow,
       nowDay: nowDay,
-      realEventStore: realEventStore,
       matteo: matteoNowState,
       chiara: chiaraNowState,
       alice: aliceNowState,
@@ -2505,7 +2503,7 @@ class _CalendarioScreenStepAStabileState
       familyNowSnapshot,
     );
 
-    final selectedDayEvents = familyNowSnapshot.realEventStore.eventsForDay(
+    final selectedDayEvents = coreStore.realEventStore.eventsForDay(
       _selectedDay,
     );
 

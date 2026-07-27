@@ -1,10 +1,9 @@
 import 'coverage_result_step_a.dart';
-import '../../real_event_store.dart';
 
 class FamilyNowSnapshot {
   final DateTime realNow;
   final DateTime now;
-  final RealEventStore realEventStore;
+
   final DateTime nowDay;
 
   final bool matteoBusyNow;
@@ -27,7 +26,6 @@ class FamilyNowSnapshot {
   const FamilyNowSnapshot({
     required this.realNow,
     required this.now,
-    required this.realEventStore,
     required this.nowDay,
     required this.matteoBusyNow,
     required this.chiaraBusyNow,

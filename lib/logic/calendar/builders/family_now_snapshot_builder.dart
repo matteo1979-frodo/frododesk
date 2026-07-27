@@ -1,4 +1,4 @@
-import '../../real_event_store.dart';
+
 import '../models/adult_now_state.dart';
 import '../models/alice_now_state.dart';
 import '../models/coverage_result_step_a.dart';
@@ -11,7 +11,6 @@ class FamilyNowSnapshotBuilder {
     required DateTime realNow,
     required DateTime now,
     required DateTime nowDay,
-    required RealEventStore realEventStore,
     required AdultNowState matteo,
     required AdultNowState chiara,
     required AliceNowState alice,
@@ -23,7 +22,6 @@ class FamilyNowSnapshotBuilder {
     return FamilyNowSnapshot(
       realNow: realNow,
       now: now,
-      realEventStore: realEventStore,
       nowDay: nowDay,
       matteoBusyNow: matteo.isBusyNow,
       chiaraBusyNow: chiara.isBusyNow,
