@@ -2281,6 +2281,36 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
+  int _computeIpsCoverage30() {
+    final baseIpsCoverage30 = coreStore.coverageAdapter.riskScore30Days(
+      startDay: _selectedDay,
+    );
+
+    final hasForcedConflictToday =
+        overrideStore.isForcedConflictForDay(
+          day: _selectedDay,
+          personKey: 'matteo',
+          eventIds: _eventsForPersonOnDay(
+            personKey: 'matteo',
+            day: _selectedDay,
+          ).map((e) => e.id).toList(),
+        ) ||
+        overrideStore.isForcedConflictForDay(
+          day: _selectedDay,
+          personKey: 'chiara',
+          eventIds: _eventsForPersonOnDay(
+            personKey: 'chiara',
+            day: _selectedDay,
+          ).map((e) => e.id).toList(),
+        );
+
+    final forcedPenalty = hasForcedConflictToday ? 15 : 0;
+
+    final int ipsCoverage30 = (baseIpsCoverage30 + forcedPenalty).clamp(0, 100);
+
+    return ipsCoverage30;
+  }
+
   FamilyNowSnapshot _buildFamilyNowSnapshot() {
     final realNow = DateTime.now();
 
@@ -2429,32 +2459,6 @@ class _CalendarioScreenStepAStabileState
       summerCampEnd: alicePeriodNow?.summerCampEnd,
     );
 
-    final baseIpsCoverage30 = coreStore.coverageAdapter.riskScore30Days(
-      startDay: _selectedDay,
-    );
-
-    final hasForcedConflictToday =
-        overrideStore.isForcedConflictForDay(
-          day: _selectedDay,
-          personKey: 'matteo',
-          eventIds: _eventsForPersonOnDay(
-            personKey: 'matteo',
-            day: _selectedDay,
-          ).map((e) => e.id).toList(),
-        ) ||
-        overrideStore.isForcedConflictForDay(
-          day: _selectedDay,
-          personKey: 'chiara',
-          eventIds: _eventsForPersonOnDay(
-            personKey: 'chiara',
-            day: _selectedDay,
-          ).map((e) => e.id).toList(),
-        );
-
-    final forcedPenalty = hasForcedConflictToday ? 15 : 0;
-
-    final int ipsCoverage30 = (baseIpsCoverage30 + forcedPenalty).clamp(0, 100);
-
     return const FamilyNowSnapshotBuilder().build(
       realNow: realNow,
       now: effectiveNow,
@@ -2462,7 +2466,6 @@ class _CalendarioScreenStepAStabileState
       matteo: matteoNowState,
       chiara: chiaraNowState,
       alice: aliceNowState,
-      ipsCoverage30: ipsCoverage30,
     );
   }
 
@@ -2490,6 +2493,7 @@ class _CalendarioScreenStepAStabileState
     final cov = _computeCoverageStepA(_selectedDay);
     final isEmergency = _isEmergencyActive();
     final showSummerCampSpecialCard = _selectedDayIsSummerCampDay();
+    final ipsCoverage30 = _computeIpsCoverage30();
     final familyNowViewModel = const FamilyNowViewModelBuilder().build(
       familyNowSnapshot,
       isEmergency: isEmergency,
@@ -2566,7 +2570,7 @@ class _CalendarioScreenStepAStabileState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 8),
-            _buildIpsPressureLine(familyNowSnapshot.ipsCoverage30),
+            _buildIpsPressureLine(ipsCoverage30),
             if (isDayOverviewMode)
               FamilyDayOverviewCard(model: familyDayOverviewViewModel!)
             else

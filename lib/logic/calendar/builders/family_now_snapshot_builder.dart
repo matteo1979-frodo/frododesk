@@ -12,7 +12,6 @@ class FamilyNowSnapshotBuilder {
     required AdultNowState matteo,
     required AdultNowState chiara,
     required AliceNowState alice,
-    required int ipsCoverage30,
   }) {
     return FamilyNowSnapshot(
       realNow: realNow,
@@ -26,7 +25,6 @@ class FamilyNowSnapshotBuilder {
       aliceNowLabel: alice.nowLabel,
       matteoTurnLabel: matteo.turnLabel,
       chiaraTurnLabel: chiara.turnLabel,
-      ipsCoverage30: ipsCoverage30,
     );
   }
 }
