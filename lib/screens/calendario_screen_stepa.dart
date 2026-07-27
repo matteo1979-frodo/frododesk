@@ -98,7 +98,6 @@ import '../logic/calendar/builders/adult_now_state_builder.dart';
 import '../logic/calendar/builders/family_day_overview_snapshot_builder.dart';
 import '../logic/calendar/models/family_day_overview_snapshot.dart';
 import '../logic/calendar/builders/family_day_overview_view_model_builder.dart';
-import '../logic/calendar/builders/time_range_matcher.dart';
 import '../logic/calendar/builders/alice_now_resolver.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
@@ -2409,16 +2408,7 @@ class _CalendarioScreenStepAStabileState
       nowDay,
     );
 
-    final timeRangeMatcher = const TimeRangeMatcher();
 
-    bool isNowInsideRange(TimeOfDay start, TimeOfDay end) {
-      return timeRangeMatcher.isNowInside(
-        day: nowDay,
-        now: effectiveNow,
-        start: start,
-        end: end,
-      );
-    }
 
     bool aliceIsOutNow = false;
 
@@ -2444,7 +2434,12 @@ class _CalendarioScreenStepAStabileState
           final schoolEnd = uscitaAt ?? _effSchoolOutEnd(nowDay);
           final schoolStart = _scuolaStart;
 
-          aliceIsOutNow = isNowInsideRange(schoolStart, schoolEnd);
+          aliceIsOutNow = const AliceNowResolver().isNowInsideTimeRange(
+            day: nowDay,
+            now: effectiveNow,
+            start: schoolStart,
+            end: schoolEnd,
+          );
         }
       } else {
         switch (alicePeriodNow.type) {
@@ -2458,7 +2453,12 @@ class _CalendarioScreenStepAStabileState
             final schoolEnd = uscitaAt ?? _effSchoolOutEnd(nowDay);
             final schoolStart = _scuolaStart;
 
-            aliceIsOutNow = isNowInsideRange(schoolStart, schoolEnd);
+            aliceIsOutNow = const AliceNowResolver().isNowInsideTimeRange(
+              day: nowDay,
+              now: effectiveNow,
+              start: schoolStart,
+              end: schoolEnd,
+            );
             break;
 
           case AliceEventType.summerCamp:
@@ -2470,7 +2470,12 @@ class _CalendarioScreenStepAStabileState
                 alicePeriodNow.summerCampEnd ??
                 const TimeOfDay(hour: 16, minute: 30);
 
-            aliceIsOutNow = isNowInsideRange(campStart, campEnd);
+            aliceIsOutNow = const AliceNowResolver().isNowInsideTimeRange(
+              day: nowDay,
+              now: effectiveNow,
+              start: campStart,
+              end: campEnd,
+            );
             break;
 
           case AliceEventType.vacation:

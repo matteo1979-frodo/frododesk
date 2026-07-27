@@ -1,5 +1,7 @@
 import '../../../models/real_event.dart';
 import '../models/alice_now_state.dart';
+import 'package:flutter/material.dart';
+import 'time_range_matcher.dart';
 
 class AliceNowResolver {
   const AliceNowResolver();
@@ -37,6 +39,20 @@ class AliceNowResolver {
     }
 
     return false;
+  }
+
+  bool isNowInsideTimeRange({
+    required DateTime day,
+    required DateTime now,
+    required TimeOfDay start,
+    required TimeOfDay end,
+  }) {
+    return const TimeRangeMatcher().isNowInside(
+      day: day,
+      now: now,
+      start: start,
+      end: end,
+    );
   }
 
   AliceNowState build() {
