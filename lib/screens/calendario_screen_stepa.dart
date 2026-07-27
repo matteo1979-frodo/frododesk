@@ -36,13 +36,9 @@ import '../widgets/disease_period_panel.dart';
 import '../widgets/extra_events_dialog.dart';
 import '../widgets/calendar/alice_event_logistics_details.dart';
 import '../logic/calendar/view_models/sandra_coverage_view_model.dart';
-
 // ✅ NEW: Eventi speciali centro estivo
 import '../logic/summer_camp_special_event_store.dart';
-
 import '../utils/calendario_formatters.dart';
-import '../utils/status_visual.dart';
-
 import '../logic/promemoria_store.dart';
 import '../models/promemoria.dart';
 import '../logic/alice_events/alice_event_behavior_text.dart';
@@ -51,9 +47,7 @@ import '../logic/alice_events/alice_event_engine.dart';
 import '../logic/calendar/models/family_now_snapshot.dart';
 import '../logic/calendar/models/coverage_result_step_a.dart';
 import '../logic/calendar/models/day_gap_visual_state.dart';
-
 import '../logic/calendar/models/turn_event_conflict.dart';
-
 import '../widgets/calendar/sandra_coverage_card.dart';
 import '../widgets/calendar/alice_state_banner.dart';
 import '../widgets/calendar/alice_events_section.dart';
