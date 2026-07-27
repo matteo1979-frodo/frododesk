@@ -2430,7 +2430,6 @@ class _CalendarioScreenStepAStabileState
     );
 
     final isEmergency = _isEmergencyActive();
-    final bool showSummerCampSpecialCard = _selectedDayIsSummerCampDay();
 
     final baseIpsCoverage30 = coreStore.coverageAdapter.riskScore30Days(
       startDay: _selectedDay,
@@ -2466,7 +2465,6 @@ class _CalendarioScreenStepAStabileState
       chiara: chiaraNowState,
       alice: aliceNowState,
       isEmergency: isEmergency,
-      showSummerCampSpecialCard: showSummerCampSpecialCard,
       ipsCoverage30: ipsCoverage30,
     );
   }
@@ -2494,8 +2492,7 @@ class _CalendarioScreenStepAStabileState
     final familyNowSnapshot = _buildFamilyNowSnapshot();
     final cov = _computeCoverageStepA(_selectedDay);
     final isEmergency = familyNowSnapshot.isEmergency;
-    final showSummerCampSpecialCard =
-        familyNowSnapshot.showSummerCampSpecialCard;
+    final showSummerCampSpecialCard = _selectedDayIsSummerCampDay();
 
     final familyNowViewModel = const FamilyNowViewModelBuilder().build(
       familyNowSnapshot,
