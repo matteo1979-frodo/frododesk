@@ -14,7 +14,6 @@ class FamilyNowSnapshot {
   final String matteoTurnLabel;
   final String chiaraTurnLabel;
 
-  final bool isEmergency;
   final int ipsCoverage30;
 
   const FamilyNowSnapshot({
@@ -29,7 +28,6 @@ class FamilyNowSnapshot {
     required this.aliceNowLabel,
     required this.matteoTurnLabel,
     required this.chiaraTurnLabel,
-    required this.isEmergency,
     required this.ipsCoverage30,
   });
 }

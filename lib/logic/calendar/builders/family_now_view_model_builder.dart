@@ -6,7 +6,10 @@ import '../view_models/family_now_view_model.dart';
 class FamilyNowViewModelBuilder {
   const FamilyNowViewModelBuilder();
 
-  FamilyNowViewModel build(FamilyNowSnapshot snapshot) {
+  FamilyNowViewModel build(
+    FamilyNowSnapshot snapshot, {
+    required bool isEmergency,
+  }) {
     return FamilyNowViewModel(
       matteo: FamilyMemberNowViewModel(
         name: 'Matteo',
@@ -31,7 +34,7 @@ class FamilyNowViewModelBuilder {
         busy: snapshot.aliceIsOutNow,
         isAlice: true,
       ),
-      emergency: snapshot.isEmergency,
+      emergency: isEmergency,
     );
   }
 }
