@@ -279,14 +279,29 @@ class _CalendarioScreenStepAStabileState
     final d0 = _onlyDate(day);
     final ov = _getOverridesForDay(d0);
     final uscitaAt = _effUscitaAnticipataAt(d0);
+    final lunchCover = _effectiveLunchCover(d0);
 
-    return _engine.sandraDecisionForDay(
+    return _sandraDecisionForDayWithResolvedValues(
       day: d0,
-      uscita13: uscitaAt != null,
       overrides: ov,
+      earlySchoolExitAt: uscitaAt,
+      lunchCover: lunchCover,
+    );
+  }
+
+  CoverageSandraDecision _sandraDecisionForDayWithResolvedValues({
+    required DateTime day,
+    required DayOverrides overrides,
+    required TimeOfDay? earlySchoolExitAt,
+    required SchoolCoverChoice lunchCover,
+  }) {
+    return _engine.sandraDecisionForDay(
+      day: day,
+      uscita13: earlySchoolExitAt != null,
+      overrides: overrides,
       ferieStore: coreStore.feriePeriodStore,
-      lunchCover: _effectiveLunchCover(d0),
-      uscitaAnticipataAt: uscitaAt,
+      lunchCover: lunchCover,
+      uscitaAnticipataAt: earlySchoolExitAt,
     );
   }
 
@@ -359,29 +374,38 @@ class _CalendarioScreenStepAStabileState
   }
 
   SchoolCoverChoice _effectiveSchoolInCover(DateTime day) {
+    return _effectiveSchoolInCoverWithFallback(
+      day: day,
+      fallbackSchoolEntryAt: () => _scuolaStart,
+    );
+  }
+
+  SchoolCoverChoice _effectiveSchoolInCoverWithFallback({
+    required DateTime day,
+    required TimeOfDay Function() fallbackSchoolEntryAt,
+  }) {
     final saved = daySettingsStore.schoolInCoverForDay(day);
     if (saved != SchoolCoverChoice.none) return saved;
 
-    final ingressoReale =
-        coreStore.aliceEventStore.getEventForDay(day)?.summerCampStart ??
-        TimeOfDay(
-          hour:
-              (coreStore.schoolStore
-                      .activePeriodForDay(_onlyDate(day))
-                      ?.weekConfig
-                      .forWeekday(_onlyDate(day).weekday)
-                      .entryMinutes ??
-                  (_scuolaStart.hour * 60 + _scuolaStart.minute)) ~/
-              60,
-          minute:
-              (coreStore.schoolStore
-                      .activePeriodForDay(_onlyDate(day))
-                      ?.weekConfig
-                      .forWeekday(_onlyDate(day).weekday)
-                      .entryMinutes ??
-                  (_scuolaStart.hour * 60 + _scuolaStart.minute)) %
-              60,
-        );
+    final summerCampStart = coreStore.aliceEventStore
+        .getEventForDay(day)
+        ?.summerCampStart;
+
+    final TimeOfDay ingressoReale;
+    if (summerCampStart != null) {
+      ingressoReale = summerCampStart;
+    } else {
+      final d0 = _onlyDate(day);
+      final entryMinutes = coreStore.schoolStore
+          .activePeriodForDay(d0)
+          ?.weekConfig
+          .forWeekday(d0.weekday)
+          .entryMinutes;
+
+      ingressoReale = entryMinutes != null
+          ? TimeOfDay(hour: entryMinutes ~/ 60, minute: entryMinutes % 60)
+          : fallbackSchoolEntryAt();
+    }
 
     final ingressoInizio = TimeOfDay(
       hour: ((ingressoReale.hour * 60 + ingressoReale.minute - 20) ~/ 60) % 24,
@@ -398,11 +422,23 @@ class _CalendarioScreenStepAStabileState
   }
 
   SchoolCoverChoice _effectiveSchoolOutCover(DateTime day) {
+    return _effectiveSchoolOutCoverWithResolvedTimes(
+      day: day,
+      schoolOutStart: () => _effSchoolOutStart(day),
+      schoolOutEnd: () => _effSchoolOutEnd(day),
+    );
+  }
+
+  SchoolCoverChoice _effectiveSchoolOutCoverWithResolvedTimes({
+    required DateTime day,
+    required TimeOfDay Function() schoolOutStart,
+    required TimeOfDay Function() schoolOutEnd,
+  }) {
     final saved = daySettingsStore.schoolOutCoverForDay(day);
     if (saved != SchoolCoverChoice.none) return saved;
 
-    final outStart = _effSchoolOutStart(day);
-    final outEnd = _effSchoolOutEnd(day);
+    final outStart = schoolOutStart();
+    final outEnd = schoolOutEnd();
 
     final coveredBySupport = _supportNetworkCoversRange(
       day: day,
@@ -414,12 +450,22 @@ class _CalendarioScreenStepAStabileState
   }
 
   SchoolCoverChoice _effectiveLunchCover(DateTime day) {
+    return _effectiveLunchCoverWithResolvedEarlyExit(
+      day: day,
+      earlySchoolExitAt: () => _effUscitaAnticipataAt(day),
+    );
+  }
+
+  SchoolCoverChoice _effectiveLunchCoverWithResolvedEarlyExit({
+    required DateTime day,
+    required TimeOfDay? Function() earlySchoolExitAt,
+  }) {
     final saved = daySettingsStore.lunchCoverForDay(day);
 
     // 👉 PRIORITÀ: scelta utente
     if (saved != SchoolCoverChoice.none) return saved;
 
-    final uscitaAt = _effUscitaAnticipataAt(day);
+    final uscitaAt = earlySchoolExitAt();
     if (uscitaAt == null) return SchoolCoverChoice.none;
 
     final coveredBySupport = _supportNetworkCoversRange(
@@ -1199,20 +1245,35 @@ class _CalendarioScreenStepAStabileState
 
   CoverageResultStepA _computeCoverageStepA(DateTime day) {
     final d0 = _onlyDate(day);
-
     final ov = _getOverridesForDay(d0);
+    final timing = EffectiveSchoolDayTimingReader(coreStore).read(d0);
 
-    final uscitaAt = _effUscitaAnticipataAt(d0);
+    final uscitaAt = timing.earlySchoolExitAt;
     final uscita13Eff = uscitaAt != null;
 
-    final outStart = _effSchoolOutStart(d0);
-    final outEnd = _effSchoolOutEnd(d0);
+    final outStart = timing.schoolExitAt;
+    final outEnd = timing.schoolPickupWindowEnd;
 
-    final schoolInCover = _effectiveSchoolInCover(d0);
-    final schoolOutCover = _effectiveSchoolOutCover(d0);
-    final lunchCover = _effectiveLunchCover(d0);
+    final schoolInCover = _effectiveSchoolInCoverWithFallback(
+      day: d0,
+      fallbackSchoolEntryAt: () => timing.schoolEntryAt,
+    );
+    final schoolOutCover = _effectiveSchoolOutCoverWithResolvedTimes(
+      day: d0,
+      schoolOutStart: () => timing.schoolExitAt,
+      schoolOutEnd: () => timing.schoolPickupWindowEnd,
+    );
+    final lunchCover = _effectiveLunchCoverWithResolvedEarlyExit(
+      day: d0,
+      earlySchoolExitAt: () => timing.earlySchoolExitAt,
+    );
 
-    final sandraDecision = _sandraDecisionForDay(d0);
+    final sandraDecision = _sandraDecisionForDayWithResolvedValues(
+      day: d0,
+      overrides: ov,
+      earlySchoolExitAt: timing.earlySchoolExitAt,
+      lunchCover: lunchCover,
+    );
 
     final analysis = _engine.analyzeDay(
       day: d0,
