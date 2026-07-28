@@ -4,6 +4,7 @@ import '../../alice_event_store.dart';
 import '../../core_store.dart';
 import '../models/alice_day_context.dart';
 import '../view_models/alice_now_event_view_model.dart';
+import 'effective_school_day_timing_reader.dart';
 
 class AliceDayContextBuilder {
   final CoreStore coreStore;
@@ -15,6 +16,9 @@ class AliceDayContextBuilder {
     final events = <AliceNowEventViewModel>[];
 
     final period = coreStore.aliceEventStore.getEventForDay(normalizedDay);
+    final schoolTiming = EffectiveSchoolDayTimingReader(
+      coreStore,
+    ).read(normalizedDay);
 
     final dayStateLabel = _dayStateLabel(period?.type);
 
@@ -28,10 +32,10 @@ class AliceDayContextBuilder {
       events.add(
         AliceNowEventViewModel(
           title: 'Scuola',
-          start: _effectiveSchoolStart(normalizedDay),
+          start: schoolTiming.schoolEntryAt,
           end:
-              _effectiveEarlySchoolExit(normalizedDay) ??
-              _effectiveSchoolOutEnd(normalizedDay),
+              schoolTiming.earlySchoolExitAt ??
+              schoolTiming.schoolPickupWindowEnd,
         ),
       );
     }
@@ -112,61 +116,6 @@ class AliceDayContextBuilder {
         .forWeekday(day.weekday);
 
     return config?.enabled ?? false;
-  }
-
-  TimeOfDay _effectiveSchoolStart(DateTime day) {
-    final config = coreStore.schoolStore
-        .activePeriodForDay(day)
-        ?.weekConfig
-        .forWeekday(day.weekday);
-
-    if (config == null || !config.enabled) {
-      return const TimeOfDay(hour: 8, minute: 25);
-    }
-
-    return TimeOfDay(
-      hour: config.entryMinutes ~/ 60,
-      minute: config.entryMinutes % 60,
-    );
-  }
-
-  TimeOfDay? _effectiveEarlySchoolExit(DateTime day) {
-    final customTime = coreStore.daySettingsStore
-        .uscitaAnticipataTimeForDay(day);
-
-    if (customTime != null) {
-      return customTime;
-    }
-
-    if (coreStore.settingsStore.isUscita13) {
-      return coreStore.settingsStore.uscitaAnticipataDefaultTime;
-    }
-
-    return null;
-  }
-
-  TimeOfDay _effectiveSchoolOutEnd(DateTime day) {
-    final customTime = coreStore.daySettingsStore.schoolOutEndForDay(day);
-
-    if (customTime != null) {
-      return customTime;
-    }
-
-    final config = coreStore.schoolStore
-        .activePeriodForDay(day)
-        ?.weekConfig
-        .forWeekday(day.weekday);
-
-    if (config == null || !config.enabled) {
-      return const TimeOfDay(hour: 16, minute: 45);
-    }
-
-    final returnMinutes = config.returnHomeMinutes;
-
-    return TimeOfDay(
-      hour: returnMinutes ~/ 60,
-      minute: returnMinutes % 60,
-    );
   }
 
   int _compareEventsByStartTime(

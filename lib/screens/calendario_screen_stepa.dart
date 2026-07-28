@@ -94,6 +94,7 @@ import '../logic/calendar/builders/family_day_overview_snapshot_builder.dart';
 import '../logic/calendar/models/family_day_overview_snapshot.dart';
 import '../logic/calendar/builders/family_day_overview_view_model_builder.dart';
 import '../logic/calendar/builders/alice_now_resolver.dart';
+import '../logic/calendar/builders/effective_school_day_timing_reader.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -254,17 +255,16 @@ class _CalendarioScreenStepAStabileState
   }
 
   TimeOfDay? _effUscitaAnticipataAt(DateTime day) {
-    final t = daySettingsStore.uscitaAnticipataTimeForDay(day);
-    if (t != null) return t;
-
-    if (settingsStore.isUscita13) {
-      return settingsStore.uscitaAnticipataDefaultTime;
-    }
-
-    return null;
+    return EffectiveSchoolDayTimingReader(
+      coreStore,
+    ).read(day).earlySchoolExitAt;
   }
 
-  bool _effUscita13(DateTime day) => _effUscitaAnticipataAt(day) != null;
+  bool _effUscita13(DateTime day) {
+    return EffectiveSchoolDayTimingReader(
+      coreStore,
+    ).read(day).hasEarlySchoolExit;
+  }
 
   bool _effSandraMattina(DateTime day) =>
       daySettingsStore.sandraMattinaForDay(day) ?? false;
@@ -290,49 +290,14 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
-  static const TimeOfDay _schoolOutDefaultStart = TimeOfDay(
-    hour: 16,
-    minute: 25,
-  );
-  static const TimeOfDay _schoolOutDefaultEnd = TimeOfDay(hour: 16, minute: 45);
-
   TimeOfDay _effSchoolOutStart(DateTime day) {
-    final custom = daySettingsStore.schoolOutStartForDay(day);
-    if (custom != null) return custom;
-
-    final d0 = _onlyDate(day);
-    final cfg = coreStore.schoolStore
-        .activePeriodForDay(d0)
-        ?.weekConfig
-        .forWeekday(d0.weekday);
-
-    if (cfg == null || !cfg.enabled) {
-      return _schoolOutDefaultStart;
-    }
-
-    return TimeOfDay(
-      hour: cfg.exitRealMinutes ~/ 60,
-      minute: cfg.exitRealMinutes % 60,
-    );
+    return EffectiveSchoolDayTimingReader(coreStore).read(day).schoolExitAt;
   }
 
   TimeOfDay _effSchoolOutEnd(DateTime day) {
-    final custom = daySettingsStore.schoolOutEndForDay(day);
-    if (custom != null) return custom;
-
-    final d0 = _onlyDate(day);
-    final cfg = coreStore.schoolStore
-        .activePeriodForDay(d0)
-        ?.weekConfig
-        .forWeekday(d0.weekday);
-
-    if (cfg == null || !cfg.enabled) {
-      return _schoolOutDefaultEnd;
-    }
-
-    final returnMinutes = cfg.returnHomeMinutes;
-
-    return TimeOfDay(hour: returnMinutes ~/ 60, minute: returnMinutes % 60);
+    return EffectiveSchoolDayTimingReader(
+      coreStore,
+    ).read(day).schoolPickupWindowEnd;
   }
 
   Future<void> _toggleUscitaAnticipata(bool enabled) async {
@@ -1101,20 +1066,9 @@ class _CalendarioScreenStepAStabileState
   }
 
   TimeOfDay get _scuolaStart {
-    final d0 = _onlyDate(_selectedDay);
-    final cfg = coreStore.schoolStore
-        .activePeriodForDay(d0)
-        ?.weekConfig
-        .forWeekday(d0.weekday);
-
-    if (cfg == null || !cfg.enabled) {
-      return const TimeOfDay(hour: 8, minute: 25);
-    }
-
-    return TimeOfDay(
-      hour: cfg.entryMinutes ~/ 60,
-      minute: cfg.entryMinutes % 60,
-    );
+    return EffectiveSchoolDayTimingReader(
+      coreStore,
+    ).read(_selectedDay).schoolEntryAt;
   }
 
   TimeOfDay get _scuolaEnd {
