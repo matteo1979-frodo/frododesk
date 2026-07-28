@@ -2457,82 +2457,90 @@ class _CalendarioScreenStepAStabileState
       selectedDay: _selectedDay,
       realNow: realNow,
     );
-    final effectiveNow = temporalMode == CalendarTemporalMode.now
-        ? realNow
-        : DateTime(
-            _selectedDay.year,
-            _selectedDay.month,
-            _selectedDay.day,
-            realNow.hour,
-            realNow.minute,
-            realNow.second,
-            realNow.millisecond,
-            realNow.microsecond,
-          );
 
-    final familyDayOverviewSnapshot =
-        temporalMode == CalendarTemporalMode.dayOverview
+    final isNowMode = temporalMode == CalendarTemporalMode.now;
+    final isDayOverviewMode = temporalMode == CalendarTemporalMode.dayOverview;
+
+    final familyDayOverviewSnapshot = isDayOverviewMode
         ? _buildFamilyDayOverviewSnapshot()
         : null;
-    final isDayOverviewMode = temporalMode == CalendarTemporalMode.dayOverview;
+
     assert(!isDayOverviewMode || familyDayOverviewSnapshot != null);
+
     final familyDayOverviewViewModel = familyDayOverviewSnapshot != null
         ? const FamilyDayOverviewViewModelBuilder().build(
             familyDayOverviewSnapshot,
           )
         : null;
-    final familyNowSnapshot = _buildFamilyNowSnapshot(
-      realNow: realNow,
-      effectiveNow: effectiveNow,
-    );
+
+    final familyNowSnapshot = isNowMode
+        ? _buildFamilyNowSnapshot(realNow: realNow, effectiveNow: realNow)
+        : null;
+
     final cov = _computeCoverageStepA(_selectedDay);
     final isEmergency = _isEmergencyActive();
     final showSummerCampSpecialCard = _selectedDayIsSummerCampDay();
     final ipsCoverage30 = _computeIpsCoverage30();
-    final familyNowViewModel = const FamilyNowViewModelBuilder().build(
-      familyNowSnapshot,
-      isEmergency: isEmergency,
-    );
 
-    final selectedDayEvents = coreStore.realEventStore.eventsForDay(
-      _selectedDay,
-    );
+    final familyNowViewModel = familyNowSnapshot != null
+        ? const FamilyNowViewModelBuilder().build(
+            familyNowSnapshot,
+            isEmergency: isEmergency,
+          )
+        : null;
+
+    final selectedDayEvents = isNowMode
+        ? coreStore.realEventStore.eventsForDay(_selectedDay)
+        : const <RealEvent>[];
 
     final adultDetailsBuilder = const FamilyAdultNowDetailsBuilder();
 
-    final matteoDetails = adultDetailsBuilder.build(
-      name: 'Matteo',
-      personKey: 'matteo',
-      day: _selectedDay,
-      now: familyNowSnapshot.now,
-      nowLabel: familyNowViewModel.matteo.label,
-      turnLabel: familyNowViewModel.matteo.turnLabel ?? 'Turno non previsto',
-      visual: familyNowViewModel.matteo.visual,
-      events: selectedDayEvents,
-    );
+    final matteoDetails =
+        familyNowSnapshot != null && familyNowViewModel != null
+        ? adultDetailsBuilder.build(
+            name: 'Matteo',
+            personKey: 'matteo',
+            day: _selectedDay,
+            now: familyNowSnapshot.now,
+            nowLabel: familyNowViewModel.matteo.label,
+            turnLabel:
+                familyNowViewModel.matteo.turnLabel ?? 'Turno non previsto',
+            visual: familyNowViewModel.matteo.visual,
+            events: selectedDayEvents,
+          )
+        : null;
 
-    final chiaraDetails = adultDetailsBuilder.build(
-      name: 'Chiara',
-      personKey: 'chiara',
-      day: _selectedDay,
-      now: familyNowSnapshot.now,
-      nowLabel: familyNowViewModel.chiara.label,
-      turnLabel: familyNowViewModel.chiara.turnLabel ?? 'Turno non previsto',
-      visual: familyNowViewModel.chiara.visual,
-      events: selectedDayEvents,
-    );
+    final chiaraDetails =
+        familyNowSnapshot != null && familyNowViewModel != null
+        ? adultDetailsBuilder.build(
+            name: 'Chiara',
+            personKey: 'chiara',
+            day: _selectedDay,
+            now: familyNowSnapshot.now,
+            nowLabel: familyNowViewModel.chiara.label,
+            turnLabel:
+                familyNowViewModel.chiara.turnLabel ?? 'Turno non previsto',
+            visual: familyNowViewModel.chiara.visual,
+            events: selectedDayEvents,
+          )
+        : null;
 
-    final aliceDayContext = AliceDayContextBuilder(
-      coreStore,
-    ).build(_selectedDay);
+    final aliceDayContext = isNowMode
+        ? AliceDayContextBuilder(coreStore).build(_selectedDay)
+        : null;
 
-    final aliceDetails = const AliceNowDetailsBuilder().build(
-      context: aliceDayContext,
-      day: _selectedDay,
-      now: familyNowSnapshot.now,
-      nowLabel: familyNowViewModel.alice.label,
-      visual: familyNowViewModel.alice.visual,
-    );
+    final aliceDetails =
+        familyNowSnapshot != null &&
+            familyNowViewModel != null &&
+            aliceDayContext != null
+        ? const AliceNowDetailsBuilder().build(
+            context: aliceDayContext,
+            day: _selectedDay,
+            now: familyNowSnapshot.now,
+            nowLabel: familyNowViewModel.alice.label,
+            visual: familyNowViewModel.alice.visual,
+          )
+        : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -2570,13 +2578,13 @@ class _CalendarioScreenStepAStabileState
               FamilyDayOverviewCard(model: familyDayOverviewViewModel!)
             else
               FamilyNowCard(
-                model: familyNowViewModel,
-                realNow: familyNowSnapshot.realNow,
+                model: familyNowViewModel!,
+                realNow: familyNowSnapshot!.realNow,
                 onTapMatteo: () {
                   showDialog(
                     context: context,
                     builder: (context) {
-                      return FamilyAdultNowDialog(model: matteoDetails);
+                      return FamilyAdultNowDialog(model: matteoDetails!);
                     },
                   );
                 },
@@ -2584,7 +2592,7 @@ class _CalendarioScreenStepAStabileState
                   showDialog(
                     context: context,
                     builder: (context) {
-                      return FamilyAdultNowDialog(model: chiaraDetails);
+                      return FamilyAdultNowDialog(model: chiaraDetails!);
                     },
                   );
                 },
@@ -2592,7 +2600,7 @@ class _CalendarioScreenStepAStabileState
                   showDialog(
                     context: context,
                     builder: (context) {
-                      return AliceNowDialog(model: aliceDetails);
+                      return AliceNowDialog(model: aliceDetails!);
                     },
                   );
                 },
