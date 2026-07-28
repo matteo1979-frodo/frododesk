@@ -2443,7 +2443,6 @@ class _CalendarioScreenStepAStabileState
     return const FamilyNowSnapshotBuilder().build(
       realNow: realNow,
       now: effectiveNow,
-      nowDay: nowDay,
       matteo: matteoNowState,
       chiara: chiaraNowState,
       alice: aliceNowState,

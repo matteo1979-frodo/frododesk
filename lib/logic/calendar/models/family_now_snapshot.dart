@@ -1,7 +1,6 @@
 class FamilyNowSnapshot {
   final DateTime realNow;
   final DateTime now;
-  final DateTime nowDay;
 
   final bool matteoBusyNow;
   final bool chiaraBusyNow;
@@ -17,7 +16,6 @@ class FamilyNowSnapshot {
   const FamilyNowSnapshot({
     required this.realNow,
     required this.now,
-    required this.nowDay,
     required this.matteoBusyNow,
     required this.chiaraBusyNow,
     required this.aliceIsOutNow,

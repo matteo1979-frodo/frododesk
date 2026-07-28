@@ -8,7 +8,6 @@ class FamilyNowSnapshotBuilder {
   FamilyNowSnapshot build({
     required DateTime realNow,
     required DateTime now,
-    required DateTime nowDay,
     required AdultNowState matteo,
     required AdultNowState chiara,
     required AliceNowState alice,
@@ -16,7 +15,6 @@ class FamilyNowSnapshotBuilder {
     return FamilyNowSnapshot(
       realNow: realNow,
       now: now,
-      nowDay: nowDay,
       matteoBusyNow: matteo.isBusyNow,
       chiaraBusyNow: chiara.isBusyNow,
       aliceIsOutNow: alice.isOutNow,
