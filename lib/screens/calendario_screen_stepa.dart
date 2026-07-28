@@ -2311,29 +2311,10 @@ class _CalendarioScreenStepAStabileState
     return ipsCoverage30;
   }
 
-  FamilyNowSnapshot _buildFamilyNowSnapshot() {
-    final realNow = DateTime.now();
-
-    final temporalMode = _temporalModeFor(
-      selectedDay: _selectedDay,
-      realNow: realNow,
-    );
-
-    final isNowMode = temporalMode == CalendarTemporalMode.now;
-
-    final effectiveNow = isNowMode
-        ? realNow
-        : DateTime(
-            _selectedDay.year,
-            _selectedDay.month,
-            _selectedDay.day,
-            realNow.hour,
-            realNow.minute,
-            realNow.second,
-            realNow.millisecond,
-            realNow.microsecond,
-          );
-
+  FamilyNowSnapshot _buildFamilyNowSnapshot({
+    required DateTime realNow,
+    required DateTime effectiveNow,
+  }) {
     final nowDay = _onlyDate(effectiveNow);
     final dayOverrides = _getOverridesForDay(nowDay);
 
@@ -2477,6 +2458,18 @@ class _CalendarioScreenStepAStabileState
       selectedDay: _selectedDay,
       realNow: realNow,
     );
+    final effectiveNow = temporalMode == CalendarTemporalMode.now
+        ? realNow
+        : DateTime(
+            _selectedDay.year,
+            _selectedDay.month,
+            _selectedDay.day,
+            realNow.hour,
+            realNow.minute,
+            realNow.second,
+            realNow.millisecond,
+            realNow.microsecond,
+          );
 
     final familyDayOverviewSnapshot =
         temporalMode == CalendarTemporalMode.dayOverview
@@ -2489,7 +2482,10 @@ class _CalendarioScreenStepAStabileState
             familyDayOverviewSnapshot,
           )
         : null;
-    final familyNowSnapshot = _buildFamilyNowSnapshot();
+    final familyNowSnapshot = _buildFamilyNowSnapshot(
+      realNow: realNow,
+      effectiveNow: effectiveNow,
+    );
     final cov = _computeCoverageStepA(_selectedDay);
     final isEmergency = _isEmergencyActive();
     final showSummerCampSpecialCard = _selectedDayIsSummerCampDay();
