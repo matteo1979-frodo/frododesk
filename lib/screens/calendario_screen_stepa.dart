@@ -260,12 +260,6 @@ class _CalendarioScreenStepAStabileState
     ).read(day).earlySchoolExitAt;
   }
 
-  bool _effUscita13(DateTime day) {
-    return EffectiveSchoolDayTimingReader(
-      coreStore,
-    ).read(day).hasEarlySchoolExit;
-  }
-
   bool _effSandraMattina(DateTime day) =>
       daySettingsStore.sandraMattinaForDay(day) ?? false;
 
@@ -1567,16 +1561,40 @@ class _CalendarioScreenStepAStabileState
   }
 
   Widget _buildDayGapsBox(CoverageResultStepA cov) {
-    final d0 = _selectedDay;
-    final sandraDecision = _sandraDecisionForDay(d0);
-    final uscita13Eff = _effUscita13(d0);
-    final inCover = _effectiveSchoolInCover(d0);
-    final outCover = _effectiveSchoolOutCover(d0);
-    final lunchCover = _effectiveLunchCover(d0);
+    final d0 = _onlyDate(_selectedDay);
+    final timing = EffectiveSchoolDayTimingReader(coreStore).read(d0);
+    final earlySchoolExitAt = timing.earlySchoolExitAt;
+    final uscita13Eff = timing.hasEarlySchoolExit;
+    final inCover = _effectiveSchoolInCoverWithFallback(
+      day: d0,
+      fallbackSchoolEntryAt: () => timing.schoolEntryAt,
+    );
+    final outCover = _effectiveSchoolOutCoverWithResolvedTimes(
+      day: d0,
+      schoolOutStart: () => timing.schoolExitAt,
+      schoolOutEnd: () => timing.schoolPickupWindowEnd,
+    );
+    final lunchCover = _effectiveLunchCoverWithResolvedEarlyExit(
+      day: d0,
+      earlySchoolExitAt: () => earlySchoolExitAt,
+    );
+    final sandraDecision = _sandraDecisionForDayWithResolvedValues(
+      day: d0,
+      overrides: _getOverridesForDay(d0),
+      earlySchoolExitAt: earlySchoolExitAt,
+      lunchCover: lunchCover,
+    );
 
     final ingressoInizio = TimeOfDay(
-      hour: ((_scuolaStart.hour * 60 + _scuolaStart.minute - 20) ~/ 60) % 24,
-      minute: (_scuolaStart.hour * 60 + _scuolaStart.minute - 20) % 60,
+      hour:
+          ((timing.schoolEntryAt.hour * 60 +
+                  timing.schoolEntryAt.minute -
+                  20) ~/
+              60) %
+          24,
+      minute:
+          (timing.schoolEntryAt.hour * 60 + timing.schoolEntryAt.minute - 20) %
+          60,
     );
 
     final supportSummaries = const DaySupportSummariesBuilder().build(
@@ -1585,11 +1603,11 @@ class _CalendarioScreenStepAStabileState
       daySettingsStore: daySettingsStore,
       day: d0,
       schoolInStart: ingressoInizio,
-      schoolInEnd: _scuolaStart,
-      schoolOutStart: _effSchoolOutStart(d0),
-      schoolOutEnd: _effSchoolOutEnd(d0),
+      schoolInEnd: timing.schoolEntryAt,
+      schoolOutStart: timing.schoolExitAt,
+      schoolOutEnd: timing.schoolPickupWindowEnd,
       earlySchoolExitActive: uscita13Eff,
-      earlySchoolExitAt: _effUscitaAnticipataAt(d0),
+      earlySchoolExitAt: earlySchoolExitAt,
       lunchEnd: _engine.sandraPranzoEnd,
     );
 
