@@ -71,6 +71,32 @@ void main() {
     expect(context.events.where((event) => event.title == 'Scuola'), isEmpty);
   });
 
+  test('periodi non scolastici prevalgono sulla scuola configurata', () {
+    final cases = <AliceEventType, String>{
+      AliceEventType.vacation: 'Vacanza',
+      AliceEventType.schoolClosure: 'Scuola chiusa',
+      AliceEventType.sickness: 'Malattia',
+    };
+
+    for (final entry in cases.entries) {
+      final day = DateTime(2026, 7, 28);
+      final coreStore = coreStoreWithSchoolDay(day: day);
+      coreStore.aliceEventStore.addEvent(
+        AliceEventPeriod(start: day, end: day, type: entry.key),
+      );
+
+      final context = AliceDayContextBuilder(coreStore).build(day);
+
+      expect(context.isSchoolDay, isFalse, reason: entry.key.name);
+      expect(context.dayStateLabel, entry.value, reason: entry.key.name);
+      expect(
+        context.events.where((event) => event.title == 'Scuola'),
+        isEmpty,
+        reason: entry.key.name,
+      );
+    }
+  });
+
   test('uscita anticipata giornaliera termina evento Scuola', () {
     final day = DateTime(2026, 7, 28);
     final coreStore = coreStoreWithSchoolDay(day: day);

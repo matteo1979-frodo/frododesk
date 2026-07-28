@@ -16,19 +16,19 @@ class AliceDayContextBuilder {
     final events = <AliceNowEventViewModel>[];
 
     final period = coreStore.aliceEventStore.getEventForDay(normalizedDay);
-    final schoolTiming = EffectiveSchoolDayTimingReader(
-      coreStore,
-    ).read(normalizedDay);
 
     final dayStateLabel = _dayStateLabel(period?.type);
 
-    final isSummerCampDay =
-        period?.type == AliceEventType.summerCamp;
+    final isSummerCampDay = period?.type == AliceEventType.summerCamp;
 
     final isSchoolDay =
         period == null && _hasConfiguredSchoolOnDay(normalizedDay);
 
     if (isSchoolDay) {
+      final schoolTiming = EffectiveSchoolDayTimingReader(
+        coreStore,
+      ).read(normalizedDay);
+
       events.add(
         AliceNowEventViewModel(
           title: 'Scuola',
@@ -45,11 +45,8 @@ class AliceDayContextBuilder {
         AliceNowEventViewModel(
           title: 'Centro estivo',
           start:
-              period?.summerCampStart ??
-              const TimeOfDay(hour: 8, minute: 30),
-          end:
-              period?.summerCampEnd ??
-              const TimeOfDay(hour: 16, minute: 30),
+              period?.summerCampStart ?? const TimeOfDay(hour: 8, minute: 30),
+          end: period?.summerCampEnd ?? const TimeOfDay(hour: 16, minute: 30),
         ),
       );
     }
