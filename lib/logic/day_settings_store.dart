@@ -51,6 +51,8 @@ class DaySettingsStore {
   // Chiave = giorno, Valore = insieme degli id persona attivi quel giorno
   final Map<DateTime, Set<String>> _supportPeopleEnabledForDay = {};
 
+  Future<void> _saveQueue = Future<void>.value();
+
   DateTime _k(DateTime d) => dayKey(d);
 
   String _dateKey(DateTime d) {
@@ -131,7 +133,7 @@ class DaySettingsStore {
     }
   }
 
-  Future<void> _save() async {
+  Future<void> _save() {
     final data = <String, dynamic>{
       'sandraDisponibile': _encodeBoolMap(_sandraDisponibile),
       'uscitaAnticipataMin': _encodeIntMap(_uscitaAnticipataMin),
@@ -147,7 +149,14 @@ class DaySettingsStore {
       'supportPeopleEnabledForDay': _encodeSupportPeople(),
     };
 
-    await PersistenceStore.saveString(_storageKey, jsonEncode(data));
+    final snapshot = jsonEncode(data);
+    final write = _saveQueue.then(
+      (_) => PersistenceStore.saveString(_storageKey, snapshot),
+    );
+
+    _saveQueue = write.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+
+    return write;
   }
 
   Map<String, dynamic> _encodeBoolMap(Map<DateTime, bool> source) {
@@ -308,6 +317,9 @@ class DaySettingsStore {
   }
 
   bool _isValidMinute(int m) => m >= 0 && m <= 24 * 60;
+
+  bool _sameIds(Set<String> a, Set<String> b) =>
+      a.length == b.length && a.containsAll(b);
 
   // -------------------------
   // Flags per giorno (legacy / compatibilità)
@@ -543,15 +555,16 @@ class DaySettingsStore {
     return ids.contains(personId);
   }
 
-  void setSupportPersonEnabledForDay(
+  Future<void> setSupportPersonEnabledForDay(
     DateTime day,
     String personId,
     bool enabled,
-  ) {
+  ) async {
     final dk = _k(day);
-    final current = Set<String>.from(
+    final previous = Set<String>.from(
       _supportPeopleEnabledForDay[dk] ?? <String>{},
     );
+    final current = Set<String>.from(previous);
 
     if (enabled) {
       current.add(personId);
@@ -565,7 +578,19 @@ class DaySettingsStore {
       _supportPeopleEnabledForDay[dk] = current;
     }
 
-    _save();
+    try {
+      await _save();
+    } catch (_) {
+      final latest = _supportPeopleEnabledForDay[dk] ?? <String>{};
+      if (_sameIds(latest, current)) {
+        if (previous.isEmpty) {
+          _supportPeopleEnabledForDay.remove(dk);
+        } else {
+          _supportPeopleEnabledForDay[dk] = previous;
+        }
+      }
+      rethrow;
+    }
   }
 
   void clearSupportPersonForDay(DateTime day, String personId) {

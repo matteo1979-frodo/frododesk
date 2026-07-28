@@ -212,8 +212,9 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
   Future<void> _editPerson(SupportPerson person) async {
     final nameCtrl = TextEditingController(text: person.name);
 
-    TimeOfDay start = person.start;
-    TimeOfDay end = person.end;
+    final editedSlot = person.effectiveSlots.first;
+    TimeOfDay start = editedSlot.start;
+    TimeOfDay end = editedSlot.end;
     bool enabled = person.enabled;
 
     final updated = await showDialog<SupportPerson>(
@@ -336,15 +337,29 @@ class _SupportNetworkPanelState extends State<SupportNetworkPanel> {
     widget.onChanged();
   }
 
-  void _togglePersonForSelectedDay(SupportPerson person, bool enabledToday) {
-    setState(() {
-      widget.daySettingsStore.setSupportPersonEnabledForDay(
+  Future<void> _togglePersonForSelectedDay(
+    SupportPerson person,
+    bool enabledToday,
+  ) async {
+    try {
+      await widget.daySettingsStore.setSupportPersonEnabledForDay(
         widget.selectedDay,
         person.id,
         enabledToday,
       );
-    });
-    widget.onChanged();
+
+      if (!mounted) return;
+      setState(() {});
+      widget.onChanged();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Impossibile salvare l'attivazione giornaliera."),
+        ),
+      );
+    }
   }
 
   void _toggleExpanded(String personId) {

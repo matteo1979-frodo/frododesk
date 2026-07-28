@@ -4,10 +4,7 @@ class SupportTimeSlot {
   final TimeOfDay start;
   final TimeOfDay end;
 
-  const SupportTimeSlot({
-    required this.start,
-    required this.end,
-  });
+  const SupportTimeSlot({required this.start, required this.end});
 }
 
 class SupportPerson {
@@ -33,9 +30,7 @@ class SupportPerson {
 
   List<SupportTimeSlot> get effectiveSlots {
     if (slots.isNotEmpty) return slots;
-    return [
-      SupportTimeSlot(start: start, end: end),
-    ];
+    return [SupportTimeSlot(start: start, end: end)];
   }
 
   SupportPerson copyWith({
@@ -46,13 +41,25 @@ class SupportPerson {
     TimeOfDay? end,
     List<SupportTimeSlot>? slots,
   }) {
+    final updatedSlots =
+        slots ??
+        (this.slots.isNotEmpty && (start != null || end != null)
+            ? [
+                SupportTimeSlot(
+                  start: start ?? this.slots.first.start,
+                  end: end ?? this.slots.first.end,
+                ),
+                ...this.slots.skip(1),
+              ]
+            : this.slots);
+
     return SupportPerson(
       id: id ?? this.id,
       name: name ?? this.name,
       enabled: enabled ?? this.enabled,
       start: start ?? this.start,
       end: end ?? this.end,
-      slots: slots ?? this.slots,
+      slots: updatedSlots,
     );
   }
 }
