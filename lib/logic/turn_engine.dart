@@ -5,17 +5,120 @@ import '../models/fourth_shift_period.dart';
 import '../models/real_event.dart';
 import '../models/turn_override.dart';
 import '../models/rotation_override.dart';
+import '../models/adult_constraint_interval.dart';
 import 'fourth_shift_store.dart';
 import 'fourth_shift_cycle_logic.dart';
 import 'turn_override_store.dart';
 import 'rotation_override_store.dart';
 import 'calendar_logic.dart';
+import 'recovery_window_policy.dart';
 
 enum TurnPerson { matteo, chiara }
 
 /// ✅ COMPATIBILITÀ UI
 /// La UI vecchia ragiona con TurnType + TurnPlan.
 enum TurnType { mattina, pomeriggio, notte, off }
+
+enum TravelDirection { outbound, returnTrip }
+
+class TravelDurationPolicy {
+  final Map<String, Duration> _personShiftDirection;
+  final Map<String, Duration> _shiftDirectionDefaults;
+  final Duration generalDefault;
+
+  factory TravelDurationPolicy({
+    Map<String, Duration>? personShiftDirection,
+    Map<String, Duration>? shiftDirectionDefaults,
+    Duration generalDefault = const Duration(minutes: 30),
+  }) {
+    final personValues =
+        personShiftDirection ??
+        {
+          keyFor(
+            personId: 'chiara',
+            shiftType: TurnType.notte,
+            direction: TravelDirection.returnTrip,
+          ): const Duration(
+            minutes: 35,
+          ),
+        };
+    final shiftValues =
+        shiftDirectionDefaults ??
+        {
+          for (final shift in TurnType.values)
+            if (shift != TurnType.off)
+              shiftKeyFor(
+                shiftType: shift,
+                direction: TravelDirection.outbound,
+              ): const Duration(
+                minutes: 60,
+              ),
+          for (final shift in TurnType.values)
+            if (shift != TurnType.off)
+              shiftKeyFor(
+                shiftType: shift,
+                direction: TravelDirection.returnTrip,
+              ): const Duration(
+                minutes: 30,
+              ),
+        };
+
+    _validateDurations(personValues.values);
+    _validateDurations(shiftValues.values);
+    _validateDurations([generalDefault]);
+
+    return TravelDurationPolicy._(
+      personShiftDirection: personValues,
+      shiftDirectionDefaults: shiftValues,
+      generalDefault: generalDefault,
+    );
+  }
+
+  TravelDurationPolicy._({
+    required Map<String, Duration> personShiftDirection,
+    required Map<String, Duration> shiftDirectionDefaults,
+    required this.generalDefault,
+  }) : _personShiftDirection = Map.unmodifiable(personShiftDirection),
+       _shiftDirectionDefaults = Map.unmodifiable(shiftDirectionDefaults);
+
+  static void _validateDurations(Iterable<Duration> durations) {
+    if (durations.any((duration) => duration.isNegative)) {
+      throw ArgumentError.value(
+        durations,
+        'durations',
+        'Travel durations cannot be negative',
+      );
+    }
+  }
+
+  Duration travelDurationFor({
+    required String personId,
+    required TurnType shiftType,
+    required TravelDirection direction,
+  }) {
+    return _personShiftDirection[keyFor(
+          personId: personId,
+          shiftType: shiftType,
+          direction: direction,
+        )] ??
+        _shiftDirectionDefaults[shiftKeyFor(
+          shiftType: shiftType,
+          direction: direction,
+        )] ??
+        generalDefault;
+  }
+
+  static String keyFor({
+    required String personId,
+    required TurnType shiftType,
+    required TravelDirection direction,
+  }) => '$personId:${shiftType.name}:${direction.name}';
+
+  static String shiftKeyFor({
+    required TurnType shiftType,
+    required TravelDirection direction,
+  }) => '${shiftType.name}:${direction.name}';
+}
 
 /// Piano turno “leggibile” (solo dati, niente logica)
 @immutable
@@ -150,6 +253,8 @@ class TurnEngine {
   /// ✅ NEW: Override turni
   final TurnOverrideStore turnOverrideStore;
   final RotationOverrideStore rotationOverrideStore;
+  final TravelDurationPolicy travelDurationPolicy;
+  final RecoveryWindowPolicy recoveryWindowPolicy;
 
   // Matteo: NOTTE -> POMERIGGIO -> MATTINA (ciclo 3 settimane)
   final List<_TurnoTipo> _cicloMatteo = const [
@@ -171,6 +276,8 @@ class TurnEngine {
     FourthShiftCycleLogic? fourthShiftCycleLogic,
     TurnOverrideStore? turnOverrideStore,
     RotationOverrideStore? rotationOverrideStore,
+    TravelDurationPolicy? travelDurationPolicy,
+    RecoveryWindowPolicy? recoveryWindowPolicy,
   }) : refWeekMonday = _mondayOf(
          _rotUTCNoon(refWeekMonday ?? DateTime(2026, 3, 2)),
        ),
@@ -178,7 +285,10 @@ class TurnEngine {
        fourthShiftCycleLogic =
            fourthShiftCycleLogic ?? const FourthShiftCycleLogic(),
        turnOverrideStore = turnOverrideStore ?? TurnOverrideStore(),
-       rotationOverrideStore = rotationOverrideStore ?? RotationOverrideStore();
+       rotationOverrideStore = rotationOverrideStore ?? RotationOverrideStore(),
+       travelDurationPolicy = travelDurationPolicy ?? TravelDurationPolicy(),
+       recoveryWindowPolicy =
+           recoveryWindowPolicy ?? const RecoveryWindowPolicy();
 
   /// ✅ API COMPATIBILITÀ: usata dalla UI vecchia
   TurnPlan turnPlanForPersonDay({
@@ -318,7 +428,6 @@ class TurnEngine {
 
     // 1) turno di oggi (con viaggio)
     final today = _turnoGiorno(person, d0);
-    final todayTipo = _turnoTipoGiorno(person, d0);
     if (!today.isOff) {
       shifts.add(_shiftConViaggio(baseDay: d0, turno: today));
     }
@@ -347,6 +456,114 @@ class TurnEngine {
     }
 
     return shifts;
+  }
+
+  List<AdultConstraintInterval> constraintsForPersonDay({
+    required TurnPerson person,
+    required DateTime day,
+  }) {
+    final d0 = _onlyDate(day);
+    final dayEnd = d0.add(const Duration(days: 1));
+    final personId = _personIdFor(person);
+    final constraints = <AdultConstraintInterval>[];
+
+    void addConstraint(AdultConstraintInterval constraint) {
+      if (!constraint.end.isAfter(constraint.start)) return;
+      constraints.add(constraint);
+    }
+
+    void addShift(DateTime baseDay, _TurnoTipo type) {
+      if (type == _TurnoTipo.off) return;
+      final shiftType = _turnTypeFromTurnoTipo(type);
+      final work = _shiftSoloLavoro(
+        baseDay: baseDay,
+        turno: _orariFromTipo(type),
+      );
+      final outbound = travelDurationPolicy.travelDurationFor(
+        personId: personId,
+        shiftType: shiftType,
+        direction: TravelDirection.outbound,
+      );
+      final returnTrip = travelDurationPolicy.travelDurationFor(
+        personId: personId,
+        shiftType: shiftType,
+        direction: TravelDirection.returnTrip,
+      );
+
+      addConstraint(
+        AdultConstraintInterval(
+          personId: personId,
+          start: work.start.subtract(outbound),
+          end: work.start,
+          kind: AdultConstraintKind.outboundTravel,
+          canBeSacrificedForCare: false,
+        ),
+      );
+      addConstraint(
+        AdultConstraintInterval(
+          personId: personId,
+          start: work.start,
+          end: work.end,
+          kind: AdultConstraintKind.work,
+          canBeSacrificedForCare: false,
+        ),
+      );
+      addConstraint(
+        AdultConstraintInterval(
+          personId: personId,
+          start: work.end,
+          end: work.end.add(returnTrip),
+          kind: AdultConstraintKind.returnTravel,
+          canBeSacrificedForCare: false,
+        ),
+      );
+
+      if (type == _TurnoTipo.notte) {
+        final recoveryStart = work.end.add(returnTrip);
+        final recoveryDay = _onlyDate(recoveryStart);
+        addConstraint(
+          AdultConstraintInterval(
+            personId: personId,
+            start: recoveryStart,
+            end: recoveryWindowPolicy.recoveryEndForDay(recoveryDay),
+            kind: AdultConstraintKind.recovery,
+            canBeSacrificedForCare: true,
+          ),
+        );
+      }
+    }
+
+    addShift(d0, _turnoTipoGiorno(person, d0));
+    final previousDay = d0.subtract(const Duration(days: 1));
+    final previousType = _turnoTipoGiorno(person, previousDay);
+    if (previousType == _TurnoTipo.notte) {
+      addShift(previousDay, previousType);
+    }
+
+    final seen = <String>{};
+    final result = constraints
+        .where((constraint) {
+          return constraint.start.isBefore(dayEnd) &&
+              constraint.end.isAfter(d0);
+        })
+        .where((constraint) {
+          final key =
+              '${constraint.personId}|${constraint.kind.name}|'
+              '${constraint.start.microsecondsSinceEpoch}|'
+              '${constraint.end.microsecondsSinceEpoch}';
+          return seen.add(key);
+        })
+        .toList();
+
+    result.sort((a, b) {
+      final byStart = a.start.compareTo(b.start);
+      if (byStart != 0) return byStart;
+      final byEnd = a.end.compareTo(b.end);
+      if (byEnd != 0) return byEnd;
+      return a.kind.index.compareTo(b.kind.index);
+    });
+
+    return result;
   }
 
   // --------------------------
@@ -418,6 +635,19 @@ class TurnEngine {
         return _TurnoTipo.notte;
       case TurnType.off:
         return _TurnoTipo.off;
+    }
+  }
+
+  TurnType _turnTypeFromTurnoTipo(_TurnoTipo t) {
+    switch (t) {
+      case _TurnoTipo.mattina:
+        return TurnType.mattina;
+      case _TurnoTipo.pomeriggio:
+        return TurnType.pomeriggio;
+      case _TurnoTipo.notte:
+        return TurnType.notte;
+      case _TurnoTipo.off:
+        return TurnType.off;
     }
   }
 

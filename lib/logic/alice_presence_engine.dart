@@ -8,6 +8,7 @@ import 'summer_camp_schedule_store.dart';
 import 'summer_camp_special_event_store.dart';
 import '../models/alice_presence_state.dart';
 import '../models/alice_special_event.dart';
+import '../models/alice_coverage_window.dart';
 import 'alice_companion_store.dart';
 import 'support_network_store.dart';
 import 'day_settings_store.dart';
@@ -96,6 +97,37 @@ class AlicePresenceEngine {
     return aliceEventStore.isAliceAtHomeDay(d0) ||
         isWeekend ||
         (!schoolStore.hasSchoolOn(d0) && !isAliceSummerCampOperationalDay(d0));
+  }
+
+  AliceCoverageTimeline coverageTimelineForDay(DateTime day) {
+    final d0 = _onlyDate(day);
+    final dayEnd = d0.add(const Duration(days: 1));
+
+    final hasAliceRealEvents = realEventStore
+        .eventsForDay(d0)
+        .any((event) => event.involvesPerson('alice'));
+    final hasExternalCare = aliceCompanionStore.entriesForDay(d0).isNotEmpty;
+
+    final isSupportedHomeDay =
+        isAliceAtHomeDay(d0) &&
+        !isAliceSchoolNormalDay(d0) &&
+        !isAliceSummerCampOperationalDay(d0) &&
+        enabledTimedEventsForDay(d0).isEmpty &&
+        !hasAliceRealEvents &&
+        !hasExternalCare;
+
+    if (!isSupportedHomeDay) {
+      return const AliceCoverageTimeline.unsupported();
+    }
+
+    return AliceCoverageTimeline.supported([
+      AliceCoverageWindow(
+        start: d0,
+        end: dayEnd,
+        requiresAdult: true,
+        state: AlicePresenceState.home,
+      ),
+    ]);
   }
 
   AliceEventType? getAliceEventTypeForDay(DateTime day) {

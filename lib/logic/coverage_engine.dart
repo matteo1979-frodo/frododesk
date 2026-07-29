@@ -6,6 +6,8 @@ import '../models/disease_period.dart';
 import '../models/real_event.dart';
 import '../models/alice_presence_state.dart';
 import '../models/work_shift.dart';
+import '../models/alice_coverage_window.dart';
+import '../models/adult_constraint_interval.dart';
 
 import 'coverage_logic.dart';
 import 'override_apply.dart';
@@ -694,6 +696,19 @@ class CoverageEngine {
     );
 
     final presenceEngine = _presenceEngine();
+    final canonicalTimeline = presenceEngine.coverageTimelineForDay(d0);
+
+    if (canonicalTimeline.isSupported) {
+      return _analyzeCanonicalHomeTimeline(
+        day: d0,
+        windows: canonicalTimeline.windows,
+        sandraMattinaAvailable: effSandraMattina,
+        sandraPranzoAvailable: effSandraPranzo,
+        sandraSeraAvailable: effSandraSera,
+        overrides: overrides,
+        ferieStore: ferieStore,
+      );
+    }
 
     final bool aliceAtHome = presenceEngine.isAliceAtHomeDuringRange(
       day: d0,
@@ -1439,6 +1454,154 @@ class CoverageEngine {
     return CoverageDayAnalysis(gaps: gaps, details: details);
   }
 
+  CoverageDayAnalysis _analyzeCanonicalHomeTimeline({
+    required DateTime day,
+    required List<AliceCoverageWindow> windows,
+    required bool sandraMattinaAvailable,
+    required bool sandraPranzoAvailable,
+    required bool sandraSeraAvailable,
+    required DayOverrides overrides,
+    FeriePeriodStore? ferieStore,
+  }) {
+    final entries = <_CoverageGapEntry>[];
+    final allConstraints = <AdultConstraintInterval>[
+      ...turnEngine.constraintsForPersonDay(
+        person: TurnPerson.matteo,
+        day: day,
+      ),
+      ...turnEngine.constraintsForPersonDay(
+        person: TurnPerson.chiara,
+        day: day,
+      ),
+    ];
+
+    for (final window in windows.where((window) => window.requiresAdult)) {
+      final points = <DateTime>{window.start, window.end};
+
+      void addIfInside(DateTime point) {
+        if (!point.isBefore(window.start) && !point.isAfter(window.end)) {
+          points.add(point);
+        }
+      }
+
+      for (final constraint in allConstraints) {
+        addIfInside(constraint.start);
+        addIfInside(constraint.end);
+      }
+
+      for (final personKey in const ['matteo', 'chiara']) {
+        for (final event in _busyShiftsFromRealEventsForPerson(
+          personKey: personKey,
+          day: day,
+        )) {
+          addIfInside(event.start);
+          addIfInside(event.end);
+        }
+      }
+
+      for (final person in supportNetworkStore.people) {
+        if (!person.enabled ||
+            !daySettingsStore.isSupportPersonEnabledForDay(day, person.id)) {
+          continue;
+        }
+        for (final slot in person.effectiveSlots) {
+          addIfInside(_atTime(day, slot.start));
+          addIfInside(_atTime(day, slot.end));
+        }
+      }
+
+      if (sandraMattinaAvailable) {
+        addIfInside(_atTime(day, sandraCambioMattinaStart));
+        addIfInside(_atTime(day, sandraCambioMattinaEnd));
+      }
+      if (sandraPranzoAvailable) {
+        addIfInside(_atTime(day, sandraPranzoStart));
+        addIfInside(_atTime(day, sandraPranzoEnd));
+      }
+      if (sandraSeraAvailable) {
+        addIfInside(_atTime(day, sandraSeraStart));
+        addIfInside(_atTime(day, sandraSeraEnd));
+      }
+
+      final ordered = points.toList()..sort((a, b) => a.compareTo(b));
+
+      for (var index = 0; index < ordered.length - 1; index++) {
+        final start = ordered[index];
+        final end = ordered[index + 1];
+        if (!end.isAfter(start)) continue;
+
+        final covered = _isFasciaCovered(
+          day: day,
+          fasciaStart: start,
+          fasciaEnd: end,
+          allowSandra: true,
+          sandraMattinaAvailable: sandraMattinaAvailable,
+          sandraPranzoAvailable: sandraPranzoAvailable,
+          sandraSeraAvailable: sandraSeraAvailable,
+          isHomePresenceWindow: true,
+          overrides: overrides,
+          ferieStore: ferieStore,
+        );
+
+        if (!covered) {
+          entries.add(
+            _CoverageGapEntry(
+              label: _homeGapLabel(start, end),
+              fasciaStart: start,
+              fasciaEnd: end,
+              isHomePresenceWindow: true,
+              allowSandra: true,
+            ),
+          );
+        }
+      }
+    }
+
+    final merged = _mergeAdjacentEntries(entries);
+    return CoverageDayAnalysis(
+      gaps: merged.map((entry) => entry.label).toList(),
+      details: merged
+          .map(
+            (entry) => CoverageGapDetail(
+              label: entry.label,
+              lines: _buildTypedConstraintExplanation(
+                constraints: allConstraints,
+                start: entry.fasciaStart,
+                end: entry.fasciaEnd,
+              ),
+              start: TimeOfDay.fromDateTime(entry.fasciaStart),
+              end: TimeOfDay.fromDateTime(entry.fasciaEnd),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  List<String> _buildTypedConstraintExplanation({
+    required List<AdultConstraintInterval> constraints,
+    required DateTime start,
+    required DateTime end,
+  }) {
+    final blockers = constraints
+        .where(
+          (constraint) =>
+              !constraint.canBeSacrificedForCare &&
+              constraint.start.isBefore(end) &&
+              constraint.end.isAfter(start),
+        )
+        .toList();
+
+    return blockers
+        .map(
+          (constraint) =>
+              '${adultConstraintPersonDisplayName(constraint.personId)}: '
+              '${constraint.kind.italianLabel} '
+              '${_fmtTimeDate(constraint.start)}–'
+              '${_fmtTimeDate(constraint.end)}.',
+        )
+        .toList();
+  }
+
   List<_CoverageGapEntry> _uncoveredExternalSegments({
     required DateTime day,
     required DateTime windowStart,
@@ -2092,9 +2255,10 @@ class CoverageEngine {
     if (overlappingRealEvent != null &&
         overlappingRealEvent.startTime != null &&
         overlappingRealEvent.endTime != null) {
-      return personName == 'Chiara'
-          ? "Chiara è occupata da evento reale: ${overlappingRealEvent.title} (${_fmt(overlappingRealEvent.startTime!)}–${_fmt(overlappingRealEvent.endTime!)})."
-          : "Matteo è occupato da evento reale: ${overlappingRealEvent.title} (${_fmt(overlappingRealEvent.startTime!)}–${_fmt(overlappingRealEvent.endTime!)}).";
+      final busyAdjective = person == TurnPerson.chiara
+          ? 'occupata'
+          : 'occupato';
+      return "$personName è $busyAdjective da evento reale: ${overlappingRealEvent.title} (${_fmt(overlappingRealEvent.startTime!)}–${_fmt(overlappingRealEvent.endTime!)}).";
     }
 
     if (_isPostNightForPersonDay(person: person, day: day)) {
@@ -2153,11 +2317,11 @@ class CoverageEngine {
         (chiaraDiseaseStatus == null) &&
         (ferieStore?.isOnHoliday(FeriePerson.chiara, day) ?? false);
 
-    var baseBusyMatteo = turnEngine.busyShiftsForPerson(
+    var baseBusyMatteo = _careBlockingShiftsForPerson(
       person: TurnPerson.matteo,
       day: day,
     );
-    var baseBusyChiara = turnEngine.busyShiftsForPerson(
+    var baseBusyChiara = _careBlockingShiftsForPerson(
       person: TurnPerson.chiara,
       day: day,
     );
@@ -2407,7 +2571,7 @@ class CoverageEngine {
                 : ferieStore?.isOnHoliday(FeriePerson.chiara, day)) ??
             false);
 
-    var baseBusy = turnEngine.busyShiftsForPerson(person: person, day: day);
+    var baseBusy = _careBlockingShiftsForPerson(person: person, day: day);
 
     if (isHoliday || diseaseStatus != null) {
       baseBusy = [];
@@ -2472,6 +2636,20 @@ class CoverageEngine {
       case DiseaseType.bed:
         return OverrideStatus.malattiaALetto;
     }
+  }
+
+  List<WorkShift> _careBlockingShiftsForPerson({
+    required TurnPerson person,
+    required DateTime day,
+  }) {
+    return turnEngine
+        .constraintsForPersonDay(person: person, day: day)
+        .where((constraint) => !constraint.canBeSacrificedForCare)
+        .map(
+          (constraint) =>
+              WorkShift(start: constraint.start, end: constraint.end),
+        )
+        .toList();
   }
 
   List<WorkShift> _busyShiftsFromRealEventsForPerson({
