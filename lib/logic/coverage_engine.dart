@@ -8,6 +8,7 @@ import '../models/alice_presence_state.dart';
 import '../models/work_shift.dart';
 import '../models/alice_coverage_window.dart';
 import '../models/adult_constraint_interval.dart';
+import '../models/coverage_criticality_detail.dart';
 
 import 'coverage_logic.dart';
 import 'override_apply.dart';
@@ -1464,15 +1465,27 @@ class CoverageEngine {
     FeriePeriodStore? ferieStore,
   }) {
     final entries = <_CoverageGapEntry>[];
-    final allConstraints = <AdultConstraintInterval>[
-      ...turnEngine.constraintsForPersonDay(
+    final criticalities = <CoverageCriticalityDetail>[];
+    final adultConstraints = <_AdultConstraints>[
+      _AdultConstraints(
+        personKey: 'matteo',
         person: TurnPerson.matteo,
-        day: day,
+        constraints: turnEngine.constraintsForPersonDay(
+          person: TurnPerson.matteo,
+          day: day,
+        ),
       ),
-      ...turnEngine.constraintsForPersonDay(
+      _AdultConstraints(
+        personKey: 'chiara',
         person: TurnPerson.chiara,
-        day: day,
+        constraints: turnEngine.constraintsForPersonDay(
+          person: TurnPerson.chiara,
+          day: day,
+        ),
       ),
+    ];
+    final allConstraints = <AdultConstraintInterval>[
+      for (final adult in adultConstraints) ...adult.constraints,
     ];
 
     for (final window in windows.where((window) => window.requiresAdult)) {
@@ -1530,20 +1543,103 @@ class CoverageEngine {
         final end = ordered[index + 1];
         if (!end.isAfter(start)) continue;
 
-        final covered = _isFasciaCovered(
+        final supportProvider = _supportProviderForRange(
+          day: day,
+          start: start,
+          end: end,
+        );
+        final sandraCovers = _isSandraWindowCoveringRange(
           day: day,
           fasciaStart: start,
           fasciaEnd: end,
-          allowSandra: true,
           sandraMattinaAvailable: sandraMattinaAvailable,
           sandraPranzoAvailable: sandraPranzoAvailable,
           sandraSeraAvailable: sandraSeraAvailable,
-          isHomePresenceWindow: true,
-          overrides: overrides,
-          ferieStore: ferieStore,
         );
 
-        if (!covered) {
+        final availableAdults = adultConstraints
+            .where(
+              (adult) => _canSpecificPersonCoverRange(
+                personKey: adult.personKey,
+                person: adult.person,
+                day: day,
+                fasciaStart: start,
+                fasciaEnd: end,
+                isHomePresenceWindow: true,
+                overrides: overrides,
+                ferieStore: ferieStore,
+              ),
+            )
+            .toList();
+
+        final recoveringAdults = availableAdults
+            .where((adult) => adult.isInSacrificableRecovery(start, end))
+            .toList();
+        final normallyAvailableAdults = availableAdults
+            .where((adult) => !adult.isInRecovery(start, end))
+            .toList();
+
+        final _CoverageProvider? alternativeProvider;
+        if (supportProvider != null) {
+          alternativeProvider = _CoverageProvider(
+            source: CoverageSource.supportNetwork,
+            providerId: supportProvider.providerId,
+          );
+        } else if (sandraCovers) {
+          alternativeProvider = const _CoverageProvider(
+            source: CoverageSource.supportNetwork,
+            providerId: CoverageProviderIds.sandraLegacy,
+          );
+        } else if (normallyAvailableAdults.isNotEmpty) {
+          final provider = [...normallyAvailableAdults]
+            ..sort((a, b) => a.stablePersonId.compareTo(b.stablePersonId));
+          alternativeProvider = _CoverageProvider(
+            source: CoverageSource.parentNormal,
+            providerId: provider.first.stablePersonId,
+          );
+        } else {
+          alternativeProvider = null;
+        }
+
+        if (alternativeProvider != null) {
+          for (final adult in recoveringAdults) {
+            criticalities.add(
+              CoverageCriticalityDetail(
+                kind: CoverageCriticalityKind.recoveryProtected,
+                personId: adult.recoveryPersonId(start, end),
+                start: start,
+                end: end,
+                source: alternativeProvider.source,
+                coverageProviderId: alternativeProvider.providerId,
+              ),
+            );
+          }
+          continue;
+        }
+
+        if (recoveringAdults.isNotEmpty) {
+          final orderedRecoveringAdults = [...recoveringAdults]
+            ..sort(
+              (a, b) => a
+                  .recoveryPersonId(start, end)
+                  .compareTo(b.recoveryPersonId(start, end)),
+            );
+          final forcedAdult = orderedRecoveringAdults.first;
+          final forcedPersonId = forcedAdult.recoveryPersonId(start, end);
+          criticalities.add(
+            CoverageCriticalityDetail(
+              kind: CoverageCriticalityKind.recoverySacrificed,
+              personId: forcedPersonId,
+              start: start,
+              end: end,
+              source: CoverageSource.parentForced,
+              coverageProviderId: forcedPersonId,
+            ),
+          );
+          continue;
+        }
+
+        if (normallyAvailableAdults.isEmpty) {
           entries.add(
             _CoverageGapEntry(
               label: _homeGapLabel(start, end),
@@ -1574,7 +1670,114 @@ class CoverageEngine {
             ),
           )
           .toList(),
+      criticalityDetails: _mergeAdjacentCriticalities(criticalities),
     );
+  }
+
+  _SupportCoverageProvider? _supportProviderForRange({
+    required DateTime day,
+    required DateTime start,
+    required DateTime end,
+  }) {
+    final providers = <_SupportCoverageProvider>[];
+    for (final person in supportNetworkStore.people) {
+      if (!person.enabled ||
+          !daySettingsStore.isSupportPersonEnabledForDay(day, person.id)) {
+        continue;
+      }
+      for (final slot in person.effectiveSlots) {
+        final slotStart = _atTime(day, slot.start);
+        final slotEnd = _atTime(day, slot.end);
+        if (!slotStart.isAfter(start) && !slotEnd.isBefore(end)) {
+          providers.add(
+            _SupportCoverageProvider(
+              providerId: person.id,
+              slotStart: slotStart,
+              slotEnd: slotEnd,
+            ),
+          );
+        }
+      }
+    }
+    providers.sort((a, b) {
+      final byId = a.providerId.compareTo(b.providerId);
+      if (byId != 0) return byId;
+      final byStart = a.slotStart.compareTo(b.slotStart);
+      if (byStart != 0) return byStart;
+      return a.slotEnd.compareTo(b.slotEnd);
+    });
+
+    return providers.isEmpty ? null : providers.first;
+  }
+
+  List<CoverageCriticalityDetail> _mergeAdjacentCriticalities(
+    List<CoverageCriticalityDetail> details,
+  ) {
+    if (details.isEmpty) return const [];
+
+    final sorted = [...details]
+      ..sort((a, b) {
+        final byPerson = a.personId.compareTo(b.personId);
+        if (byPerson != 0) return byPerson;
+        final byKind = a.kind.index.compareTo(b.kind.index);
+        if (byKind != 0) return byKind;
+        final bySource = a.source.index.compareTo(b.source.index);
+        if (bySource != 0) return bySource;
+        final byProvider = (a.coverageProviderId ?? '').compareTo(
+          b.coverageProviderId ?? '',
+        );
+        if (byProvider != 0) return byProvider;
+        final byStart = a.start.compareTo(b.start);
+        if (byStart != 0) return byStart;
+        return a.end.compareTo(b.end);
+      });
+
+    final merged = <CoverageCriticalityDetail>[];
+    var current = sorted.first;
+    for (final next in sorted.skip(1)) {
+      final identical =
+          current.kind == next.kind &&
+          current.personId == next.personId &&
+          current.source == next.source &&
+          current.coverageProviderId == next.coverageProviderId &&
+          current.start.isAtSameMomentAs(next.start) &&
+          current.end.isAtSameMomentAs(next.end);
+      if (identical) continue;
+
+      final sameSemantics =
+          current.kind == next.kind &&
+          current.personId == next.personId &&
+          current.source == next.source &&
+          current.coverageProviderId == next.coverageProviderId &&
+          current.end.isAtSameMomentAs(next.start);
+      if (sameSemantics) {
+        current = CoverageCriticalityDetail(
+          kind: current.kind,
+          personId: current.personId,
+          start: current.start,
+          end: next.end,
+          source: current.source,
+          coverageProviderId: current.coverageProviderId,
+        );
+      } else {
+        merged.add(current);
+        current = next;
+      }
+    }
+    merged.add(current);
+    return merged..sort((a, b) {
+      final byStart = a.start.compareTo(b.start);
+      if (byStart != 0) return byStart;
+      final byEnd = a.end.compareTo(b.end);
+      if (byEnd != 0) return byEnd;
+      final byPerson = a.personId.compareTo(b.personId);
+      if (byPerson != 0) return byPerson;
+      final byKind = a.kind.index.compareTo(b.kind.index);
+      if (byKind != 0) return byKind;
+      final bySource = a.source.index.compareTo(b.source.index);
+      if (bySource != 0) return bySource;
+      return (a.coverageProviderId ?? '').compareTo(b.coverageProviderId ?? '');
+    });
   }
 
   List<String> _buildTypedConstraintExplanation({
@@ -2831,8 +3034,15 @@ class CoverageSandraDecision {
 class CoverageDayAnalysis {
   final List<String> gaps;
   final List<CoverageGapDetail> details;
+  final List<CoverageCriticalityDetail> criticalityDetails;
 
-  const CoverageDayAnalysis({required this.gaps, required this.details});
+  const CoverageDayAnalysis({
+    required this.gaps,
+    required this.details,
+    this.criticalityDetails = const [],
+  });
+
+  List<CoverageGapDetail> get gapDetails => details;
 
   CoverageGapDetail? detailFor(String label) {
     for (final detail in details) {
@@ -2840,6 +3050,70 @@ class CoverageDayAnalysis {
     }
     return null;
   }
+}
+
+class _AdultConstraints {
+  final String personKey;
+  final TurnPerson person;
+  final List<AdultConstraintInterval> constraints;
+
+  const _AdultConstraints({
+    required this.personKey,
+    required this.person,
+    required this.constraints,
+  });
+
+  String get stablePersonId =>
+      constraints.isEmpty ? personKey : constraints.first.personId;
+
+  bool isInRecovery(DateTime start, DateTime end) {
+    return constraints.any(
+      (constraint) =>
+          constraint.kind == AdultConstraintKind.recovery &&
+          constraint.start.isBefore(end) &&
+          constraint.end.isAfter(start),
+    );
+  }
+
+  bool isInSacrificableRecovery(DateTime start, DateTime end) {
+    return constraints.any(
+      (constraint) =>
+          constraint.kind == AdultConstraintKind.recovery &&
+          constraint.canBeSacrificedForCare &&
+          !constraint.start.isAfter(start) &&
+          !constraint.end.isBefore(end),
+    );
+  }
+
+  String recoveryPersonId(DateTime start, DateTime end) {
+    return constraints
+        .firstWhere(
+          (constraint) =>
+              constraint.kind == AdultConstraintKind.recovery &&
+              constraint.start.isBefore(end) &&
+              constraint.end.isAfter(start),
+        )
+        .personId;
+  }
+}
+
+class _CoverageProvider {
+  final CoverageSource source;
+  final String providerId;
+
+  const _CoverageProvider({required this.source, required this.providerId});
+}
+
+class _SupportCoverageProvider {
+  final String providerId;
+  final DateTime slotStart;
+  final DateTime slotEnd;
+
+  const _SupportCoverageProvider({
+    required this.providerId,
+    required this.slotStart,
+    required this.slotEnd,
+  });
 }
 
 class CoverageGapDetail {
