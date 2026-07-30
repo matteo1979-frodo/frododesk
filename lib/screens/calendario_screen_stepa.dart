@@ -76,8 +76,6 @@ import '../logic/calendar/builders/alice_now_details_builder.dart';
 import '../widgets/calendar/alice_now_dialog.dart';
 import '../logic/calendar/builders/turn_day_builder.dart';
 import '../logic/calendar/builders/turn_person_source_builder.dart';
-import '../logic/calendar/builders/coverage_gap_filter.dart';
-import '../logic/calendar/builders/coverage_summary_builder.dart';
 import '../logic/calendar/builders/coverage_support_network_builder.dart';
 import '../logic/calendar/builders/alice_logistics_status_builder.dart';
 import '../logic/calendar/builders/alice_event_logistics_builder.dart';
@@ -96,12 +94,14 @@ import '../logic/calendar/builders/family_day_overview_view_model_builder.dart';
 import '../logic/calendar/builders/alice_now_resolver.dart';
 import '../logic/calendar/builders/effective_school_day_timing_reader.dart';
 import '../logic/calendar/builders/coverage_criticality_view_model_builder.dart';
-import '../logic/calendar/builders/coverage_result_step_a_builder.dart';
 import '../logic/calendar/view_models/coverage_criticality_view_model.dart';
 import '../widgets/calendar/coverage_criticalities_panel.dart';
 import '../logic/calendar/builders/coverage_gap_recommendation_view_model_builder.dart';
 import '../logic/calendar/view_models/coverage_gap_recommendation_view_model.dart';
 import '../widgets/calendar/coverage_gap_recommendations_panel.dart';
+import '../logic/calendar/builders/calendar_day_coverage_coordinator.dart';
+import '../logic/calendar/builders/alice_home_risk_view_model_builder.dart';
+import '../logic/calendar/view_models/alice_home_risk_view_model.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -169,16 +169,8 @@ class _CalendarioScreenStepAStabileState
   final TurnPersonSourceBuilder _turnPersonSourceBuilder =
       const TurnPersonSourceBuilder();
 
-  final CoverageGapFilter _coverageGapFilter = const CoverageGapFilter();
-
-  final CoverageSummaryBuilder _coverageSummaryBuilder =
-      const CoverageSummaryBuilder();
-
   final CoverageCriticalityViewModelBuilder _criticalityViewModelBuilder =
       const CoverageCriticalityViewModelBuilder();
-
-  final CoverageResultStepABuilder _coverageResultStepABuilder =
-      const CoverageResultStepABuilder();
 
   final CoverageGapRecommendationViewModelBuilder
   _gapRecommendationViewModelBuilder =
@@ -1254,14 +1246,15 @@ class _CalendarioScreenStepAStabileState
     return false;
   }
 
-  CoverageResultStepA _computeCoverageStepA(DateTime day) {
+  CoverageResultStepA _buildDayCoverage({
+    required DateTime day,
+    required DateTime observedAt,
+  }) {
     final d0 = _onlyDate(day);
     final ov = _getOverridesForDay(d0);
     final timing = EffectiveSchoolDayTimingReader(coreStore).read(d0);
 
     final uscitaAt = timing.earlySchoolExitAt;
-    final uscita13Eff = uscitaAt != null;
-
     final outStart = timing.schoolExitAt;
     final outEnd = timing.schoolPickupWindowEnd;
 
@@ -1286,47 +1279,39 @@ class _CalendarioScreenStepAStabileState
       lunchCover: lunchCover,
     );
 
-    final analysis = _engine.analyzeDay(
-      day: d0,
-      uscita13: uscita13Eff,
-      sandraAvailable:
-          _effSandraMattina(d0) || _effSandraPranzo(d0) || _effSandraSera(d0),
-      overrides: ov,
-      ferieStore: coreStore.feriePeriodStore,
-      schoolInCover: schoolInCover,
-      schoolOutCover: schoolOutCover,
-      schoolOutStart: outStart,
-      schoolOutEnd: outEnd,
-      lunchCover: lunchCover,
-      uscitaAnticipataAt: uscitaAt,
+    final coordinator = CalendarDayCoverageCoordinator(
+      analyze: (request) => _engine.analyzeDay(
+        day: request.day,
+        uscita13: request.uscita13,
+        sandraAvailable: request.sandraAvailable,
+        overrides: request.overrides,
+        ferieStore: request.ferieStore,
+        schoolInCover: request.schoolInCover,
+        schoolOutCover: request.schoolOutCover,
+        schoolOutStart: request.schoolOutStart,
+        schoolOutEnd: request.schoolOutEnd,
+        lunchCover: request.lunchCover,
+        uscitaAnticipataAt: request.uscitaAnticipataAt,
+      ),
     );
-
-    final filteredGapDetails = _coverageGapFilter.filter(
-      details: analysis.details,
+    return coordinator.build(
       selectedDay: d0,
-      now: DateTime.now(),
-      uscitaAnticipataActive: uscita13Eff,
-      schoolInCover: schoolInCover,
-      schoolOutCover: schoolOutCover,
-      lunchCover: lunchCover,
-    );
-
-    final gaps = filteredGapDetails.map((d) => d.label).toList();
-    final ok = gaps.isEmpty;
-
-    final summary = _coverageSummaryBuilder.build(
-      serveSandraMattina: sandraDecision.serveSandraMattina,
-      serveSandraPranzo: sandraDecision.serveSandraPranzo,
-      serveSandraSera: sandraDecision.serveSandraSera,
-      coverageOk: ok,
-      gaps: gaps,
-    );
-
-    return _coverageResultStepABuilder.build(
-      analysis: analysis,
-      filteredGapDetails: filteredGapDetails,
-      summaryDetails: summary.details,
-      bannerText: summary.bannerText,
+      observedAt: observedAt,
+      inputs: CalendarDayCoverageInputs(
+        overrides: ov,
+        ferieStore: coreStore.feriePeriodStore,
+        schoolInCover: schoolInCover,
+        schoolOutCover: schoolOutCover,
+        schoolOutStart: outStart,
+        schoolOutEnd: outEnd,
+        lunchCover: lunchCover,
+        earlySchoolExitAt: uscitaAt,
+        sandraAvailable:
+            _effSandraMattina(d0) || _effSandraPranzo(d0) || _effSandraSera(d0),
+        serveSandraMattina: sandraDecision.serveSandraMattina,
+        serveSandraPranzo: sandraDecision.serveSandraPranzo,
+        serveSandraSera: sandraDecision.serveSandraSera,
+      ),
     );
   }
 
@@ -1926,44 +1911,8 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
-  Widget _buildAliceHomeRiskBox() {
-    final d0 = _onlyDate(_selectedDay);
-    final ov = _getOverridesForDay(d0);
-    final uscitaAt = _effUscitaAnticipataAt(d0);
-    final uscita13Eff = uscitaAt != null;
-    final outStart = _effSchoolOutStart(d0);
-    final outEnd = _effSchoolOutEnd(d0);
-
-    final List<CoverageGapDetail> rawDetails = _engine
-        .aliceHomeRiskDetailsForDay(
-          day: d0,
-          uscita13: uscita13Eff,
-          sandraMattinaOn: _effSandraMattina(d0),
-          sandraPranzoOn: _effSandraPranzo(d0),
-          sandraSeraOn: _effSandraSera(d0),
-          schoolStart: _scuolaStart,
-          overrides: ov,
-          ferieStore: coreStore.feriePeriodStore,
-          schoolInCover: _effectiveSchoolInCover(d0),
-          schoolOutCover: _effectiveSchoolOutCover(d0),
-          schoolOutStart: outStart,
-          schoolOutEnd: outEnd,
-          lunchCover: _effectiveLunchCover(d0),
-          uscitaAnticipataAt: uscitaAt,
-        );
-
-    final realNow = DateTime.now();
-    final selectedIsToday = _onlyDate(d0) == _onlyDate(realNow);
-    final nowMinutes = realNow.hour * 60 + realNow.minute;
-
-    final List<CoverageGapDetail> details = rawDetails.where((d) {
-      if (!selectedIsToday) return true;
-
-      final endMinutes = d.end.hour * 60 + d.end.minute;
-      return endMinutes > nowMinutes;
-    }).toList();
-
-    final bool hasRisk = details.isNotEmpty;
+  Widget _buildAliceHomeRiskBox(AliceHomeRiskViewModel model) {
+    final bool hasRisk = model.hasRisk;
 
     final color = hasRisk ? Colors.red : Colors.green;
     final icon = hasRisk ? Icons.home_work_rounded : Icons.home_outlined;
@@ -2207,6 +2156,7 @@ class _CalendarioScreenStepAStabileState
 
   Widget _buildDecisionsSection({
     required CoverageResultStepA cov,
+    required AliceHomeRiskViewModel aliceHomeRisk,
     required bool isEmergency,
   }) {
     final criticalities = _criticalityViewModels(cov);
@@ -2235,7 +2185,7 @@ class _CalendarioScreenStepAStabileState
             CoverageCriticalitiesPanel(items: criticalities),
             const SizedBox(height: 12),
           ],
-          if (!isEmergency) _buildAliceHomeRiskBox(),
+          if (!isEmergency) _buildAliceHomeRiskBox(aliceHomeRisk),
           isEmergency ? _buildEmergencyPanelPlaceholder() : _cardCopertura(cov),
           const SizedBox(height: 12),
           SupportNetworkPanel(
@@ -2254,6 +2204,7 @@ class _CalendarioScreenStepAStabileState
 
   Widget _buildDesktopThreeColumns({
     required CoverageResultStepA cov,
+    required AliceHomeRiskViewModel aliceHomeRisk,
     required bool showSummerCampSpecialCard,
     required bool isEmergency,
   }) {
@@ -2271,7 +2222,11 @@ class _CalendarioScreenStepAStabileState
         const SizedBox(width: 12),
         Expanded(
           flex: 5,
-          child: _buildDecisionsSection(cov: cov, isEmergency: isEmergency),
+          child: _buildDecisionsSection(
+            cov: cov,
+            aliceHomeRisk: aliceHomeRisk,
+            isEmergency: isEmergency,
+          ),
         ),
       ],
     );
@@ -2279,6 +2234,7 @@ class _CalendarioScreenStepAStabileState
 
   Widget _buildTabletLayout({
     required CoverageResultStepA cov,
+    required AliceHomeRiskViewModel aliceHomeRisk,
     required bool showSummerCampSpecialCard,
     required bool isEmergency,
   }) {
@@ -2291,13 +2247,18 @@ class _CalendarioScreenStepAStabileState
           showSummerCampSpecialCard: showSummerCampSpecialCard,
         ),
         const SizedBox(height: 12),
-        _buildDecisionsSection(cov: cov, isEmergency: isEmergency),
+        _buildDecisionsSection(
+          cov: cov,
+          aliceHomeRisk: aliceHomeRisk,
+          isEmergency: isEmergency,
+        ),
       ],
     );
   }
 
   Widget _buildMobileLayout({
     required CoverageResultStepA cov,
+    required AliceHomeRiskViewModel aliceHomeRisk,
     required bool showSummerCampSpecialCard,
     required bool isEmergency,
   }) {
@@ -2310,13 +2271,18 @@ class _CalendarioScreenStepAStabileState
           showSummerCampSpecialCard: showSummerCampSpecialCard,
         ),
         const SizedBox(height: 12),
-        _buildDecisionsSection(cov: cov, isEmergency: isEmergency),
+        _buildDecisionsSection(
+          cov: cov,
+          aliceHomeRisk: aliceHomeRisk,
+          isEmergency: isEmergency,
+        ),
       ],
     );
   }
 
   Widget _buildMainLayout({
     required CoverageResultStepA cov,
+    required AliceHomeRiskViewModel aliceHomeRisk,
     required bool showSummerCampSpecialCard,
     required bool isEmergency,
   }) {
@@ -2327,6 +2293,7 @@ class _CalendarioScreenStepAStabileState
         if (w >= 1200) {
           return _buildDesktopThreeColumns(
             cov: cov,
+            aliceHomeRisk: aliceHomeRisk,
             showSummerCampSpecialCard: showSummerCampSpecialCard,
             isEmergency: isEmergency,
           );
@@ -2335,6 +2302,7 @@ class _CalendarioScreenStepAStabileState
         if (w >= 800) {
           return _buildTabletLayout(
             cov: cov,
+            aliceHomeRisk: aliceHomeRisk,
             showSummerCampSpecialCard: showSummerCampSpecialCard,
             isEmergency: isEmergency,
           );
@@ -2342,6 +2310,7 @@ class _CalendarioScreenStepAStabileState
 
         return _buildMobileLayout(
           cov: cov,
+          aliceHomeRisk: aliceHomeRisk,
           showSummerCampSpecialCard: showSummerCampSpecialCard,
           isEmergency: isEmergency,
         );
@@ -2553,7 +2522,12 @@ class _CalendarioScreenStepAStabileState
         ? _buildFamilyNowSnapshot(realNow: realNow, effectiveNow: realNow)
         : null;
 
-    final cov = _computeCoverageStepA(_selectedDay);
+    final cov = _buildDayCoverage(day: _selectedDay, observedAt: realNow);
+    final aliceHomeRisk = const AliceHomeRiskViewModelBuilder().build(
+      gapDetails: cov.gapDetails,
+      selectedDay: _selectedDay,
+      observedAt: realNow,
+    );
     final isEmergency = _isEmergencyActive();
     final showSummerCampSpecialCard = _selectedDayIsSummerCampDay();
     final ipsCoverage30 = _computeIpsCoverage30();
@@ -2689,6 +2663,7 @@ class _CalendarioScreenStepAStabileState
             const SizedBox(height: 12),
             _buildMainLayout(
               cov: cov,
+              aliceHomeRisk: aliceHomeRisk,
               showSummerCampSpecialCard: showSummerCampSpecialCard,
               isEmergency: isEmergency,
             ),
