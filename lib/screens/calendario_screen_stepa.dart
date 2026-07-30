@@ -24,7 +24,6 @@ import '../models/week_identity.dart';
 import '../logic/settings_store.dart';
 import '../logic/ips_store.dart';
 import '../logic/day_settings_store.dart';
-import '../logic/alice_event_store.dart';
 
 import '../widgets/stepb_override_panel.dart';
 import '../widgets/alice_event_panel.dart';
@@ -62,9 +61,6 @@ import '../widgets/calendar/hidden_alice_events_link.dart';
 import '../widgets/calendar/alice_events_list.dart';
 import '../widgets/calendar/alice_event_tile.dart';
 import '../widgets/calendar/alice_event_expanded.dart';
-import '../logic/calendar/builders/alice_event_tile_view_model_builder.dart';
-import '../logic/calendar/builders/alice_event_conflict_builder.dart';
-import '../logic/calendar/view_models/alice_event_tile_view_model.dart';
 import '../logic/calendar/builders/family_now_view_model_builder.dart';
 import '../logic/calendar/builders/family_now_snapshot_builder.dart';
 import '../widgets/calendar/family_now_card.dart';
@@ -102,6 +98,7 @@ import '../widgets/calendar/coverage_gap_recommendations_panel.dart';
 import '../logic/calendar/builders/calendar_day_coverage_coordinator.dart';
 import '../logic/calendar/builders/alice_home_risk_view_model_builder.dart';
 import '../logic/calendar/view_models/alice_home_risk_view_model.dart';
+import '../logic/calendar/builders/alice_school_day_view_model_builder.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -1118,22 +1115,6 @@ class _CalendarioScreenStepAStabileState
     return EffectiveSchoolDayTimingReader(
       coreStore,
     ).read(_selectedDay).schoolEntryAt;
-  }
-
-  TimeOfDay get _scuolaEnd {
-    final d0 = _onlyDate(_selectedDay);
-    final cfg = coreStore.schoolStore
-        .activePeriodForDay(d0)
-        ?.weekConfig
-        .forWeekday(d0.weekday);
-
-    if (cfg == null || !cfg.enabled) {
-      return const TimeOfDay(hour: 17, minute: 15);
-    }
-
-    final returnMinutes = cfg.returnHomeMinutes;
-
-    return TimeOfDay(hour: returnMinutes ~/ 60, minute: returnMinutes % 60);
   }
 
   DateTime _onlyDate(DateTime d) => DateTime(d.year, d.month, d.day);
@@ -2529,7 +2510,9 @@ class _CalendarioScreenStepAStabileState
       observedAt: realNow,
     );
     final isEmergency = _isEmergencyActive();
-    final showSummerCampSpecialCard = _selectedDayIsSummerCampDay();
+    final showSummerCampSpecialCard = AliceSchoolDayViewModelBuilder(coreStore)
+        .build(day: _selectedDay, expandedEventIds: _expandedAliceEventIds)
+        .showSummerCampSpecialCard;
     final ipsCoverage30 = _computeIpsCoverage30();
 
     final familyNowViewModel = familyNowSnapshot != null
@@ -4199,70 +4182,6 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
-  List<AliceSpecialEvent> _sortedAliceSpecialEventsForSelectedDay() {
-    final events = [
-      ...coreStore.aliceSpecialEventStore.eventsForDay(_selectedDay),
-    ];
-
-    events.sort((a, b) {
-      final aMin = a.start.hour * 60 + a.start.minute;
-      final bMin = b.start.hour * 60 + b.start.minute;
-      return aMin.compareTo(bMin);
-    });
-
-    bool hasConflict = false;
-
-    for (int i = 0; i < events.length; i++) {
-      for (int j = i + 1; j < events.length; j++) {
-        final a = events[i];
-        final b = events[j];
-
-        final overlap =
-            a.start.hour * 60 + a.start.minute <
-                b.end.hour * 60 + b.end.minute &&
-            b.start.hour * 60 + b.start.minute < a.end.hour * 60 + a.end.minute;
-
-        if (overlap) {
-          hasConflict = true;
-          break;
-        }
-      }
-      if (hasConflict) break;
-    }
-
-    return events;
-  }
-
-  String _aliceSpecialCategoryLabel(AliceSpecialEventCategory category) {
-    switch (category) {
-      case AliceSpecialEventCategory.school:
-        return "Scuola";
-      case AliceSpecialEventCategory.sport:
-        return "Sport";
-      case AliceSpecialEventCategory.health:
-        return "Salute";
-      case AliceSpecialEventCategory.activity:
-        return "Attività";
-      case AliceSpecialEventCategory.other:
-        return "Altro";
-    }
-  }
-
-  IconData _aliceSpecialCategoryIcon(AliceSpecialEventCategory category) {
-    switch (category) {
-      case AliceSpecialEventCategory.school:
-        return Icons.school_outlined;
-      case AliceSpecialEventCategory.sport:
-        return Icons.sports_volleyball_outlined;
-      case AliceSpecialEventCategory.health:
-        return Icons.medical_information_outlined;
-      case AliceSpecialEventCategory.activity:
-        return Icons.event_outlined;
-      case AliceSpecialEventCategory.other:
-        return Icons.label_outline;
-    }
-  }
-
   void _resetAliceSpecialEventEditor({bool closeEditor = true}) {
     _aliceEventNameController.clear();
 
@@ -4287,20 +4206,6 @@ class _CalendarioScreenStepAStabileState
     if (closeEditor) {
       _showAliceEventEditor = false;
     }
-  }
-
-  AliceEventTileViewModel _buildAliceEventTileModel({
-    required AliceSpecialEvent event,
-    required bool isConflict,
-  }) {
-    return const AliceEventTileViewModelBuilder().build(
-      event: event,
-      isConflict: isConflict,
-      isExpanded: _expandedAliceEventIds.contains(event.id),
-      requiresLogistics: _aliceEventEngine.requiresLogistics(event),
-      categoryIcon: _aliceSpecialCategoryIcon(event.category),
-      categoryLabel: _aliceSpecialCategoryLabel(event.category),
-    );
   }
 
   void _toggleAliceEventExpanded(String eventId) {
@@ -4539,225 +4444,40 @@ class _CalendarioScreenStepAStabileState
   }
 
   Widget _cardScuola() {
-    final uscitaAt = _effUscitaAnticipataAt(_selectedDay);
-    final uscita13Eff = uscitaAt != null;
-
-    final aliceEvent = coreStore.aliceEventStore.getEventForDay(_selectedDay);
-
-    final outStart = _effSchoolOutStart(_selectedDay);
-
-    final outEnd = aliceEvent?.summerCampEnd ?? _effSchoolOutEnd(_selectedDay);
-
-    final bool hasCustomOut =
-        daySettingsStore.schoolOutStartForDay(_selectedDay) != null ||
-        daySettingsStore.schoolOutEndForDay(_selectedDay) != null;
-
-    final bool hasAlicePeriodState =
-        aliceEvent != null && aliceEvent.type != AliceEventType.schoolNormal;
-
-    final activeSchoolPeriod = coreStore.schoolStore.activePeriodForDay(
-      _selectedDay,
-    );
-    final schoolPeriodLabel =
-        activeSchoolPeriod?.name ?? "Nessun periodo attivo";
-
-    final isSchoolDayActive = coreStore.schoolStore.hasSchoolOn(_selectedDay);
-    final schoolWeekdayLabel = [
-      "Lunedì",
-      "Martedì",
-      "Mercoledì",
-      "Giovedì",
-      "Venerdì",
-      "Sabato",
-      "Domenica",
-    ][_selectedDay.weekday - 1];
-
-    final uscitaReale =
-        aliceEvent?.summerCampEnd ?? _effSchoolOutStart(_selectedDay);
-    final uscitaFine = TimeOfDay(
-      hour: ((uscitaReale.hour * 60 + uscitaReale.minute + 20) ~/ 60) % 24,
-      minute: (uscitaReale.hour * 60 + uscitaReale.minute + 20) % 60,
-    );
-
-    final ingressoReale = aliceEvent?.summerCampStart ?? _scuolaStart;
-
-    final ingressoInizio = TimeOfDay(
-      hour: ((ingressoReale.hour * 60 + ingressoReale.minute - 20) ~/ 60) % 24,
-      minute: (ingressoReale.hour * 60 + ingressoReale.minute - 20) % 60,
-    );
-    final accompagnamento = ingressoInizio;
-
-    final ingressoFine = ingressoReale;
-
-    String? alicePeriodStateLabel() {
-      if (aliceEvent == null) return null;
-
-      switch (aliceEvent.type) {
-        case AliceEventType.schoolNormal:
-          return null;
-        case AliceEventType.vacation:
-          return "Vacanza";
-        case AliceEventType.schoolClosure:
-          return "Scuola chiusa";
-        case AliceEventType.sickness:
-          return "Malattia";
-        case AliceEventType.summerCamp:
-          return "Centro estivo";
-      }
-    }
-
-    Color alicePeriodStateColor() {
-      if (aliceEvent == null) return Colors.grey;
-
-      switch (aliceEvent.type) {
-        case AliceEventType.schoolNormal:
-          return Colors.grey;
-        case AliceEventType.vacation:
-          return Colors.teal;
-        case AliceEventType.schoolClosure:
-          return Colors.orange;
-        case AliceEventType.sickness:
-          return Colors.red;
-        case AliceEventType.summerCamp:
-          return Colors.green;
-      }
-    }
-
-    IconData alicePeriodStateIcon() {
-      if (aliceEvent == null) return Icons.info_outline;
-
-      switch (aliceEvent.type) {
-        case AliceEventType.schoolNormal:
-          return Icons.info_outline;
-        case AliceEventType.vacation:
-          return Icons.beach_access_outlined;
-        case AliceEventType.schoolClosure:
-          return Icons.event_busy_outlined;
-        case AliceEventType.sickness:
-          return Icons.sick_outlined;
-        case AliceEventType.summerCamp:
-          return Icons.park_outlined;
-      }
-    }
-
-    final extraEvents = _sortedAliceSpecialEventsForSelectedDay();
-    final bool hasExtraEvents = extraEvents.isNotEmpty;
-
-    bool hasAliceEventConflict = false;
-
-    for (int i = 0; i < extraEvents.length; i++) {
-      for (int j = i + 1; j < extraEvents.length; j++) {
-        final a = extraEvents[i];
-        final b = extraEvents[j];
-
-        final overlap =
-            a.start.hour * 60 + a.start.minute <
-                b.end.hour * 60 + b.end.minute &&
-            b.start.hour * 60 + b.start.minute < a.end.hour * 60 + a.end.minute;
-
-        if (overlap) {
-          hasAliceEventConflict = true;
-          break;
-        }
-      }
-      if (hasAliceEventConflict) break;
-    }
-
-    const int maxVisibleAliceEvents = 2;
-    final visibleAliceEvents = hasExtraEvents
-        ? extraEvents.take(maxVisibleAliceEvents).toList()
-        : <AliceSpecialEvent>[];
-    final hiddenAliceEventsCount = hasExtraEvents
-        ? (extraEvents.length - visibleAliceEvents.length)
-        : 0;
-
-    String aliceEventLabel() {
-      final specialCamp = coreStore.summerCampSpecialEventStore.getForDay(
-        _selectedDay,
-      );
-
-      if (specialCamp != null && specialCamp.enabled) {
-        return specialCamp.label;
-      }
-
-      if (extraEvents.isNotEmpty) {
-        return extraEvents.first.label;
-      }
-
-      if (aliceEvent != null) {
-        switch (aliceEvent.type) {
-          case AliceEventType.vacation:
-            return "Vacanza";
-          case AliceEventType.schoolClosure:
-            return "Scuola chiusa";
-          case AliceEventType.sickness:
-            return "Malattia";
-          case AliceEventType.summerCamp:
-            return "Centro estivo";
-          case AliceEventType.schoolNormal:
-            break;
-        }
-      }
-
-      return isSchoolDayActive ? "Scuola" : "A casa";
-    }
-
-    Color aliceEventColor() {
-      if (aliceEvent == null) return Colors.grey;
-
-      switch (aliceEvent.type) {
-        case AliceEventType.schoolNormal:
-          return Colors.grey;
-        case AliceEventType.vacation:
-          return Colors.teal;
-        case AliceEventType.schoolClosure:
-          return Colors.orange;
-        case AliceEventType.sickness:
-          return Colors.red;
-        case AliceEventType.summerCamp:
-          return Colors.green;
-      }
-    }
-
-    IconData aliceEventIcon() {
-      if (aliceEvent == null) return Icons.school_outlined;
-
-      switch (aliceEvent.type) {
-        case AliceEventType.schoolNormal:
-          return Icons.menu_book_rounded;
-        case AliceEventType.vacation:
-          return Icons.beach_access_outlined;
-        case AliceEventType.schoolClosure:
-          return Icons.event_busy_outlined;
-        case AliceEventType.sickness:
-          return Icons.sick_outlined;
-        case AliceEventType.summerCamp:
-          return Icons.park_outlined;
-      }
-    }
+    final model = AliceSchoolDayViewModelBuilder(
+      coreStore,
+    ).build(day: _selectedDay, expandedEventIds: _expandedAliceEventIds);
+    final uscitaAt = model.hasEarlySchoolExit
+        ? EffectiveSchoolDayTimingReader(
+            coreStore,
+          ).read(_selectedDay).earlySchoolExitAt
+        : null;
+    final uscita13Eff = model.hasEarlySchoolExit;
+    final extraEvents = model.events;
+    final visibleAliceEvents = model.visibleEvents;
+    final hasExtraEvents = extraEvents.isNotEmpty;
 
     return _card(
-      title: "Alice / Scuola",
-      subtitle: "Orari scuola + uscita anticipata rapida (con orario).",
+      title: model.title,
+      subtitle: model.subtitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AliceStateBanner(
-            label: aliceEventLabel(),
-            color: aliceEventColor(),
-            icon: aliceEventIcon(),
-            periodLabel: hasAlicePeriodState ? alicePeriodStateLabel() : null,
-            periodColor: alicePeriodStateColor(),
-            periodIcon: alicePeriodStateIcon(),
+            label: model.stateLabel,
+            color: model.stateColor,
+            icon: model.stateIcon,
+            periodLabel: model.periodLabel,
+            periodColor: model.periodColor,
+            periodIcon: model.periodIcon,
           ),
 
           AliceSchoolHeader(
-            orario:
-                "Orario: ${fmtTimeOfDay(aliceEvent?.summerCampStart ?? _scuolaStart)}–${fmtTimeOfDay(uscita13Eff ? uscitaAt : (daySettingsStore.schoolOutStartForDay(_selectedDay) ?? _scuolaEnd))}",
+            orario: model.schoolHoursLabel,
             uscitaAnticipata: uscita13Eff,
           ),
 
-          if (hasAliceEventConflict) ...[const AliceEventConflictBanner()],
+          if (model.hasEventConflict) ...[const AliceEventConflictBanner()],
 
           AliceEventsSection(
             child: Column(
@@ -4765,7 +4485,7 @@ class _CalendarioScreenStepAStabileState
               children: [
                 AliceEventsHeader(
                   hasExtraEvents: hasExtraEvents,
-                  extraEventsCount: extraEvents.length,
+                  extraEventsCount: model.events.length,
                   showAlicePeriodPanel: _showAlicePeriodPanel,
                   onNewAliceEvent: _openNewAliceSpecialEventEditor,
                   onToggleAlicePeriodPanel: () {
@@ -4779,25 +4499,18 @@ class _CalendarioScreenStepAStabileState
                   const SizedBox(height: 12),
                   AliceEventsList(
                     child: Column(
-                      children: visibleAliceEvents.map((e) {
-                        final conflictResult = const AliceEventConflictBuilder()
-                            .build(event: e, allEvents: extraEvents);
-
-                        final tileModel = _buildAliceEventTileModel(
-                          event: e,
-                          isConflict: conflictResult.isConflict,
-                        );
-
-                        final conflictWith = conflictResult.conflictWith;
-
+                      children: visibleAliceEvents.map((eventModel) {
+                        final e = eventModel.event;
+                        final tileModel = eventModel.tile;
                         return AliceEventTile(
                           model: tileModel,
                           onTap: () => _toggleAliceEventExpanded(tileModel.id),
                           expandedChild: tileModel.isExpanded
                               ? AliceEventExpanded(
                                   event: e,
-                                  conflictWith: conflictWith,
-                                  categoryLabel: _aliceSpecialCategoryLabel,
+                                  conflictWith: eventModel.conflictWith,
+                                  categoryLabel: (_) =>
+                                      eventModel.tile.categoryLabel,
                                   operationalDescription:
                                       _aliceEventEngine.operationalDescription,
                                   realTimeMeaning:
@@ -4822,7 +4535,7 @@ class _CalendarioScreenStepAStabileState
           ),
 
           HiddenAliceEventsLink(
-            hiddenCount: hiddenAliceEventsCount,
+            hiddenCount: model.hiddenEventsCount,
             onTap: () {
               showDialog(
                 context: context,
@@ -4834,15 +4547,10 @@ class _CalendarioScreenStepAStabileState
                       child: SingleChildScrollView(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
-                          children: extraEvents.map((e) {
-                            final conflictResult =
-                                const AliceEventConflictBuilder().build(
-                                  event: e,
-                                  allEvents: extraEvents,
-                                );
-
-                            final isConflict = conflictResult.isConflict;
-                            final conflictWith = conflictResult.conflictWith;
+                          children: extraEvents.map((eventModel) {
+                            final e = eventModel.event;
+                            final isConflict = eventModel.tile.isConflict;
+                            final conflictWith = eventModel.conflictWith;
 
                             return Container(
                               width: double.infinity,
@@ -4865,7 +4573,7 @@ class _CalendarioScreenStepAStabileState
                                   Row(
                                     children: [
                                       Icon(
-                                        _aliceSpecialCategoryIcon(e.category),
+                                        eventModel.tile.categoryIcon,
                                         size: 18,
                                       ),
                                       const SizedBox(width: 8),
@@ -4881,7 +4589,7 @@ class _CalendarioScreenStepAStabileState
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
-                                    "Categoria: ${_aliceSpecialCategoryLabel(e.category)}",
+                                    eventModel.categoryText,
                                     style: TextStyle(
                                       color: Colors.black.withOpacity(0.72),
                                       fontWeight: FontWeight.w700,
@@ -4889,15 +4597,15 @@ class _CalendarioScreenStepAStabileState
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    "Orario: ${fmtTimeOfDay(e.start)}–${fmtTimeOfDay(e.end)}",
+                                    eventModel.timeText,
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                  if (e.note.trim().isNotEmpty) ...[
+                                  if (eventModel.noteText != null) ...[
                                     const SizedBox(height: 6),
                                     Text(
-                                      "Nota: ${e.note}",
+                                      eventModel.noteText!,
                                       style: TextStyle(
                                         color: Colors.black.withOpacity(0.72),
                                       ),
@@ -5028,16 +4736,14 @@ class _CalendarioScreenStepAStabileState
                       labelText: "Categoria",
                       border: OutlineInputBorder(),
                     ),
-                    items: AliceSpecialEventCategory.values.map((c) {
+                    items: model.categoryOptions.map((option) {
                       return DropdownMenuItem(
-                        value: c,
+                        value: option.value,
                         child: Row(
                           children: [
-                            Icon(_aliceSpecialCategoryIcon(c), size: 18),
+                            Icon(option.icon, size: 18),
                             const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(_aliceSpecialCategoryLabel(c)),
-                            ),
+                            Expanded(child: Text(option.label)),
                           ],
                         ),
                       );
@@ -5256,28 +4962,28 @@ class _CalendarioScreenStepAStabileState
           ),
 
           SchoolStatusBox(
-            schoolPeriodLabel: schoolPeriodLabel,
-            isSchoolDayActive: isSchoolDayActive,
-            schoolWeekdayLabel: schoolWeekdayLabel,
-            accompagnamento: accompagnamento,
-            ingressoReale: ingressoReale,
-            uscitaReale: uscitaReale,
-            uscitaFine: uscitaFine,
+            schoolPeriodLabel: model.schoolPeriodLabel,
+            isSchoolDayActive: model.isSchoolDayActive,
+            schoolWeekdayLabel: model.schoolWeekdayLabel,
+            accompagnamento: model.accompanimentStart,
+            ingressoReale: model.schoolEntryAt,
+            uscitaReale: model.schoolExitAt,
+            uscitaFine: model.schoolExitWindowEnd,
             onOpenSchoolPanel: _openSchoolPanel,
           ),
           SchoolOutSummary(
             visible: !uscita13Eff,
-            outStart: outStart,
-            outEnd: outEnd,
-            hasCustomOut: hasCustomOut,
+            outStart: model.schoolOutStart,
+            outEnd: model.schoolOutEnd,
+            hasCustomOut: model.hasCustomSchoolOut,
           ),
           const SizedBox(height: 14),
           const Divider(),
           const SizedBox(height: 10),
           SchoolCoverageChoiceSection(
-            ingressoInizio: ingressoInizio,
-            ingressoFine: ingressoFine,
-            uscitaReale: uscitaReale,
+            ingressoInizio: model.accompanimentStart,
+            ingressoFine: model.schoolEntryAt,
+            uscitaReale: model.schoolExitAt,
             uscitaAt: uscitaAt,
             uscita13Eff: uscita13Eff,
             schoolInCover: _effectiveSchoolInCover(_selectedDay),
