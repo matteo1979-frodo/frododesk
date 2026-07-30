@@ -99,6 +99,9 @@ import '../logic/calendar/builders/coverage_criticality_view_model_builder.dart'
 import '../logic/calendar/builders/coverage_result_step_a_builder.dart';
 import '../logic/calendar/view_models/coverage_criticality_view_model.dart';
 import '../widgets/calendar/coverage_criticalities_panel.dart';
+import '../logic/calendar/builders/coverage_gap_recommendation_view_model_builder.dart';
+import '../logic/calendar/view_models/coverage_gap_recommendation_view_model.dart';
+import '../widgets/calendar/coverage_gap_recommendations_panel.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -176,6 +179,10 @@ class _CalendarioScreenStepAStabileState
 
   final CoverageResultStepABuilder _coverageResultStepABuilder =
       const CoverageResultStepABuilder();
+
+  final CoverageGapRecommendationViewModelBuilder
+  _gapRecommendationViewModelBuilder =
+      const CoverageGapRecommendationViewModelBuilder();
 
   final CoverageSupportNetworkBuilder _coverageSupportNetworkBuilder =
       const CoverageSupportNetworkBuilder();
@@ -2127,7 +2134,7 @@ class _CalendarioScreenStepAStabileState
             const SizedBox(height: 12),
           ],
           if (cov.gapDetails.isNotEmpty)
-            _buildActionSuggestionsPlaceholder(cov),
+            _buildCoverageGapRecommendationsPanel(cov),
           const SizedBox(height: 12),
           Container(key: _turniKey, child: _cardTurni()),
           const SizedBox(height: 12),
@@ -5461,186 +5468,33 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
-  Widget _buildActionSuggestionsPlaceholder(CoverageResultStepA cov) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.withOpacity(0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.lightbulb_outline, size: 18),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  "Azioni consigliate",
-                  style: TextStyle(fontWeight: FontWeight.w900),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 8),
-          Text(
-            cov.gapDetails.length == 1
-                ? "C'è 1 problema da gestire oggi"
-                : "Ci sono ${cov.gapDetails.length} problemi da gestire oggi",
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "Valuta di attivare un supporto o modificare un turno",
-            style: TextStyle(
-              color: Colors.black.withOpacity(0.7),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 6),
-          if (cov.gapDetails.isNotEmpty) ...[
-            ...cov.gapDetails.asMap().entries.map((entry) {
-              final index = entry.key + 1;
-              final gap = entry.value;
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Problema $index",
-                    style: const TextStyle(fontWeight: FontWeight.w900),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _gapTitleWithAliceState(
-                      gap.label.contains("Alice")
-                          ? gap.label
-                          : "Alice a casa: ${gap.label}",
-                    ),
-                    style: TextStyle(
-                      color: Colors.black.withOpacity(0.78),
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  _buildSmartSandraSuggestion(gap.label),
-                  const SizedBox(height: 8),
-                ],
-              );
-            }),
-            const SizedBox(height: 8),
-            Text(
-              "Problemi rilevati (${cov.gapDetails.length}):",
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSmartSandraSuggestion(String label) {
-    final regex = RegExp(r'(\d{2}):(\d{2})');
-    final matches = regex.allMatches(label).toList();
-
-    if (matches.length < 2) {
-      return Text(
-        "Suggerimento: verifica copertura manuale",
-        style: TextStyle(color: Colors.green, fontWeight: FontWeight.w700),
-      );
-    }
-
-    final startTime = TimeOfDay(
-      hour: int.parse(matches[0].group(1)!),
-      minute: int.parse(matches[0].group(2)!),
-    );
-
-    final endTime = TimeOfDay(
-      hour: int.parse(matches[1].group(1)!),
-      minute: int.parse(matches[1].group(2)!),
-    );
-
-    final startMin = startTime.hour * 60 + startTime.minute;
-    final endMin = endTime.hour * 60 + endTime.minute;
-
-    final startDT = DateTime(
-      _selectedDay.year,
-      _selectedDay.month,
-      _selectedDay.day,
-      startTime.hour,
-      startTime.minute,
-    );
-
-    final endDT = DateTime(
-      _selectedDay.year,
-      _selectedDay.month,
-      _selectedDay.day,
-      endTime.hour,
-      endTime.minute,
-    );
-
-    final matteoLibero = !_engine.isMatteoBusyBetween(startDT, endDT);
-    final chiaraLibera = !_engine.isChiaraBusyBetween(startDT, endDT);
-
-    final supportoDisponibile = _supportNetworkCoversRange(
+  Widget _buildCoverageGapRecommendationsPanel(CoverageResultStepA cov) {
+    final model = _gapRecommendationViewModelBuilder.buildAll(
       day: _selectedDay,
-      start: startTime,
-      end: endTime,
+      gaps: cov.gapDetails,
+      isMatteoBusy: _engine.isMatteoBusyBetween,
+      isChiaraBusy: _engine.isChiaraBusyBetween,
+      supportNetworkStore: coreStore.supportNetworkStore,
+      daySettingsStore: daySettingsStore,
+      sandraWindows: [
+        CoverageSandraWindow(
+          start: _engine.sandraCambioMattinaStart,
+          end: _engine.sandraCambioMattinaEnd,
+          active: _effSandraMattina(_selectedDay),
+        ),
+        CoverageSandraWindow(
+          start: _effectiveSandraPranzoStart(_selectedDay),
+          end: _engine.sandraPranzoEnd,
+          active: _effSandraPranzo(_selectedDay),
+        ),
+        CoverageSandraWindow(
+          start: _engine.sandraSeraStart,
+          end: _engine.sandraSeraEnd,
+          active: _effSandraSera(_selectedDay),
+        ),
+      ],
     );
-
-    final sandraMattinaCopre =
-        _effSandraMattina(_selectedDay) &&
-        (_engine.sandraCambioMattinaStart.hour * 60 +
-                _engine.sandraCambioMattinaStart.minute) <=
-            startMin &&
-        (_engine.sandraCambioMattinaEnd.hour * 60 +
-                _engine.sandraCambioMattinaEnd.minute) >=
-            endMin;
-
-    final sandraPranzoCopre =
-        _effSandraPranzo(_selectedDay) &&
-        (_effectiveSandraPranzoStart(_selectedDay).hour * 60 +
-                _effectiveSandraPranzoStart(_selectedDay).minute) <=
-            startMin &&
-        (_engine.sandraPranzoEnd.hour * 60 + _engine.sandraPranzoEnd.minute) >=
-            endMin;
-
-    final sandraSeraCopre =
-        _effSandraSera(_selectedDay) &&
-        (_engine.sandraSeraStart.hour * 60 + _engine.sandraSeraStart.minute) <=
-            startMin &&
-        (_engine.sandraSeraEnd.hour * 60 + _engine.sandraSeraEnd.minute) >=
-            endMin;
-
-    final sandraDisponibile =
-        sandraMattinaCopre || sandraPranzoCopre || sandraSeraCopre;
-
-    String suggestion;
-
-    if (matteoLibero && chiaraLibera) {
-      suggestion = "Suggerimento: possono coprire Matteo o Chiara";
-    } else if (matteoLibero) {
-      suggestion = "Suggerimento: può coprire Matteo";
-    } else if (chiaraLibera) {
-      suggestion = "Suggerimento: può coprire Chiara";
-    } else if (supportoDisponibile && sandraDisponibile) {
-      suggestion = "Suggerimento: verifica Supporto oppure Sandra";
-    } else if (supportoDisponibile) {
-      suggestion = "Suggerimento: verifica Supporto";
-    } else if (sandraDisponibile) {
-      suggestion = "Suggerimento: attiva Sandra";
-    } else {
-      suggestion = suggestion =
-          "Suggerimento: nessun genitore libero: attiva Sandra o Supporto oppure modifica turno / chiedi permesso";
-    }
-
-    return Text(
-      suggestion,
-      style: TextStyle(color: Colors.green, fontWeight: FontWeight.w700),
-    );
+    return CoverageGapRecommendationsPanel(model: model);
   }
 
   void _openSchoolPanel() {
