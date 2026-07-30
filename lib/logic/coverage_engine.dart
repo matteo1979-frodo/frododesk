@@ -18,6 +18,7 @@ import 'day_settings_store.dart';
 import 'support_network_store.dart';
 import 'disease_period_store.dart';
 import 'real_event_store.dart';
+import 'adult_logistics_availability_resolver.dart';
 
 // ✅ NEW: Ferie lunghe
 import 'ferie_period_store.dart';
@@ -2757,73 +2758,27 @@ class CoverageEngine {
     required DayOverrides overrides,
     FeriePeriodStore? ferieStore,
   }) {
-    final personOverride = personKey == 'matteo'
-        ? overrides.matteo
-        : overrides.chiara;
-    final hasManual = personOverride != null;
-
-    final diseaseStatus = hasManual
-        ? null
-        : _diseaseStatusForPerson(personId: personKey, day: day);
-
-    final isHoliday =
-        (!hasManual) &&
-        (diseaseStatus == null) &&
-        ((personKey == 'matteo'
-                ? ferieStore?.isOnHoliday(FeriePerson.matteo, day)
-                : ferieStore?.isOnHoliday(FeriePerson.chiara, day)) ??
-            false);
-
-    var baseBusy = _careBlockingShiftsForPerson(person: person, day: day);
-
-    if (isHoliday || diseaseStatus != null) {
-      baseBusy = [];
-    }
-
-    final extraBusy = _busyShiftsFromRealEventsForPerson(
+    return AdultLogisticsAvailabilityResolver(
+      turnEngine: turnEngine,
+      diseasePeriodStore: diseasePeriodStore,
+      realEventStore: realEventStore,
+    ).canCoverRange(
       personKey: personKey,
+      person: person,
       day: day,
+      start: fasciaStart,
+      end: fasciaEnd,
+      isHomePresenceWindow: isHomePresenceWindow,
+      overrides: overrides,
+      ferieStore: ferieStore,
+      forceAvailableDueToLunchCover:
+          (personKey == 'matteo' &&
+              daySettingsStore.lunchCoverForDay(day) ==
+                  SchoolCoverChoice.matteo) ||
+          (personKey == 'chiara' &&
+              daySettingsStore.lunchCoverForDay(day) ==
+                  SchoolCoverChoice.chiara),
     );
-
-    final effectiveBusy = OverrideApply.applyToBusyShifts(
-      day: day,
-      baseBusy: <WorkShift>[...baseBusy.cast<WorkShift>(), ...extraBusy],
-      personOverride: personOverride,
-    );
-
-    final lunchChoice = daySettingsStore.lunchCoverForDay(day);
-
-    final isForcedActive =
-        ((personKey == 'matteo' && lunchChoice == SchoolCoverChoice.matteo) ||
-        (personKey == 'chiara' && lunchChoice == SchoolCoverChoice.chiara));
-
-    final adjustedBusy = isForcedActive ? <WorkShift>[] : effectiveBusy;
-
-    final effectiveStatus =
-        personOverride?.status ??
-        diseaseStatus ??
-        (isHoliday ? OverrideStatus.ferie : OverrideStatus.normal);
-
-    if (effectiveStatus == OverrideStatus.malattiaALetto) {
-      return isHomePresenceWindow &&
-          isTimeCovered(fasciaStart, fasciaEnd, <PersonAvailability>[
-            PersonAvailability(busyShifts: adjustedBusy),
-          ]);
-    }
-
-    if (effectiveStatus == OverrideStatus.malattiaLeggera) {
-      if (!isHomePresenceWindow &&
-          _overlapsImps(day: day, start: fasciaStart, end: fasciaEnd)) {
-        return false;
-      }
-      return isTimeCovered(fasciaStart, fasciaEnd, <PersonAvailability>[
-        PersonAvailability(busyShifts: adjustedBusy),
-      ]);
-    }
-
-    return isTimeCovered(fasciaStart, fasciaEnd, <PersonAvailability>[
-      PersonAvailability(busyShifts: adjustedBusy),
-    ]);
   }
 
   OverrideStatus? _diseaseStatusForPerson({

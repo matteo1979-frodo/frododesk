@@ -3,9 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/logic/alice_companion_store.dart';
 import 'package:frododesk/logic/alice_event_store.dart';
 import 'package:frododesk/logic/alice_presence_engine.dart';
+import 'package:frododesk/logic/adult_logistics_availability_resolver.dart';
 import 'package:frododesk/logic/alice_special_event_store.dart';
 import 'package:frododesk/logic/coverage_engine.dart';
 import 'package:frododesk/logic/day_settings_store.dart';
+import 'package:frododesk/logic/disease_period_store.dart';
+import 'package:frododesk/logic/ferie_period_store.dart';
 import 'package:frododesk/logic/real_event_store.dart';
 import 'package:frododesk/logic/school_store.dart';
 import 'package:frododesk/logic/summer_camp_schedule_store.dart';
@@ -14,6 +17,7 @@ import 'package:frododesk/logic/support_network_store.dart';
 import 'package:frododesk/logic/turn_engine.dart';
 import 'package:frododesk/logic/turn_override_store.dart';
 import 'package:frododesk/models/day_override.dart';
+import 'package:frododesk/models/disease_period.dart';
 import 'package:frododesk/models/adult_constraint_interval.dart';
 import 'package:frododesk/models/real_event.dart';
 import 'package:frododesk/models/school_model.dart';
@@ -512,6 +516,187 @@ void main() {
         (gap) => gap.toLowerCase().startsWith('alice ingresso'),
       ),
       isTrue,
+    );
+  });
+
+  group('equivalenza resolver adulti e CoverageEngine', () {
+    Future<void> expectMatteoEquivalent({
+      required DateTime start,
+      required DateTime end,
+      DaySettingsStore? settings,
+      DiseasePeriodStore? diseases,
+      RealEventStore? events,
+      DayOverrides? overrides,
+      FeriePeriodStore? holidays,
+      bool home = false,
+      bool? expectedAvailable,
+    }) async {
+      final daySettings = settings ?? DaySettingsStore();
+      final diseaseStore = diseases ?? DiseasePeriodStore();
+      final eventStore = events ?? RealEventStore();
+      final effectiveOverrides = overrides ?? DayOverrides.empty(day);
+      final turnEngine = TurnEngine();
+      final resolver = AdultLogisticsAvailabilityResolver(
+        turnEngine: turnEngine,
+        diseasePeriodStore: diseaseStore,
+        realEventStore: eventStore,
+      );
+      final engine = CoverageEngine(
+        aliceCompanionStore: AliceCompanionStore(),
+        turnEngine: turnEngine,
+        daySettingsStore: daySettings,
+        diseasePeriodStore: diseaseStore,
+        realEventStore: eventStore,
+      );
+
+      final direct = resolver.canCoverRange(
+        personKey: 'matteo',
+        person: TurnPerson.matteo,
+        day: day,
+        start: start,
+        end: end,
+        isHomePresenceWindow: home,
+        overrides: effectiveOverrides,
+        ferieStore: holidays,
+        forceAvailableDueToLunchCover:
+            daySettings.lunchCoverForDay(day) == SchoolCoverChoice.matteo,
+      );
+      final throughCoverage = !engine.isMatteoBusyBetween(
+        start,
+        end,
+        overrides: effectiveOverrides,
+        ferieStore: holidays,
+        isHomePresenceWindow: home,
+      );
+      expect(throughCoverage, direct);
+      if (expectedAvailable != null) {
+        expect(direct, expectedAvailable);
+      }
+    }
+
+    test('lavoro, outbound, return, disponibile e indisponibile', () async {
+      await expectMatteoEquivalent(
+        start: DateTime(2026, 8, 11, 7),
+        end: DateTime(2026, 8, 11, 8),
+        expectedAvailable: false,
+      );
+      await expectMatteoEquivalent(
+        start: DateTime(2026, 8, 11, 5, 15),
+        end: DateTime(2026, 8, 11, 5, 45),
+        expectedAvailable: false,
+      );
+      await expectMatteoEquivalent(
+        start: DateTime(2026, 8, 11, 14),
+        end: DateTime(2026, 8, 11, 14, 30),
+        expectedAvailable: false,
+      );
+      await expectMatteoEquivalent(
+        start: DateTime(2026, 8, 11, 15),
+        end: DateTime(2026, 8, 11, 16),
+        expectedAvailable: true,
+      );
+    });
+
+    test('evento reale', () async {
+      final events = RealEventStore()
+        ..addEvent(
+          RealEvent(
+            id: 'equivalence-event',
+            startDate: day,
+            endDate: day,
+            title: 'Impegno',
+            personKey: 'matteo',
+            startTime: const TimeOfDay(hour: 15, minute: 0),
+            endTime: const TimeOfDay(hour: 16, minute: 0),
+          ),
+        );
+      await expectMatteoEquivalent(
+        start: DateTime(2026, 8, 11, 15, 15),
+        end: DateTime(2026, 8, 11, 15, 45),
+        events: events,
+        expectedAvailable: false,
+      );
+    });
+
+    test('ferie e override mantengono le precedenze', () async {
+      final holidays = FeriePeriodStore()
+        ..add(
+          FeriePeriod(person: FeriePerson.matteo, startDay: day, endDay: day),
+        );
+      await expectMatteoEquivalent(
+        start: DateTime(2026, 8, 11, 7),
+        end: DateTime(2026, 8, 11, 8),
+        holidays: holidays,
+        expectedAvailable: true,
+      );
+      await expectMatteoEquivalent(
+        start: DateTime(2026, 8, 11, 7),
+        end: DateTime(2026, 8, 11, 8),
+        holidays: holidays,
+        overrides: DayOverrides(
+          day: day,
+          matteo: PersonDayOverride(status: OverrideStatus.normal),
+        ),
+        expectedAvailable: false,
+      );
+    });
+
+    test('malattia distingue casa e accompagnamento esterno', () async {
+      final diseases = DiseasePeriodStore();
+      await diseases.addPeriod(
+        DiseasePeriod(
+          personId: 'matteo',
+          type: DiseaseType.bed,
+          startDate: day,
+          endDate: day,
+        ),
+      );
+      await expectMatteoEquivalent(
+        start: DateTime(2026, 8, 11, 15),
+        end: DateTime(2026, 8, 11, 16),
+        diseases: diseases,
+        home: true,
+        expectedAvailable: true,
+      );
+      await expectMatteoEquivalent(
+        start: DateTime(2026, 8, 11, 15),
+        end: DateTime(2026, 8, 11, 16),
+        diseases: diseases,
+        home: false,
+        expectedAvailable: false,
+      );
+    });
+
+    test(
+      'lunchCover conserva il comportamento corrente di azzeramento busy',
+      () async {
+        final settings = DaySettingsStore()
+          ..setLunchCoverForDay(day, SchoolCoverChoice.matteo);
+        await expectMatteoEquivalent(
+          start: DateTime(2026, 8, 11, 7),
+          end: DateTime(2026, 8, 11, 8),
+          settings: settings,
+          expectedAvailable: true,
+        );
+        final resolver = AdultLogisticsAvailabilityResolver(
+          turnEngine: TurnEngine(),
+          diseasePeriodStore: DiseasePeriodStore(),
+          realEventStore: RealEventStore(),
+        );
+        expect(
+          resolver.canCoverRange(
+            personKey: 'matteo',
+            person: TurnPerson.matteo,
+            day: day,
+            start: DateTime(2026, 8, 11, 7),
+            end: DateTime(2026, 8, 11, 8),
+            isHomePresenceWindow: false,
+            overrides: DayOverrides.empty(day),
+            forceAvailableDueToLunchCover: true,
+          ),
+          isTrue,
+        );
+      },
     );
   });
 }
