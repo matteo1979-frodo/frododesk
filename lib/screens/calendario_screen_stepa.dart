@@ -95,6 +95,10 @@ import '../logic/calendar/models/family_day_overview_snapshot.dart';
 import '../logic/calendar/builders/family_day_overview_view_model_builder.dart';
 import '../logic/calendar/builders/alice_now_resolver.dart';
 import '../logic/calendar/builders/effective_school_day_timing_reader.dart';
+import '../logic/calendar/builders/coverage_criticality_view_model_builder.dart';
+import '../logic/calendar/builders/coverage_result_step_a_builder.dart';
+import '../logic/calendar/view_models/coverage_criticality_view_model.dart';
+import '../widgets/calendar/coverage_criticalities_panel.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -166,6 +170,12 @@ class _CalendarioScreenStepAStabileState
 
   final CoverageSummaryBuilder _coverageSummaryBuilder =
       const CoverageSummaryBuilder();
+
+  final CoverageCriticalityViewModelBuilder _criticalityViewModelBuilder =
+      const CoverageCriticalityViewModelBuilder();
+
+  final CoverageResultStepABuilder _coverageResultStepABuilder =
+      const CoverageResultStepABuilder();
 
   final CoverageSupportNetworkBuilder _coverageSupportNetworkBuilder =
       const CoverageSupportNetworkBuilder();
@@ -1305,11 +1315,20 @@ class _CalendarioScreenStepAStabileState
       gaps: gaps,
     );
 
-    return CoverageResultStepA(
-      ok: ok,
-      details: summary.details,
-      gapDetails: filteredGapDetails,
+    return _coverageResultStepABuilder.build(
+      analysis: analysis,
+      filteredGapDetails: filteredGapDetails,
+      summaryDetails: summary.details,
       bannerText: summary.bannerText,
+    );
+  }
+
+  List<CoverageCriticalityViewModel> _criticalityViewModels(
+    CoverageResultStepA coverage,
+  ) {
+    return _criticalityViewModelBuilder.build(
+      details: coverage.criticalityDetails,
+      supportPeople: coreStore.supportNetworkStore.people,
     );
   }
 
@@ -2090,6 +2109,7 @@ class _CalendarioScreenStepAStabileState
   }
 
   Widget _buildRealitySection(CoverageResultStepA cov) {
+    final criticalities = _criticalityViewModels(cov);
     return _buildSectionBox(
       title: "REALTÀ DEL GIORNO",
       subtitle: "Turni, eventi adulti e stato reale delle persone oggi.",
@@ -2102,6 +2122,10 @@ class _CalendarioScreenStepAStabileState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (criticalities.isNotEmpty) ...[
+            CoverageCriticalityRealityList(items: criticalities),
+            const SizedBox(height: 12),
+          ],
           if (cov.gapDetails.isNotEmpty)
             _buildActionSuggestionsPlaceholder(cov),
           const SizedBox(height: 12),
@@ -2178,6 +2202,7 @@ class _CalendarioScreenStepAStabileState
     required CoverageResultStepA cov,
     required bool isEmergency,
   }) {
+    final criticalities = _criticalityViewModels(cov);
     return _buildSectionBox(
       title: "BUCHI / DECISIONI",
       subtitle:
@@ -2191,7 +2216,18 @@ class _CalendarioScreenStepAStabileState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (!isEmergency && cov.gapDetails.isNotEmpty) ...[
+            const Text(
+              'Buchi reali',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 6),
+          ],
           if (!isEmergency) _buildDayGapsBox(cov),
+          if (!isEmergency && criticalities.isNotEmpty) ...[
+            CoverageCriticalitiesPanel(items: criticalities),
+            const SizedBox(height: 12),
+          ],
           if (!isEmergency) _buildAliceHomeRiskBox(),
           isEmergency ? _buildEmergencyPanelPlaceholder() : _cardCopertura(cov),
           const SizedBox(height: 12),
