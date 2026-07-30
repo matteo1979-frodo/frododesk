@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../models/day_override.dart';
+import 'calendar/models/alice_summer_camp_logistics.dart';
 import 'persistence_store.dart';
 
 /// Impostazioni "operative" per giorno (NON globali).
@@ -50,6 +51,9 @@ class DaySettingsStore {
   // ✅ NEW: Rete di supporto attiva per giorno
   // Chiave = giorno, Valore = insieme degli id persona attivi quel giorno
   final Map<DateTime, Set<String>> _supportPeopleEnabledForDay = {};
+
+  final Map<DateTime, AliceLogisticProviderRef> _summerCampDropOffProvider = {};
+  final Map<DateTime, AliceLogisticProviderRef> _summerCampPickUpProvider = {};
 
   Future<void> _saveQueue = Future<void>.value();
 
@@ -100,6 +104,8 @@ class DaySettingsStore {
       _schoolOutStartMin.clear();
       _schoolOutEndMin.clear();
       _supportPeopleEnabledForDay.clear();
+      _summerCampDropOffProvider.clear();
+      _summerCampPickUpProvider.clear();
 
       _loadBoolMap(decoded['sandraDisponibile'], _sandraDisponibile);
       _loadIntMap(decoded['uscitaAnticipataMin'], _uscitaAnticipataMin);
@@ -128,6 +134,14 @@ class DaySettingsStore {
 
       _loadAliceWindows(decoded['aliceWindows']);
       _loadSupportPeople(decoded['supportPeopleEnabledForDay']);
+      _loadLogisticProviderMap(
+        decoded['summerCampDropOffProvider'],
+        _summerCampDropOffProvider,
+      );
+      _loadLogisticProviderMap(
+        decoded['summerCampPickUpProvider'],
+        _summerCampPickUpProvider,
+      );
     } catch (_) {
       // Se il JSON è corrotto/non compatibile, ignoriamo senza rompere l'app.
     }
@@ -147,6 +161,12 @@ class DaySettingsStore {
       'schoolOutStartMin': _encodeIntMap(_schoolOutStartMin),
       'schoolOutEndMin': _encodeIntMap(_schoolOutEndMin),
       'supportPeopleEnabledForDay': _encodeSupportPeople(),
+      'summerCampDropOffProvider': _encodeLogisticProviderMap(
+        _summerCampDropOffProvider,
+      ),
+      'summerCampPickUpProvider': _encodeLogisticProviderMap(
+        _summerCampPickUpProvider,
+      ),
     };
 
     final snapshot = jsonEncode(data);
@@ -205,6 +225,27 @@ class DaySettingsStore {
     }
 
     return out;
+  }
+
+  Map<String, dynamic> _encodeLogisticProviderMap(
+    Map<DateTime, AliceLogisticProviderRef> source,
+  ) {
+    final out = <String, dynamic>{};
+    for (final entry in source.entries) {
+      out[_dateKey(entry.key)] = _encodeLogisticProvider(entry.value);
+    }
+    return out;
+  }
+
+  Map<String, String> _encodeLogisticProvider(
+    AliceLogisticProviderRef provider,
+  ) {
+    final kind = switch (provider.kind) {
+      AliceLogisticProviderKind.parent => 'parent',
+      AliceLogisticProviderKind.sandra => 'sandra',
+      AliceLogisticProviderKind.supportPerson => 'supportPerson',
+    };
+    return <String, String>{'kind': kind, 'providerId': provider.providerId};
   }
 
   void _loadBoolMap(dynamic raw, Map<DateTime, bool> target) {
@@ -302,6 +343,41 @@ class DaySettingsStore {
         _supportPeopleEnabledForDay[day] = ids;
       }
     }
+  }
+
+  void _loadLogisticProviderMap(
+    dynamic raw,
+    Map<DateTime, AliceLogisticProviderRef> target,
+  ) {
+    if (raw is! Map) return;
+
+    for (final entry in raw.entries) {
+      final day = _dateFromKey(entry.key.toString());
+      final provider = _decodeLogisticProvider(entry.value);
+      if (day != null && provider != null) {
+        target[day] = provider;
+      }
+    }
+  }
+
+  AliceLogisticProviderRef? _decodeLogisticProvider(dynamic raw) {
+    if (raw is! Map) return null;
+    final kind = raw['kind'];
+    final providerId = raw['providerId'];
+    if (kind is! String || providerId is! String) return null;
+
+    return switch (kind) {
+      'parent' when providerId == 'matteo' => AliceLogisticProviderRef.parent(
+        AliceLogisticParent.matteo,
+      ),
+      'parent' when providerId == 'chiara' => AliceLogisticProviderRef.parent(
+        AliceLogisticParent.chiara,
+      ),
+      'sandra' when providerId == 'sandra' => AliceLogisticProviderRef.sandra,
+      'supportPerson' when providerId.trim().isNotEmpty =>
+        AliceLogisticProviderRef.supportPerson(providerId),
+      _ => null,
+    };
   }
 
   // -------------------------
@@ -623,6 +699,61 @@ class DaySettingsStore {
   }
 
   // -------------------------
+  // Centro estivo: assegnazioni logistiche per giorno
+  // -------------------------
+
+  AliceLogisticProviderRef? summerCampDropOffProviderForDay(DateTime day) =>
+      _summerCampDropOffProvider[_k(day)];
+
+  Future<void> setSummerCampDropOffProviderForDay(
+    DateTime day,
+    AliceLogisticProviderRef? provider,
+  ) {
+    return _setLogisticProviderForDay(
+      _summerCampDropOffProvider,
+      day,
+      provider,
+    );
+  }
+
+  AliceLogisticProviderRef? summerCampPickUpProviderForDay(DateTime day) =>
+      _summerCampPickUpProvider[_k(day)];
+
+  Future<void> setSummerCampPickUpProviderForDay(
+    DateTime day,
+    AliceLogisticProviderRef? provider,
+  ) {
+    return _setLogisticProviderForDay(_summerCampPickUpProvider, day, provider);
+  }
+
+  Future<void> _setLogisticProviderForDay(
+    Map<DateTime, AliceLogisticProviderRef> target,
+    DateTime day,
+    AliceLogisticProviderRef? provider,
+  ) async {
+    final dk = _k(day);
+    final previous = target[dk];
+    if (provider == null) {
+      target.remove(dk);
+    } else {
+      target[dk] = provider;
+    }
+
+    try {
+      await _save();
+    } catch (_) {
+      if (target[dk] == provider) {
+        if (previous == null) {
+          target.remove(dk);
+        } else {
+          target[dk] = previous;
+        }
+      }
+      rethrow;
+    }
+  }
+
+  // -------------------------
   // Alice windows per giorno
   // -------------------------
 
@@ -659,6 +790,43 @@ class DaySettingsStore {
   void clearAllAliceWindowsForDay(DateTime day) {
     _aliceWindows.remove(_k(day));
     _save();
+  }
+
+  Future<void> clearDay(DateTime day) {
+    final dk = _k(day);
+    _sandraDisponibile.remove(dk);
+    _uscitaAnticipataMin.remove(dk);
+    _sandraMattina.remove(dk);
+    _sandraPranzo.remove(dk);
+    _sandraSera.remove(dk);
+    _schoolInCover.remove(dk);
+    _schoolOutCover.remove(dk);
+    _lunchCover.remove(dk);
+    _aliceWindows.remove(dk);
+    _schoolOutStartMin.remove(dk);
+    _schoolOutEndMin.remove(dk);
+    _supportPeopleEnabledForDay.remove(dk);
+    _summerCampDropOffProvider.remove(dk);
+    _summerCampPickUpProvider.remove(dk);
+    return _save();
+  }
+
+  Future<void> clearAll() {
+    _sandraDisponibile.clear();
+    _uscitaAnticipataMin.clear();
+    _sandraMattina.clear();
+    _sandraPranzo.clear();
+    _sandraSera.clear();
+    _schoolInCover.clear();
+    _schoolOutCover.clear();
+    _lunchCover.clear();
+    _aliceWindows.clear();
+    _schoolOutStartMin.clear();
+    _schoolOutEndMin.clear();
+    _supportPeopleEnabledForDay.clear();
+    _summerCampDropOffProvider.clear();
+    _summerCampPickUpProvider.clear();
+    return _save();
   }
 }
 
