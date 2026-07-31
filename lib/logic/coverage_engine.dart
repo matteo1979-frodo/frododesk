@@ -1467,21 +1467,47 @@ class CoverageEngine {
   }) {
     final entries = <_CoverageGapEntry>[];
     final criticalities = <CoverageCriticalityDetail>[];
+    final availabilityResolver = AdultLogisticsAvailabilityResolver(
+      turnEngine: turnEngine,
+      diseasePeriodStore: diseasePeriodStore,
+      realEventStore: realEventStore,
+    );
+
+    List<AdultConstraintInterval> effectiveConstraintsFor({
+      required String personKey,
+      required TurnPerson person,
+    }) {
+      final constraints = turnEngine.constraintsForPersonDay(
+        person: person,
+        day: day,
+      );
+      final shiftState = availabilityResolver.effectivePlannedShiftState(
+        personKey: personKey,
+        day: day,
+        overrides: overrides,
+        ferieStore: ferieStore,
+      );
+      if (shiftState.isPlannedShiftActive) return constraints;
+      return constraints
+          .where((constraint) => constraint.kind != AdultConstraintKind.recovery)
+          .toList();
+    }
+
     final adultConstraints = <_AdultConstraints>[
       _AdultConstraints(
         personKey: 'matteo',
         person: TurnPerson.matteo,
-        constraints: turnEngine.constraintsForPersonDay(
+        constraints: effectiveConstraintsFor(
+          personKey: 'matteo',
           person: TurnPerson.matteo,
-          day: day,
         ),
       ),
       _AdultConstraints(
         personKey: 'chiara',
         person: TurnPerson.chiara,
-        constraints: turnEngine.constraintsForPersonDay(
+        constraints: effectiveConstraintsFor(
+          personKey: 'chiara',
           person: TurnPerson.chiara,
-          day: day,
         ),
       ),
     ];

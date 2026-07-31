@@ -4,12 +4,19 @@ import 'package:frododesk/logic/alice_companion_store.dart';
 import 'package:frododesk/logic/alice_event_store.dart';
 import 'package:frododesk/logic/coverage_engine.dart';
 import 'package:frododesk/logic/day_settings_store.dart';
+import 'package:frododesk/logic/disease_period_store.dart';
+import 'package:frododesk/logic/ferie_period_store.dart';
+import 'package:frododesk/logic/real_event_store.dart';
 import 'package:frododesk/logic/support_network_store.dart';
 import 'package:frododesk/logic/turn_engine.dart';
+import 'package:frododesk/logic/turn_override_store.dart';
 import 'package:frododesk/models/adult_constraint_interval.dart';
 import 'package:frododesk/models/coverage_criticality_detail.dart';
 import 'package:frododesk/models/day_override.dart';
+import 'package:frododesk/models/disease_period.dart';
+import 'package:frododesk/models/real_event.dart';
 import 'package:frododesk/models/support_person.dart';
+import 'package:frododesk/models/turn_override.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -21,9 +28,14 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  AliceEventStore homeAllDay() {
+  AliceEventStore homeAllDay([DateTime? requestedDay]) {
+    final targetDay = requestedDay ?? day;
     return AliceEventStore()..addEvent(
-      AliceEventPeriod(start: day, end: day, type: AliceEventType.vacation),
+      AliceEventPeriod(
+        start: targetDay,
+        end: targetDay,
+        type: AliceEventType.vacation,
+      ),
     );
   }
 
@@ -35,7 +47,13 @@ void main() {
     TimeOfDay? sandraMorningStart,
     TimeOfDay? sandraMorningEnd,
     TurnEngine? turnEngine,
+    DateTime? requestedDay,
+    DayOverrides? overrides,
+    DiseasePeriodStore? diseasePeriodStore,
+    FeriePeriodStore? ferieStore,
+    RealEventStore? realEventStore,
   }) async {
+    final targetDay = requestedDay ?? day;
     final supportNetwork = SupportNetworkStore();
     final daySettings = DaySettingsStore();
     if (supportSlots.isNotEmpty) {
@@ -49,31 +67,42 @@ void main() {
           slots: supportSlots,
         ),
       );
-      await daySettings.setSupportPersonEnabledForDay(day, 'support-id', true);
+      await daySettings.setSupportPersonEnabledForDay(
+        targetDay,
+        'support-id',
+        true,
+      );
     }
     for (final person in supportPeople) {
       supportNetwork.addPerson(person);
     }
     for (final personId in enabledSupportIds ?? const <String>{}) {
-      await daySettings.setSupportPersonEnabledForDay(day, personId, true);
+      await daySettings.setSupportPersonEnabledForDay(
+        targetDay,
+        personId,
+        true,
+      );
     }
 
     return CoverageEngine(
       turnEngine: turnEngine,
       aliceCompanionStore: AliceCompanionStore(),
-      aliceEventStore: homeAllDay(),
+      aliceEventStore: homeAllDay(targetDay),
+      diseasePeriodStore: diseasePeriodStore,
+      realEventStore: realEventStore,
       supportNetworkStore: supportNetwork,
       daySettingsStore: daySettings,
       sandraCambioMattinaStart: sandraMorningStart,
       sandraCambioMattinaEnd: sandraMorningEnd,
     ).analyzeDayV2(
-      day: day,
+      day: targetDay,
       uscita13: false,
       sandraMattinaOn: sandraMorning,
       sandraPranzoOn: false,
       sandraSeraOn: false,
       schoolStart: const TimeOfDay(hour: 8, minute: 0),
-      overrides: DayOverrides.empty(day),
+      overrides: overrides ?? DayOverrides.empty(targetDay),
+      ferieStore: ferieStore,
     );
   }
 
@@ -609,6 +638,160 @@ void main() {
         )
         .toSet();
     expect(identities, hasLength(analysis.criticalityDetails.length));
+  });
+
+  group('recovery solo dopo turno notturno effettivo', () {
+    final runtimeDay = DateTime(2026, 7, 31);
+
+    TurnEngine nightEngine({bool bothAdults = false}) {
+      final shifts = TurnOverrideStore()
+        ..setDailyOverride(
+          person: TurnPersonId.matteo,
+          day: runtimeDay.subtract(const Duration(days: 1)),
+          newShift: TurnOverrideShift.notte,
+        )
+        ..setDailyOverride(
+          person: TurnPersonId.matteo,
+          day: runtimeDay,
+          newShift: TurnOverrideShift.off,
+        )
+        ..setDailyOverride(
+          person: TurnPersonId.chiara,
+          day: runtimeDay,
+          newShift: TurnOverrideShift.off,
+        )
+        ..setDailyOverride(
+          person: TurnPersonId.chiara,
+          day: runtimeDay.subtract(const Duration(days: 1)),
+          newShift: bothAdults
+              ? TurnOverrideShift.notte
+              : TurnOverrideShift.off,
+        );
+      return TurnEngine(turnOverrideStore: shifts);
+    }
+
+    Iterable<CoverageCriticalityDetail> recoveryFor(
+      CoverageDayAnalysis analysis,
+      String personId,
+    ) => analysis.criticalityDetails.where(
+      (detail) => detail.personId == personId,
+    );
+
+    test('notte lavorata mantiene il recovery per Matteo', () async {
+      final analysis = await analyze(
+        requestedDay: runtimeDay,
+        turnEngine: nightEngine(),
+      );
+      expect(recoveryFor(analysis, 'matteo'), isNotEmpty);
+    });
+
+    for (final status in [
+      OverrideStatus.malattiaLeggera,
+      OverrideStatus.malattiaALetto,
+      OverrideStatus.ferie,
+      OverrideStatus.permesso,
+    ]) {
+      test('${status.name} annulla ogni recovery pianificato', () async {
+        final analysis = await analyze(
+          requestedDay: runtimeDay,
+          turnEngine: nightEngine(),
+          overrides: DayOverrides(
+            day: runtimeDay,
+            matteo: PersonDayOverride(
+              status: status,
+              permessoRange: status == OverrideStatus.permesso
+                  ? TimeRangeMinutes(startMin: 8 * 60, endMin: 12 * 60)
+                  : null,
+            ),
+          ),
+        );
+        expect(recoveryFor(analysis, 'matteo'), isEmpty);
+      });
+    }
+
+    for (final type in DiseaseType.values) {
+      test('malattia ${type.name} da store annulla il recovery', () async {
+        final diseases = DiseasePeriodStore();
+        await diseases.addPeriod(
+          DiseasePeriod(
+            personId: 'matteo',
+            type: type,
+            startDate: runtimeDay,
+            endDate: runtimeDay,
+          ),
+        );
+        final analysis = await analyze(
+          requestedDay: runtimeDay,
+          turnEngine: nightEngine(),
+          diseasePeriodStore: diseases,
+        );
+        expect(recoveryFor(analysis, 'matteo'), isEmpty);
+      });
+    }
+
+    test('ferie da store annullano il recovery', () async {
+      final holidays = FeriePeriodStore()
+        ..add(
+          FeriePeriod(
+            person: FeriePerson.matteo,
+            startDay: runtimeDay,
+            endDay: runtimeDay,
+          ),
+        );
+      final analysis = await analyze(
+        requestedDay: runtimeDay,
+        turnEngine: nightEngine(),
+        ferieStore: holidays,
+      );
+      expect(recoveryFor(analysis, 'matteo'), isEmpty);
+    });
+
+    test('evento reale non annulla il recovery lavorato', () async {
+      final events = RealEventStore()
+        ..addEvent(
+          RealEvent(
+            id: 'event',
+            startDate: runtimeDay,
+            endDate: runtimeDay,
+            title: 'Evento reale',
+            startTime: const TimeOfDay(hour: 16, minute: 0),
+            endTime: const TimeOfDay(hour: 17, minute: 0),
+            personKey: 'matteo',
+          ),
+        );
+      final analysis = await analyze(
+        requestedDay: runtimeDay,
+        turnEngine: nightEngine(),
+        realEventStore: events,
+      );
+      expect(recoveryFor(analysis, 'matteo'), isNotEmpty);
+    });
+
+    test('31 luglio malattia leggera: niente coda 22:30-24 né gap', () async {
+      final analysis = await analyze(
+        requestedDay: runtimeDay,
+        turnEngine: nightEngine(),
+        overrides: DayOverrides(
+          day: runtimeDay,
+          matteo: PersonDayOverride(status: OverrideStatus.malattiaLeggera),
+        ),
+      );
+      expect(analysis.criticalityDetails, isEmpty);
+      expect(analysis.gapDetails, isEmpty);
+    });
+
+    test('due adulti: recovery soltanto per la notte lavorata', () async {
+      final analysis = await analyze(
+        requestedDay: runtimeDay,
+        turnEngine: nightEngine(bothAdults: true),
+        overrides: DayOverrides(
+          day: runtimeDay,
+          matteo: PersonDayOverride(status: OverrideStatus.malattiaLeggera),
+        ),
+      );
+      expect(recoveryFor(analysis, 'matteo'), isEmpty);
+      expect(recoveryFor(analysis, 'chiara'), isNotEmpty);
+    });
   });
 }
 

@@ -32,20 +32,13 @@ class AdultLogisticsAvailabilityResolver {
     FeriePeriodStore? ferieStore,
     bool forceAvailableDueToLunchCover = false,
   }) {
-    final personOverride = personKey == 'matteo'
-        ? overrides.matteo
-        : overrides.chiara;
-    final hasManual = personOverride != null;
-    final diseaseStatus = hasManual
-        ? null
-        : _diseaseStatus(personId: personKey, day: day);
-    final isHoliday =
-        !hasManual &&
-        diseaseStatus == null &&
-        ((personKey == 'matteo'
-                ? ferieStore?.isOnHoliday(FeriePerson.matteo, day)
-                : ferieStore?.isOnHoliday(FeriePerson.chiara, day)) ??
-            false);
+    final state = effectivePlannedShiftState(
+      personKey: personKey,
+      day: day,
+      overrides: overrides,
+      ferieStore: ferieStore,
+    );
+    final personOverride = state.personOverride;
 
     var baseBusy = turnEngine
         .constraintsForPersonDay(person: person, day: day)
@@ -55,7 +48,7 @@ class AdultLogisticsAvailabilityResolver {
               WorkShift(start: constraint.start, end: constraint.end),
         )
         .toList();
-    if (isHoliday || diseaseStatus != null) baseBusy = [];
+    if (!state.isPlannedShiftActive) baseBusy = [];
 
     final effectiveBusy = OverrideApply.applyToBusyShifts(
       day: day,
@@ -65,10 +58,7 @@ class AdultLogisticsAvailabilityResolver {
     final adjustedBusy = forceAvailableDueToLunchCover
         ? <WorkShift>[]
         : effectiveBusy;
-    final status =
-        personOverride?.status ??
-        diseaseStatus ??
-        (isHoliday ? OverrideStatus.ferie : OverrideStatus.normal);
+    final status = state.status;
 
     if (status == OverrideStatus.malattiaALetto) {
       return isHomePresenceWindow &&
@@ -84,6 +74,40 @@ class AdultLogisticsAvailabilityResolver {
     return isTimeCovered(start, end, [
       PersonAvailability(busyShifts: adjustedBusy),
     ]);
+  }
+
+  /// Resolves whether the planned work constraints are part of the adult's
+  /// real day. This is the same typed status resolution used by availability.
+  EffectivePlannedShiftState effectivePlannedShiftState({
+    required String personKey,
+    required DateTime day,
+    required DayOverrides overrides,
+    FeriePeriodStore? ferieStore,
+  }) {
+    final personOverride = personKey == 'matteo'
+        ? overrides.matteo
+        : overrides.chiara;
+    final hasManual = personOverride != null;
+    final diseaseStatus = hasManual
+        ? null
+        : _diseaseStatus(personId: personKey, day: day);
+    final isHoliday =
+        !hasManual &&
+        diseaseStatus == null &&
+        ((personKey == 'matteo'
+                ? ferieStore?.isOnHoliday(FeriePerson.matteo, day)
+                : ferieStore?.isOnHoliday(FeriePerson.chiara, day)) ??
+            false);
+    final status =
+        personOverride?.status ??
+        diseaseStatus ??
+        (isHoliday ? OverrideStatus.ferie : OverrideStatus.normal);
+
+    return EffectivePlannedShiftState(
+      status: status,
+      personOverride: personOverride,
+      isPlannedShiftActive: status == OverrideStatus.normal,
+    );
   }
 
   OverrideStatus? _diseaseStatus({
@@ -139,4 +163,16 @@ class AdultLogisticsAvailabilityResolver {
     return (start.isBefore(firstEnd) && end.isAfter(firstStart)) ||
         (start.isBefore(secondEnd) && end.isAfter(secondStart));
   }
+}
+
+class EffectivePlannedShiftState {
+  final OverrideStatus status;
+  final PersonDayOverride? personOverride;
+  final bool isPlannedShiftActive;
+
+  const EffectivePlannedShiftState({
+    required this.status,
+    required this.personOverride,
+    required this.isPlannedShiftActive,
+  });
 }
