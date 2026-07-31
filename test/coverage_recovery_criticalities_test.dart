@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/logic/alice_companion_store.dart';
 import 'package:frododesk/logic/alice_event_store.dart';
+import 'package:frododesk/logic/calendar/builders/calendar_day_status_builder.dart';
+import 'package:frododesk/logic/calendar/models/calendar_day_status.dart';
 import 'package:frododesk/logic/coverage_engine.dart';
 import 'package:frododesk/logic/day_settings_store.dart';
 import 'package:frododesk/logic/disease_period_store.dart';
@@ -178,6 +180,14 @@ void main() {
       35,
       14,
       30,
+    );
+    expect(
+      const CalendarDayStatusBuilder().build(
+        gapDetails: analysis.gapDetails,
+        criticalityDetails: analysis.criticalityDetails,
+        hasLogisticGaps: false,
+      ),
+      CalendarDayStatus.attention,
     );
   });
 
@@ -778,6 +788,14 @@ void main() {
       );
       expect(analysis.criticalityDetails, isEmpty);
       expect(analysis.gapDetails, isEmpty);
+      expect(
+        const CalendarDayStatusBuilder().build(
+          gapDetails: analysis.gapDetails,
+          criticalityDetails: analysis.criticalityDetails,
+          hasLogisticGaps: false,
+        ),
+        CalendarDayStatus.ok,
+      );
     });
 
     test('due adulti: recovery soltanto per la notte lavorata', () async {

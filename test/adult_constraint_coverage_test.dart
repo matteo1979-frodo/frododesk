@@ -4,6 +4,8 @@ import 'package:frododesk/logic/alice_companion_store.dart';
 import 'package:frododesk/logic/alice_event_store.dart';
 import 'package:frododesk/logic/alice_presence_engine.dart';
 import 'package:frododesk/logic/adult_logistics_availability_resolver.dart';
+import 'package:frododesk/logic/calendar/builders/calendar_day_status_builder.dart';
+import 'package:frododesk/logic/calendar/models/calendar_day_status.dart';
 import 'package:frododesk/logic/alice_special_event_store.dart';
 import 'package:frododesk/logic/coverage_engine.dart';
 import 'package:frododesk/logic/day_settings_store.dart';
@@ -217,6 +219,14 @@ void main() {
             detail.end == const TimeOfDay(hour: 14, minute: 30),
       ),
       isFalse,
+    );
+    expect(
+      const CalendarDayStatusBuilder().build(
+        gapDetails: analysis.gapDetails,
+        criticalityDetails: analysis.criticalityDetails,
+        hasLogisticGaps: false,
+      ),
+      CalendarDayStatus.problem,
     );
   });
 

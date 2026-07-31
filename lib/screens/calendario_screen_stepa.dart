@@ -77,6 +77,8 @@ import '../logic/calendar/builders/alice_logistics_status_builder.dart';
 import '../logic/calendar/builders/alice_event_logistics_builder.dart';
 import '../logic/calendar/builders/alice_event_logistics_text_builder.dart';
 import '../logic/calendar/builders/day_gap_visual_state_builder.dart';
+import '../logic/calendar/builders/calendar_day_status_builder.dart';
+import '../logic/calendar/presenters/calendar_day_status_visual_presenter.dart';
 import '../logic/calendar/builders/visible_gap_details_builder.dart';
 import '../logic/calendar/builders/day_support_summaries_builder.dart';
 import '../logic/calendar/builders/alice_companion_for_gap_builder.dart';
@@ -207,6 +209,12 @@ class _CalendarioScreenStepAStabileState
 
   final DayGapVisualStateBuilder _dayGapVisualStateBuilder =
       const DayGapVisualStateBuilder();
+
+  final CalendarDayStatusBuilder _calendarDayStatusBuilder =
+      const CalendarDayStatusBuilder();
+
+  final CalendarDayStatusVisualPresenter _calendarDayStatusVisualPresenter =
+      const CalendarDayStatusVisualPresenter();
 
   final VisibleGapDetailsBuilder _visibleGapDetailsBuilder =
       const VisibleGapDetailsBuilder();
@@ -2548,11 +2556,16 @@ class _CalendarioScreenStepAStabileState
       isMatteoBusy: (start, end) => _engine.isMatteoBusyBetween(start, end),
       isChiaraBusy: (start, end) => _engine.isChiaraBusyBetween(start, end),
     );
-    final dayOverallVisual = _dayGapVisualStateBuilder.build(
-      hasLogisticConflict: selectedDayLogisticsStatus.hasLogisticConflict,
-      hasIncompleteLogistics: selectedDayLogisticsStatus.hasIncompleteLogistics,
-      hasRealCoverageGap: cov.gapDetails.isNotEmpty,
-      hasSummerCampLogisticGaps: summerCampLogistics?.hasLogisticGaps ?? false,
+    final dayStatus = _calendarDayStatusBuilder.build(
+      gapDetails: cov.gapDetails,
+      criticalityDetails: cov.criticalityDetails,
+      hasLogisticGaps:
+          selectedDayLogisticsStatus.hasLogisticConflict ||
+          selectedDayLogisticsStatus.hasIncompleteLogistics ||
+          (summerCampLogistics?.hasLogisticGaps ?? false),
+    );
+    final dayStatusColor = _calendarDayStatusVisualPresenter.colorFor(
+      dayStatus,
     );
     final ipsCoverage30 = _computeIpsCoverage30();
 
@@ -2634,7 +2647,7 @@ class _CalendarioScreenStepAStabileState
                 margin: const EdgeInsets.only(left: 8),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: dayOverallVisual.color,
+                  color: dayStatusColor,
                 ),
               ),
             ],
