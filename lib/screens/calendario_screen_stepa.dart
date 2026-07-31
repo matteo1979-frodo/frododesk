@@ -5296,7 +5296,7 @@ class _CalendarioScreenStepAStabileState
                     child: const Text("Annulla"),
                   ),
                   ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       final updatedDay = current.copyWith(
                         enabled: active,
                         entryMinutes: ingresso.hour * 60 + ingresso.minute,
@@ -5305,12 +5305,12 @@ class _CalendarioScreenStepAStabileState
 
                       final updatedPeriod = buildUpdatedPeriod(updatedDay);
 
-                      setState(() {
-                        coreStore.schoolStore.updatePeriod(updatedPeriod);
-                      });
-
-                      Navigator.pop(context); // chiude popup giorno
-                      Navigator.pop(context); // chiude popup settimana
+                      final navigator = Navigator.of(context);
+                      await coreStore.schoolStore.updatePeriod(updatedPeriod);
+                      if (!mounted || !navigator.mounted) return;
+                      setState(() {});
+                      navigator.pop(); // chiude popup giorno
+                      navigator.pop(); // chiude popup settimana
                     },
                     child: const Text("Salva"),
                   ),
@@ -5758,11 +5758,11 @@ class _CalendarioScreenStepAStabileState
                                             Icons.delete_outline,
                                             color: Colors.red,
                                           ),
-                                          onPressed: () {
-                                            setState(() {
-                                              coreStore.schoolStore
-                                                  .removePeriod(p.id);
-                                            });
+                                          onPressed: () async {
+                                            await coreStore.schoolStore
+                                                .removePeriod(p.id);
+                                            if (!mounted) return;
+                                            setState(() {});
                                           },
                                         ),
                                       ],
@@ -5854,7 +5854,7 @@ class _CalendarioScreenStepAStabileState
                                           child: const Text("Annulla"),
                                         ),
                                         ElevatedButton(
-                                          onPressed: () {
+                                          onPressed: () async {
                                             if (nameController.text
                                                     .trim()
                                                     .isEmpty ||
@@ -5863,7 +5863,10 @@ class _CalendarioScreenStepAStabileState
                                               return;
                                             }
 
-                                            coreStore.schoolStore.addPeriod(
+                                            final navigator = Navigator.of(
+                                              context,
+                                            );
+                                            await coreStore.schoolStore.addPeriod(
                                               SchoolPeriod(
                                                 id: DateTime.now()
                                                     .millisecondsSinceEpoch
@@ -5914,9 +5917,12 @@ class _CalendarioScreenStepAStabileState
                                                 ),
                                               ),
                                             );
-
+                                            if (!mounted ||
+                                                !navigator.mounted) {
+                                              return;
+                                            }
                                             setState(() {});
-                                            Navigator.pop(context);
+                                            navigator.pop();
                                           },
                                           child: const Text("Salva"),
                                         ),

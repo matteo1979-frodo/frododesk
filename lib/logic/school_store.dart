@@ -6,15 +6,27 @@ import '../models/school_model.dart';
 import 'persistence_store.dart';
 import 'calendar_logic.dart';
 
+typedef SchoolStoreLoadString = Future<String?> Function(String key);
+typedef SchoolStoreSaveString = Future<void> Function(String key, String value);
+
 class SchoolStore {
   static const String _storageKey = 'school_periods_v1';
 
   final List<SchoolPeriod> _periods = [];
+  final SchoolStoreLoadString _loadString;
+  final SchoolStoreSaveString _saveString;
+  Future<void> _saveQueue = Future<void>.value();
+
+  SchoolStore({
+    SchoolStoreLoadString? loadString,
+    SchoolStoreSaveString? saveString,
+  }) : _loadString = loadString ?? PersistenceStore.loadString,
+       _saveString = saveString ?? PersistenceStore.saveString;
 
   List<SchoolPeriod> get periods => List.unmodifiable(_periods);
 
   Future<void> load() async {
-    final raw = await PersistenceStore.loadString(_storageKey);
+    final raw = await _loadString(_storageKey);
     if (raw == null || raw.isEmpty) return;
 
     try {
@@ -69,31 +81,31 @@ class SchoolStore {
     }
   }
 
-  void setPeriods(List<SchoolPeriod> periods) {
+  Future<void> setPeriods(List<SchoolPeriod> periods) async {
     _periods
       ..clear()
       ..addAll(periods);
     _sortPeriods();
-    _save();
+    await _save();
   }
 
-  void addPeriod(SchoolPeriod period) {
+  Future<void> addPeriod(SchoolPeriod period) async {
     _periods.add(period);
     _sortPeriods();
-    _save();
+    await _save();
   }
 
-  void updatePeriod(SchoolPeriod updatedPeriod) {
+  Future<void> updatePeriod(SchoolPeriod updatedPeriod) async {
     final index = _periods.indexWhere((p) => p.id == updatedPeriod.id);
     if (index == -1) return;
     _periods[index] = updatedPeriod;
     _sortPeriods();
-    _save();
+    await _save();
   }
 
-  void removePeriod(String periodId) {
+  Future<void> removePeriod(String periodId) async {
     _periods.removeWhere((p) => p.id == periodId);
-    _save();
+    await _save();
   }
 
   SchoolPeriod? activePeriodForDay(DateTime day) {
@@ -121,9 +133,9 @@ class SchoolStore {
     return schoolDayConfigFor(day) != null;
   }
 
-  void clear() {
+  Future<void> clear() async {
     _periods.clear();
-    _save();
+    await _save();
   }
 
   void _sortPeriods() {
@@ -142,7 +154,7 @@ class SchoolStore {
     });
   }
 
-  Future<void> _save() async {
+  Future<void> _save() {
     final data = _periods
         .map(
           (period) => {
@@ -158,8 +170,10 @@ class SchoolStore {
           },
         )
         .toList();
-
-    await PersistenceStore.saveString(_storageKey, jsonEncode(data));
+    final snapshot = jsonEncode(data);
+    final write = _saveQueue.then((_) => _saveString(_storageKey, snapshot));
+    _saveQueue = write.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    return write;
   }
 
   Map<String, dynamic> _weekConfigToMap(SchoolWeekConfig config) {
