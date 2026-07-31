@@ -99,6 +99,13 @@ import '../logic/calendar/builders/calendar_day_coverage_coordinator.dart';
 import '../logic/calendar/builders/alice_home_risk_view_model_builder.dart';
 import '../logic/calendar/view_models/alice_home_risk_view_model.dart';
 import '../logic/calendar/builders/alice_school_day_view_model_builder.dart';
+import '../logic/adult_logistics_availability_resolver.dart';
+import '../logic/calendar/builders/alice_logistic_provider_availability_resolver.dart';
+import '../logic/calendar/builders/alice_summer_camp_logistics_coordinator.dart';
+import '../logic/calendar/builders/alice_summer_camp_logistics_view_model_builder.dart';
+import '../logic/calendar/models/alice_summer_camp_logistics.dart';
+import '../logic/calendar/view_models/alice_summer_camp_logistics_view_model.dart';
+import '../widgets/calendar/summer_camp_logistics_section.dart';
 
 class CalendarioScreenStepAStabile extends StatefulWidget {
   final CoreStore coreStore;
@@ -1616,10 +1623,19 @@ class _CalendarioScreenStepAStabileState
       isChiaraBusy: (start, end) => _engine.isChiaraBusyBetween(start, end),
     );
 
+    final summerCampLogistics = _summerCampLogisticsViewModel(
+      operational: AliceSchoolDayViewModelBuilder(coreStore)
+          .build(day: d0, expandedEventIds: _expandedAliceEventIds)
+          .showSummerCampSpecialCard,
+      effectiveStart: timing.schoolEntryAt,
+      effectiveEnd: timing.schoolExitAt,
+    );
+
     final visual = _dayGapVisualStateBuilder.build(
       hasLogisticConflict: aliceLogisticsStatus.hasLogisticConflict,
       hasIncompleteLogistics: aliceLogisticsStatus.hasIncompleteLogistics,
       hasRealCoverageGap: cov.gapDetails.isNotEmpty,
+      hasSummerCampLogisticGaps: summerCampLogistics?.hasLogisticGaps ?? false,
     );
 
     final companionEntries = coreStore.aliceCompanionStore.entriesForDay(d0);
@@ -2513,6 +2529,31 @@ class _CalendarioScreenStepAStabileState
     final showSummerCampSpecialCard = AliceSchoolDayViewModelBuilder(coreStore)
         .build(day: _selectedDay, expandedEventIds: _expandedAliceEventIds)
         .showSummerCampSpecialCard;
+    final selectedDayTiming = EffectiveSchoolDayTimingReader(
+      coreStore,
+    ).read(_selectedDay);
+    final summerCampLogistics = _summerCampLogisticsViewModel(
+      operational: showSummerCampSpecialCard,
+      effectiveStart: selectedDayTiming.schoolEntryAt,
+      effectiveEnd: selectedDayTiming.schoolExitAt,
+    );
+    final selectedDayLogisticEvents = coreStore.aliceSpecialEventStore
+        .eventsForDay(_onlyDate(_selectedDay))
+        .where((event) => event.behavior == AliceEventBehavior.logistic)
+        .toList();
+    final selectedDayLogisticsStatus = _aliceLogisticsStatusBuilder.build(
+      day: _onlyDate(_selectedDay),
+      logisticEvents: selectedDayLogisticEvents,
+      aliceEventEngine: _aliceEventEngine,
+      isMatteoBusy: (start, end) => _engine.isMatteoBusyBetween(start, end),
+      isChiaraBusy: (start, end) => _engine.isChiaraBusyBetween(start, end),
+    );
+    final dayOverallVisual = _dayGapVisualStateBuilder.build(
+      hasLogisticConflict: selectedDayLogisticsStatus.hasLogisticConflict,
+      hasIncompleteLogistics: selectedDayLogisticsStatus.hasIncompleteLogistics,
+      hasRealCoverageGap: cov.gapDetails.isNotEmpty,
+      hasSummerCampLogisticGaps: summerCampLogistics?.hasLogisticGaps ?? false,
+    );
     final ipsCoverage30 = _computeIpsCoverage30();
 
     final familyNowViewModel = familyNowSnapshot != null
@@ -2593,7 +2634,7 @@ class _CalendarioScreenStepAStabileState
                 margin: const EdgeInsets.only(left: 8),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: cov.gapDetails.isNotEmpty ? Colors.red : Colors.green,
+                  color: dayOverallVisual.color,
                 ),
               ),
             ],
@@ -4456,6 +4497,11 @@ class _CalendarioScreenStepAStabileState
     final extraEvents = model.events;
     final visibleAliceEvents = model.visibleEvents;
     final hasExtraEvents = extraEvents.isNotEmpty;
+    final summerCampLogistics = _summerCampLogisticsViewModel(
+      operational: model.showSummerCampSpecialCard,
+      effectiveStart: model.schoolEntryAt,
+      effectiveEnd: model.schoolExitAt,
+    );
 
     return _card(
       title: model.title,
@@ -4980,65 +5026,146 @@ class _CalendarioScreenStepAStabileState
           const SizedBox(height: 14),
           const Divider(),
           const SizedBox(height: 10),
-          SchoolCoverageChoiceSection(
-            ingressoInizio: model.accompanimentStart,
-            ingressoFine: model.schoolEntryAt,
-            uscitaReale: model.schoolExitAt,
-            uscitaAt: uscitaAt,
-            uscita13Eff: uscita13Eff,
-            schoolInCover: _effectiveSchoolInCover(_selectedDay),
-            schoolOutCover: _effectiveSchoolOutCover(_selectedDay),
-            lunchCover: _effectiveLunchCover(_selectedDay),
-            labelForChoice: _schoolCoverLabel,
-            onSchoolInChanged: (v) {
-              setState(() {
-                daySettingsStore.setSchoolInCoverForDay(_selectedDay, v);
-              });
-              if (v == SchoolCoverChoice.altro) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      "Altro: lista persone arriverà dopo (placeholder).",
+          if (summerCampLogistics != null)
+            SummerCampLogisticsSection(
+              model: summerCampLogistics,
+              onDropOffChanged: (provider) =>
+                  _saveSummerCampLogistics(AliceLogisticLeg.dropOff, provider),
+              onPickUpChanged: (provider) =>
+                  _saveSummerCampLogistics(AliceLogisticLeg.pickUp, provider),
+            )
+          else
+            SchoolCoverageChoiceSection(
+              ingressoInizio: model.accompanimentStart,
+              ingressoFine: model.schoolEntryAt,
+              uscitaReale: model.schoolExitAt,
+              uscitaAt: uscitaAt,
+              uscita13Eff: uscita13Eff,
+              schoolInCover: _effectiveSchoolInCover(_selectedDay),
+              schoolOutCover: _effectiveSchoolOutCover(_selectedDay),
+              lunchCover: _effectiveLunchCover(_selectedDay),
+              labelForChoice: _schoolCoverLabel,
+              onSchoolInChanged: (v) {
+                setState(() {
+                  daySettingsStore.setSchoolInCoverForDay(_selectedDay, v);
+                });
+                if (v == SchoolCoverChoice.altro) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        "Altro: lista persone arriverà dopo (placeholder).",
+                      ),
                     ),
-                  ),
-                );
-              }
-              ipsStore.refresh(now: _selectedDay);
-            },
-            onSchoolOutChanged: (v) {
-              setState(() {
-                daySettingsStore.setSchoolOutCoverForDay(_selectedDay, v);
-              });
-              if (v == SchoolCoverChoice.altro) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      "Altro: lista persone arriverà dopo (placeholder).",
+                  );
+                }
+                ipsStore.refresh(now: _selectedDay);
+              },
+              onSchoolOutChanged: (v) {
+                setState(() {
+                  daySettingsStore.setSchoolOutCoverForDay(_selectedDay, v);
+                });
+                if (v == SchoolCoverChoice.altro) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        "Altro: lista persone arriverà dopo (placeholder).",
+                      ),
                     ),
-                  ),
-                );
-              }
-              ipsStore.refresh(now: _selectedDay);
-            },
-            onLunchChanged: (v) {
-              setState(() {
-                daySettingsStore.setLunchCoverForDay(_selectedDay, v);
-              });
-              if (v == SchoolCoverChoice.altro) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      "Altro: lista persone arriverà dopo (placeholder).",
+                  );
+                }
+                ipsStore.refresh(now: _selectedDay);
+              },
+              onLunchChanged: (v) {
+                setState(() {
+                  daySettingsStore.setLunchCoverForDay(_selectedDay, v);
+                });
+                if (v == SchoolCoverChoice.altro) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        "Altro: lista persone arriverà dopo (placeholder).",
+                      ),
                     ),
-                  ),
-                );
-              }
-              ipsStore.refresh(now: _selectedDay);
-            },
-          ),
+                  );
+                }
+                ipsStore.refresh(now: _selectedDay);
+              },
+            ),
         ],
       ),
     );
+  }
+
+  AliceSummerCampLogisticsViewModel? _summerCampLogisticsViewModel({
+    required bool operational,
+    required TimeOfDay effectiveStart,
+    required TimeOfDay effectiveEnd,
+  }) {
+    final day = _onlyDate(_selectedDay);
+    DateTime at(TimeOfDay time) =>
+        DateTime(day.year, day.month, day.day, time.hour, time.minute);
+    final availability = AliceLogisticProviderAvailabilityResolver(
+      adultResolver: AdultLogisticsAvailabilityResolver(
+        turnEngine: coreStore.turnEngine,
+        diseasePeriodStore: coreStore.diseasePeriodStore,
+        realEventStore: coreStore.realEventStore,
+      ),
+      daySettingsStore: daySettingsStore,
+      supportNetworkStore: coreStore.supportNetworkStore,
+    );
+    final result =
+        AliceSummerCampLogisticsCoordinator(
+          daySettingsStore: daySettingsStore,
+          availabilityResolver: availability,
+        ).resolveDay(
+          day: day,
+          summerCampOperational: operational,
+          effectiveStart: at(effectiveStart),
+          effectiveEnd: at(effectiveEnd),
+          overrides: _getOverridesForDay(day),
+          sandraWindows: [
+            AliceSandraAvailabilityWindow(
+              enabled: _effSandraMattina(day),
+              start: _engine.sandraCambioMattinaStart,
+              end: _engine.sandraCambioMattinaEnd,
+            ),
+            AliceSandraAvailabilityWindow(
+              enabled: _effSandraPranzo(day),
+              start: _effectiveSandraPranzoStart(day),
+              end: _engine.sandraPranzoEnd,
+            ),
+            AliceSandraAvailabilityWindow(
+              enabled: _effSandraSera(day),
+              start: _engine.sandraSeraStart,
+              end: _engine.sandraSeraEnd,
+            ),
+          ],
+          ferieStore: coreStore.feriePeriodStore,
+        );
+    return const AliceSummerCampLogisticsViewModelBuilder().build(
+      result: result,
+      supportPeople: coreStore.supportNetworkStore.people,
+    );
+  }
+
+  Future<void> _saveSummerCampLogistics(
+    AliceLogisticLeg leg,
+    AliceLogisticProviderRef? provider,
+  ) async {
+    if (leg == AliceLogisticLeg.dropOff) {
+      await daySettingsStore.setSummerCampDropOffProviderForDay(
+        _selectedDay,
+        provider,
+      );
+    } else {
+      await daySettingsStore.setSummerCampPickUpProviderForDay(
+        _selectedDay,
+        provider,
+      );
+    }
+    if (!mounted) return;
+    setState(() {});
+    ipsStore.refresh(now: _selectedDay);
   }
 
   SandraCoverageViewModel _buildSandraCoverageViewModel() {

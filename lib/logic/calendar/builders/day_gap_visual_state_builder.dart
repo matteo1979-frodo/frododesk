@@ -25,11 +25,14 @@ class DayGapVisualStateBuilder {
     required bool hasLogisticConflict,
     required bool hasIncompleteLogistics,
     required bool hasRealCoverageGap,
+    bool hasSummerCampLogisticGaps = false,
   }) {
-    final state = hasLogisticConflict || hasRealCoverageGap
+    final hasLogisticGaps =
+        hasSummerCampLogisticGaps ||
+        hasLogisticConflict ||
+        hasIncompleteLogistics;
+    final state = hasLogisticGaps || hasRealCoverageGap
         ? DayGapVisualState.realGap
-        : hasIncompleteLogistics
-        ? DayGapVisualState.coveredNeed
         : DayGapVisualState.noProblem;
 
     final color = state == DayGapVisualState.realGap
@@ -44,7 +47,9 @@ class DayGapVisualStateBuilder {
         ? Icons.warning_amber_rounded
         : Icons.check_circle;
 
-    final headline = hasLogisticConflict
+    final headline = hasSummerCampLogisticGaps
+        ? "❗ Buchi logistici da risolvere"
+        : hasLogisticConflict
         ? "❗ Conflitto logistico Alice"
         : hasIncompleteLogistics
         ? "⚠ Logistica Alice incompleta"
@@ -54,7 +59,9 @@ class DayGapVisualStateBuilder {
         ? "⚠ Copertura necessaria ma risolta"
         : "✓ Nessun problema oggi";
 
-    final subline = hasLogisticConflict
+    final subline = hasSummerCampLogisticGaps
+        ? "Esistono tratte del centro estivo ancora da assegnare o in conflitto."
+        : hasLogisticConflict
         ? "Un evento Alice ha accompagnamento o ritiro assegnato a una persona non disponibile."
         : hasIncompleteLogistics
         ? "Un evento Alice richiede accompagnamento o ritiro, ma manca ancora una persona assegnata."

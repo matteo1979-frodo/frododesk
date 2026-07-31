@@ -45,7 +45,7 @@ class SchoolCoverageChoiceSection extends StatelessWidget {
         const Divider(),
         const SizedBox(height: 10),
         const Text(
-          "Decisione scuola (copertura)",
+          "Decisione scuola (accompagnamento)",
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 10),
