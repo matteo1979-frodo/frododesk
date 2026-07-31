@@ -62,7 +62,7 @@ import '../widgets/calendar/alice_events_list.dart';
 import '../widgets/calendar/alice_event_tile.dart';
 import '../widgets/calendar/alice_event_expanded.dart';
 import '../logic/calendar/builders/family_now_view_model_builder.dart';
-import '../logic/calendar/builders/family_now_snapshot_builder.dart';
+import '../logic/calendar/builders/family_now_snapshot_coordinator.dart';
 import '../widgets/calendar/family_now_card.dart';
 import '../widgets/calendar/family_day_overview_card.dart';
 import '../logic/calendar/builders/family_adult_now_details_builder.dart';
@@ -85,11 +85,9 @@ import '../logic/calendar/builders/alice_companion_for_gap_builder.dart';
 import '../logic/calendar/builders/gap_title_with_alice_state_builder.dart';
 import '../logic/calendar/builders/person_effective_status_builder.dart';
 import '../logic/calendar/builders/turn_event_conflict_visual_state_builder.dart';
-import '../logic/calendar/builders/adult_now_state_builder.dart';
 import '../logic/calendar/builders/family_day_overview_snapshot_builder.dart';
 import '../logic/calendar/models/family_day_overview_snapshot.dart';
 import '../logic/calendar/builders/family_day_overview_view_model_builder.dart';
-import '../logic/calendar/builders/alice_now_resolver.dart';
 import '../logic/calendar/builders/effective_school_day_timing_reader.dart';
 import '../logic/calendar/builders/coverage_criticality_view_model_builder.dart';
 import '../logic/calendar/view_models/coverage_criticality_view_model.dart';
@@ -1201,45 +1199,6 @@ class _CalendarioScreenStepAStabileState
     });
 
     return filtered;
-  }
-
-  bool _isPersonBusyForEventNow({
-    required String personKey,
-    required DateTime now,
-  }) {
-    final events = coreStore.realEventStore
-        .eventsForDay(_onlyDate(now))
-        .where((e) => e.personKey == personKey);
-
-    for (final event in events) {
-      final eventStart = DateTime(
-        event.startDate.year,
-        event.startDate.month,
-        event.startDate.day,
-        event.startTime?.hour ?? 0,
-        event.startTime?.minute ?? 0,
-      );
-
-      DateTime eventEnd = DateTime(
-        event.endDate.year,
-        event.endDate.month,
-        event.endDate.day,
-        event.endTime?.hour ?? 23,
-        event.endTime?.minute ?? 59,
-      );
-
-      if (!eventEnd.isAfter(eventStart)) {
-        eventEnd = eventEnd.add(const Duration(days: 1));
-      }
-
-      final isNowInside = now.isAfter(eventStart) && now.isBefore(eventEnd);
-
-      if (isNowInside) {
-        return true;
-      }
-    }
-
-    return false;
   }
 
   CoverageResultStepA _buildDayCoverage({
@@ -2361,141 +2320,12 @@ class _CalendarioScreenStepAStabileState
     return ipsCoverage30;
   }
 
-  FamilyNowSnapshot _buildFamilyNowSnapshot({
-    required DateTime realNow,
-    required DateTime effectiveNow,
-  }) {
-    final nowDay = _onlyDate(effectiveNow);
-    final dayOverrides = _getOverridesForDay(nowDay);
-
-    final matteoOverride = dayOverrides.matteo;
-    final matteoDisease = coreStore.diseasePeriodStore.getPeriodForDay(
-      'matteo',
-      nowDay,
-    );
-
-    final matteoIsInHolidayPeriod = coreStore.feriePeriodStore.isOnHoliday(
-      FeriePerson.matteo,
-      _onlyDate(nowDay),
-    );
-
-    final matteoEffectiveStatus = _personEffectiveStatusBuilder.build(
-      manualOverride: matteoOverride,
-      diseasePeriod: matteoDisease,
-      isInHolidayPeriod: matteoIsInHolidayPeriod,
-    );
-
-    final matteoBusyForEventNow = _isPersonBusyForEventNow(
-      personKey: 'matteo',
-      now: effectiveNow,
-    );
-
-    final matteoBusyForTurn = _engine.isMatteoBusyBetween(
-      effectiveNow,
-      effectiveNow.add(const Duration(minutes: 1)),
-    );
-
-    final matteoPlan = _turns.turnPlanForPersonDay(
-      person: TurnPerson.matteo,
-      day: _selectedDay,
-    );
-
-    final matteoTurnLabel = _personEffectiveStatusBuilder.buildTurnLabel(
-      isOff: matteoPlan.isOff,
-      startText: fmtTimeOfDay(matteoPlan.start),
-      endText: fmtTimeOfDay(matteoPlan.end),
-    );
-
-    final matteoNowState = const AdultNowStateBuilder().build(
-      effectiveStatus: matteoEffectiveStatus,
-      isBusyForEventNow: matteoBusyForEventNow,
-      isBusyForTurn: matteoBusyForTurn,
-      turnLabel: matteoTurnLabel,
-    );
-
-    final chiaraOverride = dayOverrides.chiara;
-    final chiaraDisease = coreStore.diseasePeriodStore.getPeriodForDay(
-      'chiara',
-      nowDay,
-    );
-
-    final chiaraIsInHolidayPeriod = coreStore.feriePeriodStore.isOnHoliday(
-      FeriePerson.chiara,
-      nowDay,
-    );
-
-    final chiaraEffectiveStatus = _personEffectiveStatusBuilder.build(
-      manualOverride: chiaraOverride,
-      diseasePeriod: chiaraDisease,
-      isInHolidayPeriod: chiaraIsInHolidayPeriod,
-    );
-
-    final chiaraBusyForEventNow = _isPersonBusyForEventNow(
-      personKey: 'chiara',
-      now: effectiveNow,
-    );
-
-    final chiaraBusyForTurn = _engine.isChiaraBusyBetween(
-      effectiveNow,
-      effectiveNow.add(const Duration(minutes: 1)),
-    );
-
-    final chiaraPlan = _turns.turnPlanForPersonDay(
-      person: TurnPerson.chiara,
-      day: _selectedDay,
-    );
-
-    final chiaraTurnLabel = _personEffectiveStatusBuilder.buildTurnLabel(
-      isOff: chiaraPlan.isOff,
-      startText: fmtTimeOfDay(chiaraPlan.start),
-      endText: fmtTimeOfDay(chiaraPlan.end),
-    );
-
-    final chiaraNowState = const AdultNowStateBuilder().build(
-      effectiveStatus: chiaraEffectiveStatus,
-      isBusyForEventNow: chiaraBusyForEventNow,
-      isBusyForTurn: chiaraBusyForTurn,
-      turnLabel: chiaraTurnLabel,
-    );
-
-    final alicePeriodNow = coreStore.aliceEventStore.getEventForDay(nowDay);
-    final aliceSpecialEventsNow = coreStore.aliceSpecialEventStore.eventsForDay(
-      nowDay,
-    );
-
-    final aliceRealEventsNow = coreStore.realEventStore
-        .eventsForDay(nowDay)
-        .where((event) => event.personKey == 'alice')
-        .toList();
-
-    final isRealSchoolDay = coreStore.schoolStore.hasSchoolOn(nowDay);
-
-    final uscitaAt = _effUscitaAnticipataAt(nowDay);
-    final schoolEnd = uscitaAt ?? _effSchoolOutEnd(nowDay);
-    final schoolStart = _scuolaStart;
-
-    final aliceNowState = const AliceNowResolver().build(
-      day: nowDay,
-      now: effectiveNow,
-      realEvents: aliceRealEventsNow,
-      specialEvents: aliceSpecialEventsNow,
-      dayType: alicePeriodNow?.type,
-      isRealSchoolDay: isRealSchoolDay,
-      isSchoolNormalDay: coreStore.aliceEventStore.isSchoolNormalDay(
-        _selectedDay,
-      ),
-      schoolStart: schoolStart,
-      schoolEnd: schoolEnd,
-      summerCampStart: alicePeriodNow?.summerCampStart,
-      summerCampEnd: alicePeriodNow?.summerCampEnd,
-    );
-
-    return const FamilyNowSnapshotBuilder().build(
-      realNow: realNow,
-      now: effectiveNow,
-      matteo: matteoNowState,
-      chiara: chiaraNowState,
-      alice: aliceNowState,
+  FamilyNowSnapshot _buildFamilyNowSnapshot({required DateTime observedAt}) {
+    return const FamilyNowSnapshotCoordinator().build(
+      selectedDay: _selectedDay,
+      observedAt: observedAt,
+      coreStore: coreStore,
+      overrides: _getOverridesForDay(_selectedDay),
     );
   }
 
@@ -2524,7 +2354,7 @@ class _CalendarioScreenStepAStabileState
         : null;
 
     final familyNowSnapshot = isNowMode
-        ? _buildFamilyNowSnapshot(realNow: realNow, effectiveNow: realNow)
+        ? _buildFamilyNowSnapshot(observedAt: realNow)
         : null;
 
     final cov = _buildDayCoverage(day: _selectedDay, observedAt: realNow);
