@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../coverage_engine.dart';
-import '../../day_settings_store.dart';
-import '../../support_network_store.dart';
-import '../../../models/support_person.dart';
 import '../view_models/coverage_gap_recommendation_view_model.dart';
-
-typedef AdultBusyReader = bool Function(DateTime rangeStart, DateTime rangeEnd);
+import 'coverage_gap_companion_resolver.dart';
 
 class CoverageGapRecommendationViewModelBuilder {
   const CoverageGapRecommendationViewModelBuilder();
@@ -14,22 +10,16 @@ class CoverageGapRecommendationViewModelBuilder {
   CoverageGapRecommendationsViewModel buildAll({
     required DateTime day,
     required List<CoverageGapDetail> gaps,
-    required AdultBusyReader isMatteoBusy,
-    required AdultBusyReader isChiaraBusy,
-    required SupportNetworkStore supportNetworkStore,
-    required DaySettingsStore daySettingsStore,
-    required List<CoverageSandraWindow> sandraWindows,
+    required List<CoverageGapCompanionResolution> resolutions,
   }) {
     final recommendations = gaps
+        .asMap()
+        .entries
         .map(
-          (gap) => build(
+          (entry) => build(
             day: day,
-            gap: gap,
-            isMatteoBusy: isMatteoBusy,
-            isChiaraBusy: isChiaraBusy,
-            supportNetworkStore: supportNetworkStore,
-            daySettingsStore: daySettingsStore,
-            sandraWindows: sandraWindows,
+            gap: entry.value,
+            resolution: resolutions[entry.key],
           ),
         )
         .toList(growable: false);
@@ -46,28 +36,20 @@ class CoverageGapRecommendationViewModelBuilder {
   CoverageGapRecommendationViewModel build({
     required DateTime day,
     required CoverageGapDetail gap,
-    required AdultBusyReader isMatteoBusy,
-    required AdultBusyReader isChiaraBusy,
-    required SupportNetworkStore supportNetworkStore,
-    required DaySettingsStore daySettingsStore,
-    required List<CoverageSandraWindow> sandraWindows,
+    required CoverageGapCompanionResolution resolution,
   }) {
-    final start = _at(day, gap.start);
-    final end = _at(day, gap.end);
-    final matteoAvailable = !isMatteoBusy(start, end);
-    final chiaraAvailable = !isChiaraBusy(start, end);
-    final support = _supportFor(
-      day: day,
-      gap: gap,
-      supportNetworkStore: supportNetworkStore,
-      daySettingsStore: daySettingsStore,
+    final parents = resolution.availableCandidates
+        .where((candidate) => candidate.kind == CoverageGapCompanionKind.parent)
+        .toList(growable: false);
+    final matteoAvailable = parents.any(
+      (candidate) => candidate.providerId == 'matteo',
     );
-    final sandraAvailable = sandraWindows.any(
-      (window) =>
-          window.active &&
-          _minutes(window.start) <= _minutes(gap.start) &&
-          _minutes(window.end) >= _minutes(gap.end),
+    final chiaraAvailable = parents.any(
+      (candidate) => candidate.providerId == 'chiara',
     );
+    final support = resolution.firstOf(CoverageGapCompanionKind.supportPerson);
+    final sandraAvailable =
+        resolution.firstOf(CoverageGapCompanionKind.sandra) != null;
 
     if (matteoAvailable && chiaraAvailable) {
       return _model(
@@ -98,24 +80,24 @@ class CoverageGapRecommendationViewModelBuilder {
         providerDisplayName: 'Chiara',
       );
     }
-    if (support.active != null && sandraAvailable) {
+    if (support != null && sandraAvailable) {
       return _model(
         gap,
         day,
         'Suggerimento: verifica Supporto oppure Sandra',
         CoverageGapRecommendationKind.useSupportNetwork,
-        providerId: support.active!.id,
-        providerDisplayName: _displayName(support.active!.name),
+        providerId: support.providerId,
+        providerDisplayName: support.displayName,
       );
     }
-    if (support.active != null) {
+    if (support != null) {
       return _model(
         gap,
         day,
         'Suggerimento: verifica Supporto',
         CoverageGapRecommendationKind.useSupportNetwork,
-        providerId: support.active!.id,
-        providerDisplayName: _displayName(support.active!.name),
+        providerId: support.providerId,
+        providerDisplayName: support.displayName,
       );
     }
     if (sandraAvailable) {
@@ -128,14 +110,15 @@ class CoverageGapRecommendationViewModelBuilder {
         providerDisplayName: 'Sandra',
       );
     }
-    if (support.inactive != null) {
-      final name = _displayName(support.inactive!.name);
+    if (resolution.inactiveSupportCandidates.isNotEmpty) {
+      final candidate = resolution.inactiveSupportCandidates.first;
+      final name = candidate.displayName;
       return _model(
         gap,
         day,
         'Suggerimento: attiva $name nella rete di supporto',
         CoverageGapRecommendationKind.useSupportNetwork,
-        providerId: support.inactive!.id,
+        providerId: candidate.providerId,
         providerDisplayName: name,
         canExecuteAction: true,
       );
@@ -170,52 +153,10 @@ class CoverageGapRecommendationViewModelBuilder {
     );
   }
 
-  _SupportCandidates _supportFor({
-    required DateTime day,
-    required CoverageGapDetail gap,
-    required SupportNetworkStore supportNetworkStore,
-    required DaySettingsStore daySettingsStore,
-  }) {
-    SupportPerson? active;
-    SupportPerson? inactive;
-    for (final person in supportNetworkStore.people) {
-      if (!person.enabled || !_personCovers(person, gap)) continue;
-      if (daySettingsStore.isSupportPersonEnabledForDay(day, person.id)) {
-        active ??= person;
-      } else {
-        inactive ??= person;
-      }
-    }
-    return _SupportCandidates(active: active, inactive: inactive);
-  }
-
-  bool _personCovers(SupportPerson person, CoverageGapDetail gap) {
-    return person.effectiveSlots.any(
-      (slot) =>
-          _minutes(slot.start) <= _minutes(gap.start) &&
-          _minutes(slot.end) >= _minutes(gap.end),
-    );
-  }
-
   DateTime _at(DateTime day, TimeOfDay time) =>
       DateTime(day.year, day.month, day.day, time.hour, time.minute);
-
-  int _minutes(TimeOfDay time) => time.hour * 60 + time.minute;
 
   String _format(TimeOfDay time) =>
       '${time.hour.toString().padLeft(2, '0')}:'
       '${time.minute.toString().padLeft(2, '0')}';
-
-  String _displayName(String name) {
-    final clean = name.trim();
-    if (clean.isEmpty) return 'Supporto';
-    return '${clean[0].toUpperCase()}${clean.substring(1)}';
-  }
-}
-
-class _SupportCandidates {
-  final SupportPerson? active;
-  final SupportPerson? inactive;
-
-  const _SupportCandidates({required this.active, required this.inactive});
 }

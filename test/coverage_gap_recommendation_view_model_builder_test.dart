@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:frododesk/logic/calendar/builders/coverage_gap_companion_resolver.dart';
 import 'package:frododesk/logic/calendar/builders/coverage_gap_recommendation_view_model_builder.dart';
 import 'package:frododesk/logic/calendar/view_models/coverage_gap_recommendation_view_model.dart';
 import 'package:frododesk/logic/coverage_engine.dart';
@@ -13,6 +14,7 @@ void main() {
   SharedPreferences.setMockInitialValues({});
 
   const builder = CoverageGapRecommendationViewModelBuilder();
+  const resolver = CoverageGapCompanionResolver();
   final day = DateTime(2026, 8, 11);
 
   CoverageGapDetail gap({
@@ -44,15 +46,17 @@ void main() {
         await settings.setSupportPersonEnabledForDay(day, support.id, true);
       }
     }
-    return builder.build(
+    final resolvedGap = detail ?? gap();
+    final resolution = resolver.resolve(
       day: day,
-      gap: detail ?? gap(),
+      gap: resolvedGap,
       isMatteoBusy: (_, _) => matteoBusy,
       isChiaraBusy: (_, _) => chiaraBusy,
       supportNetworkStore: supportStore,
       daySettingsStore: settings,
       sandraWindows: sandraWindows,
     );
+    return builder.build(day: day, gap: resolvedGap, resolution: resolution);
   }
 
   const support = SupportPerson(
@@ -137,14 +141,28 @@ void main() {
   );
 
   test('più gap mantengono ordine e conteggio nel builder reale', () {
+    final gaps = [
+      gap(startHour: 8, endHour: 9),
+      gap(startHour: 14, endHour: 15),
+    ];
+    final supportStore = SupportNetworkStore();
+    final settings = DaySettingsStore();
     final result = builder.buildAll(
       day: day,
-      gaps: [gap(startHour: 8, endHour: 9), gap(startHour: 14, endHour: 15)],
-      isMatteoBusy: (_, _) => false,
-      isChiaraBusy: (_, _) => true,
-      supportNetworkStore: SupportNetworkStore(),
-      daySettingsStore: DaySettingsStore(),
-      sandraWindows: const [],
+      gaps: gaps,
+      resolutions: gaps
+          .map(
+            (item) => resolver.resolve(
+              day: day,
+              gap: item,
+              isMatteoBusy: (_, _) => false,
+              isChiaraBusy: (_, _) => true,
+              supportNetworkStore: supportStore,
+              daySettingsStore: settings,
+              sandraWindows: const [],
+            ),
+          )
+          .toList(),
     );
     expect(result.countText, 'Ci sono 2 problemi da gestire oggi');
     expect(result.recommendations.map((model) => model.title), [

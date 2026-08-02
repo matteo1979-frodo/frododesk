@@ -80,7 +80,7 @@ import '../logic/calendar/builders/calendar_day_status_builder.dart';
 import '../logic/calendar/presenters/calendar_day_status_visual_presenter.dart';
 import '../logic/calendar/builders/visible_gap_details_builder.dart';
 import '../logic/calendar/builders/day_support_summaries_builder.dart';
-import '../logic/calendar/builders/alice_companion_for_gap_builder.dart';
+import '../logic/calendar/builders/coverage_gap_companion_resolver.dart';
 import '../logic/calendar/builders/gap_title_with_alice_state_builder.dart';
 import '../logic/calendar/builders/person_effective_status_builder.dart';
 import '../logic/calendar/builders/turn_event_conflict_visual_state_builder.dart';
@@ -189,8 +189,8 @@ class _CalendarioScreenStepAStabileState
   final AliceEventLogisticsBuilder _aliceEventLogisticsBuilder =
       const AliceEventLogisticsBuilder();
 
-  final AliceCompanionForGapBuilder _aliceCompanionForGapBuilder =
-      const AliceCompanionForGapBuilder();
+  final CoverageGapCompanionResolver _gapCompanionResolver =
+      const CoverageGapCompanionResolver();
 
   final GapTitleWithAliceStateBuilder _gapTitleWithAliceStateBuilder =
       const GapTitleWithAliceStateBuilder();
@@ -363,10 +363,9 @@ class _CalendarioScreenStepAStabileState
 
   CalendarDayCoverageInputs _coverageInputs(DateTime day) {
     final d0 = _onlyDate(day);
-    return CalendarDayCoverageInputResolver(coreStore: coreStore).resolve(
-      selectedDay: d0,
-      overrides: _getOverridesForDay(d0),
-    );
+    return CalendarDayCoverageInputResolver(
+      coreStore: coreStore,
+    ).resolve(selectedDay: d0, overrides: _getOverridesForDay(d0));
   }
 
   Future<void> _editEmergencyTimeRange({
@@ -980,7 +979,7 @@ class _CalendarioScreenStepAStabileState
     final start = gap.start;
     final end = gap.end;
 
-    final person = _whoCanBringAliceForGap(start: start, end: end);
+    final person = _companionForGap(gap);
 
     return coreStore.aliceCompanionStore.companionActionTextForExactRange(
       day: _selectedDay,
@@ -1240,84 +1239,20 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
-  AliceCompanionPerson _whoCanBringAliceForGap({
-    required TimeOfDay start,
-    required TimeOfDay end,
-  }) {
-    final day = _selectedDay;
-
-    final ov = _getOverridesForDay(day);
-
-    final matteoDisease = coreStore.diseasePeriodStore.getPeriodForDay(
-      'matteo',
-      _onlyDate(day),
+  CoverageGapCompanionResolution _resolveCompanions(CoverageGapDetail gap) {
+    return _gapCompanionResolver.resolve(
+      day: _selectedDay,
+      gap: gap,
+      isMatteoBusy: _engine.isMatteoBusyBetween,
+      isChiaraBusy: _engine.isChiaraBusyBetween,
+      supportNetworkStore: coreStore.supportNetworkStore,
+      daySettingsStore: daySettingsStore,
+      sandraWindows: _coverageSandraWindows(),
     );
+  }
 
-    final matteoIsInHolidayPeriod = coreStore.feriePeriodStore.isOnHoliday(
-      FeriePerson.matteo,
-      _onlyDate(day),
-    );
-
-    final matteoEffectiveStatus = _personEffectiveStatusBuilder.build(
-      manualOverride: ov.matteo,
-      diseasePeriod: matteoDisease,
-      isInHolidayPeriod: matteoIsInHolidayPeriod,
-    );
-
-    final chiaraDisease = coreStore.diseasePeriodStore.getPeriodForDay(
-      'chiara',
-      _onlyDate(day),
-    );
-
-    final chiaraIsInHolidayPeriod = coreStore.feriePeriodStore.isOnHoliday(
-      FeriePerson.chiara,
-      _onlyDate(day),
-    );
-
-    final chiaraEffectiveStatus = _personEffectiveStatusBuilder.build(
-      manualOverride: ov.chiara,
-      diseasePeriod: chiaraDisease,
-      isInHolidayPeriod: chiaraIsInHolidayPeriod,
-    );
-
-    final matteoSick = matteoEffectiveStatus.isSick;
-
-    final chiaraSick = chiaraEffectiveStatus.isSick;
-
-    final matteoPlan = _turns.turnPlanForPersonDay(
-      person: TurnPerson.matteo,
-      day: day,
-    );
-
-    final chiaraPlan = _turns.turnPlanForPersonDay(
-      person: TurnPerson.chiara,
-      day: day,
-    );
-
-    final events = coreStore.realEventStore
-        .eventsForDay(_onlyDate(day))
-        .where((e) => e.startTime != null && e.endTime != null)
-        .map(
-          (e) => AliceCompanionBusyEvent(
-            personKey: e.personKey,
-            start: e.startTime!,
-            end: e.endTime!,
-          ),
-        )
-        .toList();
-
-    return _aliceCompanionForGapBuilder.build(
-      day: day,
-      start: start,
-      end: end,
-      matteoSick: matteoSick,
-      chiaraSick: chiaraSick,
-      matteoWorkStart: matteoPlan.isOff ? null : matteoPlan.start,
-      matteoWorkEnd: matteoPlan.isOff ? null : matteoPlan.end,
-      chiaraWorkStart: chiaraPlan.isOff ? null : chiaraPlan.start,
-      chiaraWorkEnd: chiaraPlan.isOff ? null : chiaraPlan.end,
-      events: events,
-    );
+  AliceCompanionPerson _companionForGap(CoverageGapDetail gap) {
+    return _resolveCompanions(gap).suggestedAliceCompanion;
   }
 
   Widget _buildDayGapsBox(CoverageResultStepA cov) {
@@ -1633,10 +1568,7 @@ class _CalendarioScreenStepAStabileState
                           day: d0,
                           start: gap.start,
                           end: gap.end,
-                          person: _whoCanBringAliceForGap(
-                            start: gap.start,
-                            end: gap.end,
-                          ),
+                          person: _companionForGap(gap),
                         ),
                       );
 
@@ -4904,33 +4836,34 @@ class _CalendarioScreenStepAStabileState
   }
 
   Widget _buildCoverageGapRecommendationsPanel(CoverageResultStepA cov) {
+    final resolutions = cov.gapDetails
+        .map(_resolveCompanions)
+        .toList(growable: false);
     final model = _gapRecommendationViewModelBuilder.buildAll(
       day: _selectedDay,
       gaps: cov.gapDetails,
-      isMatteoBusy: _engine.isMatteoBusyBetween,
-      isChiaraBusy: _engine.isChiaraBusyBetween,
-      supportNetworkStore: coreStore.supportNetworkStore,
-      daySettingsStore: daySettingsStore,
-      sandraWindows: [
-        CoverageSandraWindow(
-          start: _engine.sandraCambioMattinaStart,
-          end: _engine.sandraCambioMattinaEnd,
-          active: _effSandraMattina(_selectedDay),
-        ),
-        CoverageSandraWindow(
-          start: _effectiveSandraPranzoStart(_selectedDay),
-          end: _engine.sandraPranzoEnd,
-          active: _effSandraPranzo(_selectedDay),
-        ),
-        CoverageSandraWindow(
-          start: _engine.sandraSeraStart,
-          end: _engine.sandraSeraEnd,
-          active: _effSandraSera(_selectedDay),
-        ),
-      ],
+      resolutions: resolutions,
     );
     return CoverageGapRecommendationsPanel(model: model);
   }
+
+  List<CoverageSandraWindow> _coverageSandraWindows() => [
+    CoverageSandraWindow(
+      start: _engine.sandraCambioMattinaStart,
+      end: _engine.sandraCambioMattinaEnd,
+      active: _effSandraMattina(_selectedDay),
+    ),
+    CoverageSandraWindow(
+      start: _effectiveSandraPranzoStart(_selectedDay),
+      end: _engine.sandraPranzoEnd,
+      active: _effSandraPranzo(_selectedDay),
+    ),
+    CoverageSandraWindow(
+      start: _engine.sandraSeraStart,
+      end: _engine.sandraSeraEnd,
+      active: _effSandraSera(_selectedDay),
+    ),
+  ];
 
   void _openSchoolPanel() {
     final activeSchoolPeriod = coreStore.schoolStore.activePeriodForDay(
