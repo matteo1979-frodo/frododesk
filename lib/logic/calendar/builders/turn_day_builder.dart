@@ -5,41 +5,19 @@ import '../../turn_engine.dart';
 import '../view_models/turn_day_view_model.dart';
 import 'turn_event_conflict_builder.dart';
 import 'turn_person_status_builder.dart';
+import 'turn_presentation_state_builder.dart';
+import '../models/turn_presentation_state.dart';
 
 class TurnDayBuilder {
   final TurnEventConflictBuilder conflictBuilder;
   final TurnPersonStatusBuilder statusBuilder;
+  final TurnPresentationStateBuilder presentationBuilder;
 
   const TurnDayBuilder({
     this.conflictBuilder = const TurnEventConflictBuilder(),
     this.statusBuilder = const TurnPersonStatusBuilder(),
+    this.presentationBuilder = const TurnPresentationStateBuilder(),
   });
-
-  TurnSourceKind _sourceKindFromText(String? sourceText) {
-    if (sourceText == null) {
-      return TurnSourceKind.standard;
-    }
-
-    final lower = sourceText.toLowerCase();
-
-    if (lower.contains('solo oggi')) {
-      return TurnSourceKind.dailyOverride;
-    }
-
-    if (lower.contains('periodo')) {
-      return TurnSourceKind.periodOverride;
-    }
-
-    if (lower.contains('nuova rotazione')) {
-      return TurnSourceKind.rotationOverride;
-    }
-
-    if (lower.contains('quarta squadra')) {
-      return TurnSourceKind.fourthShift;
-    }
-
-    return TurnSourceKind.standard;
-  }
 
   List<RealEvent> _eventsForPerson({
     required String personKey,
@@ -99,6 +77,9 @@ class TurnDayBuilder {
     required DiseasePeriod? diseasePeriod,
     required String? turnOverrideStatusText,
     required String? sourceText,
+    required TurnSourceKind sourceKind,
+    required bool isManualShiftChange,
+    required DateTime observedAt,
     required bool isOnHoliday,
     required bool isSick,
     required bool isBedSick,
@@ -128,17 +109,34 @@ class TurnDayBuilder {
       allDayEvents: allDayEvents,
     );
 
+    final presentation = presentationBuilder.build(
+      day: day,
+      observedAt: observedAt,
+      plan: plan,
+      manualOverride: manualOverride,
+      diseasePeriod: diseasePeriod,
+      isOnHoliday: isOnHoliday,
+      isSick: isSick,
+      isBedSick: isBedSick,
+      isManualShiftChange: isManualShiftChange,
+      statusText: statusText,
+      sourceKind: sourceKind,
+      sourceText: sourceText,
+      hasConflict: conflicts.isNotEmpty,
+    );
+
     return TurnPersonDayViewModel(
       person: person,
       personKey: personKey,
       displayName: displayName,
       plan: plan,
       statusText: statusText,
-      sourceKind: _sourceKindFromText(sourceText),
+      sourceKind: sourceKind,
       sourceText: sourceText,
       isOnHoliday: isOnHoliday,
       isSick: isSick,
       isBedSick: isBedSick,
+      presentation: presentation,
       events: List<RealEvent>.unmodifiable(personEvents),
       conflicts: List.unmodifiable(conflicts),
     );

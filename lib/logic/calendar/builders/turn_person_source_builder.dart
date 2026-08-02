@@ -1,15 +1,19 @@
-
 import '../../../models/turn_override.dart';
 import '../../../utils/calendario_formatters.dart';
 import '../../core_store.dart';
+import '../models/turn_presentation_state.dart';
 
 class TurnPersonSourceResult {
   final String? turnOverrideStatusText;
   final String? sourceText;
+  final TurnSourceKind sourceKind;
+  final bool isManualShiftChange;
 
   const TurnPersonSourceResult({
     required this.turnOverrideStatusText,
     required this.sourceText,
+    required this.sourceKind,
+    required this.isManualShiftChange,
   });
 }
 
@@ -27,6 +31,8 @@ class TurnPersonSourceBuilder {
       return const TurnPersonSourceResult(
         turnOverrideStatusText: null,
         sourceText: null,
+        sourceKind: TurnSourceKind.standard,
+        isManualShiftChange: false,
       );
     }
 
@@ -42,6 +48,8 @@ class TurnPersonSourceBuilder {
             '${_turnOverrideShiftLabel(daily.shift!)} '
             '(solo oggi)',
         sourceText: 'Cambio turno (solo oggi)',
+        sourceKind: TurnSourceKind.dailyOverride,
+        isManualShiftChange: true,
       );
     }
 
@@ -61,6 +69,8 @@ class TurnPersonSourceBuilder {
       return TurnPersonSourceResult(
         turnOverrideStatusText: statusText,
         sourceText: 'Cambio turno (periodo)',
+        sourceKind: TurnSourceKind.periodOverride,
+        isManualShiftChange: true,
       );
     }
 
@@ -73,6 +83,8 @@ class TurnPersonSourceBuilder {
       return const TurnPersonSourceResult(
         turnOverrideStatusText: null,
         sourceText: 'Nuova rotazione',
+        sourceKind: TurnSourceKind.rotationOverride,
+        isManualShiftChange: false,
       );
     }
 
@@ -85,12 +97,16 @@ class TurnPersonSourceBuilder {
       return const TurnPersonSourceResult(
         turnOverrideStatusText: null,
         sourceText: 'Quarta squadra',
+        sourceKind: TurnSourceKind.fourthShift,
+        isManualShiftChange: false,
       );
     }
 
     return const TurnPersonSourceResult(
       turnOverrideStatusText: null,
       sourceText: null,
+      sourceKind: TurnSourceKind.standard,
+      isManualShiftChange: false,
     );
   }
 

@@ -1,14 +1,7 @@
 import '../../turn_engine.dart';
 import '../../../models/real_event.dart';
 import '../models/turn_event_conflict.dart';
-
-enum TurnSourceKind {
-  standard,
-  dailyOverride,
-  periodOverride,
-  rotationOverride,
-  fourthShift,
-}
+import '../models/turn_presentation_state.dart';
 
 class TurnPersonDayViewModel {
   final TurnPerson person;
@@ -24,6 +17,7 @@ class TurnPersonDayViewModel {
   final bool isOnHoliday;
   final bool isSick;
   final bool isBedSick;
+  final TurnPresentationState presentation;
 
   final List<RealEvent> events;
   final List<TurnEventConflictResolution> conflicts;
@@ -39,6 +33,7 @@ class TurnPersonDayViewModel {
     required this.isOnHoliday,
     required this.isSick,
     required this.isBedSick,
+    required this.presentation,
     required this.events,
     required this.conflicts,
   });

@@ -46,6 +46,7 @@ import '../logic/calendar/models/family_now_snapshot.dart';
 import '../logic/calendar/models/coverage_result_step_a.dart';
 import '../logic/calendar/models/day_gap_visual_state.dart';
 import '../logic/calendar/models/turn_event_conflict.dart';
+import '../logic/calendar/models/turn_presentation_state.dart';
 import '../widgets/calendar/sandra_coverage_card.dart';
 import '../widgets/calendar/alice_state_banner.dart';
 import '../widgets/calendar/alice_events_section.dart';
@@ -70,6 +71,7 @@ import '../logic/calendar/builders/alice_day_context_builder.dart';
 import '../logic/calendar/builders/alice_now_details_builder.dart';
 import '../widgets/calendar/alice_now_dialog.dart';
 import '../logic/calendar/builders/turn_day_builder.dart';
+import '../logic/calendar/builders/turn_presentation_state_builder.dart';
 import '../logic/calendar/builders/turn_person_source_builder.dart';
 import '../logic/calendar/builders/coverage_support_network_builder.dart';
 import '../logic/calendar/builders/alice_logistics_status_builder.dart';
@@ -174,6 +176,8 @@ class _CalendarioScreenStepAStabileState
 
   final TurnPersonSourceBuilder _turnPersonSourceBuilder =
       const TurnPersonSourceBuilder();
+  final TurnPresentationStateBuilder _turnPresentationStateBuilder =
+      const TurnPresentationStateBuilder();
 
   final CoverageCriticalityViewModelBuilder _criticalityViewModelBuilder =
       const CoverageCriticalityViewModelBuilder();
@@ -996,28 +1000,29 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
-  String _turnPlanSummary(TurnPlan plan) {
-    final label = _turnLabel(plan.type);
-    if (plan.isOff) return "OFF";
-    return "$label ${fmtTimeOfDay(plan.start)} ${fmtTimeOfDay(plan.end)}";
+  Color _turnSourceColor(TurnSourceTone tone) {
+    switch (tone) {
+      case TurnSourceTone.fourthShift:
+        return Colors.orange;
+      case TurnSourceTone.manualOverride:
+        return Colors.amber.shade800;
+      case TurnSourceTone.rotationOverride:
+        return Colors.deepPurple;
+      case TurnSourceTone.standard:
+        return Colors.blueGrey;
+    }
   }
 
-  Color _turnSourceColor(String sourceText) {
-    final lower = sourceText.toLowerCase();
-
-    if (lower.contains('quarta squadra')) {
-      return Colors.orange;
+  Color _turnStatusColor(TurnPresentationTone tone) {
+    switch (tone) {
+      case TurnPresentationTone.sickness:
+        return Colors.red;
+      case TurnPresentationTone.manualOverride:
+        return Colors.deepPurple;
+      case TurnPresentationTone.standard:
+      case TurnPresentationTone.rest:
+        return Theme.of(context).colorScheme.primary;
     }
-
-    if (lower.contains('cambio turno')) {
-      return Colors.amber.shade800;
-    }
-
-    if (lower.contains('nuova rotazione')) {
-      return Colors.deepPurple;
-    }
-
-    return Colors.blueGrey;
   }
 
   List<RealEvent> _eventsForPersonOnDay({
@@ -2818,11 +2823,14 @@ class _CalendarioScreenStepAStabileState
       displayName: 'Matteo',
       day: _selectedDay,
       plan: m,
-      turnSummary: _turnPlanSummary(m),
+      turnSummary: _turnPresentationStateBuilder.summaryFor(m),
       manualOverride: ov.matteo,
       diseasePeriod: matteoDisease,
       turnOverrideStatusText: matteoSourceResult.turnOverrideStatusText,
       sourceText: matteoSourceResult.sourceText,
+      sourceKind: matteoSourceResult.sourceKind,
+      isManualShiftChange: matteoSourceResult.isManualShiftChange,
+      observedAt: observedAt,
       isOnHoliday: matteoEffectiveStatus.isOnHoliday,
       isSick: matteoIsSick,
       isBedSick: matteoIsBedSick,
@@ -2835,11 +2843,14 @@ class _CalendarioScreenStepAStabileState
       displayName: 'Chiara',
       day: _selectedDay,
       plan: c,
-      turnSummary: _turnPlanSummary(c),
+      turnSummary: _turnPresentationStateBuilder.summaryFor(c),
       manualOverride: ov.chiara,
       diseasePeriod: chiaraDisease,
       turnOverrideStatusText: chiaraSourceResult.turnOverrideStatusText,
       sourceText: chiaraSourceResult.sourceText,
+      sourceKind: chiaraSourceResult.sourceKind,
+      isManualShiftChange: chiaraSourceResult.isManualShiftChange,
+      observedAt: observedAt,
       isOnHoliday: chiaraEffectiveStatus.isOnHoliday,
       isSick: chiaraIsSick,
       isBedSick: chiaraIsBedSick,
@@ -2889,20 +2900,16 @@ class _CalendarioScreenStepAStabileState
           ],
           _turnRow(
             turnDay.matteo.displayName,
-            turnDay.matteo.plan,
+            turnDay.matteo.presentation,
             observedAt: observedAt,
-            statusText: turnDay.matteo.statusText,
-            sourceText: turnDay.matteo.sourceText,
             events: turnDay.matteo.events,
             conflicts: turnDay.matteo.conflicts,
           ),
           const SizedBox(height: 10),
           _turnRow(
             turnDay.chiara.displayName,
-            turnDay.chiara.plan,
+            turnDay.chiara.presentation,
             observedAt: observedAt,
-            statusText: turnDay.chiara.statusText,
-            sourceText: turnDay.chiara.sourceText,
             events: turnDay.chiara.events,
             conflicts: turnDay.chiara.conflicts,
           ),
@@ -3458,30 +3465,16 @@ class _CalendarioScreenStepAStabileState
 
   Widget _turnRow(
     String name,
-    TurnPlan p, {
+    TurnPresentationState presentation, {
     required DateTime observedAt,
-    String? statusText,
-    String? sourceText,
     List<RealEvent> events = const [],
     List<TurnEventConflictResolution> conflicts = const [],
   }) {
-    final label = _turnLabel(p.type);
     final visibleEvents = _turnUiObservationFilter.visibleEvents(
       events: events,
       selectedDay: _selectedDay,
       observedAt: observedAt,
     );
-    final time = p.isOff
-        ? "OFF"
-        : "${fmtTimeOfDay(p.start)}–${fmtTimeOfDay(p.end)}";
-
-    final isMalattiaALetto =
-        statusText != null &&
-        statusText.toLowerCase().contains('malattia a letto');
-
-    final isTurnChanged =
-        statusText != null &&
-        statusText.toLowerCase().contains('turno cambiato manualmente');
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -3504,27 +3497,25 @@ class _CalendarioScreenStepAStabileState
                 runSpacing: 4,
                 children: [
                   Text(
-                    "$label • $time",
+                    "${presentation.turnLabel} • ${presentation.timeLabel}",
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
-                  if (statusText != null && statusText.isNotEmpty)
+                  if (presentation.statusText != null &&
+                      presentation.statusText!.isNotEmpty)
                     Text(
-                      "• Stato: $statusText",
+                      "• Stato: ${presentation.statusText}",
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: isMalattiaALetto
-                            ? Colors.red
-                            : isTurnChanged
-                            ? Colors.deepPurple
-                            : Theme.of(context).colorScheme.primary,
+                        color: _turnStatusColor(presentation.statusTone),
                       ),
                     ),
-                  if (sourceText != null && sourceText.isNotEmpty)
+                  if (presentation.sourceText != null &&
+                      presentation.sourceText!.isNotEmpty)
                     Text(
-                      "• $sourceText",
+                      "• ${presentation.sourceText}",
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: _turnSourceColor(sourceText),
+                        color: _turnSourceColor(presentation.sourceTone),
                       ),
                     ),
                 ],
@@ -3568,7 +3559,7 @@ class _CalendarioScreenStepAStabileState
                 if (conflicts.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(
-                    isMalattiaALetto
+                    presentation.isBedSick
                         ? "⚠ Conflitto con stato reale"
                         : "⚠ Conflitto con turno",
                     style: TextStyle(
@@ -3673,19 +3664,6 @@ class _CalendarioScreenStepAStabileState
         ),
       ),
     );
-  }
-
-  String _turnLabel(TurnType t) {
-    switch (t) {
-      case TurnType.mattina:
-        return "M";
-      case TurnType.pomeriggio:
-        return "P";
-      case TurnType.notte:
-        return "N";
-      case TurnType.off:
-        return "OFF";
-    }
   }
 
   Widget _cardOverrideStepB(DayOverrides ovSelected) {
