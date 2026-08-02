@@ -6,6 +6,7 @@ import 'package:frododesk/logic/calendar/builders/alice_school_day_view_model_bu
 import 'package:frododesk/logic/calendar/view_models/alice_school_day_view_model.dart';
 import 'package:frododesk/logic/core_store.dart';
 import 'package:frododesk/models/alice_special_event.dart';
+import 'package:frododesk/models/real_event.dart';
 import 'package:frododesk/models/school_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -92,12 +93,36 @@ void main() {
     }
   });
 
-  test('giorno senza scuola è presentato come Alice a casa', () {
+  test('giorno senza attività presenta Alice a casa tutto il giorno', () {
     final day = DateTime(2026, 7, 26);
-    expect(build(storeFor(day), day).stateLabel, 'A casa');
+    final model = build(storeFor(day), day);
+
+    expect(model.stateLabel, 'A casa');
+    expect(model.schoolHoursLabel, 'Orario: Tutto il giorno');
   });
 
-  test('centro estivo mantiene orari e condizione card speciale', () {
+  test('evento reale futuro impedisce Tutto il giorno', () {
+    final day = DateTime(2026, 7, 26);
+    final store = storeFor(day);
+    store.realEventStore.addEvent(
+      RealEvent(
+        id: 'alice-evening',
+        startDate: day,
+        endDate: day,
+        title: 'Festa',
+        startTime: const TimeOfDay(hour: 18, minute: 0),
+        endTime: const TimeOfDay(hour: 20, minute: 0),
+        personKey: 'alice',
+      ),
+    );
+
+    final model = build(store, day);
+
+    expect(model.stateLabel, 'A casa');
+    expect(model.schoolHoursLabel, isNot('Orario: Tutto il giorno'));
+  });
+
+  test('centro estivo usa il proprio timing anche nella riga Orario', () {
     final day = DateTime(2026, 7, 28);
     final store = storeFor(day);
     store.aliceEventStore.addEvent(
@@ -105,17 +130,19 @@ void main() {
         start: day,
         end: day,
         type: AliceEventType.summerCamp,
-        summerCampStart: const TimeOfDay(hour: 8, minute: 15),
-        summerCampEnd: const TimeOfDay(hour: 16, minute: 20),
+        summerCampStart: const TimeOfDay(hour: 8, minute: 30),
+        summerCampEnd: const TimeOfDay(hour: 16, minute: 30),
       ),
     );
 
     final model = build(store, day);
 
     expect(model.stateLabel, 'Centro estivo');
-    expect(model.schoolHoursLabel, 'Orario: 08:15–16:25');
-    expect(model.schoolEntryAt, const TimeOfDay(hour: 8, minute: 15));
-    expect(model.schoolExitAt, const TimeOfDay(hour: 16, minute: 20));
+    expect(model.schoolHoursLabel, 'Orario: 08:30–16:30');
+    expect(model.schoolHoursLabel, isNot(contains('16:25')));
+    expect(model.schoolEntryAt, const TimeOfDay(hour: 8, minute: 30));
+    expect(model.schoolExitAt, const TimeOfDay(hour: 16, minute: 30));
+    expect(model.schoolExitWindowEnd, const TimeOfDay(hour: 16, minute: 50));
     expect(model.showSummerCampSpecialCard, isTrue);
   });
 

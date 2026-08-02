@@ -60,9 +60,14 @@ class AliceSchoolDayViewModelBuilder {
         .toList(growable: false);
 
     final earlyExit = timing.earlySchoolExitAt;
-    final entry = period?.summerCampStart ?? timing.schoolEntryAt;
-    final displayedEnd = earlyExit ?? timing.schoolExitAt;
-    final exit = period?.summerCampEnd ?? timing.schoolExitAt;
+    final isSummerCamp = period?.type == AliceEventType.summerCamp;
+    final entry = isSummerCamp
+        ? period?.summerCampStart ?? const TimeOfDay(hour: 8, minute: 30)
+        : timing.schoolEntryAt;
+    final displayedEnd = isSummerCamp
+        ? period?.summerCampEnd ?? const TimeOfDay(hour: 16, minute: 30)
+        : earlyExit ?? timing.schoolExitAt;
+    final exit = isSummerCamp ? displayedEnd : timing.schoolExitAt;
     final exitWindowEnd = TimeOfDay(
       hour: ((_minutes(exit) + 20) ~/ 60) % 24,
       minute: (_minutes(exit) + 20) % 60,
@@ -80,6 +85,16 @@ class AliceSchoolDayViewModelBuilder {
     final visible = eventModels
         .take(AliceSchoolDayViewModel.maxVisibleEvents)
         .toList(growable: false);
+    final hasAliceRealEvent = coreStore.realEventStore
+        .eventsForDay(normalizedDay)
+        .any((event) => event.involvesPerson('alice'));
+    final isEntireDayAtHome =
+        !schoolActive &&
+        period?.type != AliceEventType.schoolNormal &&
+        !isSummerCamp &&
+        !(specialCamp?.enabled ?? false) &&
+        eventModels.isEmpty &&
+        !hasAliceRealEvent;
 
     return AliceSchoolDayViewModel(
       title: 'Alice / Scuola',
@@ -92,8 +107,9 @@ class AliceSchoolDayViewModelBuilder {
           : null,
       periodColor: state.color,
       periodIcon: state.periodIcon,
-      schoolHoursLabel:
-          'Orario: ${fmtTimeOfDay(entry)}–${fmtTimeOfDay(displayedEnd)}',
+      schoolHoursLabel: isEntireDayAtHome
+          ? 'Orario: Tutto il giorno'
+          : 'Orario: ${fmtTimeOfDay(entry)}–${fmtTimeOfDay(displayedEnd)}',
       hasEarlySchoolExit: earlyExit != null,
       hasEventConflict: eventModels.any((event) => event.tile.isConflict),
       events: eventModels,
