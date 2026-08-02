@@ -84,6 +84,7 @@ import '../logic/calendar/builders/coverage_gap_companion_resolver.dart';
 import '../logic/calendar/builders/gap_title_with_alice_state_builder.dart';
 import '../logic/calendar/builders/person_effective_status_builder.dart';
 import '../logic/calendar/builders/turn_event_conflict_visual_state_builder.dart';
+import '../logic/calendar/builders/turn_ui_observation_filter.dart';
 import '../logic/calendar/builders/family_day_overview_snapshot_builder.dart';
 import '../logic/calendar/models/family_day_overview_snapshot.dart';
 import '../logic/calendar/builders/family_day_overview_view_model_builder.dart';
@@ -97,6 +98,7 @@ import '../widgets/calendar/coverage_gap_recommendations_panel.dart';
 import '../logic/calendar/builders/calendar_day_coverage_coordinator.dart';
 import '../logic/calendar/builders/calendar_day_coverage_input_resolver.dart';
 import '../logic/calendar/builders/alice_home_risk_view_model_builder.dart';
+import '../logic/calendar/calendar_day_navigation.dart';
 import '../logic/calendar/view_models/alice_home_risk_view_model.dart';
 import '../logic/calendar/builders/alice_school_day_view_model_builder.dart';
 import '../logic/adult_logistics_availability_resolver.dart';
@@ -201,6 +203,11 @@ class _CalendarioScreenStepAStabileState
   final TurnEventConflictVisualStateBuilder
   _turnEventConflictVisualStateBuilder =
       const TurnEventConflictVisualStateBuilder();
+
+  final TurnUiObservationFilter _turnUiObservationFilter =
+      const TurnUiObservationFilter();
+
+  final CalendarDayNavigation _dayNavigation = const CalendarDayNavigation();
 
   final AliceEventLogisticsTextBuilder _aliceEventLogisticsTextBuilder =
       const AliceEventLogisticsTextBuilder();
@@ -935,14 +942,14 @@ class _CalendarioScreenStepAStabileState
 
   void _prevDay() {
     setState(() {
-      _selectedDay = _onlyDate(_selectedDay.subtract(const Duration(days: 1)));
+      _selectedDay = _dayNavigation.previous(_selectedDay);
       _syncWeekWithSelectedDay();
     });
   }
 
   void _nextDay() {
     setState(() {
-      _selectedDay = _onlyDate(_selectedDay.add(const Duration(days: 1)));
+      _selectedDay = _dayNavigation.next(_selectedDay);
       _syncWeekWithSelectedDay();
     });
   }
@@ -1744,7 +1751,10 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
-  Widget _buildRealitySection(CoverageResultStepA cov) {
+  Widget _buildRealitySection(
+    CoverageResultStepA cov, {
+    required DateTime observedAt,
+  }) {
     final criticalities = _criticalityViewModels(cov);
     return _buildSectionBox(
       title: "REALTÀ DEL GIORNO",
@@ -1765,7 +1775,10 @@ class _CalendarioScreenStepAStabileState
           if (cov.gapDetails.isNotEmpty)
             _buildCoverageGapRecommendationsPanel(cov),
           const SizedBox(height: 12),
-          Container(key: _turniKey, child: _cardTurni()),
+          Container(
+            key: _turniKey,
+            child: _cardTurni(observedAt: observedAt),
+          ),
           const SizedBox(height: 12),
           Container(
             key: _eventiKey,
@@ -1884,6 +1897,7 @@ class _CalendarioScreenStepAStabileState
 
   Widget _buildDesktopThreeColumns({
     required CoverageResultStepA cov,
+    required DateTime observedAt,
     required AliceHomeRiskViewModel aliceHomeRisk,
     required bool showSummerCampSpecialCard,
     required bool isEmergency,
@@ -1891,7 +1905,10 @@ class _CalendarioScreenStepAStabileState
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(flex: 5, child: _buildRealitySection(cov)),
+        Expanded(
+          flex: 5,
+          child: _buildRealitySection(cov, observedAt: observedAt),
+        ),
         const SizedBox(width: 12),
         Expanded(
           flex: 4,
@@ -1914,6 +1931,7 @@ class _CalendarioScreenStepAStabileState
 
   Widget _buildTabletLayout({
     required CoverageResultStepA cov,
+    required DateTime observedAt,
     required AliceHomeRiskViewModel aliceHomeRisk,
     required bool showSummerCampSpecialCard,
     required bool isEmergency,
@@ -1921,7 +1939,7 @@ class _CalendarioScreenStepAStabileState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildRealitySection(cov),
+        _buildRealitySection(cov, observedAt: observedAt),
         const SizedBox(height: 12),
         _buildAliceSection(
           showSummerCampSpecialCard: showSummerCampSpecialCard,
@@ -1938,6 +1956,7 @@ class _CalendarioScreenStepAStabileState
 
   Widget _buildMobileLayout({
     required CoverageResultStepA cov,
+    required DateTime observedAt,
     required AliceHomeRiskViewModel aliceHomeRisk,
     required bool showSummerCampSpecialCard,
     required bool isEmergency,
@@ -1945,7 +1964,7 @@ class _CalendarioScreenStepAStabileState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildRealitySection(cov),
+        _buildRealitySection(cov, observedAt: observedAt),
         const SizedBox(height: 12),
         _buildAliceSection(
           showSummerCampSpecialCard: showSummerCampSpecialCard,
@@ -1962,6 +1981,7 @@ class _CalendarioScreenStepAStabileState
 
   Widget _buildMainLayout({
     required CoverageResultStepA cov,
+    required DateTime observedAt,
     required AliceHomeRiskViewModel aliceHomeRisk,
     required bool showSummerCampSpecialCard,
     required bool isEmergency,
@@ -1973,6 +1993,7 @@ class _CalendarioScreenStepAStabileState
         if (w >= 1200) {
           return _buildDesktopThreeColumns(
             cov: cov,
+            observedAt: observedAt,
             aliceHomeRisk: aliceHomeRisk,
             showSummerCampSpecialCard: showSummerCampSpecialCard,
             isEmergency: isEmergency,
@@ -1982,6 +2003,7 @@ class _CalendarioScreenStepAStabileState
         if (w >= 800) {
           return _buildTabletLayout(
             cov: cov,
+            observedAt: observedAt,
             aliceHomeRisk: aliceHomeRisk,
             showSummerCampSpecialCard: showSummerCampSpecialCard,
             isEmergency: isEmergency,
@@ -1990,6 +2012,7 @@ class _CalendarioScreenStepAStabileState
 
         return _buildMobileLayout(
           cov: cov,
+          observedAt: observedAt,
           aliceHomeRisk: aliceHomeRisk,
           showSummerCampSpecialCard: showSummerCampSpecialCard,
           isEmergency: isEmergency,
@@ -2047,11 +2070,11 @@ class _CalendarioScreenStepAStabileState
 
   @override
   Widget build(BuildContext context) {
-    final realNow = DateTime.now();
+    final observedAt = DateTime.now();
 
     final temporalMode = _temporalModeFor(
       selectedDay: _selectedDay,
-      realNow: realNow,
+      realNow: observedAt,
     );
 
     final isNowMode = temporalMode == CalendarTemporalMode.now;
@@ -2070,14 +2093,14 @@ class _CalendarioScreenStepAStabileState
         : null;
 
     final familyNowSnapshot = isNowMode
-        ? _buildFamilyNowSnapshot(observedAt: realNow)
+        ? _buildFamilyNowSnapshot(observedAt: observedAt)
         : null;
 
-    final cov = _buildDayCoverage(day: _selectedDay, observedAt: realNow);
+    final cov = _buildDayCoverage(day: _selectedDay, observedAt: observedAt);
     final aliceHomeRisk = const AliceHomeRiskViewModelBuilder().build(
       gapDetails: cov.gapDetails,
       selectedDay: _selectedDay,
-      observedAt: realNow,
+      observedAt: observedAt,
     );
     final isEmergency = _isEmergencyActive();
     final showSummerCampSpecialCard = AliceSchoolDayViewModelBuilder(coreStore)
@@ -2246,6 +2269,7 @@ class _CalendarioScreenStepAStabileState
             const SizedBox(height: 12),
             _buildMainLayout(
               cov: cov,
+              observedAt: observedAt,
               aliceHomeRisk: aliceHomeRisk,
               showSummerCampSpecialCard: showSummerCampSpecialCard,
               isEmergency: isEmergency,
@@ -2718,7 +2742,7 @@ class _CalendarioScreenStepAStabileState
     );
   }
 
-  Widget _cardTurni() {
+  Widget _cardTurni({required DateTime observedAt}) {
     final m = _turns.turnPlanForPersonDay(
       person: TurnPerson.matteo,
       day: _selectedDay,
@@ -2846,6 +2870,7 @@ class _CalendarioScreenStepAStabileState
               personName: turnDay.matteo.displayName,
               personKey: turnDay.matteo.personKey,
               conflicts: turnDay.matteo.conflicts,
+              observedAt: observedAt,
             ),
             const SizedBox(height: 12),
           ],
@@ -2854,6 +2879,7 @@ class _CalendarioScreenStepAStabileState
               personName: turnDay.chiara.displayName,
               personKey: turnDay.chiara.personKey,
               conflicts: turnDay.chiara.conflicts,
+              observedAt: observedAt,
             ),
             const SizedBox(height: 12),
           ],
@@ -2864,6 +2890,7 @@ class _CalendarioScreenStepAStabileState
           _turnRow(
             turnDay.matteo.displayName,
             turnDay.matteo.plan,
+            observedAt: observedAt,
             statusText: turnDay.matteo.statusText,
             sourceText: turnDay.matteo.sourceText,
             events: turnDay.matteo.events,
@@ -2873,6 +2900,7 @@ class _CalendarioScreenStepAStabileState
           _turnRow(
             turnDay.chiara.displayName,
             turnDay.chiara.plan,
+            observedAt: observedAt,
             statusText: turnDay.chiara.statusText,
             sourceText: turnDay.chiara.sourceText,
             events: turnDay.chiara.events,
@@ -3272,6 +3300,7 @@ class _CalendarioScreenStepAStabileState
     required String personName,
     required String personKey,
     required List<TurnEventConflictResolution> conflicts,
+    required DateTime observedAt,
   }) {
     final override = overrideStore.getForDay(_selectedDay);
 
@@ -3301,11 +3330,9 @@ class _CalendarioScreenStepAStabileState
 
     final isBedSick = effectiveStatus.isBedSick;
 
-    final now = DateTime.now();
-
     final visibleConflicts = conflicts.visibleAt(
       selectedDay: _selectedDay,
-      now: now,
+      now: observedAt,
     );
 
     if (visibleConflicts.isEmpty) {
@@ -3432,30 +3459,18 @@ class _CalendarioScreenStepAStabileState
   Widget _turnRow(
     String name,
     TurnPlan p, {
+    required DateTime observedAt,
     String? statusText,
     String? sourceText,
     List<RealEvent> events = const [],
     List<TurnEventConflictResolution> conflicts = const [],
   }) {
     final label = _turnLabel(p.type);
-    final now = DateTime.now();
-    final selectedIsToday = _onlyDate(_selectedDay) == _onlyDate(now);
-
-    final visibleEvents = events.where((e) {
-      if (!selectedIsToday) return true;
-
-      if (e.endTime == null) return true;
-
-      final end = DateTime(
-        _selectedDay.year,
-        _selectedDay.month,
-        _selectedDay.day,
-        e.endTime!.hour,
-        e.endTime!.minute,
-      );
-
-      return end.isAfter(now);
-    }).toList();
+    final visibleEvents = _turnUiObservationFilter.visibleEvents(
+      events: events,
+      selectedDay: _selectedDay,
+      observedAt: observedAt,
+    );
     final time = p.isOff
         ? "OFF"
         : "${fmtTimeOfDay(p.start)}–${fmtTimeOfDay(p.end)}";
