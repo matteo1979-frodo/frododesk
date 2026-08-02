@@ -53,6 +53,7 @@ class CalendarDayCoverageInputs {
   final bool serveSandraMattina;
   final bool serveSandraPranzo;
   final bool serveSandraSera;
+  final TimeOfDay sandraLunchStart;
 
   const CalendarDayCoverageInputs({
     required this.overrides,
@@ -67,6 +68,7 @@ class CalendarDayCoverageInputs {
     required this.serveSandraMattina,
     required this.serveSandraPranzo,
     required this.serveSandraSera,
+    this.sandraLunchStart = const TimeOfDay(hour: 13, minute: 0),
   });
 }
 
