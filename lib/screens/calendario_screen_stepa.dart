@@ -95,7 +95,6 @@ import '../logic/calendar/builders/coverage_criticality_view_model_builder.dart'
 import '../logic/calendar/view_models/coverage_criticality_view_model.dart';
 import '../widgets/calendar/coverage_criticalities_panel.dart';
 import '../logic/calendar/builders/coverage_gap_recommendation_view_model_builder.dart';
-import '../logic/calendar/view_models/coverage_gap_recommendation_view_model.dart';
 import '../widgets/calendar/coverage_gap_recommendations_panel.dart';
 import '../logic/calendar/builders/calendar_day_coverage_coordinator.dart';
 import '../logic/calendar/builders/calendar_day_coverage_input_resolver.dart';
@@ -289,15 +288,6 @@ class _CalendarioScreenStepAStabileState
       coreStore,
     ).read(day).earlySchoolExitAt;
   }
-
-  bool _effSandraMattina(DateTime day) =>
-      daySettingsStore.sandraMattinaForDay(day) ?? false;
-
-  bool _effSandraPranzo(DateTime day) =>
-      daySettingsStore.sandraPranzoForDay(day) ?? false;
-
-  bool _effSandraSera(DateTime day) =>
-      daySettingsStore.sandraSeraForDay(day) ?? false;
 
   CoverageSandraDecision _sandraDecisionForDay(DateTime day) {
     final inputs = _coverageInputs(day);
@@ -1252,14 +1242,13 @@ class _CalendarioScreenStepAStabileState
   }
 
   CoverageGapCompanionResolution _resolveCompanions(CoverageGapDetail gap) {
+    final availability = _coverageInputs(_selectedDay).logisticsAvailability;
     return _gapCompanionResolver.resolve(
       day: _selectedDay,
       gap: gap,
       isMatteoBusy: _engine.isMatteoBusyBetween,
       isChiaraBusy: _engine.isChiaraBusyBetween,
-      supportNetworkStore: coreStore.supportNetworkStore,
-      daySettingsStore: daySettingsStore,
-      sandraWindows: _coverageSandraWindows(),
+      availability: availability,
     );
   }
 
@@ -1409,7 +1398,11 @@ class _CalendarioScreenStepAStabileState
             ),
             if (visual.state == DayGapVisualState.coveredNeed) ...[
               const SizedBox(height: 10),
-              if (sandraDecision.serveSandraMattina && _effSandraMattina(d0))
+              if (sandraDecision.serveSandraMattina &&
+                  coverageInputs
+                      .logisticsAvailability
+                      .sandraWindows[0]
+                      .available)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
@@ -1417,7 +1410,11 @@ class _CalendarioScreenStepAStabileState
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
-              if (sandraDecision.serveSandraPranzo && _effSandraPranzo(d0))
+              if (sandraDecision.serveSandraPranzo &&
+                  coverageInputs
+                      .logisticsAvailability
+                      .sandraWindows[1]
+                      .available)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
@@ -1425,7 +1422,11 @@ class _CalendarioScreenStepAStabileState
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),
-              if (sandraDecision.serveSandraSera && _effSandraSera(d0))
+              if (sandraDecision.serveSandraSera &&
+                  coverageInputs
+                      .logisticsAvailability
+                      .sandraWindows[2]
+                      .available)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
@@ -1516,9 +1517,11 @@ class _CalendarioScreenStepAStabileState
                         _engine.isMatteoBusyBetween(start, end),
                     isChiaraBusy: (start, end) =>
                         _engine.isChiaraBusyBetween(start, end),
-                    hasEnabledSupport: coreStore.supportNetworkStore.people.any(
-                      (p) => p.enabled,
-                    ),
+                    hasAvailableSupport: (start, end) =>
+                        coverageInputs.logisticsAvailability.supportCovers(
+                          TimeOfDay.fromDateTime(start),
+                          TimeOfDay.fromDateTime(end),
+                        ),
                   );
                   final logisticsText = _aliceEventLogisticsTextBuilder.build(
                     logistics,
@@ -4656,14 +4659,14 @@ class _CalendarioScreenStepAStabileState
     final day = _onlyDate(_selectedDay);
     DateTime at(TimeOfDay time) =>
         DateTime(day.year, day.month, day.day, time.hour, time.minute);
+    final logisticsAvailability = _coverageInputs(day).logisticsAvailability;
     final availability = AliceLogisticProviderAvailabilityResolver(
       adultResolver: AdultLogisticsAvailabilityResolver(
         turnEngine: coreStore.turnEngine,
         diseasePeriodStore: coreStore.diseasePeriodStore,
         realEventStore: coreStore.realEventStore,
       ),
-      daySettingsStore: daySettingsStore,
-      supportNetworkStore: coreStore.supportNetworkStore,
+      logisticsAvailability: logisticsAvailability,
     );
     final result =
         AliceSummerCampLogisticsCoordinator(
@@ -4675,23 +4678,6 @@ class _CalendarioScreenStepAStabileState
           effectiveStart: at(effectiveStart),
           effectiveEnd: at(effectiveEnd),
           overrides: _getOverridesForDay(day),
-          sandraWindows: [
-            AliceSandraAvailabilityWindow(
-              enabled: _effSandraMattina(day),
-              start: _engine.sandraCambioMattinaStart,
-              end: _engine.sandraCambioMattinaEnd,
-            ),
-            AliceSandraAvailabilityWindow(
-              enabled: _effSandraPranzo(day),
-              start: _effectiveSandraPranzoStart(day),
-              end: _engine.sandraPranzoEnd,
-            ),
-            AliceSandraAvailabilityWindow(
-              enabled: _effSandraSera(day),
-              start: _engine.sandraSeraStart,
-              end: _engine.sandraSeraEnd,
-            ),
-          ],
           ferieStore: coreStore.feriePeriodStore,
         );
     return const AliceSummerCampLogisticsViewModelBuilder().build(
@@ -4722,12 +4708,11 @@ class _CalendarioScreenStepAStabileState
 
   SandraCoverageViewModel _buildSandraCoverageViewModel() {
     final sandraDecision = _sandraDecisionForDay(_selectedDay);
-
     return SandraCoverageViewModel(
       decision: sandraDecision,
-      manualMattina: _effSandraMattina(_selectedDay),
-      manualPranzo: _effSandraPranzo(_selectedDay),
-      manualSera: _effSandraSera(_selectedDay),
+      manualMattina: daySettingsStore.sandraMattinaForDay(_selectedDay) == true,
+      manualPranzo: daySettingsStore.sandraPranzoForDay(_selectedDay) == true,
+      manualSera: daySettingsStore.sandraSeraForDay(_selectedDay) == true,
       mattinaStart: _engine.sandraCambioMattinaStart,
       mattinaEnd: _engine.sandraCambioMattinaEnd,
       pranzoStart: _effectiveSandraPranzoStart(_selectedDay),
@@ -4839,24 +4824,6 @@ class _CalendarioScreenStepAStabileState
     );
     return CoverageGapRecommendationsPanel(model: model);
   }
-
-  List<CoverageSandraWindow> _coverageSandraWindows() => [
-    CoverageSandraWindow(
-      start: _engine.sandraCambioMattinaStart,
-      end: _engine.sandraCambioMattinaEnd,
-      active: _effSandraMattina(_selectedDay),
-    ),
-    CoverageSandraWindow(
-      start: _effectiveSandraPranzoStart(_selectedDay),
-      end: _engine.sandraPranzoEnd,
-      active: _effSandraPranzo(_selectedDay),
-    ),
-    CoverageSandraWindow(
-      start: _engine.sandraSeraStart,
-      end: _engine.sandraSeraEnd,
-      active: _effSandraSera(_selectedDay),
-    ),
-  ];
 
   void _openSchoolPanel() {
     final activeSchoolPeriod = coreStore.schoolStore.activePeriodForDay(

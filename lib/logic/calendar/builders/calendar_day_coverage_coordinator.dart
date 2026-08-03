@@ -8,6 +8,7 @@ import '../models/coverage_result_step_a.dart';
 import 'coverage_gap_filter.dart';
 import 'coverage_result_step_a_builder.dart';
 import 'coverage_summary_builder.dart';
+import 'calendar_logistics_availability_resolver.dart';
 
 class CalendarDayCoverageRequest {
   final DateTime day;
@@ -54,6 +55,7 @@ class CalendarDayCoverageInputs {
   final bool serveSandraPranzo;
   final bool serveSandraSera;
   final TimeOfDay sandraLunchStart;
+  final CalendarLogisticsAvailabilityResult logisticsAvailability;
 
   const CalendarDayCoverageInputs({
     required this.overrides,
@@ -69,6 +71,7 @@ class CalendarDayCoverageInputs {
     required this.serveSandraPranzo,
     required this.serveSandraSera,
     this.sandraLunchStart = const TimeOfDay(hour: 13, minute: 0),
+    required this.logisticsAvailability,
   });
 }
 

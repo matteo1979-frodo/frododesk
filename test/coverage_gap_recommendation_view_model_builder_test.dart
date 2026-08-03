@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/logic/calendar/builders/coverage_gap_companion_resolver.dart';
+import 'package:frododesk/logic/calendar/builders/calendar_logistics_availability_resolver.dart';
 import 'package:frododesk/logic/calendar/builders/coverage_gap_recommendation_view_model_builder.dart';
 import 'package:frododesk/logic/calendar/view_models/coverage_gap_recommendation_view_model.dart';
 import 'package:frododesk/logic/coverage_engine.dart';
@@ -52,9 +53,21 @@ void main() {
       gap: resolvedGap,
       isMatteoBusy: (_, _) => matteoBusy,
       isChiaraBusy: (_, _) => chiaraBusy,
-      supportNetworkStore: supportStore,
-      daySettingsStore: settings,
-      sandraWindows: sandraWindows,
+      availability: CalendarLogisticsAvailabilityResult(
+        day: day,
+        supportNetworkStore: supportStore,
+        daySettingsStore: settings,
+        sandraWindows: sandraWindows
+            .map(
+              (window) => SandraAvailabilityWindow(
+                band: SandraAvailabilityBand.mattina,
+                start: window.start,
+                end: window.end,
+                available: window.active,
+              ),
+            )
+            .toList(),
+      ),
     );
     return builder.build(day: day, gap: resolvedGap, resolution: resolution);
   }
@@ -157,9 +170,12 @@ void main() {
               gap: item,
               isMatteoBusy: (_, _) => false,
               isChiaraBusy: (_, _) => true,
-              supportNetworkStore: supportStore,
-              daySettingsStore: settings,
-              sandraWindows: const [],
+              availability: CalendarLogisticsAvailabilityResult(
+                day: day,
+                supportNetworkStore: supportStore,
+                daySettingsStore: settings,
+                sandraWindows: const [],
+              ),
             ),
           )
           .toList(),

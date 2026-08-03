@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core_store.dart';
 import '../../day_settings_store.dart';
 import '../../../utils/calendario_formatters.dart';
+import 'calendar_logistics_availability_resolver.dart';
 
 class CoverageSupportMatch {
   final String personName;
@@ -26,61 +27,22 @@ class CoverageSupportNetworkBuilder {
     required TimeOfDay start,
     required TimeOfDay end,
   }) {
-    final d0 = DateTime(day.year, day.month, day.day);
-
-    final rangeStart = DateTime(
-      d0.year,
-      d0.month,
-      d0.day,
-      start.hour,
-      start.minute,
+    final availability = CalendarLogisticsAvailabilityResult(
+      day: DateTime(day.year, day.month, day.day),
+      sandraWindows: const [],
+      supportNetworkStore: coreStore.supportNetworkStore,
+      daySettingsStore: daySettingsStore,
     );
-
-    final rangeEnd = DateTime(d0.year, d0.month, d0.day, end.hour, end.minute);
-
-    final matches = <CoverageSupportMatch>[];
-
-    for (final person in coreStore.supportNetworkStore.people) {
-      if (!person.enabled) continue;
-
-      final enabledForDay = daySettingsStore.isSupportPersonEnabledForDay(
-        d0,
-        person.id,
-      );
-
-      if (!enabledForDay) continue;
-
-      final supportStart = DateTime(
-        d0.year,
-        d0.month,
-        d0.day,
-        person.start.hour,
-        person.start.minute,
-      );
-
-      final supportEnd = DateTime(
-        d0.year,
-        d0.month,
-        d0.day,
-        person.end.hour,
-        person.end.minute,
-      );
-
-      final coversFullRange =
-          !supportStart.isAfter(rangeStart) && !supportEnd.isBefore(rangeEnd);
-
-      if (!coversFullRange) continue;
-
-      matches.add(
-        CoverageSupportMatch(
-          personName: person.name,
-          start: person.start,
-          end: person.end,
-        ),
-      );
-    }
-
-    return matches;
+    return availability
+        .supportForWindow(start, end)
+        .map(
+          (match) => CoverageSupportMatch(
+            personName: match.displayName,
+            start: match.slotStart,
+            end: match.slotEnd,
+          ),
+        )
+        .toList(growable: false);
   }
 
   bool coversRange({

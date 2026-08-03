@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../coverage_engine.dart';
 import '../../alice_companion_store.dart';
-import '../../day_settings_store.dart';
-import '../../support_network_store.dart';
-import '../view_models/coverage_gap_recommendation_view_model.dart';
+import 'calendar_logistics_availability_resolver.dart';
 
 typedef CoverageGapAdultBusyReader =
     bool Function(DateTime rangeStart, DateTime rangeEnd);
@@ -64,9 +62,7 @@ class CoverageGapCompanionResolver {
     required CoverageGapDetail gap,
     required CoverageGapAdultBusyReader isMatteoBusy,
     required CoverageGapAdultBusyReader isChiaraBusy,
-    required SupportNetworkStore supportNetworkStore,
-    required DaySettingsStore daySettingsStore,
-    required List<CoverageSandraWindow> sandraWindows,
+    required CalendarLogisticsAvailabilityResult availability,
   }) {
     final start = _at(day, gap.start);
     final end = _at(day, gap.end);
@@ -92,17 +88,20 @@ class CoverageGapCompanionResolver {
       );
     }
 
-    for (final person in supportNetworkStore.people) {
-      if (!person.enabled ||
-          !person.effectiveSlots.any(
-            (slot) => _covers(slot.start, slot.end, gap.start, gap.end),
-          )) {
-        continue;
-      }
-      final active = daySettingsStore.isSupportPersonEnabledForDay(
+    for (final person in availability.supportNetworkStore.people) {
+      if (!person.enabled) continue;
+      final active = availability.daySettingsStore.isSupportPersonEnabledForDay(
         day,
         person.id,
       );
+      final matches = availability
+          .supportForWindow(
+            gap.start,
+            gap.end,
+            requireActiveForDay: false,
+          )
+          .where((match) => match.providerId == person.id);
+      if (matches.isEmpty) continue;
       final candidate = CoverageGapCompanionCandidate(
         providerId: person.id,
         kind: CoverageGapCompanionKind.supportPerson,
@@ -112,11 +111,7 @@ class CoverageGapCompanionResolver {
       (active ? available : inactive).add(candidate);
     }
 
-    if (sandraWindows.any(
-      (window) =>
-          window.active &&
-          _covers(window.start, window.end, gap.start, gap.end),
-    )) {
+    if (availability.sandraCovers(gap.start, gap.end)) {
       available.add(
         const CoverageGapCompanionCandidate(
           providerId: 'sandra',
@@ -133,19 +128,8 @@ class CoverageGapCompanionResolver {
     );
   }
 
-  bool _covers(
-    TimeOfDay start,
-    TimeOfDay end,
-    TimeOfDay gapStart,
-    TimeOfDay gapEnd,
-  ) =>
-      _minutes(start) <= _minutes(gapStart) &&
-      _minutes(end) >= _minutes(gapEnd);
-
   DateTime _at(DateTime day, TimeOfDay time) =>
       DateTime(day.year, day.month, day.day, time.hour, time.minute);
-
-  int _minutes(TimeOfDay time) => time.hour * 60 + time.minute;
 
   String _displayName(String name) {
     final clean = name.trim();

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/logic/adult_logistics_availability_resolver.dart';
 import 'package:frododesk/logic/calendar/builders/alice_logistic_provider_availability_resolver.dart';
 import 'package:frododesk/logic/calendar/builders/alice_summer_camp_logistics_coordinator.dart';
+import 'package:frododesk/logic/calendar/builders/calendar_logistics_availability_resolver.dart';
 import 'package:frododesk/logic/day_settings_store.dart';
 import 'package:frododesk/logic/disease_period_store.dart';
 import 'package:frododesk/logic/real_event_store.dart';
@@ -23,7 +24,7 @@ void main() {
 
   _Harness harness({
     List<SupportPerson> support = const [],
-    List<AliceSandraAvailabilityWindow> sandra = const [],
+    List<SandraAvailabilityWindow> sandra = const [],
   }) {
     final settings = DaySettingsStore();
     final network = SupportNetworkStore();
@@ -43,8 +44,12 @@ void main() {
         daySettingsStore: settings,
         availabilityResolver: AliceLogisticProviderAvailabilityResolver(
           adultResolver: adult,
-          daySettingsStore: settings,
-          supportNetworkStore: network,
+          logisticsAvailability: CalendarLogisticsAvailabilityResult(
+            day: day,
+            sandraWindows: sandra,
+            supportNetworkStore: network,
+            daySettingsStore: settings,
+          ),
         ),
       ),
     );
@@ -82,8 +87,9 @@ void main() {
   test('Sandra richiede una finestra completa', () async {
     final complete = harness(
       sandra: const [
-        AliceSandraAvailabilityWindow(
-          enabled: true,
+        SandraAvailabilityWindow(
+          band: SandraAvailabilityBand.mattina,
+          available: true,
           start: TimeOfDay(hour: 7, minute: 30),
           end: TimeOfDay(hour: 8, minute: 0),
         ),
@@ -100,8 +106,9 @@ void main() {
 
     final partial = harness(
       sandra: const [
-        AliceSandraAvailabilityWindow(
-          enabled: true,
+        SandraAvailabilityWindow(
+          band: SandraAvailabilityBand.mattina,
+          available: true,
           start: TimeOfDay(hour: 7, minute: 50),
           end: TimeOfDay(hour: 8, minute: 0),
         ),
@@ -189,8 +196,9 @@ void main() {
       final h = harness(
         support: const [z, a],
         sandra: const [
-          AliceSandraAvailabilityWindow(
-            enabled: true,
+          SandraAvailabilityWindow(
+            band: SandraAvailabilityBand.sera,
+            available: true,
             start: TimeOfDay(hour: 15, minute: 0),
             end: TimeOfDay(hour: 17, minute: 0),
           ),
@@ -216,7 +224,7 @@ void main() {
 class _Harness {
   final DateTime day;
   final DaySettingsStore settings;
-  final List<AliceSandraAvailabilityWindow> sandra;
+  final List<SandraAvailabilityWindow> sandra;
   final AliceSummerCampLogisticsCoordinator coordinator;
 
   const _Harness({
@@ -233,6 +241,5 @@ class _Harness {
         effectiveStart: DateTime(day.year, day.month, day.day, 8),
         effectiveEnd: DateTime(day.year, day.month, day.day, 16),
         overrides: DayOverrides.empty(day),
-        sandraWindows: sandra,
       );
 }

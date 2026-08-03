@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/logic/calendar/builders/alice_home_risk_view_model_builder.dart';
 import 'package:frododesk/logic/calendar/builders/calendar_day_coverage_coordinator.dart';
+import 'package:frododesk/logic/calendar/builders/calendar_logistics_availability_resolver.dart';
 import 'package:frododesk/logic/calendar/builders/coverage_result_step_a_builder.dart';
 import 'package:frododesk/logic/coverage_engine.dart';
 import 'package:frododesk/logic/day_settings_store.dart';
 import 'package:frododesk/logic/ferie_period_store.dart';
+import 'package:frododesk/logic/support_network_store.dart';
 import 'package:frododesk/models/coverage_criticality_detail.dart';
 import 'package:frododesk/models/day_override.dart';
 
@@ -39,6 +41,12 @@ CalendarDayCoverageInputs _inputs(DateTime day) => CalendarDayCoverageInputs(
   serveSandraMattina: false,
   serveSandraPranzo: false,
   serveSandraSera: false,
+  logisticsAvailability: CalendarLogisticsAvailabilityResult(
+    day: day,
+    sandraWindows: const [],
+    supportNetworkStore: SupportNetworkStore(),
+    daySettingsStore: DaySettingsStore(),
+  ),
 );
 
 class _CountingResultBuilder extends CoverageResultStepABuilder {

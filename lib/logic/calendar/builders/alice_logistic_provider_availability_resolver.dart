@@ -1,35 +1,19 @@
 import 'package:flutter/material.dart';
 
 import '../../../models/day_override.dart';
-import '../../../models/support_person.dart';
 import '../../adult_logistics_availability_resolver.dart';
-import '../../day_settings_store.dart';
 import '../../ferie_period_store.dart';
-import '../../support_network_store.dart';
 import '../../turn_engine.dart';
 import '../models/alice_summer_camp_logistics.dart';
-
-class AliceSandraAvailabilityWindow {
-  final bool enabled;
-  final TimeOfDay start;
-  final TimeOfDay end;
-
-  const AliceSandraAvailabilityWindow({
-    required this.enabled,
-    required this.start,
-    required this.end,
-  });
-}
+import 'calendar_logistics_availability_resolver.dart';
 
 class AliceLogisticProviderAvailabilityResolver {
   final AdultLogisticsAvailabilityResolver adultResolver;
-  final DaySettingsStore daySettingsStore;
-  final SupportNetworkStore supportNetworkStore;
+  final CalendarLogisticsAvailabilityResult logisticsAvailability;
 
   const AliceLogisticProviderAvailabilityResolver({
     required this.adultResolver,
-    required this.daySettingsStore,
-    required this.supportNetworkStore,
+    required this.logisticsAvailability,
   });
 
   List<AliceLogisticProviderAvailability> resolve({
@@ -37,27 +21,54 @@ class AliceLogisticProviderAvailabilityResolver {
     required DateTime start,
     required DateTime end,
     required DayOverrides overrides,
-    required List<AliceSandraAvailabilityWindow> sandraWindows,
     FeriePeriodStore? ferieStore,
   }) {
     final values = <AliceLogisticProviderAvailability>[
-      _adult(AliceLogisticParent.matteo, TurnPerson.matteo, day, start, end, overrides, ferieStore),
-      _adult(AliceLogisticParent.chiara, TurnPerson.chiara, day, start, end, overrides, ferieStore),
+      _adult(
+        AliceLogisticParent.matteo,
+        TurnPerson.matteo,
+        day,
+        start,
+        end,
+        overrides,
+        ferieStore,
+      ),
+      _adult(
+        AliceLogisticParent.chiara,
+        TurnPerson.chiara,
+        day,
+        start,
+        end,
+        overrides,
+        ferieStore,
+      ),
       AliceLogisticProviderAvailability(
         provider: AliceLogisticProviderRef.sandra,
         start: start,
         end: end,
-        available: sandraWindows.any((window) => window.enabled && _slotCovers(day, window.start, window.end, start, end)),
+        available: logisticsAvailability.sandraCovers(
+          TimeOfDay.fromDateTime(start),
+          TimeOfDay.fromDateTime(end),
+        ),
       ),
     ];
-    final people = [...supportNetworkStore.people]..sort((a, b) => a.id.compareTo(b.id));
+    final people = [...logisticsAvailability.supportNetworkStore.people]
+      ..sort((a, b) => a.id.compareTo(b.id));
+    final supportMatches = logisticsAvailability.supportForWindow(
+      TimeOfDay.fromDateTime(start),
+      TimeOfDay.fromDateTime(end),
+    );
     for (final person in people) {
-      values.add(AliceLogisticProviderAvailability(
-        provider: AliceLogisticProviderRef.supportPerson(person.id),
-        start: start,
-        end: end,
-        available: _supportCovers(person, day, start, end),
-      ));
+      values.add(
+        AliceLogisticProviderAvailability(
+          provider: AliceLogisticProviderRef.supportPerson(person.id),
+          start: start,
+          end: end,
+          available: supportMatches.any(
+            (match) => match.providerId == person.id,
+          ),
+        ),
+      );
     }
     return values;
   }
@@ -85,15 +96,4 @@ class AliceLogisticProviderAvailabilityResolver {
       ferieStore: ferieStore,
     ),
   );
-
-  bool _supportCovers(SupportPerson person, DateTime day, DateTime start, DateTime end) =>
-      person.enabled &&
-      daySettingsStore.isSupportPersonEnabledForDay(day, person.id) &&
-      person.effectiveSlots.any((slot) => _slotCovers(day, slot.start, slot.end, start, end));
-
-  bool _slotCovers(DateTime day, TimeOfDay slotStart, TimeOfDay slotEnd, DateTime start, DateTime end) {
-    final a = DateTime(day.year, day.month, day.day, slotStart.hour, slotStart.minute);
-    final b = DateTime(day.year, day.month, day.day, slotEnd.hour, slotEnd.minute);
-    return !a.isAfter(start) && !b.isBefore(end);
-  }
 }

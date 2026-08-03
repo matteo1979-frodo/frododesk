@@ -136,28 +136,25 @@ void main() {
     final inputs = resolver(
       store,
     ).resolve(selectedDay: day, overrides: DayOverrides.empty(day));
-    expect(inputs.sandraAvailable, true);
+    expect(inputs.sandraAvailable, false);
   });
 
-  test('Sandra uses global fallback and daily override precedence', () {
+  test('Sandra requires global enablement and explicit daily activation', () {
     final store = CoreStore(initialDate: day);
     store.settingsStore.setSandraDisponibile(true);
     expect(
       resolver(store)
           .resolve(selectedDay: day, overrides: DayOverrides.empty(day))
           .sandraAvailable,
-      true,
+      false,
     );
 
-    store.daySettingsStore
-      ..setSandraMattinaForDay(day, false)
-      ..setSandraPranzoForDay(day, false)
-      ..setSandraSeraForDay(day, false);
+    store.daySettingsStore.setSandraMattinaForDay(day, true);
     expect(
       resolver(store)
           .resolve(selectedDay: day, overrides: DayOverrides.empty(day))
           .sandraAvailable,
-      false,
+      true,
     );
   });
 }

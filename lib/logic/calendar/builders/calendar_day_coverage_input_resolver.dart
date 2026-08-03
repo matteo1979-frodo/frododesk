@@ -8,6 +8,7 @@ import '../models/effective_school_day_timing.dart';
 import 'calendar_day_coverage_coordinator.dart';
 import 'coverage_support_network_builder.dart';
 import 'effective_school_day_timing_reader.dart';
+import 'calendar_logistics_availability_resolver.dart';
 
 class CalendarDayCoverageInputResolver {
   final CoreStore coreStore;
@@ -37,6 +38,21 @@ class CalendarDayCoverageInputResolver {
       lunchCover: lunchCover,
       uscitaAnticipataAt: timing.earlySchoolExitAt,
     );
+    final sandraLunchStart = _sandraLunchStart(day, timing, lunchCover);
+    final availability =
+        CalendarLogisticsAvailabilityResolver(
+          settingsStore: coreStore.settingsStore,
+          daySettingsStore: coreStore.daySettingsStore,
+          supportNetworkStore: coreStore.supportNetworkStore,
+        ).resolve(
+          day: day,
+          mattinaStart: coreStore.coverageEngine.sandraCambioMattinaStart,
+          mattinaEnd: coreStore.coverageEngine.sandraCambioMattinaEnd,
+          pranzoStart: sandraLunchStart,
+          pranzoEnd: coreStore.coverageEngine.sandraPranzoEnd,
+          seraStart: coreStore.coverageEngine.sandraSeraStart,
+          seraEnd: coreStore.coverageEngine.sandraSeraEnd,
+        );
 
     return CalendarDayCoverageInputs(
       overrides: overrides,
@@ -47,18 +63,23 @@ class CalendarDayCoverageInputResolver {
       schoolOutEnd: timing.schoolPickupWindowEnd,
       lunchCover: lunchCover,
       earlySchoolExitAt: timing.earlySchoolExitAt,
-      sandraAvailable: _sandraAvailable(day),
+      sandraAvailable: availability.sandraAvailable,
       serveSandraMattina: sandraDecision.serveSandraMattina,
       serveSandraPranzo: sandraDecision.serveSandraPranzo,
       serveSandraSera: sandraDecision.serveSandraSera,
-      sandraLunchStart: _sandraLunchStart(day, timing, lunchCover),
+      sandraLunchStart: sandraLunchStart,
+      logisticsAvailability: availability,
     );
   }
 
-  SchoolCoverChoice _schoolInCover(DateTime day, EffectiveSchoolDayTiming timing) {
+  SchoolCoverChoice _schoolInCover(
+    DateTime day,
+    EffectiveSchoolDayTiming timing,
+  ) {
     final saved = coreStore.daySettingsStore.schoolInCoverForDay(day);
     if (saved != SchoolCoverChoice.none) return saved;
-    final entry = coreStore.aliceEventStore.getEventForDay(day)?.summerCampStart ??
+    final entry =
+        coreStore.aliceEventStore.getEventForDay(day)?.summerCampStart ??
         timing.schoolEntryAt;
     final minutes = entry.hour * 60 + entry.minute - 20;
     final start = TimeOfDay(hour: (minutes ~/ 60) % 24, minute: minutes % 60);
@@ -67,7 +88,10 @@ class CalendarDayCoverageInputResolver {
         : SchoolCoverChoice.none;
   }
 
-  SchoolCoverChoice _schoolOutCover(DateTime day, EffectiveSchoolDayTiming timing) {
+  SchoolCoverChoice _schoolOutCover(
+    DateTime day,
+    EffectiveSchoolDayTiming timing,
+  ) {
     final saved = coreStore.daySettingsStore.schoolOutCoverForDay(day);
     if (saved != SchoolCoverChoice.none) return saved;
     return _covered(day, timing.schoolExitAt, timing.schoolPickupWindowEnd)
@@ -93,14 +117,6 @@ class CalendarDayCoverageInputResolver {
         start: start,
         end: end,
       );
-
-  bool _sandraAvailable(DateTime day) {
-    final store = coreStore.daySettingsStore;
-    final fallback = coreStore.settingsStore.isSandraDisponibile;
-    return store.effectiveSandraMattina(day, fallbackGlobal: fallback) ||
-        store.effectiveSandraPranzo(day, fallbackGlobal: fallback) ||
-        store.effectiveSandraSera(day, fallbackGlobal: fallback);
-  }
 
   TimeOfDay _sandraLunchStart(
     DateTime day,

@@ -45,16 +45,13 @@ class AliceEventLogisticsBuilder {
     required AliceEventEngine aliceEventEngine,
     required bool Function(DateTime start, DateTime end) isMatteoBusy,
     required bool Function(DateTime start, DateTime end) isChiaraBusy,
-    required bool hasEnabledSupport,
+    required bool Function(DateTime start, DateTime end) hasAvailableSupport,
   }) {
-    final sameAdult =
-        aliceEventEngine.hasSameAdultForDropOffAndPickUp(event);
+    final sameAdult = aliceEventEngine.hasSameAdultForDropOffAndPickUp(event);
 
-    final missingDropOff =
-        !aliceEventEngine.hasDropOffAssigned(event);
+    final missingDropOff = !aliceEventEngine.hasDropOffAssigned(event);
 
-    final missingPickUp =
-        !aliceEventEngine.hasPickUpAssigned(event);
+    final missingPickUp = !aliceEventEngine.hasPickUpAssigned(event);
 
     final usesMatteo = aliceEventEngine.usesMatteo(event);
     final usesChiara = aliceEventEngine.usesChiara(event);
@@ -75,45 +72,39 @@ class AliceEventLogisticsBuilder {
       event.end.minute,
     );
 
-    final dropOffEnd = eventStart.add(
-      const Duration(minutes: 20),
-    );
+    final dropOffEnd = eventStart.add(const Duration(minutes: 20));
 
-    final pickUpStart = eventEnd.subtract(
-      const Duration(minutes: 20),
-    );
+    final pickUpStart = eventEnd.subtract(const Duration(minutes: 20));
 
     final matteoDropOffBusy =
         event.dropOffAdultKey == 'matteo' &&
         isMatteoBusy(eventStart, dropOffEnd);
 
     final matteoPickUpBusy =
-        event.pickUpAdultKey == 'matteo' &&
-        isMatteoBusy(pickUpStart, eventEnd);
+        event.pickUpAdultKey == 'matteo' && isMatteoBusy(pickUpStart, eventEnd);
 
     final chiaraDropOffBusy =
         event.dropOffAdultKey == 'chiara' &&
         isChiaraBusy(eventStart, dropOffEnd);
 
     final chiaraPickUpBusy =
-        event.pickUpAdultKey == 'chiara' &&
-        isChiaraBusy(pickUpStart, eventEnd);
+        event.pickUpAdultKey == 'chiara' && isChiaraBusy(pickUpStart, eventEnd);
 
-    final matteoBusy =
-        matteoDropOffBusy || matteoPickUpBusy;
+    final matteoBusy = matteoDropOffBusy || matteoPickUpBusy;
 
-    final chiaraBusy =
-        chiaraDropOffBusy || chiaraPickUpBusy;
+    final chiaraBusy = chiaraDropOffBusy || chiaraPickUpBusy;
 
     final canSuggestSupport =
-        (matteoBusy || chiaraBusy) &&
-        hasEnabledSupport;
+        ((matteoDropOffBusy || chiaraDropOffBusy) &&
+            hasAvailableSupport(eventStart, dropOffEnd)) ||
+        ((matteoPickUpBusy || chiaraPickUpBusy) &&
+            hasAvailableSupport(pickUpStart, eventEnd));
 
-    final singleAdultManagesEvent =
-        aliceEventEngine.isManagedBySingleAdult(event);
+    final singleAdultManagesEvent = aliceEventEngine.isManagedBySingleAdult(
+      event,
+    );
 
-    final splitLogistics =
-        aliceEventEngine.hasSplitLogistics(event);
+    final splitLogistics = aliceEventEngine.hasSplitLogistics(event);
 
     final dropOffConflict =
         (event.dropOffAdultKey == 'matteo' && matteoBusy) ||

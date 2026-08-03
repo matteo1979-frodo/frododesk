@@ -23,7 +23,6 @@ class AliceSummerCampLogisticsCoordinator {
     required DateTime effectiveStart,
     required DateTime effectiveEnd,
     required DayOverrides overrides,
-    required List<AliceSandraAvailabilityWindow> sandraWindows,
     FeriePeriodStore? ferieStore,
   }) {
     final dropAssigned = daySettingsStore.summerCampDropOffProviderForDay(day);
@@ -48,12 +47,18 @@ class AliceSummerCampLogisticsCoordinator {
       dropOffAssignedProvider: dropAssigned,
       pickUpAssignedProvider: pickAssigned,
       dropOffAvailabilities: availabilityResolver.resolve(
-        day: day, start: dropStart, end: effectiveStart, overrides: overrides,
-        sandraWindows: sandraWindows, ferieStore: ferieStore,
+        day: day,
+        start: dropStart,
+        end: effectiveStart,
+        overrides: overrides,
+        ferieStore: ferieStore,
       ),
       pickUpAvailabilities: availabilityResolver.resolve(
-        day: day, start: effectiveEnd, end: pickEnd, overrides: overrides,
-        sandraWindows: sandraWindows, ferieStore: ferieStore,
+        day: day,
+        start: effectiveEnd,
+        end: pickEnd,
+        overrides: overrides,
+        ferieStore: ferieStore,
       ),
     );
   }
