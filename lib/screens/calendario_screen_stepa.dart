@@ -75,7 +75,7 @@ import '../logic/calendar/builders/turn_presentation_state_builder.dart';
 import '../logic/calendar/builders/turn_person_source_builder.dart';
 import '../logic/calendar/builders/coverage_support_network_builder.dart';
 import '../logic/calendar/builders/alice_logistics_status_builder.dart';
-import '../logic/calendar/builders/alice_event_logistics_builder.dart';
+import '../logic/calendar/builders/alice_event_logistics_coordinator.dart';
 import '../logic/calendar/builders/alice_event_logistics_text_builder.dart';
 import '../logic/calendar/builders/day_gap_visual_state_builder.dart';
 import '../logic/calendar/builders/calendar_day_status_builder.dart';
@@ -104,9 +104,11 @@ import '../logic/calendar/view_models/alice_home_risk_view_model.dart';
 import '../logic/calendar/builders/alice_school_day_view_model_builder.dart';
 import '../logic/adult_logistics_availability_resolver.dart';
 import '../logic/calendar/builders/alice_logistic_provider_availability_resolver.dart';
+import '../logic/calendar/builders/calendar_logistics_availability_resolver.dart';
 import '../logic/calendar/builders/alice_summer_camp_logistics_coordinator.dart';
 import '../logic/calendar/builders/alice_summer_camp_logistics_view_model_builder.dart';
 import '../logic/calendar/models/alice_summer_camp_logistics.dart';
+import '../logic/calendar/models/alice_event_logistics.dart';
 import '../logic/calendar/view_models/alice_summer_camp_logistics_view_model.dart';
 import '../widgets/calendar/summer_camp_logistics_section.dart';
 
@@ -190,9 +192,6 @@ class _CalendarioScreenStepAStabileState
 
   final AliceLogisticsStatusBuilder _aliceLogisticsStatusBuilder =
       const AliceLogisticsStatusBuilder();
-
-  final AliceEventLogisticsBuilder _aliceEventLogisticsBuilder =
-      const AliceEventLogisticsBuilder();
 
   final CoverageGapCompanionResolver _gapCompanionResolver =
       const CoverageGapCompanionResolver();
@@ -1258,7 +1257,10 @@ class _CalendarioScreenStepAStabileState
     return _resolveCompanions(gap).suggestedAliceCompanion;
   }
 
-  Widget _buildDayGapsBox(CoverageResultStepA cov) {
+  Widget _buildDayGapsBox(
+    CoverageResultStepA cov,
+    List<AliceEventLogisticsResolution> aliceEventLogistics,
+  ) {
     final d0 = _onlyDate(_selectedDay);
     final timing = EffectiveSchoolDayTimingReader(coreStore).read(d0);
     final earlySchoolExitAt = timing.earlySchoolExitAt;
@@ -1299,17 +1301,8 @@ class _CalendarioScreenStepAStabileState
       lunchEnd: _engine.sandraPranzoEnd,
     );
 
-    final logisticAliceEvents = coreStore.aliceSpecialEventStore
-        .eventsForDay(d0)
-        .where((e) => e.behavior == AliceEventBehavior.logistic)
-        .toList();
-
     final aliceLogisticsStatus = _aliceLogisticsStatusBuilder.build(
-      day: d0,
-      logisticEvents: logisticAliceEvents,
-      aliceEventEngine: _aliceEventEngine,
-      isMatteoBusy: (start, end) => _engine.isMatteoBusyBetween(start, end),
-      isChiaraBusy: (start, end) => _engine.isChiaraBusyBetween(start, end),
+      resolutions: aliceEventLogistics,
     );
 
     final summerCampLogistics = _summerCampLogisticsViewModel(
@@ -1496,11 +1489,11 @@ class _CalendarioScreenStepAStabileState
                 ),
             ],
             if (visual.state == DayGapVisualState.realGap ||
-                logisticAliceEvents.isNotEmpty ||
+                aliceEventLogistics.isNotEmpty ||
                 companionEntries.isNotEmpty) ...[
               const SizedBox(height: 10),
 
-              if (logisticAliceEvents.isNotEmpty) ...[
+              if (aliceEventLogistics.isNotEmpty) ...[
                 const SizedBox(height: 8),
 
                 const Text(
@@ -1510,21 +1503,8 @@ class _CalendarioScreenStepAStabileState
 
                 const SizedBox(height: 6),
 
-                ...logisticAliceEvents.map((e) {
-                  final logistics = _aliceEventLogisticsBuilder.build(
-                    day: d0,
-                    event: e,
-                    aliceEventEngine: _aliceEventEngine,
-                    isMatteoBusy: (start, end) =>
-                        _engine.isMatteoBusyBetween(start, end),
-                    isChiaraBusy: (start, end) =>
-                        _engine.isChiaraBusyBetween(start, end),
-                    hasAvailableSupport: (start, end) =>
-                        coverageInputs.logisticsAvailability.supportCovers(
-                          TimeOfDay.fromDateTime(start),
-                          TimeOfDay.fromDateTime(end),
-                        ),
-                  );
+                ...aliceEventLogistics.map((logistics) {
+                  final e = logistics.event;
                   final logisticsText = _aliceEventLogisticsTextBuilder.build(
                     logistics,
                   );
@@ -1861,6 +1841,7 @@ class _CalendarioScreenStepAStabileState
     required CoverageResultStepA cov,
     required AliceHomeRiskViewModel aliceHomeRisk,
     required bool isEmergency,
+    required List<AliceEventLogisticsResolution> aliceEventLogistics,
   }) {
     final criticalities = _criticalityViewModels(cov);
     return _buildSectionBox(
@@ -1883,7 +1864,7 @@ class _CalendarioScreenStepAStabileState
             ),
             const SizedBox(height: 6),
           ],
-          if (!isEmergency) _buildDayGapsBox(cov),
+          if (!isEmergency) _buildDayGapsBox(cov, aliceEventLogistics),
           if (!isEmergency && criticalities.isNotEmpty) ...[
             CoverageCriticalitiesPanel(items: criticalities),
             const SizedBox(height: 12),
@@ -1911,6 +1892,7 @@ class _CalendarioScreenStepAStabileState
     required AliceHomeRiskViewModel aliceHomeRisk,
     required bool showSummerCampSpecialCard,
     required bool isEmergency,
+    required List<AliceEventLogisticsResolution> aliceEventLogistics,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1933,6 +1915,7 @@ class _CalendarioScreenStepAStabileState
             cov: cov,
             aliceHomeRisk: aliceHomeRisk,
             isEmergency: isEmergency,
+            aliceEventLogistics: aliceEventLogistics,
           ),
         ),
       ],
@@ -1945,6 +1928,7 @@ class _CalendarioScreenStepAStabileState
     required AliceHomeRiskViewModel aliceHomeRisk,
     required bool showSummerCampSpecialCard,
     required bool isEmergency,
+    required List<AliceEventLogisticsResolution> aliceEventLogistics,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1959,6 +1943,7 @@ class _CalendarioScreenStepAStabileState
           cov: cov,
           aliceHomeRisk: aliceHomeRisk,
           isEmergency: isEmergency,
+          aliceEventLogistics: aliceEventLogistics,
         ),
       ],
     );
@@ -1970,6 +1955,7 @@ class _CalendarioScreenStepAStabileState
     required AliceHomeRiskViewModel aliceHomeRisk,
     required bool showSummerCampSpecialCard,
     required bool isEmergency,
+    required List<AliceEventLogisticsResolution> aliceEventLogistics,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1984,6 +1970,7 @@ class _CalendarioScreenStepAStabileState
           cov: cov,
           aliceHomeRisk: aliceHomeRisk,
           isEmergency: isEmergency,
+          aliceEventLogistics: aliceEventLogistics,
         ),
       ],
     );
@@ -1995,6 +1982,7 @@ class _CalendarioScreenStepAStabileState
     required AliceHomeRiskViewModel aliceHomeRisk,
     required bool showSummerCampSpecialCard,
     required bool isEmergency,
+    required List<AliceEventLogisticsResolution> aliceEventLogistics,
   }) {
     return LayoutBuilder(
       builder: (context, c) {
@@ -2007,6 +1995,7 @@ class _CalendarioScreenStepAStabileState
             aliceHomeRisk: aliceHomeRisk,
             showSummerCampSpecialCard: showSummerCampSpecialCard,
             isEmergency: isEmergency,
+            aliceEventLogistics: aliceEventLogistics,
           );
         }
 
@@ -2017,6 +2006,7 @@ class _CalendarioScreenStepAStabileState
             aliceHomeRisk: aliceHomeRisk,
             showSummerCampSpecialCard: showSummerCampSpecialCard,
             isEmergency: isEmergency,
+            aliceEventLogistics: aliceEventLogistics,
           );
         }
 
@@ -2026,6 +2016,7 @@ class _CalendarioScreenStepAStabileState
           aliceHomeRisk: aliceHomeRisk,
           showSummerCampSpecialCard: showSummerCampSpecialCard,
           isEmergency: isEmergency,
+          aliceEventLogistics: aliceEventLogistics,
         );
       },
     );
@@ -2128,12 +2119,15 @@ class _CalendarioScreenStepAStabileState
         .eventsForDay(_onlyDate(_selectedDay))
         .where((event) => event.behavior == AliceEventBehavior.logistic)
         .toList();
-    final selectedDayLogisticsStatus = _aliceLogisticsStatusBuilder.build(
+    final selectedDayEventLogistics = _aliceEventLogisticsResolutions(
       day: _onlyDate(_selectedDay),
-      logisticEvents: selectedDayLogisticEvents,
-      aliceEventEngine: _aliceEventEngine,
-      isMatteoBusy: (start, end) => _engine.isMatteoBusyBetween(start, end),
-      isChiaraBusy: (start, end) => _engine.isChiaraBusyBetween(start, end),
+      events: selectedDayLogisticEvents,
+      logisticsAvailability: _coverageInputs(
+        _onlyDate(_selectedDay),
+      ).logisticsAvailability,
+    );
+    final selectedDayLogisticsStatus = _aliceLogisticsStatusBuilder.build(
+      resolutions: selectedDayEventLogistics,
     );
     final dayStatus = _calendarDayStatusBuilder.build(
       gapDetails: cov.gapDetails,
@@ -2283,6 +2277,7 @@ class _CalendarioScreenStepAStabileState
               aliceHomeRisk: aliceHomeRisk,
               showSummerCampSpecialCard: showSummerCampSpecialCard,
               isEmergency: isEmergency,
+              aliceEventLogistics: selectedDayEventLogistics,
             ),
             const SizedBox(height: 18),
           ],
@@ -4662,13 +4657,8 @@ class _CalendarioScreenStepAStabileState
     DateTime at(TimeOfDay time) =>
         DateTime(day.year, day.month, day.day, time.hour, time.minute);
     final logisticsAvailability = _coverageInputs(day).logisticsAvailability;
-    final availability = AliceLogisticProviderAvailabilityResolver(
-      adultResolver: AdultLogisticsAvailabilityResolver(
-        turnEngine: coreStore.turnEngine,
-        diseasePeriodStore: coreStore.diseasePeriodStore,
-        realEventStore: coreStore.realEventStore,
-      ),
-      logisticsAvailability: logisticsAvailability,
+    final availability = _aliceLogisticProviderAvailabilityResolver(
+      logisticsAvailability,
     );
     final result =
         AliceSummerCampLogisticsCoordinator(
@@ -4686,6 +4676,40 @@ class _CalendarioScreenStepAStabileState
       result: result,
       supportPeople: coreStore.supportNetworkStore.people,
     );
+  }
+
+  AliceLogisticProviderAvailabilityResolver
+  _aliceLogisticProviderAvailabilityResolver(
+    CalendarLogisticsAvailabilityResult logisticsAvailability,
+  ) => AliceLogisticProviderAvailabilityResolver(
+    adultResolver: AdultLogisticsAvailabilityResolver(
+      turnEngine: coreStore.turnEngine,
+      diseasePeriodStore: coreStore.diseasePeriodStore,
+      realEventStore: coreStore.realEventStore,
+    ),
+    logisticsAvailability: logisticsAvailability,
+  );
+
+  List<AliceEventLogisticsResolution> _aliceEventLogisticsResolutions({
+    required DateTime day,
+    required List<AliceSpecialEvent> events,
+    required CalendarLogisticsAvailabilityResult logisticsAvailability,
+  }) {
+    final coordinator = AliceEventLogisticsCoordinator(
+      availabilityResolver: _aliceLogisticProviderAvailabilityResolver(
+        logisticsAvailability,
+      ),
+    );
+    return events
+        .map(
+          (event) => coordinator.resolve(
+            day: day,
+            event: event,
+            overrides: _getOverridesForDay(day),
+            ferieStore: coreStore.feriePeriodStore,
+          ),
+        )
+        .toList(growable: false);
   }
 
   Future<void> _saveSummerCampLogistics(

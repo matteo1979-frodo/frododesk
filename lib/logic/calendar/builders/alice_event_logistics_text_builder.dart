@@ -1,6 +1,11 @@
-import 'alice_event_logistics_builder.dart';
+import '../models/alice_event_logistics.dart';
+import '../models/alice_summer_camp_logistics.dart';
 
 class AliceEventLogisticsTextResult {
+  final AliceLogisticProviderRef? dropOffProvider;
+  final AliceLogisticProviderRef? pickUpProvider;
+  final AliceLogisticProviderRef? dropOffSuggestedProvider;
+  final AliceLogisticProviderRef? pickUpSuggestedProvider;
   final String? sameAdultText;
   final String? incompleteText;
   final String? involvedAdultsText;
@@ -11,6 +16,10 @@ class AliceEventLogisticsTextResult {
   final String? splitLogisticsText;
 
   const AliceEventLogisticsTextResult({
+    required this.dropOffProvider,
+    required this.pickUpProvider,
+    required this.dropOffSuggestedProvider,
+    required this.pickUpSuggestedProvider,
     required this.sameAdultText,
     required this.incompleteText,
     required this.involvedAdultsText,
@@ -25,7 +34,9 @@ class AliceEventLogisticsTextResult {
 class AliceEventLogisticsTextBuilder {
   const AliceEventLogisticsTextBuilder();
 
-  AliceEventLogisticsTextResult build(AliceEventLogisticsResult logistics) {
+  AliceEventLogisticsTextResult build(
+    AliceEventLogisticsResolution logistics,
+  ) {
     final sameAdultText = logistics.sameAdult
         ? 'Stessa persona gestisce accompagnamento e ritiro'
         : null;
@@ -75,6 +86,10 @@ class AliceEventLogisticsTextBuilder {
         : null;
 
     return AliceEventLogisticsTextResult(
+      dropOffProvider: logistics.outboundProvider,
+      pickUpProvider: logistics.returnProvider,
+      dropOffSuggestedProvider: logistics.outbound.suggestedProvider,
+      pickUpSuggestedProvider: logistics.returnLeg.suggestedProvider,
       sameAdultText: sameAdultText,
       incompleteText: incompleteText,
       involvedAdultsText: involvedAdultsText,

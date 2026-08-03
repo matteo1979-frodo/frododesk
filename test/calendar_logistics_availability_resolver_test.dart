@@ -3,13 +3,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/logic/calendar/builders/calendar_logistics_availability_resolver.dart';
-import 'package:frododesk/logic/calendar/builders/alice_event_logistics_builder.dart';
-import 'package:frododesk/logic/alice_events/alice_event_engine.dart';
 import 'package:frododesk/logic/day_settings_store.dart';
 import 'package:frododesk/logic/settings_store.dart';
 import 'package:frododesk/logic/support_network_store.dart';
 import 'package:frododesk/models/support_person.dart';
-import 'package:frododesk/models/alice_special_event.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -287,48 +284,31 @@ void main() {
         id: 'event-support',
         name: 'Supporto evento',
         enabled: true,
-        start: TimeOfDay(hour: 9, minute: 0),
-        end: TimeOfDay(hour: 10, minute: 0),
-      );
-      final event = AliceSpecialEvent(
-        id: 'event',
-        label: 'Evento',
-        category: AliceSpecialEventCategory.sport,
-        dropOffAdultKey: 'matteo',
-        pickUpAdultKey: 'matteo',
-        date: day,
-        start: const TimeOfDay(hour: 9, minute: 0),
-        end: const TimeOfDay(hour: 10, minute: 0),
-      );
-      AliceEventLogisticsResult build(
-        CalendarLogisticsAvailabilityResult availability,
-      ) => const AliceEventLogisticsBuilder().build(
-        day: day,
-        event: event,
-        aliceEventEngine: const AliceEventEngine(),
-        isMatteoBusy: (_, _) => true,
-        isChiaraBusy: (_, _) => false,
-        hasAvailableSupport: (start, end) => availability.supportCovers(
-          TimeOfDay.fromDateTime(start),
-          TimeOfDay.fromDateTime(end),
-        ),
+        start: TimeOfDay(hour: 8, minute: 40),
+        end: TimeOfDay(hour: 10, minute: 20),
       );
 
       expect(
-        build(
-          await resolve(globalSandra: false, people: const [person]),
-        ).canSuggestSupport,
-        isFalse,
+        (await resolve(globalSandra: false, people: const [person]))
+            .supportForWindow(
+              const TimeOfDay(hour: 8, minute: 40),
+              const TimeOfDay(hour: 9, minute: 0),
+            ),
+        isEmpty,
       );
       expect(
-        build(
-          await resolve(
+        (await resolve(
             globalSandra: false,
             people: const [person],
             activeSupport: const {'event-support'},
-          ),
-        ).canSuggestSupport,
-        isTrue,
+          ))
+            .supportForWindow(
+              const TimeOfDay(hour: 8, minute: 40),
+              const TimeOfDay(hour: 9, minute: 0),
+            )
+            .single
+            .providerId,
+        'event-support',
       );
     },
   );
