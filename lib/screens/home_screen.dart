@@ -48,6 +48,7 @@ import 'package:flutter/services.dart';
 import '../logic/persistence_store.dart';
 import '../logic/home_event_note_updater.dart';
 import '../models/home_event_view_model.dart';
+import '../models/home_observed_at.dart';
 
 class HomeScreen extends StatefulWidget {
   final IpsStore ipsStore;
@@ -160,9 +161,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return "$hh:$mm";
   }
 
-  List<CoverageGapDetail> _todayCoverageDetails() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+  List<CoverageGapDetail> _todayCoverageDetails(HomeObservedAt observedAt) {
+    final today = observedAt.day;
 
     final rawDetails = coreStore.coverageEngine.aliceHomeRiskDetailsForDay(
       day: today,
@@ -254,14 +254,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  _HomeCoverageIssue? _todayCoverageIssueFromNow() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+  _HomeCoverageIssue? _todayCoverageIssueFromNow(HomeObservedAt observedAt) {
+    final today = observedAt.day;
+    final nowMinutes = observedAt.minuteOfDay;
 
-    final nowTime = TimeOfDay.now();
-    final nowMinutes = nowTime.hour * 60 + nowTime.minute;
-
-    final details = _todayCoverageDetails().where((detail) {
+    final details = _todayCoverageDetails(observedAt).where((detail) {
       final endMinutes = detail.end.hour * 60 + detail.end.minute;
       return endMinutes > nowMinutes;
     }).toList();
@@ -277,9 +274,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return _HomeCoverageIssue(day: today, details: details);
   }
 
-  _HomeCoverageIssue? _nextCoverageIssueIn30Days() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+  _HomeCoverageIssue? _nextCoverageIssueIn30Days(HomeObservedAt observedAt) {
+    final today = observedAt.day;
 
     for (int i = 1; i <= 30; i++) {
       final day = today.add(Duration(days: i));
@@ -293,9 +289,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return null;
   }
 
-  Future<void> _openCalendarToday() async {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+  Future<void> _openCalendarToday(HomeObservedAt observedAt) async {
+    final today = observedAt.day;
 
     await Navigator.of(context).push(
       MaterialPageRoute(
@@ -310,9 +305,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) setState(() {});
   }
 
-  List<Promemoria> _buildTodayPromemoria() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+  List<Promemoria> _buildTodayPromemoria(HomeObservedAt observedAt) {
+    final today = observedAt.day;
 
     final store = coreStore.promemoriaStore;
     final items = store.items;
@@ -340,11 +334,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  List<HomeEventViewModel> _buildTodayRealEvents() {
-    final day = DateTime.now();
-    final selectedDay = DateTime(day.year, day.month, day.day);
-
-    return _getAllEventsForDay(selectedDay);
+  List<HomeEventViewModel> _buildTodayRealEvents(HomeObservedAt observedAt) {
+    return _getAllEventsForDay(observedAt.day);
   }
 
   List<HomeEventViewModel> _getAllEventsForDay(DateTime day) {
@@ -355,8 +346,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  List<_HomeDay> _buildNext7DaysReal() {
-    final now = DateTime.now();
+  List<_HomeDay> _buildNext7DaysReal(HomeObservedAt observedAt) {
+    final now = observedAt.observedAt;
     final List<_HomeDay> result = [];
 
     final endOfYear = DateTime(now.year, 12, 31);
@@ -554,6 +545,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showTodayPopup({
+    required HomeObservedAt observedAt,
     required Map<String, List<Promemoria>> groupedPromemoria,
     required List<HomeEventViewModel> todayEvents,
     required int promemoriaCount,
@@ -564,6 +556,7 @@ class _HomeScreenState extends State<HomeScreen> {
       title: "Oggi",
       subtitle: "Promemoria ed eventi reali della giornata",
       child: _buildOggiDialogContent(
+        observedAt: observedAt,
         groupedPromemoria: groupedPromemoria,
         todayEvents: todayEvents,
         promemoriaCount: promemoriaCount,
@@ -571,13 +564,19 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _showNext7DaysPopup({required List<_HomeDay> next7Days}) async {
+  Future<void> _showNext7DaysPopup({
+    required HomeObservedAt observedAt,
+    required List<_HomeDay> next7Days,
+  }) async {
     await _showHomeDialog(
       icon: Icons.date_range_rounded,
       color: const Color(0xFF42A5F5),
       title: "Eventi globali",
       subtitle: "Eventi futuri fino a fine anno",
-      child: _buildNext7DaysDialogContent(next7Days: next7Days),
+      child: _buildNext7DaysDialogContent(
+        observedAt: observedAt,
+        next7Days: next7Days,
+      ),
     );
   }
 
@@ -754,8 +753,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return count;
   }
 
-  Future<void> _showFutureYearsPopup() async {
-    final currentYear = DateTime.now().year;
+  Future<void> _showFutureYearsPopup(HomeObservedAt observedAt) async {
+    final currentYear = observedAt.year;
     final years = List.generate(10, (index) => currentYear + index + 1);
 
     await _showHomeDialog(
@@ -790,8 +789,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _showPastYearsPopup() async {
-    final currentYear = DateTime.now().year;
+  Future<void> _showPastYearsPopup(HomeObservedAt observedAt) async {
+    final currentYear = observedAt.year;
     final years = List.generate(10, (index) => currentYear - index - 1);
 
     await _showHomeDialog(
@@ -929,6 +928,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showEventsPopup({
+    required HomeObservedAt observedAt,
     required List<HomeEventViewModel> todayEvents,
   }) async {
     await _showHomeDialog(
@@ -953,7 +953,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Align(
             alignment: Alignment.centerLeft,
             child: OutlinedButton.icon(
-              onPressed: _openCalendarToday,
+              onPressed: () => _openCalendarToday(observedAt),
               icon: const Icon(Icons.calendar_month_rounded),
               label: const Text("Vai al calendario"),
             ),
@@ -1196,6 +1196,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildOggiDialogContent({
+    required HomeObservedAt observedAt,
     required Map<String, List<Promemoria>> groupedPromemoria,
     required List<HomeEventViewModel> todayEvents,
     required int promemoriaCount,
@@ -1230,7 +1231,7 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.only(bottom: 10),
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
-                onTap: _openCalendarToday,
+                onTap: () => _openCalendarToday(observedAt),
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
@@ -1313,7 +1314,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Align(
           alignment: Alignment.centerLeft,
           child: OutlinedButton.icon(
-            onPressed: _openCalendarToday,
+            onPressed: () => _openCalendarToday(observedAt),
             icon: const Icon(Icons.calendar_month_rounded),
             label: const Text("Apri calendario"),
           ),
@@ -1322,8 +1323,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildNext7DaysDialogContent({required List<_HomeDay> next7Days}) {
-    final currentYear = DateTime.now().year;
+  Widget _buildNext7DaysDialogContent({
+    required HomeObservedAt observedAt,
+    required List<_HomeDay> next7Days,
+  }) {
+    final currentYear = observedAt.year;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1341,7 +1345,7 @@ class _HomeScreenState extends State<HomeScreen> {
           title: "Eventi passati",
           subtitle: "Archivio degli anni precedenti",
           color: const Color(0xFF8D6E63),
-          onTap: _showPastYearsPopup,
+          onTap: () => _showPastYearsPopup(observedAt),
         ),
         const SizedBox(height: 10),
         GlobalEventEntryCard(
@@ -1359,7 +1363,7 @@ class _HomeScreenState extends State<HomeScreen> {
           title: "Eventi futuri",
           subtitle: "Anni successivi al $currentYear",
           color: const Color(0xFF5E35B1),
-          onTap: _showFutureYearsPopup,
+          onTap: () => _showFutureYearsPopup(observedAt),
         ),
       ],
     );
@@ -1367,9 +1371,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final todayPromemoria = _buildTodayPromemoria();
-    final todayEvents = _buildTodayRealEvents();
-    final next7Days = _buildNext7DaysReal();
+    final observedAt = HomeObservedAt(observedAt: DateTime.now());
+    final todayPromemoria = _buildTodayPromemoria(observedAt);
+    final todayEvents = _buildTodayRealEvents(observedAt);
+    final next7Days = _buildNext7DaysReal(observedAt);
     final groupedPromemoria = _groupPromemoriaByPersona(todayPromemoria);
 
     return Scaffold(
@@ -1437,7 +1442,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           return Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(child: _buildSystemStatusCard()),
+                              Expanded(
+                                child: _buildSystemStatusCard(observedAt),
+                              ),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: _buildPanoramicaOggiCard(
@@ -1446,15 +1453,19 @@ class _HomeScreenState extends State<HomeScreen> {
                                   personeCount: groupedPromemoria.length,
                                   prossimiGiorniCount: next7Days.length,
                                   onPromemoriaTap: () => _showTodayPopup(
+                                    observedAt: observedAt,
                                     groupedPromemoria: groupedPromemoria,
                                     todayEvents: todayEvents,
                                     promemoriaCount: todayPromemoria.length,
                                   ),
                                   onEventiTap: () => _showEventsPopup(
+                                    observedAt: observedAt,
                                     todayEvents: todayEvents,
                                   ),
-                                  onNext7DaysTap: () =>
-                                      _showNext7DaysPopup(next7Days: next7Days),
+                                  onNext7DaysTap: () => _showNext7DaysPopup(
+                                    observedAt: observedAt,
+                                    next7Days: next7Days,
+                                  ),
                                 ),
                               ),
                             ],
@@ -1463,7 +1474,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         return Column(
                           children: [
-                            _buildSystemStatusCard(),
+                            _buildSystemStatusCard(observedAt),
                             const SizedBox(height: 16),
                             _buildPanoramicaOggiCard(
                               promemoriaCount: todayPromemoria.length,
@@ -1471,21 +1482,26 @@ class _HomeScreenState extends State<HomeScreen> {
                               personeCount: groupedPromemoria.length,
                               prossimiGiorniCount: next7Days.length,
                               onPromemoriaTap: () => _showTodayPopup(
+                                observedAt: observedAt,
                                 groupedPromemoria: groupedPromemoria,
                                 todayEvents: todayEvents,
                                 promemoriaCount: todayPromemoria.length,
                               ),
-                              onEventiTap: () =>
-                                  _showEventsPopup(todayEvents: todayEvents),
-                              onNext7DaysTap: () =>
-                                  _showNext7DaysPopup(next7Days: next7Days),
+                              onEventiTap: () => _showEventsPopup(
+                                observedAt: observedAt,
+                                todayEvents: todayEvents,
+                              ),
+                              onNext7DaysTap: () => _showNext7DaysPopup(
+                                observedAt: observedAt,
+                                next7Days: next7Days,
+                              ),
                             ),
                           ],
                         );
                       },
                     ),
                     const SizedBox(height: 24),
-                    _buildModulesSection(),
+                    _buildModulesSection(observedAt),
                     const SizedBox(height: 22),
                     Center(
                       child: Text(
@@ -1547,16 +1563,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSystemStatusCard() {
+  Widget _buildSystemStatusCard(HomeObservedAt observedAt) {
     return ValueListenableBuilder<snap.IpsSnapshot>(
       valueListenable: ipsStore,
       builder: (context, ips, _) {
-        final todayIssue = _todayCoverageIssueFromNow();
+        final todayIssue = _todayCoverageIssueFromNow(observedAt);
         final todayDetails = todayIssue?.details ?? [];
 
         final bool hasTodayCoverageIssue = todayIssue != null;
 
-        final nextIssue = _nextCoverageIssueIn30Days();
+        final nextIssue = _nextCoverageIssueIn30Days(observedAt);
 
         final stateText = hasTodayCoverageIssue
             ? "✋ Problema oggi"
@@ -1611,7 +1627,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   MiniActionChip(
                     icon: Icons.calendar_today_rounded,
                     label: "Apri calendario",
-                    onTap: _openCalendarToday,
+                    onTap: () => _openCalendarToday(observedAt),
                   ),
                   MiniActionChip(
                     icon: Icons.shield_rounded,
@@ -4354,7 +4370,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildModulesSection() {
+  Widget _buildModulesSection(HomeObservedAt observedAt) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -4398,7 +4414,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   badgeColor: const Color(0xFF43A047),
                   startColor: const Color(0xFF7C4DFF),
                   endColor: const Color(0xFFB388FF),
-                  onTap: _openCalendarToday,
+                  onTap: () => _openCalendarToday(observedAt),
                 ),
                 _DashboardModuleCard(
                   icon: Icons.favorite_rounded,
