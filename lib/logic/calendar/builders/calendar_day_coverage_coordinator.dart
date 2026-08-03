@@ -13,7 +13,9 @@ import 'calendar_logistics_availability_resolver.dart';
 class CalendarDayCoverageRequest {
   final DateTime day;
   final bool uscita13;
-  final bool sandraAvailable;
+  final bool sandraMorningAvailable;
+  final bool sandraLunchAvailable;
+  final bool sandraEveningAvailable;
   final DayOverrides overrides;
   final FeriePeriodStore ferieStore;
   final SchoolCoverChoice schoolInCover;
@@ -26,7 +28,9 @@ class CalendarDayCoverageRequest {
   const CalendarDayCoverageRequest({
     required this.day,
     required this.uscita13,
-    required this.sandraAvailable,
+    required this.sandraMorningAvailable,
+    required this.sandraLunchAvailable,
+    required this.sandraEveningAvailable,
     required this.overrides,
     required this.ferieStore,
     required this.schoolInCover,
@@ -50,7 +54,6 @@ class CalendarDayCoverageInputs {
   final TimeOfDay schoolOutEnd;
   final SchoolCoverChoice lunchCover;
   final TimeOfDay? earlySchoolExitAt;
-  final bool sandraAvailable;
   final bool serveSandraMattina;
   final bool serveSandraPranzo;
   final bool serveSandraSera;
@@ -66,7 +69,6 @@ class CalendarDayCoverageInputs {
     required this.schoolOutEnd,
     required this.lunchCover,
     required this.earlySchoolExitAt,
-    required this.sandraAvailable,
     required this.serveSandraMattina,
     required this.serveSandraPranzo,
     required this.serveSandraSera,
@@ -95,11 +97,20 @@ class CalendarDayCoverageCoordinator {
   }) {
     final day = DateTime(selectedDay.year, selectedDay.month, selectedDay.day);
     final uscita13 = inputs.earlySchoolExitAt != null;
+    final availability = inputs.logisticsAvailability;
     final analysis = analyze(
       CalendarDayCoverageRequest(
         day: day,
         uscita13: uscita13,
-        sandraAvailable: inputs.sandraAvailable,
+        sandraMorningAvailable: availability.sandraAvailableFor(
+          SandraAvailabilityBand.mattina,
+        ),
+        sandraLunchAvailable: availability.sandraAvailableFor(
+          SandraAvailabilityBand.pranzo,
+        ),
+        sandraEveningAvailable: availability.sandraAvailableFor(
+          SandraAvailabilityBand.sera,
+        ),
         overrides: inputs.overrides,
         ferieStore: inputs.ferieStore,
         schoolInCover: inputs.schoolInCover,

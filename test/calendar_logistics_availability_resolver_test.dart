@@ -150,7 +150,10 @@ void main() {
         mattina: true,
         pranzo: false,
       );
-      expect(availability.sandraAvailable, isTrue); // coverage
+      expect(
+        availability.sandraAvailableFor(SandraAvailabilityBand.mattina),
+        isTrue,
+      ); // coverage
       expect(
         availability.sandraCovers(
           const TimeOfDay(hour: 7, minute: 40),

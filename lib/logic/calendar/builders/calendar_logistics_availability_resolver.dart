@@ -47,7 +47,8 @@ class CalendarLogisticsAvailabilityResult {
     required this.daySettingsStore,
   });
 
-  bool get sandraAvailable => sandraWindows.any((window) => window.available);
+  bool sandraAvailableFor(SandraAvailabilityBand band) =>
+      sandraWindows.any((window) => window.band == band && window.available);
 
   bool sandraCovers(TimeOfDay start, TimeOfDay end) => sandraWindows.any(
     (window) =>

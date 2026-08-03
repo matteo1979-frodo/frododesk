@@ -353,7 +353,9 @@ class CoverageEngine {
   List<String> gapsForDay({
     required DateTime day,
     required bool uscita13,
-    required bool sandraAvailable,
+    required bool sandraMorningAvailable,
+    required bool sandraLunchAvailable,
+    required bool sandraEveningAvailable,
     required DayOverrides overrides,
     FeriePeriodStore? ferieStore,
     TimeOfDay? schoolOutStart,
@@ -368,7 +370,9 @@ class CoverageEngine {
     return analyzeDay(
       day: day,
       uscita13: uscita13,
-      sandraAvailable: sandraAvailable,
+      sandraMorningAvailable: sandraMorningAvailable,
+      sandraLunchAvailable: sandraLunchAvailable,
+      sandraEveningAvailable: sandraEveningAvailable,
       overrides: overrides,
       ferieStore: ferieStore,
       schoolOutStart: schoolOutStart,
@@ -509,7 +513,9 @@ class CoverageEngine {
   CoverageDayAnalysis analyzeDay({
     required DateTime day,
     required bool uscita13,
-    required bool sandraAvailable,
+    required bool sandraMorningAvailable,
+    required bool sandraLunchAvailable,
+    required bool sandraEveningAvailable,
     required DayOverrides overrides,
     FeriePeriodStore? ferieStore,
     TimeOfDay? schoolOutStart,
@@ -524,9 +530,9 @@ class CoverageEngine {
     return analyzeDayV2(
       day: day,
       uscita13: uscita13,
-      sandraMattinaOn: sandraAvailable,
-      sandraPranzoOn: sandraAvailable,
-      sandraSeraOn: sandraAvailable,
+      sandraMattinaOn: sandraMorningAvailable,
+      sandraPranzoOn: sandraLunchAvailable,
+      sandraSeraOn: sandraEveningAvailable,
       schoolStart: (() {
         final cfg = schoolStore
             .activePeriodForDay(_onlyDate(day))
@@ -684,18 +690,9 @@ class CoverageEngine {
     final d0 = _onlyDate(day);
     final entries = <_CoverageGapEntry>[];
 
-    final bool effSandraMattina = daySettingsStore.effectiveSandraMattina(
-      d0,
-      fallbackGlobal: sandraMattinaOn,
-    );
-    final bool effSandraPranzo = daySettingsStore.effectiveSandraPranzo(
-      d0,
-      fallbackGlobal: sandraPranzoOn,
-    );
-    final bool effSandraSera = daySettingsStore.effectiveSandraSera(
-      d0,
-      fallbackGlobal: sandraSeraOn,
-    );
+    final bool effSandraMattina = sandraMattinaOn;
+    final bool effSandraPranzo = sandraPranzoOn;
+    final bool effSandraSera = sandraSeraOn;
 
     final presenceEngine = _presenceEngine();
     final canonicalTimeline = presenceEngine.coverageTimelineForDay(d0);

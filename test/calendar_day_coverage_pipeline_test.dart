@@ -37,7 +37,6 @@ CalendarDayCoverageInputs _inputs(DateTime day) => CalendarDayCoverageInputs(
   schoolOutEnd: const TimeOfDay(hour: 16, minute: 45),
   lunchCover: SchoolCoverChoice.none,
   earlySchoolExitAt: null,
-  sandraAvailable: false,
   serveSandraMattina: false,
   serveSandraPranzo: false,
   serveSandraSera: false,

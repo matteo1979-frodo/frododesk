@@ -1047,7 +1047,9 @@ class _CalendarioScreenStepAStabileState
       analyze: (request) => _engine.analyzeDay(
         day: request.day,
         uscita13: request.uscita13,
-        sandraAvailable: request.sandraAvailable,
+        sandraMorningAvailable: request.sandraMorningAvailable,
+        sandraLunchAvailable: request.sandraLunchAvailable,
+        sandraEveningAvailable: request.sandraEveningAvailable,
         overrides: request.overrides,
         ferieStore: request.ferieStore,
         schoolInCover: request.schoolInCover,

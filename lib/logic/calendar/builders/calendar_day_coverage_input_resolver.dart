@@ -63,7 +63,6 @@ class CalendarDayCoverageInputResolver {
       schoolOutEnd: timing.schoolPickupWindowEnd,
       lunchCover: lunchCover,
       earlySchoolExitAt: timing.earlySchoolExitAt,
-      sandraAvailable: availability.sandraAvailable,
       serveSandraMattina: sandraDecision.serveSandraMattina,
       serveSandraPranzo: sandraDecision.serveSandraPranzo,
       serveSandraSera: sandraDecision.serveSandraSera,

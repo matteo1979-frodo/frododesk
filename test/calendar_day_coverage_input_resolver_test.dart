@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/logic/calendar/builders/calendar_day_coverage_input_resolver.dart';
+import 'package:frododesk/logic/calendar/builders/calendar_logistics_availability_resolver.dart';
 import 'package:frododesk/logic/core_store.dart';
 import 'package:frododesk/logic/day_settings_store.dart';
 import 'package:frododesk/models/day_override.dart';
@@ -136,7 +137,12 @@ void main() {
     final inputs = resolver(
       store,
     ).resolve(selectedDay: day, overrides: DayOverrides.empty(day));
-    expect(inputs.sandraAvailable, false);
+    expect(
+      inputs.logisticsAvailability.sandraAvailableFor(
+        SandraAvailabilityBand.mattina,
+      ),
+      false,
+    );
   });
 
   test('Sandra requires global enablement and explicit daily activation', () {
@@ -145,7 +151,8 @@ void main() {
     expect(
       resolver(store)
           .resolve(selectedDay: day, overrides: DayOverrides.empty(day))
-          .sandraAvailable,
+          .logisticsAvailability
+          .sandraAvailableFor(SandraAvailabilityBand.mattina),
       false,
     );
 
@@ -153,7 +160,8 @@ void main() {
     expect(
       resolver(store)
           .resolve(selectedDay: day, overrides: DayOverrides.empty(day))
-          .sandraAvailable,
+          .logisticsAvailability
+          .sandraAvailableFor(SandraAvailabilityBand.mattina),
       true,
     );
   });
