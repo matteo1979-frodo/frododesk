@@ -46,6 +46,8 @@ import '../models/finance_transaction.dart';
 import 'package:flutter/services.dart';
 
 import '../logic/persistence_store.dart';
+import '../logic/home_event_note_updater.dart';
+import '../models/home_event_view_model.dart';
 
 class HomeScreen extends StatefulWidget {
   final IpsStore ipsStore;
@@ -338,94 +340,19 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  List<_HomeEvent> _buildTodayRealEvents() {
+  List<HomeEventViewModel> _buildTodayRealEvents() {
     final day = DateTime.now();
     final selectedDay = DateTime(day.year, day.month, day.day);
 
     return _getAllEventsForDay(selectedDay);
   }
 
-  List<_HomeEvent> _getAllEventsForDay(DateTime day) {
-    final List<_HomeEvent> items = [];
-
-    final realEvents = coreStore.realEventStore.eventsForDay(day);
-
-    for (final e in realEvents) {
-      String time = "Tutto il giorno";
-
-      if (e.startTime != null && e.endTime != null) {
-        final sh = e.startTime!.hour.toString().padLeft(2, '0');
-        final sm = e.startTime!.minute.toString().padLeft(2, '0');
-        final eh = e.endTime!.hour.toString().padLeft(2, '0');
-        final em = e.endTime!.minute.toString().padLeft(2, '0');
-        time = "$sh:$sm-$eh:$em";
-      } else if (e.startTime != null) {
-        final sh = e.startTime!.hour.toString().padLeft(2, '0');
-        final sm = e.startTime!.minute.toString().padLeft(2, '0');
-        time = "$sh:$sm";
-      }
-
-      final category = (e.personKey == null || e.personKey!.trim().isEmpty)
-          ? "Evento"
-          : e.personKey!;
-
-      items.add(
-        _HomeEvent(
-          id: e.id,
-          time: time,
-          title: e.title,
-          category: category,
-          source: "real",
-          participants: e.effectiveParticipantKeys.map((key) {
-            switch (key) {
-              case "matteo":
-                return "Matteo";
-              case "chiara":
-                return "Chiara";
-              case "alice":
-                return "Alice";
-              case "sandra":
-                return "Sandra";
-              case "family":
-                return "Famiglia";
-              default:
-                return key;
-            }
-          }).toList(),
-          ipsImpact: true,
-          notes: e.notes,
-        ),
-      );
-    }
-
-    final aliceEvents = coreStore.aliceSpecialEventStore
-        .eventsForDay(day)
-        .where((event) => event.enabled)
-        .toList();
-
-    for (final e in aliceEvents) {
-      final sh = e.start.hour.toString().padLeft(2, '0');
-      final sm = e.start.minute.toString().padLeft(2, '0');
-      final eh = e.end.hour.toString().padLeft(2, '0');
-      final em = e.end.minute.toString().padLeft(2, '0');
-
-      items.add(
-        _HomeEvent(
-          id: e.id,
-          time: "$sh:$sm-$eh:$em",
-          title: e.label,
-          category: "Alice",
-          source: "alice",
-          participants: const ["Alice"],
-          ipsImpact: true,
-          notes: e.note,
-        ),
-      );
-    }
-
-    items.sort((a, b) => a.time.compareTo(b.time));
-
-    return items;
+  List<HomeEventViewModel> _getAllEventsForDay(DateTime day) {
+    return const HomeEventViewModelBuilder().forDay(
+      day: day,
+      realEvents: coreStore.realEventStore.eventsForDay(day),
+      aliceSpecialEvents: coreStore.aliceSpecialEventStore.eventsForDay(day),
+    );
   }
 
   List<_HomeDay> _buildNext7DaysReal() {
@@ -628,7 +555,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _showTodayPopup({
     required Map<String, List<Promemoria>> groupedPromemoria,
-    required List<_HomeEvent> todayEvents,
+    required List<HomeEventViewModel> todayEvents,
     required int promemoriaCount,
   }) async {
     await _showHomeDialog(
@@ -705,7 +632,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           for (int i = 0; i < end.day; i++) {
             final day = DateTime(year, monthIndex, i + 1);
-            eventCount += coreStore.realEventStore.eventsForDay(day).length;
+            eventCount += _getAllEventsForDay(day).length;
           }
 
           final hasEvents = eventCount > 0;
@@ -907,7 +834,7 @@ class _HomeScreenState extends State<HomeScreen> {
       subtitle: "Eventi dell’anno",
       child: StatefulBuilder(
         builder: (context, dialogSetState) {
-          final List<_HomeEvent> events = [];
+          final List<HomeEventViewModel> events = [];
 
           final start = DateTime(year, 1, 1);
           final end = DateTime(year, 12, 31);
@@ -917,21 +844,7 @@ class _HomeScreenState extends State<HomeScreen> {
           while (!cursor.isAfter(end)) {
             final dayEvents = _getAllEventsForDay(cursor);
 
-            for (final e in dayEvents) {
-              events.add(
-                _HomeEvent(
-                  id: e.id,
-                  time:
-                      "${cursor.day}/${cursor.month}/${cursor.year} • ${e.time}",
-                  title: e.title,
-                  category: e.category,
-                  source: e.source,
-                  participants: e.participants,
-                  ipsImpact: e.ipsImpact,
-                  notes: e.notes,
-                ),
-              );
-            }
+            events.addAll(dayEvents);
 
             cursor = cursor.add(const Duration(days: 1));
           }
@@ -946,6 +859,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: _buildEventsGroupedByDay(
                     events,
+                    dateStyle: HomeEventDateLabelStyle.dayMonthYear,
                     onSaved: () {
                       dialogSetState(() {});
                     },
@@ -982,7 +896,7 @@ class _HomeScreenState extends State<HomeScreen> {
             "Dicembre": 12,
           }[monthName]!;
 
-          final List<_HomeEvent> events = [];
+          final List<HomeEventViewModel> events = [];
 
           final end = DateTime(year, monthIndex + 1, 0);
 
@@ -990,20 +904,7 @@ class _HomeScreenState extends State<HomeScreen> {
             final day = DateTime(year, monthIndex, i + 1);
             final dayEvents = _getAllEventsForDay(day);
 
-            for (final e in dayEvents) {
-              events.add(
-                _HomeEvent(
-                  id: e.id,
-                  time: "${day.day}/${day.month} • ${e.time}",
-                  title: e.title,
-                  category: e.category,
-                  source: e.source,
-                  participants: e.participants,
-                  ipsImpact: e.ipsImpact,
-                  notes: e.notes,
-                ),
-              );
-            }
+            events.addAll(dayEvents);
           }
 
           return events.isEmpty
@@ -1016,6 +917,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: _buildEventsGroupedByDay(
                     events,
+                    dateStyle: HomeEventDateLabelStyle.dayMonth,
                     onSaved: () {
                       dialogSetState(() {});
                     },
@@ -1026,7 +928,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _showEventsPopup({required List<_HomeEvent> todayEvents}) async {
+  Future<void> _showEventsPopup({
+    required List<HomeEventViewModel> todayEvents,
+  }) async {
     await _showHomeDialog(
       icon: Icons.event_note_rounded,
       color: const Color(0xFF3F51B5),
@@ -1059,7 +963,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCompactEventTile(_HomeEvent e, {VoidCallback? onSaved}) {
+  Widget _buildCompactEventTile(
+    HomeEventViewModel e, {
+    VoidCallback? onSaved,
+    HomeEventDateLabelStyle dateStyle = HomeEventDateLabelStyle.none,
+  }) {
     return InkWell(
       onTap: () {
         _showEventDetailPopup(e, onSaved: onSaved);
@@ -1079,7 +987,7 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(
               width: 82,
               child: Text(
-                e.time,
+                HomeEventFormatter.tileTime(e, dateStyle: dateStyle),
                 style: const TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 12.5,
@@ -1112,48 +1020,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showEventDetailPopup(
-    _HomeEvent event, {
+    HomeEventViewModel event, {
     VoidCallback? onSaved,
   }) async {
-    final parts = event.time.split("•");
-    final datePart = parts.first.trim();
-    final timePart = parts.length > 1 ? parts[1].trim() : "";
-
-    final dateParts = datePart.split("/");
-    final dayNumber = int.tryParse(dateParts[0]) ?? 1;
-    final monthNumber = int.tryParse(dateParts[1]) ?? 1;
-    final year = DateTime.now().year;
-
-    final weekdays = [
-      "Lunedì",
-      "Martedì",
-      "Mercoledì",
-      "Giovedì",
-      "Venerdì",
-      "Sabato",
-      "Domenica",
-    ];
-
-    final months = [
-      "Gennaio",
-      "Febbraio",
-      "Marzo",
-      "Aprile",
-      "Maggio",
-      "Giugno",
-      "Luglio",
-      "Agosto",
-      "Settembre",
-      "Ottobre",
-      "Novembre",
-      "Dicembre",
-    ];
-
-    final date = DateTime(year, monthNumber, dayNumber);
-    final readableDate =
-        "${weekdays[date.weekday - 1]} $dayNumber ${months[monthNumber - 1]}";
-
-    final controller = TextEditingController(text: event.notes ?? "");
+    final readableDate = HomeEventFormatter.readableDay(event.day);
+    final timePart = HomeEventFormatter.time(event);
+    final controller = TextEditingController(text: event.description ?? "");
 
     await _showHomeDialog(
       icon: Icons.auto_stories_rounded,
@@ -1184,21 +1056,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                if (timePart.isNotEmpty)
-                  Row(
-                    children: [
-                      const Icon(Icons.schedule_rounded, size: 18),
-                      const SizedBox(width: 8),
-                      Text(
-                        timePart,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
-                        ),
+                Row(
+                  children: [
+                    const Icon(Icons.schedule_rounded, size: 18),
+                    const SizedBox(width: 8),
+                    Text(
+                      timePart,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
                       ),
-                    ],
-                  ),
-                if (timePart.isNotEmpty) const SizedBox(height: 8),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     const Icon(Icons.group_rounded, size: 18),
@@ -1262,38 +1133,10 @@ class _HomeScreenState extends State<HomeScreen> {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () {
-                if (event.source == "alice") {
-                  final parts = event.time.split("•");
-                  final datePart = parts.first.trim();
-
-                  final dateParts = datePart.split("/");
-                  final day = int.parse(dateParts[0]);
-                  final month = int.parse(dateParts[1]);
-                  final year = DateTime.now().year;
-
-                  final date = DateTime(year, month, day);
-
-                  final list = coreStore.aliceSpecialEventStore.eventsForDay(
-                    date,
-                  );
-
-                  final updated = list.map((e) {
-                    if (e.id == event.id) {
-                      return e.copyWith(note: controller.text);
-                    }
-                    return e;
-                  }).toList();
-
-                  coreStore.aliceSpecialEventStore.replaceEventsForDay(
-                    date,
-                    updated,
-                  );
-                } else {
-                  coreStore.realEventStore.updateEventNotes(
-                    id: event.id,
-                    notes: controller.text,
-                  );
-                }
+                HomeEventNoteUpdater(
+                  realEventStore: coreStore.realEventStore,
+                  aliceSpecialEventStore: coreStore.aliceSpecialEventStore,
+                ).update(event, controller.text);
 
                 Navigator.of(context).pop();
 
@@ -1317,54 +1160,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Widget> _buildEventsGroupedByDay(
-    List<_HomeEvent> events, {
+    List<HomeEventViewModel> events, {
+    required HomeEventDateLabelStyle dateStyle,
     VoidCallback? onSaved,
   }) {
-    final Map<String, List<_HomeEvent>> grouped = {};
-
-    for (final e in events) {
-      final parts = e.time.split("•");
-      final dayPart = parts.first.trim(); // es: "12/5"
-
-      grouped.putIfAbsent(dayPart, () => []).add(e);
-    }
-
-    final weekdays = [
-      "Lunedì",
-      "Martedì",
-      "Mercoledì",
-      "Giovedì",
-      "Venerdì",
-      "Sabato",
-      "Domenica",
-    ];
-
-    final months = [
-      "Gennaio",
-      "Febbraio",
-      "Marzo",
-      "Aprile",
-      "Maggio",
-      "Giugno",
-      "Luglio",
-      "Agosto",
-      "Settembre",
-      "Ottobre",
-      "Novembre",
-      "Dicembre",
-    ];
+    final grouped = HomeEventGrouping.byDay(events);
 
     final List<Widget> widgets = [];
 
     for (final entry in grouped.entries) {
-      final dateParts = entry.key.split("/");
-      final dayNumber = int.tryParse(dateParts[0]) ?? 1;
-      final monthNumber = int.tryParse(dateParts[1]) ?? 1;
-      final year = DateTime.now().year;
-
-      final date = DateTime(year, monthNumber, dayNumber);
-      final readableDay =
-          "${weekdays[date.weekday - 1]} $dayNumber ${months[monthNumber - 1]}";
+      final readableDay = HomeEventFormatter.readableDay(entry.key);
 
       widgets.add(
         Padding(
@@ -1378,7 +1183,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
       widgets.addAll(
         entry.value.map(
-          (event) => _buildCompactEventTile(event, onSaved: onSaved),
+          (event) => _buildCompactEventTile(
+            event,
+            onSaved: onSaved,
+            dateStyle: dateStyle,
+          ),
         ),
       );
     }
@@ -1388,7 +1197,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildOggiDialogContent({
     required Map<String, List<Promemoria>> groupedPromemoria,
-    required List<_HomeEvent> todayEvents,
+    required List<HomeEventViewModel> todayEvents,
     required int promemoriaCount,
   }) {
     if (groupedPromemoria.isEmpty && todayEvents.isEmpty) {
@@ -4922,31 +4731,9 @@ class _DashboardModuleCardState extends State<_DashboardModuleCard>
   }
 }
 
-class _HomeEvent {
-  final String id;
-  final String time;
-  final String title;
-  final String category;
-  final String source;
-  final List<String> participants;
-  final bool ipsImpact;
-  final String? notes;
-
-  const _HomeEvent({
-    required this.id,
-    required this.time,
-    required this.title,
-    required this.category,
-    required this.source,
-    required this.participants,
-    required this.ipsImpact,
-    this.notes,
-  });
-}
-
 class _HomeDay {
   final String dayLabel;
-  final List<_HomeEvent> events;
+  final List<HomeEventViewModel> events;
 
   const _HomeDay({required this.dayLabel, required this.events});
 }
