@@ -395,6 +395,9 @@ void main() {
     final screen = File(
       'lib/screens/calendario_screen_stepa.dart',
     ).readAsStringSync();
+    final pipeline = File(
+      'lib/logic/calendar/builders/calendar_day_coverage_pipeline.dart',
+    ).readAsStringSync();
     final engine = File('lib/logic/coverage_engine.dart').readAsStringSync();
     final buildCoverage = screen.substring(
       screen.indexOf('CoverageResultStepA _buildDayCoverage'),
@@ -410,10 +413,12 @@ void main() {
       ).hasMatch(buildCoverage),
       isFalse,
     );
-    expect(RegExp(r'\.analyzeDay\(').allMatches(buildCoverage), hasLength(1));
-    expect(buildCoverage, contains('sandraMorningAvailable:'));
-    expect(buildCoverage, contains('sandraLunchAvailable:'));
-    expect(buildCoverage, contains('sandraEveningAvailable:'));
+    expect(buildCoverage, contains('CalendarDayCoveragePipeline'));
+    expect(buildCoverage, isNot(contains('.analyzeDay(')));
+    expect(RegExp(r'\.analyzeDay\(').allMatches(pipeline), hasLength(1));
+    expect(pipeline, contains('sandraMorningAvailable:'));
+    expect(pipeline, contains('sandraLunchAvailable:'));
+    expect(pipeline, contains('sandraEveningAvailable:'));
     expect(engine, isNot(contains('.effectiveSandraMattina(')));
     expect(engine, isNot(contains('.effectiveSandraPranzo(')));
     expect(engine, isNot(contains('.effectiveSandraSera(')));

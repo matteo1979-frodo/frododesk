@@ -16,9 +16,7 @@ void main() {
 
   test('Home render path creates one clock and has no TimeOfDay.now', () {
     final source = File('lib/screens/home_screen.dart').readAsStringSync();
-    final renderPathStart = source.indexOf(
-      'List<CoverageGapDetail> _todayCoverageDetails',
-    );
+    final renderPathStart = source.indexOf('CoverageResultStepA _dayCoverage');
     final renderPathEnd = source.indexOf(
       'Future<void> _showFinancePresentPopup',
     );

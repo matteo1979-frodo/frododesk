@@ -97,6 +97,7 @@ import '../widgets/calendar/coverage_criticalities_panel.dart';
 import '../logic/calendar/builders/coverage_gap_recommendation_view_model_builder.dart';
 import '../widgets/calendar/coverage_gap_recommendations_panel.dart';
 import '../logic/calendar/builders/calendar_day_coverage_coordinator.dart';
+import '../logic/calendar/builders/calendar_day_coverage_pipeline.dart';
 import '../logic/calendar/builders/calendar_day_coverage_input_resolver.dart';
 import '../logic/calendar/builders/alice_home_risk_view_model_builder.dart';
 import '../logic/calendar/calendar_day_navigation.dart';
@@ -1040,29 +1041,10 @@ class _CalendarioScreenStepAStabileState
     required DateTime observedAt,
   }) {
     final d0 = _onlyDate(day);
-    final inputs = _coverageInputs(d0);
-
-    final coordinator = CalendarDayCoverageCoordinator(
-      analyze: (request) => _engine.analyzeDay(
-        day: request.day,
-        uscita13: request.uscita13,
-        sandraMorningAvailable: request.sandraMorningAvailable,
-        sandraLunchAvailable: request.sandraLunchAvailable,
-        sandraEveningAvailable: request.sandraEveningAvailable,
-        overrides: request.overrides,
-        ferieStore: request.ferieStore,
-        schoolInCover: request.schoolInCover,
-        schoolOutCover: request.schoolOutCover,
-        schoolOutStart: request.schoolOutStart,
-        schoolOutEnd: request.schoolOutEnd,
-        lunchCover: request.lunchCover,
-        uscitaAnticipataAt: request.uscitaAnticipataAt,
-      ),
-    );
-    return coordinator.build(
+    return CalendarDayCoveragePipeline(coreStore: coreStore).build(
       selectedDay: d0,
       observedAt: observedAt,
-      inputs: inputs,
+      overrides: _getOverridesForDay(d0),
     );
   }
 

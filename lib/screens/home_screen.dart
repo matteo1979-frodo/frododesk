@@ -17,8 +17,6 @@ import 'spese_page.dart';
 
 import 'salute_screen.dart';
 
-import '../logic/coverage_engine.dart';
-
 import 'statistiche_screen.dart';
 import 'finance_screen.dart';
 import '../widgets/home_people_panel.dart';
@@ -49,6 +47,11 @@ import '../logic/persistence_store.dart';
 import '../logic/home_event_note_updater.dart';
 import '../models/home_event_view_model.dart';
 import '../models/home_observed_at.dart';
+import '../logic/calendar/builders/alice_home_risk_view_model_builder.dart';
+import '../logic/calendar/builders/calendar_day_coverage_pipeline.dart';
+import '../logic/calendar/builders/calendar_day_status_builder.dart';
+import '../logic/calendar/models/calendar_day_status.dart';
+import '../logic/calendar/models/coverage_result_step_a.dart';
 
 class HomeScreen extends StatefulWidget {
   final IpsStore ipsStore;
@@ -161,128 +164,26 @@ class _HomeScreenState extends State<HomeScreen> {
     return "$hh:$mm";
   }
 
-  List<CoverageGapDetail> _todayCoverageDetails(HomeObservedAt observedAt) {
-    final today = observedAt.day;
-
-    final rawDetails = coreStore.coverageEngine.aliceHomeRiskDetailsForDay(
-      day: today,
-      uscita13:
-          coreStore.daySettingsStore.uscita13ForDay(today) ??
-          settingsStore.isUscita13,
-      sandraMattinaOn:
-          coreStore.daySettingsStore.sandraMattinaForDay(today) ?? false,
-      sandraPranzoOn:
-          coreStore.daySettingsStore.sandraPranzoForDay(today) ?? false,
-      sandraSeraOn: coreStore.daySettingsStore.sandraSeraForDay(today) ?? false,
-      schoolStart: TimeOfDay(
-        hour:
-            (coreStore.schoolStore.schoolDayConfigFor(today)?.entryMinutes ??
-                505) ~/
-            60,
-        minute:
-            (coreStore.schoolStore.schoolDayConfigFor(today)?.entryMinutes ??
-                505) %
-            60,
-      ),
-      overrides: coreStore.overrideStore.getEffectiveForDay(
-        day: today,
-        ferieStore: coreStore.feriePeriodStore,
-      ),
-      ferieStore: coreStore.feriePeriodStore,
-      schoolInCover: coreStore.daySettingsStore.schoolInCoverForDay(today),
-      schoolOutCover: coreStore.daySettingsStore.schoolOutCoverForDay(today),
-      schoolOutStart:
-          coreStore.daySettingsStore.schoolOutStartForDay(today) ??
-          const TimeOfDay(hour: 16, minute: 25),
-      schoolOutEnd:
-          coreStore.daySettingsStore.schoolOutEndForDay(today) ??
-          const TimeOfDay(hour: 16, minute: 45),
-      lunchCover: coreStore.daySettingsStore.lunchCoverForDay(today),
-      uscitaAnticipataAt: coreStore.daySettingsStore.uscitaAnticipataTimeForDay(
-        today,
-      ),
-    );
-
-    return rawDetails.where((detail) {
-      final gapStart = DateTime(
-        today.year,
-        today.month,
-        today.day,
-        detail.start.hour,
-        detail.start.minute,
-      );
-
-      final gapEnd = DateTime(
-        today.year,
-        today.month,
-        today.day,
-        detail.end.hour,
-        detail.end.minute,
-      );
-
-      for (final person in coreStore.supportNetworkStore.people) {
-        if (!person.enabled) continue;
-
-        final enabledForDay = coreStore.daySettingsStore
-            .isSupportPersonEnabledForDay(today, person.id);
-
-        if (!enabledForDay) continue;
-
-        final supportStart = DateTime(
-          today.year,
-          today.month,
-          today.day,
-          person.start.hour,
-          person.start.minute,
-        );
-
-        final supportEnd = DateTime(
-          today.year,
-          today.month,
-          today.day,
-          person.end.hour,
-          person.end.minute,
-        );
-
-        final covers =
-            !supportStart.isAfter(gapStart) && !supportEnd.isBefore(gapEnd);
-
-        if (covers) return false;
-      }
-
-      return true;
-    }).toList();
+  CoverageResultStepA _dayCoverage({
+    required DateTime day,
+    required HomeObservedAt observedAt,
+  }) {
+    return CalendarDayCoveragePipeline(
+      coreStore: coreStore,
+    ).build(selectedDay: day, observedAt: observedAt.observedAt);
   }
 
-  _HomeCoverageIssue? _todayCoverageIssueFromNow(HomeObservedAt observedAt) {
-    final today = observedAt.day;
-    final nowMinutes = observedAt.minuteOfDay;
-
-    final details = _todayCoverageDetails(observedAt).where((detail) {
-      final endMinutes = detail.end.hour * 60 + detail.end.minute;
-      return endMinutes > nowMinutes;
-    }).toList();
-
-    if (details.isEmpty) return null;
-
-    details.sort((a, b) {
-      final aStart = a.start.hour * 60 + a.start.minute;
-      final bStart = b.start.hour * 60 + b.start.minute;
-      return aStart.compareTo(bStart);
-    });
-
-    return _HomeCoverageIssue(day: today, details: details);
-  }
-
-  _HomeCoverageIssue? _nextCoverageIssueIn30Days(HomeObservedAt observedAt) {
+  ({DateTime day, CoverageResultStepA coverage})? _nextCoverageIssueIn30Days(
+    HomeObservedAt observedAt,
+  ) {
     final today = observedAt.day;
 
     for (int i = 1; i <= 30; i++) {
       final day = today.add(Duration(days: i));
-      final details = ipsStore.coverage.realGapDetailsForDay(day);
+      final coverage = _dayCoverage(day: day, observedAt: observedAt);
 
-      if (details.isNotEmpty) {
-        return _HomeCoverageIssue(day: day, details: details);
+      if (!coverage.ok) {
+        return (day: day, coverage: coverage);
       }
     }
 
@@ -1567,10 +1468,22 @@ class _HomeScreenState extends State<HomeScreen> {
     return ValueListenableBuilder<snap.IpsSnapshot>(
       valueListenable: ipsStore,
       builder: (context, ips, _) {
-        final todayIssue = _todayCoverageIssueFromNow(observedAt);
-        final todayDetails = todayIssue?.details ?? [];
-
-        final bool hasTodayCoverageIssue = todayIssue != null;
+        final todayCoverage = _dayCoverage(
+          day: observedAt.day,
+          observedAt: observedAt,
+        );
+        final todayRisk = const AliceHomeRiskViewModelBuilder().build(
+          gapDetails: todayCoverage.gapDetails,
+          selectedDay: observedAt.day,
+          observedAt: observedAt.observedAt,
+        );
+        final todayStatus = const CalendarDayStatusBuilder().build(
+          gapDetails: todayRisk.gapDetails,
+          criticalityDetails: todayCoverage.criticalityDetails,
+          hasLogisticGaps: false,
+        );
+        final todayDetails = todayRisk.gapDetails;
+        final hasTodayCoverageIssue = todayStatus == CalendarDayStatus.problem;
 
         final nextIssue = _nextCoverageIssueIn30Days(observedAt);
 
@@ -1590,7 +1503,7 @@ class _HomeScreenState extends State<HomeScreen> {
           systemDetail =
               "Copertura: Alice scoperta oggi ${_formatTime(first.start)}–${_formatTime(first.end)}";
         } else if (nextIssue != null) {
-          final first = nextIssue.details.first;
+          final first = nextIssue.coverage.gapDetails.first;
 
           final weekday = [
             "Lun",
@@ -4752,13 +4665,6 @@ class _HomeDay {
   final List<HomeEventViewModel> events;
 
   const _HomeDay({required this.dayLabel, required this.events});
-}
-
-class _HomeCoverageIssue {
-  final DateTime day;
-  final List<CoverageGapDetail> details;
-
-  const _HomeCoverageIssue({required this.day, required this.details});
 }
 
 String _getMonthName(int month) {
