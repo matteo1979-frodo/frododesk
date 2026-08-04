@@ -8,7 +8,6 @@ import '../logic/ips_store.dart';
 
 import '../logic/settings_store.dart';
 import '../models/ips_snapshot.dart' as snap;
-import '../models/promemoria.dart';
 import '../models/finance_fund.dart';
 import '../models/finance_recurring_item.dart';
 import 'calendario_screen_stepa.dart';
@@ -47,11 +46,8 @@ import '../logic/persistence_store.dart';
 import '../logic/home_event_note_updater.dart';
 import '../models/home_event_view_model.dart';
 import '../models/home_observed_at.dart';
-import '../logic/calendar/builders/alice_home_risk_view_model_builder.dart';
-import '../logic/calendar/builders/calendar_day_coverage_pipeline.dart';
-import '../logic/calendar/builders/calendar_day_status_builder.dart';
-import '../logic/calendar/models/calendar_day_status.dart';
-import '../logic/calendar/models/coverage_result_step_a.dart';
+import '../models/home_snapshot.dart';
+import '../logic/home_snapshot_coordinator.dart';
 
 class HomeScreen extends StatefulWidget {
   final IpsStore ipsStore;
@@ -158,36 +154,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  String _formatTime(TimeOfDay time) {
-    final hh = time.hour.toString().padLeft(2, '0');
-    final mm = time.minute.toString().padLeft(2, '0');
-    return "$hh:$mm";
-  }
-
-  CoverageResultStepA _dayCoverage({
-    required DateTime day,
-    required HomeObservedAt observedAt,
-  }) {
-    return CalendarDayCoveragePipeline(
+  HomeSnapshot _requestHomeSnapshot(HomeObservedAt observedAt) {
+    return HomeSnapshotCoordinator(
       coreStore: coreStore,
-    ).build(selectedDay: day, observedAt: observedAt.observedAt);
-  }
-
-  ({DateTime day, CoverageResultStepA coverage})? _nextCoverageIssueIn30Days(
-    HomeObservedAt observedAt,
-  ) {
-    final today = observedAt.day;
-
-    for (int i = 1; i <= 30; i++) {
-      final day = today.add(Duration(days: i));
-      final coverage = _dayCoverage(day: day, observedAt: observedAt);
-
-      if (!coverage.ok) {
-        return (day: day, coverage: coverage);
-      }
-    }
-
-    return null;
+    ).build(observedAt: observedAt);
   }
 
   Future<void> _openCalendarToday(HomeObservedAt observedAt) async {
@@ -204,111 +174,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     ipsStore.refresh();
     if (mounted) setState(() {});
-  }
-
-  List<Promemoria> _buildTodayPromemoria(HomeObservedAt observedAt) {
-    final today = observedAt.day;
-
-    final store = coreStore.promemoriaStore;
-    final items = store.items;
-
-    return items.where((p) {
-      final created = DateTime(
-        p.createdDay.year,
-        p.createdDay.month,
-        p.createdDay.day,
-      );
-
-      final completed = p.completedDay == null
-          ? null
-          : DateTime(
-              p.completedDay!.year,
-              p.completedDay!.month,
-              p.completedDay!.day,
-            );
-
-      final isVisible =
-          (created.isBefore(today) || created == today) &&
-          (!p.done || completed == today);
-
-      return isVisible;
-    }).toList();
-  }
-
-  List<HomeEventViewModel> _buildTodayRealEvents(HomeObservedAt observedAt) {
-    return _getAllEventsForDay(observedAt.day);
-  }
-
-  List<HomeEventViewModel> _getAllEventsForDay(DateTime day) {
-    return const HomeEventViewModelBuilder().forDay(
-      day: day,
-      realEvents: coreStore.realEventStore.eventsForDay(day),
-      aliceSpecialEvents: coreStore.aliceSpecialEventStore.eventsForDay(day),
-    );
-  }
-
-  List<_HomeDay> _buildNext7DaysReal(HomeObservedAt observedAt) {
-    final now = observedAt.observedAt;
-    final List<_HomeDay> result = [];
-
-    final endOfYear = DateTime(now.year, 12, 31);
-    final daysToScan = endOfYear
-        .difference(DateTime(now.year, now.month, now.day))
-        .inDays;
-
-    for (int i = 1; i <= daysToScan; i++) {
-      final day = now.add(Duration(days: i));
-      final dayKey = DateTime(day.year, day.month, day.day);
-
-      final mappedEvents = _getAllEventsForDay(dayKey);
-
-      if (mappedEvents.isEmpty) continue;
-
-      final weekday = [
-        "Lun",
-        "Mar",
-        "Mer",
-        "Gio",
-        "Ven",
-        "Sab",
-        "Dom",
-      ][day.weekday - 1];
-
-      final label = "$weekday ${day.day}/${day.month}";
-      result.add(_HomeDay(dayLabel: label, events: mappedEvents));
-    }
-
-    return result;
-  }
-
-  Map<String, List<Promemoria>> _groupPromemoriaByPersona(
-    List<Promemoria> items,
-  ) {
-    final Map<String, List<Promemoria>> grouped = {};
-
-    for (final p in items) {
-      grouped.putIfAbsent(p.persona, () => []).add(p);
-    }
-
-    final entries = grouped.entries.toList()
-      ..sort((a, b) => _personaOrder(a.key).compareTo(_personaOrder(b.key)));
-
-    return {for (final e in entries) e.key: e.value};
-  }
-
-  int _personaOrder(String persona) {
-    switch (persona.toLowerCase()) {
-      case "matteo":
-        return 0;
-      case "chiara":
-        return 1;
-      case "alice":
-        return 2;
-      case "famiglia":
-        return 3;
-      default:
-        return 99;
-    }
   }
 
   Color _colorForPersona(String persona) {
@@ -445,77 +310,34 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _showTodayPopup({
-    required HomeObservedAt observedAt,
-    required Map<String, List<Promemoria>> groupedPromemoria,
-    required List<HomeEventViewModel> todayEvents,
-    required int promemoriaCount,
-  }) async {
+  Future<void> _showTodayPopup({required HomeSnapshot snapshot}) async {
     await _showHomeDialog(
       icon: Icons.today_rounded,
       color: const Color(0xFF43A047),
       title: "Oggi",
       subtitle: "Promemoria ed eventi reali della giornata",
-      child: _buildOggiDialogContent(
-        observedAt: observedAt,
-        groupedPromemoria: groupedPromemoria,
-        todayEvents: todayEvents,
-        promemoriaCount: promemoriaCount,
-      ),
+      child: _buildOggiDialogContent(snapshot: snapshot),
     );
   }
 
-  Future<void> _showNext7DaysPopup({
-    required HomeObservedAt observedAt,
-    required List<_HomeDay> next7Days,
-  }) async {
+  Future<void> _showNext7DaysPopup({required HomeSnapshot snapshot}) async {
     await _showHomeDialog(
       icon: Icons.date_range_rounded,
       color: const Color(0xFF42A5F5),
       title: "Eventi globali",
       subtitle: "Eventi futuri fino a fine anno",
-      child: _buildNext7DaysDialogContent(
-        observedAt: observedAt,
-        next7Days: next7Days,
-      ),
+      child: _buildNext7DaysDialogContent(snapshot: snapshot),
     );
   }
 
-  Future<void> _showYearMonthsPopup({required int year}) async {
-    final months = [
-      "Gennaio",
-      "Febbraio",
-      "Marzo",
-      "Aprile",
-      "Maggio",
-      "Giugno",
-      "Luglio",
-      "Agosto",
-      "Settembre",
-      "Ottobre",
-      "Novembre",
-      "Dicembre",
-    ];
-
-    final monthIndexMap = {
-      "Gennaio": 1,
-      "Febbraio": 2,
-      "Marzo": 3,
-      "Aprile": 4,
-      "Maggio": 5,
-      "Giugno": 6,
-      "Luglio": 7,
-      "Agosto": 8,
-      "Settembre": 9,
-      "Ottobre": 10,
-      "Novembre": 11,
-      "Dicembre": 12,
-    };
-
+  Future<void> _showYearMonthsPopup({
+    required HomeYearEventsSnapshot yearSnapshot,
+    required HomeObservedAt observedAt,
+  }) async {
     await _showHomeDialog(
       icon: Icons.calendar_month_rounded,
       color: const Color(0xFF43A047),
-      title: "$year",
+      title: "${yearSnapshot.year}",
       subtitle: "Scegli un mese",
       child: GridView.count(
         crossAxisCount: 4,
@@ -524,23 +346,14 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
         childAspectRatio: 1.25,
-        children: months.map((m) {
-          final monthIndex = monthIndexMap[m]!;
-
-          int eventCount = 0;
-          final end = DateTime(year, monthIndex + 1, 0);
-
-          for (int i = 0; i < end.day; i++) {
-            final day = DateTime(year, monthIndex, i + 1);
-            eventCount += _getAllEventsForDay(day).length;
-          }
-
-          final hasEvents = eventCount > 0;
-
+        children: yearSnapshot.months.map((month) {
           return InkWell(
-            onTap: hasEvents
+            onTap: month.hasEvents
                 ? () {
-                    _showMonthEventsPopup(year: year, monthName: m);
+                    _showMonthEventsPopup(
+                      monthSnapshot: month,
+                      observedAt: observedAt,
+                    );
                   }
                 : null,
             borderRadius: BorderRadius.circular(22),
@@ -550,7 +363,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: hasEvents
+                  colors: month.hasEvents
                       ? [
                           const Color(0xFF43A047).withOpacity(0.28),
                           const Color(0xFF8BC34A).withOpacity(0.12),
@@ -562,12 +375,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                  color: hasEvents
+                  color: month.hasEvents
                       ? const Color(0xFF43A047).withOpacity(0.42)
                       : Colors.white.withOpacity(0.28),
                 ),
                 boxShadow: [
-                  if (hasEvents)
+                  if (month.hasEvents)
                     BoxShadow(
                       color: const Color(0xFF43A047).withOpacity(0.18),
                       blurRadius: 18,
@@ -579,27 +392,27 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    hasEvents
+                    month.hasEvents
                         ? Icons.event_available_rounded
                         : Icons.calendar_month_outlined,
                     size: 22,
-                    color: hasEvents
+                    color: month.hasEvents
                         ? const Color(0xFF2E7D32)
                         : Colors.black.withOpacity(0.25),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    m,
+                    month.name,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 13.5,
-                      color: hasEvents
+                      color: month.hasEvents
                           ? Colors.black.withOpacity(0.86)
                           : Colors.black.withOpacity(0.35),
                     ),
                   ),
-                  if (hasEvents)
+                  if (month.hasEvents)
                     Container(
                       margin: const EdgeInsets.only(top: 4),
                       width: 24,
@@ -611,12 +424,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   const SizedBox(height: 5),
                   Text(
-                    eventCount == 1 ? "1 evento" : "$eventCount eventi",
+                    month.eventCount == 1
+                        ? "1 evento"
+                        : "${month.eventCount} eventi",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 12,
-                      color: hasEvents
+                      color: month.hasEvents
                           ? Colors.black.withOpacity(0.62)
                           : Colors.black.withOpacity(0.28),
                     ),
@@ -630,34 +445,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  int _eventCountForYear(int year) {
-    int count = 0;
-
-    for (final event in coreStore.realEventStore.allEvents) {
-      final startYear = event.startDate.year;
-      final endYear = event.endDate.year;
-
-      if (startYear <= year && endYear >= year) {
-        count++;
-      }
-    }
-
-    for (final day in coreStore.aliceSpecialEventStore.allDates()) {
-      if (day.year != year) continue;
-
-      count += coreStore.aliceSpecialEventStore
-          .eventsForDay(day)
-          .where((event) => event.enabled)
-          .length;
-    }
-
-    return count;
-  }
-
-  Future<void> _showFutureYearsPopup(HomeObservedAt observedAt) async {
-    final currentYear = observedAt.year;
-    final years = List.generate(10, (index) => currentYear + index + 1);
-
+  Future<void> _showFutureYearsPopup(HomeSnapshot snapshot) async {
+    final currentYear = snapshot.globalEvents.currentYear;
     await _showHomeDialog(
       icon: Icons.auto_awesome_motion_rounded,
       color: const Color(0xFF5E35B1),
@@ -665,22 +454,24 @@ class _HomeScreenState extends State<HomeScreen> {
       subtitle: "Anni successivi al $currentYear",
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: years.map((year) {
-          final count = _eventCountForYear(year);
-          final hasEvents = count > 0;
-
+        children: snapshot.globalEvents.futureYears.map((yearSnapshot) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: GlobalEventEntryCard(
               icon: Icons.calendar_month_rounded,
-              title: "$year ($count)",
-              subtitle: hasEvents
-                  ? "Apri gli eventi del $year"
+              title: "${yearSnapshot.year} (${yearSnapshot.eventCount})",
+              subtitle: yearSnapshot.hasEvents
+                  ? "Apri gli eventi del ${yearSnapshot.year}"
                   : "Nessun evento inserito",
-              color: hasEvents ? const Color(0xFF5E35B1) : Colors.grey,
-              onTap: hasEvents
+              color: yearSnapshot.hasEvents
+                  ? const Color(0xFF5E35B1)
+                  : Colors.grey,
+              onTap: yearSnapshot.hasEvents
                   ? () {
-                      _showYearEventsPopup(year: year);
+                      _showYearEventsPopup(
+                        yearSnapshot: yearSnapshot,
+                        observedAt: snapshot.observedAt,
+                      );
                     }
                   : () {},
             ),
@@ -690,10 +481,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _showPastYearsPopup(HomeObservedAt observedAt) async {
-    final currentYear = observedAt.year;
-    final years = List.generate(10, (index) => currentYear - index - 1);
-
+  Future<void> _showPastYearsPopup(HomeSnapshot snapshot) async {
     await _showHomeDialog(
       icon: Icons.history_rounded,
       color: const Color(0xFF8D6E63),
@@ -701,22 +489,24 @@ class _HomeScreenState extends State<HomeScreen> {
       subtitle: "Archivio degli anni precedenti",
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: years.map((year) {
-          final count = _eventCountForYear(year);
-          final hasEvents = count > 0;
-
+        children: snapshot.globalEvents.pastYears.map((yearSnapshot) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: GlobalEventEntryCard(
               icon: Icons.history_rounded,
-              title: "$year ($count)",
-              subtitle: hasEvents
-                  ? "Apri gli eventi del $year"
+              title: "${yearSnapshot.year} (${yearSnapshot.eventCount})",
+              subtitle: yearSnapshot.hasEvents
+                  ? "Apri gli eventi del ${yearSnapshot.year}"
                   : "Nessun evento archiviato",
-              color: hasEvents ? const Color(0xFF8D6E63) : Colors.grey,
-              onTap: hasEvents
+              color: yearSnapshot.hasEvents
+                  ? const Color(0xFF8D6E63)
+                  : Colors.grey,
+              onTap: yearSnapshot.hasEvents
                   ? () {
-                      _showYearEventsPopup(year: year);
+                      _showYearEventsPopup(
+                        yearSnapshot: yearSnapshot,
+                        observedAt: snapshot.observedAt,
+                      );
                     }
                   : () {},
             ),
@@ -726,30 +516,20 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _showYearEventsPopup({required int year}) async {
+  Future<void> _showYearEventsPopup({
+    required HomeYearEventsSnapshot yearSnapshot,
+    required HomeObservedAt observedAt,
+  }) async {
+    var currentSnapshot = yearSnapshot;
+
     await _showHomeDialog(
       icon: Icons.event_note_rounded,
       color: const Color(0xFF5E35B1),
-      title: "$year",
+      title: "${yearSnapshot.year}",
       subtitle: "Eventi dell’anno",
       child: StatefulBuilder(
         builder: (context, dialogSetState) {
-          final List<HomeEventViewModel> events = [];
-
-          final start = DateTime(year, 1, 1);
-          final end = DateTime(year, 12, 31);
-
-          DateTime cursor = start;
-
-          while (!cursor.isAfter(end)) {
-            final dayEvents = _getAllEventsForDay(cursor);
-
-            events.addAll(dayEvents);
-
-            cursor = cursor.add(const Duration(days: 1));
-          }
-
-          return events.isEmpty
+          return !currentSnapshot.hasEvents
               ? DialogEmptyState(
                   icon: Icons.event_note_rounded,
                   title: "Nessun evento",
@@ -758,9 +538,12 @@ class _HomeScreenState extends State<HomeScreen> {
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: _buildEventsGroupedByDay(
-                    events,
+                    currentSnapshot.days,
                     dateStyle: HomeEventDateLabelStyle.dayMonthYear,
                     onSaved: () {
+                      currentSnapshot = _requestHomeSnapshot(
+                        observedAt,
+                      ).globalEvents.year(currentSnapshot.year);
                       dialogSetState(() {});
                     },
                   ),
@@ -771,43 +554,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showMonthEventsPopup({
-    required int year,
-    required String monthName,
+    required HomeMonthEventsSnapshot monthSnapshot,
+    required HomeObservedAt observedAt,
   }) async {
+    var currentSnapshot = monthSnapshot;
+
     await _showHomeDialog(
       icon: Icons.event_note_rounded,
       color: const Color(0xFF43A047),
-      title: "$monthName $year",
+      title: "${monthSnapshot.name} ${monthSnapshot.year}",
       subtitle: "Eventi del mese",
       child: StatefulBuilder(
         builder: (context, dialogSetState) {
-          final monthIndex = {
-            "Gennaio": 1,
-            "Febbraio": 2,
-            "Marzo": 3,
-            "Aprile": 4,
-            "Maggio": 5,
-            "Giugno": 6,
-            "Luglio": 7,
-            "Agosto": 8,
-            "Settembre": 9,
-            "Ottobre": 10,
-            "Novembre": 11,
-            "Dicembre": 12,
-          }[monthName]!;
-
-          final List<HomeEventViewModel> events = [];
-
-          final end = DateTime(year, monthIndex + 1, 0);
-
-          for (int i = 0; i < end.day; i++) {
-            final day = DateTime(year, monthIndex, i + 1);
-            final dayEvents = _getAllEventsForDay(day);
-
-            events.addAll(dayEvents);
-          }
-
-          return events.isEmpty
+          return !currentSnapshot.hasEvents
               ? DialogEmptyState(
                   icon: Icons.event_note_rounded,
                   title: "Nessun evento",
@@ -816,9 +575,13 @@ class _HomeScreenState extends State<HomeScreen> {
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: _buildEventsGroupedByDay(
-                    events,
+                    currentSnapshot.days,
                     dateStyle: HomeEventDateLabelStyle.dayMonth,
                     onSaved: () {
+                      currentSnapshot = _requestHomeSnapshot(observedAt)
+                          .globalEvents
+                          .year(currentSnapshot.year)
+                          .month(currentSnapshot.month);
                       dialogSetState(() {});
                     },
                   ),
@@ -830,26 +593,26 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _showEventsPopup({
     required HomeObservedAt observedAt,
-    required List<HomeEventViewModel> todayEvents,
+    required HomeTodaySnapshot today,
   }) async {
     await _showHomeDialog(
       icon: Icons.event_note_rounded,
       color: const Color(0xFF3F51B5),
       title: "Eventi",
-      subtitle: todayEvents.isEmpty
+      subtitle: !today.showEvents
           ? "Nessun evento presente oggi"
-          : "${todayEvents.length} evento/i della giornata",
+          : "${today.eventCount} evento/i della giornata",
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (todayEvents.isEmpty)
+          if (!today.showEvents)
             DialogEmptyState(
               icon: Icons.event_note_rounded,
               title: "Nessun evento oggi",
               subtitle: "La giornata è libera 🎉",
             )
           else
-            ...todayEvents.map(_buildCompactEventTile),
+            ...today.events.map(_buildCompactEventTile),
           const SizedBox(height: 10),
           Align(
             alignment: Alignment.centerLeft,
@@ -1061,29 +824,25 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Widget> _buildEventsGroupedByDay(
-    List<HomeEventViewModel> events, {
+    List<HomeEventDaySnapshot> groups, {
     required HomeEventDateLabelStyle dateStyle,
     VoidCallback? onSaved,
   }) {
-    final grouped = HomeEventGrouping.byDay(events);
-
     final List<Widget> widgets = [];
 
-    for (final entry in grouped.entries) {
-      final readableDay = HomeEventFormatter.readableDay(entry.key);
-
+    for (final group in groups) {
       widgets.add(
         Padding(
           padding: const EdgeInsets.only(top: 12, bottom: 6),
           child: Text(
-            readableDay,
+            group.label,
             style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
           ),
         ),
       );
 
       widgets.addAll(
-        entry.value.map(
+        group.events.map(
           (event) => _buildCompactEventTile(
             event,
             onSaved: onSaved,
@@ -1096,13 +855,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return widgets;
   }
 
-  Widget _buildOggiDialogContent({
-    required HomeObservedAt observedAt,
-    required Map<String, List<Promemoria>> groupedPromemoria,
-    required List<HomeEventViewModel> todayEvents,
-    required int promemoriaCount,
-  }) {
-    if (groupedPromemoria.isEmpty && todayEvents.isEmpty) {
+  Widget _buildOggiDialogContent({required HomeSnapshot snapshot}) {
+    final today = snapshot.today;
+    if (today.isEmpty) {
       return DialogEmptyState(
         icon: Icons.event_available_rounded,
         title: "Nessun evento in programma",
@@ -1114,25 +869,24 @@ class _HomeScreenState extends State<HomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "$promemoriaCount promemoria • ${todayEvents.length} eventi",
+          "${today.reminderCount} promemoria • ${today.eventCount} eventi",
           style: TextStyle(
             color: Colors.black.withOpacity(0.55),
             fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 18),
-        if (groupedPromemoria.isNotEmpty) ...[
+        if (today.showReminders) ...[
           SectionTitle(text: "Da fare oggi"),
-          ...groupedPromemoria.entries.map((entry) {
-            final persona = entry.key;
-            final list = entry.value;
+          ...today.reminderGroups.map((group) {
+            final persona = group.persona;
             final color = _colorForPersona(persona);
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
-                onTap: () => _openCalendarToday(observedAt),
+                onTap: () => _openCalendarToday(snapshot.observedAt),
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
@@ -1166,7 +920,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    "$persona (${list.length})",
+                                    "$persona (${group.count})",
                                     style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w800,
@@ -1179,16 +933,16 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              list.first.testo,
+                              group.firstText,
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 color: Colors.black.withOpacity(0.82),
                               ),
                             ),
-                            if (list.length > 1) ...[
+                            if (group.hasAdditionalItems) ...[
                               const SizedBox(height: 4),
                               Text(
-                                "+${list.length - 1} altro/i",
+                                "+${group.additionalCount} altro/i",
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.black.withOpacity(0.55),
@@ -1206,16 +960,16 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           }),
         ],
-        if (todayEvents.isNotEmpty) ...[
-          if (groupedPromemoria.isNotEmpty) const SizedBox(height: 8),
+        if (today.showEvents) ...[
+          if (today.showReminders) const SizedBox(height: 8),
           SectionTitle(text: "Succede oggi"),
-          ...todayEvents.map(_buildCompactEventTile),
+          ...today.events.map(_buildCompactEventTile),
         ],
         const SizedBox(height: 10),
         Align(
           alignment: Alignment.centerLeft,
           child: OutlinedButton.icon(
-            onPressed: () => _openCalendarToday(observedAt),
+            onPressed: () => _openCalendarToday(snapshot.observedAt),
             icon: const Icon(Icons.calendar_month_rounded),
             label: const Text("Apri calendario"),
           ),
@@ -1224,11 +978,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildNext7DaysDialogContent({
-    required HomeObservedAt observedAt,
-    required List<_HomeDay> next7Days,
-  }) {
-    final currentYear = observedAt.year;
+  Widget _buildNext7DaysDialogContent({required HomeSnapshot snapshot}) {
+    final globalEvents = snapshot.globalEvents;
+    final currentYear = globalEvents.currentYear;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1246,7 +998,7 @@ class _HomeScreenState extends State<HomeScreen> {
           title: "Eventi passati",
           subtitle: "Archivio degli anni precedenti",
           color: const Color(0xFF8D6E63),
-          onTap: () => _showPastYearsPopup(observedAt),
+          onTap: () => _showPastYearsPopup(snapshot),
         ),
         const SizedBox(height: 10),
         GlobalEventEntryCard(
@@ -1255,7 +1007,10 @@ class _HomeScreenState extends State<HomeScreen> {
           subtitle: "Eventi dell’anno corrente",
           color: const Color(0xFF43A047),
           onTap: () {
-            _showYearMonthsPopup(year: currentYear);
+            _showYearMonthsPopup(
+              yearSnapshot: globalEvents.currentYearEvents,
+              observedAt: snapshot.observedAt,
+            );
           },
         ),
         const SizedBox(height: 10),
@@ -1264,7 +1019,7 @@ class _HomeScreenState extends State<HomeScreen> {
           title: "Eventi futuri",
           subtitle: "Anni successivi al $currentYear",
           color: const Color(0xFF5E35B1),
-          onTap: () => _showFutureYearsPopup(observedAt),
+          onTap: () => _showFutureYearsPopup(snapshot),
         ),
       ],
     );
@@ -1273,10 +1028,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final observedAt = HomeObservedAt(observedAt: DateTime.now());
-    final todayPromemoria = _buildTodayPromemoria(observedAt);
-    final todayEvents = _buildTodayRealEvents(observedAt);
-    final next7Days = _buildNext7DaysReal(observedAt);
-    final groupedPromemoria = _groupPromemoriaByPersona(todayPromemoria);
+    final snapshot = _requestHomeSnapshot(observedAt);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F1D12),
@@ -1343,30 +1095,19 @@ class _HomeScreenState extends State<HomeScreen> {
                           return Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: _buildSystemStatusCard(observedAt),
-                              ),
+                              Expanded(child: _buildSystemStatusCard(snapshot)),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: _buildPanoramicaOggiCard(
-                                  promemoriaCount: todayPromemoria.length,
-                                  eventiCount: todayEvents.length,
-                                  personeCount: groupedPromemoria.length,
-                                  prossimiGiorniCount: next7Days.length,
-                                  onPromemoriaTap: () => _showTodayPopup(
-                                    observedAt: observedAt,
-                                    groupedPromemoria: groupedPromemoria,
-                                    todayEvents: todayEvents,
-                                    promemoriaCount: todayPromemoria.length,
-                                  ),
+                                  snapshot: snapshot,
+                                  onPromemoriaTap: () =>
+                                      _showTodayPopup(snapshot: snapshot),
                                   onEventiTap: () => _showEventsPopup(
-                                    observedAt: observedAt,
-                                    todayEvents: todayEvents,
+                                    observedAt: snapshot.observedAt,
+                                    today: snapshot.today,
                                   ),
-                                  onNext7DaysTap: () => _showNext7DaysPopup(
-                                    observedAt: observedAt,
-                                    next7Days: next7Days,
-                                  ),
+                                  onNext7DaysTap: () =>
+                                      _showNext7DaysPopup(snapshot: snapshot),
                                 ),
                               ),
                             ],
@@ -1375,27 +1116,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         return Column(
                           children: [
-                            _buildSystemStatusCard(observedAt),
+                            _buildSystemStatusCard(snapshot),
                             const SizedBox(height: 16),
                             _buildPanoramicaOggiCard(
-                              promemoriaCount: todayPromemoria.length,
-                              eventiCount: todayEvents.length,
-                              personeCount: groupedPromemoria.length,
-                              prossimiGiorniCount: next7Days.length,
-                              onPromemoriaTap: () => _showTodayPopup(
-                                observedAt: observedAt,
-                                groupedPromemoria: groupedPromemoria,
-                                todayEvents: todayEvents,
-                                promemoriaCount: todayPromemoria.length,
-                              ),
+                              snapshot: snapshot,
+                              onPromemoriaTap: () =>
+                                  _showTodayPopup(snapshot: snapshot),
                               onEventiTap: () => _showEventsPopup(
-                                observedAt: observedAt,
-                                todayEvents: todayEvents,
+                                observedAt: snapshot.observedAt,
+                                today: snapshot.today,
                               ),
-                              onNext7DaysTap: () => _showNext7DaysPopup(
-                                observedAt: observedAt,
-                                next7Days: next7Days,
-                              ),
+                              onNext7DaysTap: () =>
+                                  _showNext7DaysPopup(snapshot: snapshot),
                             ),
                           ],
                         );
@@ -1464,73 +1196,22 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSystemStatusCard(HomeObservedAt observedAt) {
+  Widget _buildSystemStatusCard(HomeSnapshot snapshot) {
     return ValueListenableBuilder<snap.IpsSnapshot>(
       valueListenable: ipsStore,
       builder: (context, ips, _) {
-        final todayCoverage = _dayCoverage(
-          day: observedAt.day,
-          observedAt: observedAt,
-        );
-        final todayRisk = const AliceHomeRiskViewModelBuilder().build(
-          gapDetails: todayCoverage.gapDetails,
-          selectedDay: observedAt.day,
-          observedAt: observedAt.observedAt,
-        );
-        final todayStatus = const CalendarDayStatusBuilder().build(
-          gapDetails: todayRisk.gapDetails,
-          criticalityDetails: todayCoverage.criticalityDetails,
-          hasLogisticGaps: false,
-        );
-        final todayDetails = todayRisk.gapDetails;
-        final hasTodayCoverageIssue = todayStatus == CalendarDayStatus.problem;
-
-        final nextIssue = _nextCoverageIssueIn30Days(observedAt);
-
-        final stateText = hasTodayCoverageIssue
-            ? "✋ Problema oggi"
-            : "😌 Sistema stabilizzato";
-
-        final mainSentence = hasTodayCoverageIssue
-            ? "Oggi: Alice non coperta"
-            : "Nessuna criticità oggi";
-
-        String systemDetail;
-
-        if (hasTodayCoverageIssue) {
-          final first = todayDetails.first;
-
-          systemDetail =
-              "Copertura: Alice scoperta oggi ${_formatTime(first.start)}–${_formatTime(first.end)}";
-        } else if (nextIssue != null) {
-          final first = nextIssue.coverage.gapDetails.first;
-
-          final weekday = [
-            "Lun",
-            "Mar",
-            "Mer",
-            "Gio",
-            "Ven",
-            "Sab",
-            "Dom",
-          ][nextIssue.day.weekday - 1];
-
-          systemDetail =
-              "Prossimo problema: $weekday ${nextIssue.day.day}/${nextIssue.day.month} • ${_formatTime(first.start)}–${_formatTime(first.end)}";
-        } else {
-          systemDetail = "Nessuna criticità prevista";
-        }
+        final systemStatus = snapshot.systemStatus;
 
         return _DashboardCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SystemStatusHeader(
-                hasTodayCoverageIssue: hasTodayCoverageIssue,
+                hasTodayCoverageIssue: systemStatus.hasTodayCoverageIssue,
                 ipsLevel: ips.level,
-                stateText: stateText,
-                mainSentence: mainSentence,
-                systemDetail: systemDetail,
+                stateText: systemStatus.stateText,
+                mainSentence: systemStatus.mainSentence,
+                systemDetail: systemStatus.systemDetail,
               ),
               const SizedBox(height: 18),
               Wrap(
@@ -1540,7 +1221,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   MiniActionChip(
                     icon: Icons.calendar_today_rounded,
                     label: "Apri calendario",
-                    onTap: () => _openCalendarToday(observedAt),
+                    onTap: () => _openCalendarToday(snapshot.observedAt),
                   ),
                   MiniActionChip(
                     icon: Icons.shield_rounded,
@@ -1563,10 +1244,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildPanoramicaOggiCard({
-    required int promemoriaCount,
-    required int eventiCount,
-    required int personeCount,
-    required int prossimiGiorniCount,
+    required HomeSnapshot snapshot,
     required VoidCallback onPromemoriaTap,
     required VoidCallback onEventiTap,
     required VoidCallback onNext7DaysTap,
@@ -1586,9 +1264,9 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 18),
           FinancePressureSummaryCard(financeStore: financeStore),
           HomeOverviewMetrics(
-            promemoriaCount: promemoriaCount,
-            eventiCount: eventiCount,
-            prossimiGiorniCount: prossimiGiorniCount,
+            promemoriaCount: snapshot.today.reminderCount,
+            eventiCount: snapshot.today.eventCount,
+            prossimiGiorniCount: snapshot.globalEvents.futureDayCount,
             onPromemoriaTap: onPromemoriaTap,
             onEventiTap: onEventiTap,
             onPeopleTap: () {
@@ -4658,13 +4336,6 @@ class _DashboardModuleCardState extends State<_DashboardModuleCard>
       },
     );
   }
-}
-
-class _HomeDay {
-  final String dayLabel;
-  final List<HomeEventViewModel> events;
-
-  const _HomeDay({required this.dayLabel, required this.events});
 }
 
 String _getMonthName(int month) {

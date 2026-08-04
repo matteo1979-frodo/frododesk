@@ -16,14 +16,15 @@ void main() {
 
   test('Home render path creates one clock and has no TimeOfDay.now', () {
     final source = File('lib/screens/home_screen.dart').readAsStringSync();
-    final renderPathStart = source.indexOf('CoverageResultStepA _dayCoverage');
-    final renderPathEnd = source.indexOf(
-      'Future<void> _showFinancePresentPopup',
+    final renderPathStart = source.indexOf(
+      'Widget build(BuildContext context)',
     );
+    final renderPathEnd = source.indexOf('Widget _buildHeader');
     final renderPath = source.substring(renderPathStart, renderPathEnd);
 
     expect('DateTime.now()'.allMatches(renderPath), hasLength(1));
     expect(renderPath, contains('HomeObservedAt(observedAt: DateTime.now())'));
+    expect(renderPath, contains('_requestHomeSnapshot(observedAt)'));
     expect(renderPath, isNot(contains('TimeOfDay.now()')));
   });
 

@@ -297,7 +297,7 @@ void main() {
   test('21. navigazione Home verso Calendario resta tipizzata e invariata', () {
     final source = File('lib/screens/home_screen.dart').readAsStringSync();
     final navigationStart = source.indexOf('Future<void> _openCalendarToday');
-    final navigationEnd = source.indexOf('List<Promemoria>');
+    final navigationEnd = source.indexOf('Color _colorForPersona');
     final navigation = source.substring(navigationStart, navigationEnd);
 
     expect(navigation, contains('CalendarioScreenStepAStabile'));
