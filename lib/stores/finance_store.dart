@@ -1314,10 +1314,8 @@ class FinanceStore {
     return items.fold(0.0, (sum, item) => sum + item.expectedAmount);
   }
 
-  double economicPressureScore() {
+  double economicPressureScore({required DateTime observedAt}) {
     double score = 0;
-
-    final now = DateTime.now();
 
     for (final item in recurringItems) {
       if (item.isIncome) continue;
@@ -1413,7 +1411,7 @@ class FinanceStore {
         item.nextDueDate.day,
       );
 
-      final days = dueDate.difference(now).inDays;
+      final days = dueDate.difference(observedAt).inDays;
 
       if (days <= 30) {
         weight *= 1.8;

@@ -43,8 +43,11 @@ import '../models/finance_transaction.dart';
 import 'package:flutter/services.dart';
 
 import '../logic/persistence_store.dart';
+import '../logic/finance/home_finance_coordinator.dart';
 import '../logic/home_event_note_updater.dart';
 import '../models/home_event_view_model.dart';
+import '../models/finance_module_presentation.dart';
+import '../models/finance_pressure_presentation.dart';
 import '../models/home_observed_at.dart';
 import '../models/home_snapshot.dart';
 import '../logic/home_snapshot_coordinator.dart';
@@ -1029,6 +1032,9 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final observedAt = HomeObservedAt(observedAt: DateTime.now());
     final snapshot = _requestHomeSnapshot(observedAt);
+    final financeViewData = HomeFinanceCoordinator(
+      financeStore: financeStore,
+    ).build(observedAt: observedAt);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F1D12),
@@ -1100,6 +1106,8 @@ class _HomeScreenState extends State<HomeScreen> {
                               Expanded(
                                 child: _buildPanoramicaOggiCard(
                                   snapshot: snapshot,
+                                  financePressurePresentation:
+                                      financeViewData.pressurePresentation,
                                   onPromemoriaTap: () =>
                                       _showTodayPopup(snapshot: snapshot),
                                   onEventiTap: () => _showEventsPopup(
@@ -1120,6 +1128,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             const SizedBox(height: 16),
                             _buildPanoramicaOggiCard(
                               snapshot: snapshot,
+                              financePressurePresentation:
+                                  financeViewData.pressurePresentation,
                               onPromemoriaTap: () =>
                                   _showTodayPopup(snapshot: snapshot),
                               onEventiTap: () => _showEventsPopup(
@@ -1134,7 +1144,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                     ),
                     const SizedBox(height: 24),
-                    _buildModulesSection(observedAt),
+                    _buildModulesSection(
+                      observedAt,
+                      financeViewData.modulePresentation,
+                    ),
                     const SizedBox(height: 22),
                     Center(
                       child: Text(
@@ -1245,6 +1258,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildPanoramicaOggiCard({
     required HomeSnapshot snapshot,
+    required FinancePressurePresentation financePressurePresentation,
     required VoidCallback onPromemoriaTap,
     required VoidCallback onEventiTap,
     required VoidCallback onNext7DaysTap,
@@ -1262,7 +1276,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          FinancePressureSummaryCard(financeStore: financeStore),
+          FinancePressureSummaryCard(presentation: financePressurePresentation),
           HomeOverviewMetrics(
             promemoriaCount: snapshot.today.reminderCount,
             eventiCount: snapshot.today.eventCount,
@@ -3961,7 +3975,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildModulesSection(HomeObservedAt observedAt) {
+  Widget _buildModulesSection(
+    HomeObservedAt observedAt,
+    FinanceModulePresentation financeModulePresentation,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -4024,11 +4041,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 _DashboardModuleCard(
                   icon: Icons.euro_rounded,
                   title: "Finanze",
-                  subtitle:
-                      "Saldo €${financeStore.totalBalance().toStringAsFixed(0)} • Margine €${financeStore.projectedMonthlyMargin().toStringAsFixed(0)}",
-                  badge: financeStore.isUnderPressure()
-                      ? "Pressione"
-                      : "Stabile",
+                  subtitle: financeModulePresentation.subtitle,
+                  badge: financeModulePresentation.badgeText,
                   badgeColor: const Color(0xFFB08D57),
                   startColor: const Color(0xFF8D6E63),
                   endColor: const Color(0xFFBCAAA4),
