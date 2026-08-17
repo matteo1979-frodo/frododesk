@@ -44,6 +44,7 @@ import 'package:flutter/services.dart';
 
 import '../logic/persistence_store.dart';
 import '../logic/finance/home_finance_coordinator.dart';
+import '../logic/finance/finance_lifecycle_coordinator.dart';
 import '../logic/home_event_note_updater.dart';
 import '../models/home_event_view_model.dart';
 import '../models/finance_module_presentation.dart';
@@ -79,23 +80,15 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadFinanceData();
   }
 
-  Future<void> _loadFinanceData() async {
-    await financeStore.loadInitialRealData();
-
-    await financeStore.saveBalances();
-    await financeStore.saveFunds();
-    await financeStore.saveRecurringItems();
-
-    financeStore.saveSnapshot(DateTime.now());
-
-    debugPrint('FINANCE balances: ${financeStore.balances.length}');
-    debugPrint('FINANCE funds: ${financeStore.funds.length}');
-    debugPrint('FINANCE recurring: ${financeStore.recurringItems.length}');
-    debugPrint('FINANCE total: ${financeStore.totalBalance()}');
-
-    if (mounted) {
-      setState(() {});
-    }
+  Future<void> _loadFinanceData() {
+    return FinanceLifecycleCoordinator(
+      financeStore: financeStore,
+      refresh: () {
+        if (mounted) {
+          setState(() {});
+        }
+      },
+    ).initialize();
   }
 
   Future<void> _showDataTransferDialog() async {

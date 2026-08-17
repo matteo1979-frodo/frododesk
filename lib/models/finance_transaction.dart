@@ -26,6 +26,7 @@ class FinanceTransaction {
   final String? recurringItemId;
 
   final String? notes;
+  final String? economicFactId;
 
   const FinanceTransaction({
     required this.id,
@@ -39,6 +40,7 @@ class FinanceTransaction {
     required this.origin,
     this.recurringItemId,
     this.notes,
+    this.economicFactId,
   });
 
   Map<String, dynamic> toJson() {
@@ -54,6 +56,7 @@ class FinanceTransaction {
       'origin': origin.name,
       'recurringItemId': recurringItemId,
       'notes': notes,
+      'economicFactId': economicFactId,
     };
   }
 
@@ -76,6 +79,7 @@ class FinanceTransaction {
       ),
       recurringItemId: json['recurringItemId'] as String?,
       notes: json['notes'] as String?,
+      economicFactId: json['economicFactId'] as String?,
     );
   }
 }

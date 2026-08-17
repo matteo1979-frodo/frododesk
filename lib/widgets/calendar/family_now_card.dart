@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../logic/calendar/view_models/family_member_now_view_model.dart';
 import '../../logic/calendar/view_models/family_now_view_model.dart';
+import '../shared/frodo_person_avatar.dart';
 
 class FamilyNowCard extends StatelessWidget {
   final FamilyNowViewModel model;
@@ -27,9 +28,9 @@ class FamilyNowCard extends StatelessWidget {
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.indigo.withOpacity(0.07),
+        color: Colors.indigo.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.indigo.withOpacity(0.22)),
+        border: Border.all(color: Colors.indigo.withValues(alpha: 0.22)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,9 +56,11 @@ class FamilyNowCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.75),
+                  color: Colors.white.withValues(alpha: 0.75),
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Colors.indigo.withOpacity(0.14)),
+                  border: Border.all(
+                    color: Colors.indigo.withValues(alpha: 0.14),
+                  ),
                 ),
                 child: Text(
                   DateFormat('HH:mm', 'it_IT').format(realNow),
@@ -74,7 +77,7 @@ class FamilyNowCard extends StatelessWidget {
           Text(
             "Fotografia reale riferita al giorno selezionato, all'ora attuale.",
             style: TextStyle(
-              color: Colors.black.withOpacity(0.65),
+              color: Colors.black.withValues(alpha: 0.65),
               fontWeight: FontWeight.w600,
               fontSize: 12,
             ),
@@ -121,12 +124,20 @@ class _FamilyNowRow extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withOpacity(0.35)),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
         ),
         child: Row(
           children: [
+            FrodoPersonAvatar(
+              category: FrodoPersonCategoryResolver.fromKnownName(model.name),
+              size: 28,
+              foregroundColor: color,
+              backgroundColor: color.withValues(alpha: 0.14),
+              semanticLabel: model.name,
+            ),
+            const SizedBox(width: 8),
             Icon(icon, size: 18, color: color),
             const SizedBox(width: 8),
             SizedBox(

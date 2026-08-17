@@ -58,6 +58,35 @@ class FinanceBehaviorProfile {
     this.recoveryImpactScore = 0.5,
   });
 
+  FinanceBehaviorProfile copyWith({
+    bool? predictable,
+    bool? lifeGenerated,
+    bool? timeSensitive,
+    bool? canBeDelayed,
+    bool? canBeSplit,
+    bool? canBeReduced,
+    bool? affectsResilience,
+    bool? affectsOperationalOxygen,
+    double? rigidityScore,
+    double? maneuverabilityScore,
+    double? recoveryImpactScore,
+  }) {
+    return FinanceBehaviorProfile(
+      predictable: predictable ?? this.predictable,
+      lifeGenerated: lifeGenerated ?? this.lifeGenerated,
+      timeSensitive: timeSensitive ?? this.timeSensitive,
+      canBeDelayed: canBeDelayed ?? this.canBeDelayed,
+      canBeSplit: canBeSplit ?? this.canBeSplit,
+      canBeReduced: canBeReduced ?? this.canBeReduced,
+      affectsResilience: affectsResilience ?? this.affectsResilience,
+      affectsOperationalOxygen:
+          affectsOperationalOxygen ?? this.affectsOperationalOxygen,
+      rigidityScore: rigidityScore ?? this.rigidityScore,
+      maneuverabilityScore: maneuverabilityScore ?? this.maneuverabilityScore,
+      recoveryImpactScore: recoveryImpactScore ?? this.recoveryImpactScore,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'predictable': predictable,
@@ -231,6 +260,7 @@ class FinanceRecurringItem {
       'paymentOwner': paymentOwner.name,
       'subject': subject.name,
       'balanceId': balanceId,
+      'paymentMethod': paymentMethod.name,
       'stability': stability.name,
       'suspensionRisk': suspensionRisk.name,
       'originType': originType.name,

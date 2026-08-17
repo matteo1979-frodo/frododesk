@@ -9,8 +9,17 @@ import '../models/fund_transaction.dart';
 import '../models/finance_month_projection.dart';
 import '../models/finance_transaction.dart';
 import '../models/finance_account_linked_item.dart';
+import '../models/finance_asset_movement.dart';
+import '../models/finance_fund_mutation_plan.dart';
+import '../logic/economics/economic_fact_id_generator.dart';
 
 class FinanceStore {
+  final EconomicFactIdGenerator economicFactIdGenerator;
+
+  FinanceStore({EconomicFactIdGenerator? economicFactIdGenerator})
+    : economicFactIdGenerator =
+          economicFactIdGenerator ?? EconomicFactIdGenerator.timestamped();
+
   final List<FinancePerson> people = const [
     FinancePerson(id: 'matteo', name: 'Matteo'),
     FinancePerson(id: 'chiara', name: 'Chiara'),
@@ -24,6 +33,8 @@ class FinanceStore {
   final List<FundTransaction> fundTransactions = [];
   final List<FinanceTransaction> transactions = [];
   final List<FinanceAccountLinkedItem> linkedItems = [];
+  final List<FinanceAssetMovement> assetMovements = [];
+  bool _portfolioReady = false;
 
   double totalBalance() {
     return balances
@@ -92,6 +103,8 @@ class FinanceStore {
   double totalFunds() {
     return funds.fold(0.0, (sum, fund) => sum + fund.amount);
   }
+
+  double familyNetWorth() => grossTotalBalance() + totalFunds();
 
   double projectedMonthlyExpenses() {
     return recurringItems
@@ -325,6 +338,7 @@ class FinanceStore {
       date: date,
       totalBalance: totalBalance(),
       totalFunds: totalFunds(),
+      familyNetWorth: familyNetWorth(),
       projectedMonthlyIncome: projectedMonthlyIncome(),
       projectedMonthlyExpenses: projectedMonthlyExpenses(),
       projectedMonthlyMargin: projectedMonthlyMargin(),
@@ -468,6 +482,7 @@ class FinanceStore {
               ? FinanceTransactionType.income
               : FinanceTransactionType.expense,
           origin: FinanceTransactionOrigin.adjustment,
+          economicFactId: economicFactIdGenerator.next(),
           notes: 'Saldo modificato manualmente',
         ),
       );
@@ -482,6 +497,7 @@ class FinanceStore {
     required double amount,
     required String description,
     String? notes,
+    String? economicFactId,
   }) async {
     final index = balances.indexWhere((b) => b.balanceId == balanceId);
 
@@ -519,6 +535,7 @@ class FinanceStore {
         type: FinanceTransactionType.expense,
         origin: FinanceTransactionOrigin.manual,
         notes: notes,
+        economicFactId: economicFactId ?? economicFactIdGenerator.next(),
       ),
     );
 
@@ -531,6 +548,7 @@ class FinanceStore {
     required double amount,
     required String description,
     String? notes,
+    String? economicFactId,
   }) async {
     final index = balances.indexWhere((b) => b.balanceId == balanceId);
 
@@ -568,6 +586,7 @@ class FinanceStore {
         type: FinanceTransactionType.income,
         origin: FinanceTransactionOrigin.manual,
         notes: notes,
+        economicFactId: economicFactId ?? economicFactIdGenerator.next(),
       ),
     );
 
@@ -616,6 +635,7 @@ class FinanceStore {
         type: FinanceTransactionType.expense,
         origin: FinanceTransactionOrigin.manual,
         notes: 'Rimozione entrata extra',
+        economicFactId: economicFactIdGenerator.next(),
       ),
     );
 
@@ -664,6 +684,7 @@ class FinanceStore {
         type: FinanceTransactionType.income,
         origin: FinanceTransactionOrigin.manual,
         notes: 'Ripristino movimento eliminato',
+        economicFactId: economicFactIdGenerator.next(),
       ),
     );
 
@@ -721,6 +742,7 @@ class FinanceStore {
     );
 
     final transferId = DateTime.now().microsecondsSinceEpoch.toString();
+    final economicFactId = economicFactIdGenerator.next();
 
     transactions.add(
       FinanceTransaction(
@@ -734,6 +756,7 @@ class FinanceStore {
         type: FinanceTransactionType.transfer,
         origin: FinanceTransactionOrigin.manual,
         notes: 'Trasferimento verso ${toBalance.name}',
+        economicFactId: economicFactId,
       ),
     );
 
@@ -749,6 +772,7 @@ class FinanceStore {
         type: FinanceTransactionType.transfer,
         origin: FinanceTransactionOrigin.manual,
         notes: 'Trasferimento da ${fromBalance.name}',
+        economicFactId: economicFactId,
       ),
     );
 
@@ -771,6 +795,12 @@ class FinanceStore {
   }
 
   Future<void> loadInitialRealData() async {
+    if (await loadSavedPortfolio()) {
+      await loadSavedRecurringItems();
+      await loadSavedSnapshots();
+      await loadSavedLinkedItems();
+      return;
+    }
     final now = DateTime.now();
 
     final loaded = await loadSavedBalances();
@@ -803,6 +833,7 @@ class FinanceStore {
           await saveRecurringItems();
         }
 
+        await migrateLegacyPortfolio();
         return;
       }
       for (int i = 0; i < balances.length; i++) {
@@ -889,12 +920,179 @@ class FinanceStore {
       ..clear()
       ..addAll(demoRecurringItems);
     await saveRecurringItems();
+    await migrateLegacyPortfolio();
   }
+
+  Future<bool> loadSavedPortfolio() async {
+    final json = await PersistenceStore.loadJsonMap('finance_portfolio_v2');
+    if (json == null || json['version'] != 2) {
+      return false;
+    }
+    balances
+      ..clear()
+      ..addAll(
+        (json['balances'] as List).map(
+          (item) => FinanceBalance.fromJson(Map<String, dynamic>.from(item)),
+        ),
+      );
+    funds
+      ..clear()
+      ..addAll(
+        (json['funds'] as List).map(
+          (item) => FinanceFund.fromJson(Map<String, dynamic>.from(item)),
+        ),
+      );
+    assetMovements
+      ..clear()
+      ..addAll(
+        (json['assetMovements'] as List).map(
+          (item) =>
+              FinanceAssetMovement.fromJson(Map<String, dynamic>.from(item)),
+        ),
+      );
+    transactions
+      ..clear()
+      ..addAll(
+        (json['transactions'] as List).map(
+          (item) =>
+              FinanceTransaction.fromJson(Map<String, dynamic>.from(item)),
+        ),
+      );
+    fundTransactions
+      ..clear()
+      ..addAll(
+        (json['fundTransactions'] as List? ?? const []).map(
+          (item) => FundTransaction.fromJson(Map<String, dynamic>.from(item)),
+        ),
+    );
+    _portfolioReady = true;
+    return true;
+  }
+
+  Future<void> migrateLegacyPortfolio() async {
+    if (assetMovements.isEmpty) {
+      final migratedAt = DateTime.now();
+      for (var index = 0; index < funds.length; index++) {
+        final fund = funds[index];
+        funds[index] = FinanceFund(
+          id: fund.id,
+          name: fund.name,
+          description: fund.description,
+          amount: fund.amount,
+          protected: fund.protected,
+          category: fund.category,
+          status: fund.status,
+          openingKind: FinanceFundOpeningKind.legacyImported,
+          openedAt: fund.openedAt ?? migratedAt,
+          closedAt: fund.closedAt,
+        );
+        if (fund.amount > 0) {
+          assetMovements.add(
+            FinanceAssetMovement(
+              id: 'legacy_${fund.id}',
+              fundId: fund.id,
+              kind: FinanceAssetMovementKind.legacyOpening,
+              description: 'Saldo precedente',
+              occurredAt: migratedAt,
+              legs: [
+                FinanceAssetLeg(
+                  type: FinanceAssetLegType.openingBalance,
+                  delta: -fund.amount,
+                ),
+                FinanceAssetLeg(
+                  type: FinanceAssetLegType.fund,
+                  referenceId: fund.id,
+                  delta: fund.amount,
+                ),
+              ],
+            ),
+          );
+        }
+      }
+    }
+    final migratedIds = assetMovements.map((item) => item.id).toSet();
+    for (final transaction in fundTransactions) {
+      final movementId = 'legacy_fund_tx_${transaction.id}';
+      if (migratedIds.contains(movementId)) continue;
+      final fundDelta = transaction.type == FundTransactionType.deposit
+          ? transaction.amount
+          : -transaction.amount;
+      assetMovements.add(
+        FinanceAssetMovement(
+          id: movementId,
+          fundId: transaction.fundId,
+          kind: FinanceAssetMovementKind.legacyUnclassified,
+          description: transaction.description.isEmpty
+              ? 'Operazione precedente'
+              : transaction.description,
+          occurredAt: transaction.date,
+          legs: [
+            FinanceAssetLeg(
+              type: FinanceAssetLegType.legacyCounterpart,
+              delta: -fundDelta,
+            ),
+            FinanceAssetLeg(
+              type: FinanceAssetLegType.fund,
+              referenceId: transaction.fundId,
+              delta: fundDelta,
+            ),
+          ],
+        ),
+      );
+    }
+    _portfolioReady = true;
+    await savePortfolio();
+  }
+
+  Future<void> savePortfolio() => PersistenceStore.saveJsonMap(
+    'finance_portfolio_v2',
+    _portfolioJson(balances, funds, assetMovements, transactions),
+  );
+
+  Future<void> commitFundPlan(FinanceFundMutationPlan plan) async {
+    await PersistenceStore.saveJsonMap(
+      'finance_portfolio_v2',
+      _portfolioJson(
+        plan.balances,
+        plan.funds,
+        plan.movements,
+        plan.transactions,
+      ),
+    );
+    balances
+      ..clear()
+      ..addAll(plan.balances);
+    funds
+      ..clear()
+      ..addAll(plan.funds);
+    assetMovements
+      ..clear()
+      ..addAll(plan.movements);
+    transactions
+      ..clear()
+      ..addAll(plan.transactions);
+    _portfolioReady = true;
+  }
+
+  Map<String, dynamic> _portfolioJson(
+    List<FinanceBalance> nextBalances,
+    List<FinanceFund> nextFunds,
+    List<FinanceAssetMovement> nextMovements,
+    List<FinanceTransaction> nextTransactions,
+  ) => {
+    'version': 2,
+    'balances': nextBalances.map((item) => item.toJson()).toList(),
+    'funds': nextFunds.map((item) => item.toJson()).toList(),
+    'assetMovements': nextMovements.map((item) => item.toJson()).toList(),
+    'transactions': nextTransactions.map((item) => item.toJson()).toList(),
+    'fundTransactions': fundTransactions.map((item) => item.toJson()).toList(),
+  };
 
   Future<void> saveBalances() async {
     final jsonList = balances.map((b) => b.toJson()).toList();
 
     await PersistenceStore.saveJsonList('finance_balances', jsonList);
+    if (_portfolioReady) await savePortfolio();
   }
 
   Future<bool> loadSavedBalances() async {
@@ -945,6 +1143,7 @@ class FinanceStore {
     final jsonList = transactions.map((t) => t.toJson()).toList();
 
     await PersistenceStore.saveJsonList('finance_transactions', jsonList);
+    if (_portfolioReady) await savePortfolio();
   }
 
   Future<void> saveLinkedItems() async {
@@ -1008,6 +1207,7 @@ class FinanceStore {
     return true;
   }
 
+  @Deprecated('Usa FinanceFundLifecycleCoordinator')
   Future<void> updateFundAmount({
     required String fundId,
     required double newAmount,
@@ -1044,6 +1244,7 @@ class FinanceStore {
     await saveFunds();
   }
 
+  @Deprecated('Usa FinanceFundLifecycleCoordinator con controparti esplicite')
   Future<void> addFundTransaction({
     required String fundId,
     required String description,
@@ -1104,7 +1305,8 @@ class FinanceStore {
         type: type == FundTransactionType.deposit
             ? FinanceTransactionType.income
             : FinanceTransactionType.expense,
-        origin: FinanceTransactionOrigin.manual,
+        origin: FinanceTransactionOrigin.fund,
+        economicFactId: economicFactIdGenerator.next(),
         notes: 'Movimento fondo: ${oldFund.name}',
       ),
     );
@@ -1114,11 +1316,15 @@ class FinanceStore {
     await saveTransactions();
   }
 
+  @Deprecated('Chiudi il fondo tramite FinanceFundLifecycleCoordinator')
   Future<void> removeFund(String fundId) async {
     funds.removeWhere((f) => f.id == fundId);
+    fundTransactions.removeWhere((transaction) => transaction.fundId == fundId);
+    transactions.removeWhere((transaction) => transaction.balanceId == fundId);
 
     await saveFunds();
     await saveFundTransactions();
+    await saveTransactions();
   }
 
   Future<void> confirmRecurringItem(String itemId, {double? realAmount}) async {
@@ -1173,6 +1379,7 @@ class FinanceStore {
                 : FinanceTransactionType.expense,
             origin: FinanceTransactionOrigin.recurringItem,
             recurringItemId: item.id,
+            economicFactId: economicFactIdGenerator.next(),
             notes: item.description,
           ),
         );
@@ -1296,12 +1503,14 @@ class FinanceStore {
     final jsonList = funds.map((f) => f.toJson()).toList();
 
     await PersistenceStore.saveJsonList('finance_funds', jsonList);
+    if (_portfolioReady) await savePortfolio();
   }
 
   Future<void> saveFundTransactions() async {
     final jsonList = fundTransactions.map((t) => t.toJson()).toList();
 
     await PersistenceStore.saveJsonList('finance_fund_transactions', jsonList);
+    if (_portfolioReady) await savePortfolio();
   }
 
   Future<void> saveRecurringItems() async {

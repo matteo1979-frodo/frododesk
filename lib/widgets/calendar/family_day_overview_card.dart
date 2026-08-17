@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../logic/calendar/view_models/alice_day_overview_view_model.dart';
 import '../../logic/calendar/view_models/family_day_overview_view_model.dart';
 import '../../logic/calendar/view_models/family_member_day_overview_view_model.dart';
+import '../shared/frodo_person_avatar.dart';
 
 class FamilyDayOverviewCard extends StatelessWidget {
   final FamilyDayOverviewViewModel model;
@@ -17,9 +18,9 @@ class FamilyDayOverviewCard extends StatelessWidget {
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.indigo.withOpacity(0.07),
+        color: Colors.indigo.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.indigo.withOpacity(0.22)),
+        border: Border.all(color: Colors.indigo.withValues(alpha: 0.22)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,7 +57,7 @@ class FamilyDayOverviewCard extends StatelessWidget {
           Text(
             'Situazione prevista per la giornata selezionata.',
             style: TextStyle(
-              color: Colors.black.withOpacity(0.65),
+              color: Colors.black.withValues(alpha: 0.65),
               fontWeight: FontWeight.w600,
               fontSize: 12,
             ),
@@ -84,12 +85,18 @@ class _FamilyDayOverviewRow extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.55),
+        color: Colors.white.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.indigo.withOpacity(0.18)),
+        border: Border.all(color: Colors.indigo.withValues(alpha: 0.18)),
       ),
       child: Row(
         children: [
+          FrodoPersonAvatar(
+            category: FrodoPersonCategoryResolver.fromKnownName(model.name),
+            size: 28,
+            semanticLabel: model.name,
+          ),
+          const SizedBox(width: 8),
           SizedBox(
             width: 62,
             child: Text(
@@ -111,7 +118,7 @@ class _FamilyDayOverviewRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black.withOpacity(0.62),
+                    color: Colors.black.withValues(alpha: 0.62),
                   ),
                 ),
               ],
@@ -134,12 +141,18 @@ class _AliceDayOverviewRow extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.55),
+        color: Colors.white.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.indigo.withOpacity(0.18)),
+        border: Border.all(color: Colors.indigo.withValues(alpha: 0.18)),
       ),
       child: Row(
         children: [
+          FrodoPersonAvatar(
+            category: FrodoPersonCategoryResolver.fromKnownName(model.name),
+            size: 28,
+            semanticLabel: model.name,
+          ),
+          const SizedBox(width: 8),
           SizedBox(
             width: 62,
             child: Text(

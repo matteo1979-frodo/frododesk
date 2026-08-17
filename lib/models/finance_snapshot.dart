@@ -2,6 +2,7 @@ class FinanceSnapshot {
   final DateTime date;
   final double totalBalance;
   final double totalFunds;
+  final double familyNetWorth;
   final double projectedMonthlyIncome;
   final double projectedMonthlyExpenses;
   final double projectedMonthlyMargin;
@@ -23,6 +24,7 @@ class FinanceSnapshot {
     required this.date,
     required this.totalBalance,
     required this.totalFunds,
+    required this.familyNetWorth,
     required this.projectedMonthlyIncome,
     required this.projectedMonthlyExpenses,
     required this.projectedMonthlyMargin,
@@ -45,6 +47,7 @@ class FinanceSnapshot {
       'date': date.toIso8601String(),
       'totalBalance': totalBalance,
       'totalFunds': totalFunds,
+      'familyNetWorth': familyNetWorth,
       'projectedMonthlyIncome': projectedMonthlyIncome,
       'projectedMonthlyExpenses': projectedMonthlyExpenses,
       'projectedMonthlyMargin': projectedMonthlyMargin,
@@ -68,6 +71,10 @@ class FinanceSnapshot {
       date: DateTime.parse(json['date'] as String),
       totalBalance: (json['totalBalance'] as num).toDouble(),
       totalFunds: (json['totalFunds'] as num).toDouble(),
+      familyNetWorth:
+          (json['familyNetWorth'] as num?)?.toDouble() ??
+          (json['totalBalance'] as num).toDouble() +
+              (json['totalFunds'] as num).toDouble(),
       projectedMonthlyIncome: (json['projectedMonthlyIncome'] as num)
           .toDouble(),
       projectedMonthlyExpenses: (json['projectedMonthlyExpenses'] as num)

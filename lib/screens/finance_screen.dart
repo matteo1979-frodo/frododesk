@@ -15,6 +15,12 @@ import 'person_finance_screen.dart';
 import '../core/frododesk_bootstrap.dart';
 import '../engines/observation/observation_engine.dart';
 import 'finance/finance_observations_page.dart';
+import 'finance/finance_funds_page.dart';
+import 'finance/finance_ledger_page.dart';
+import '../logic/finance/finance_funds_coordinator.dart';
+import '../logic/finance/finance_ledger_coordinator.dart';
+import '../logic/finance/finance_recurring_coordinator.dart';
+import '../models/finance_recurring_draft.dart';
 
 class FinanceScreen extends StatefulWidget {
   final FinanceStore financeStore;
@@ -67,6 +73,8 @@ class _FinanceScreenState extends State<FinanceScreen> {
                     _buildFrodoControlCard(financeObservations),
                     const SizedBox(height: 18),
                     _buildMainNumbers(),
+                    const SizedBox(height: 12),
+                    _buildModernFinanceActions(),
                     const SizedBox(height: 18),
                     _buildIncomeExpenseSection(),
                     const SizedBox(height: 18),
@@ -221,6 +229,49 @@ class _FinanceScreenState extends State<FinanceScreen> {
             value: "€${financeStore.availableThisMonth().toStringAsFixed(0)}",
             icon: Icons.calendar_month_rounded,
             color: const Color(0xFFFB8C00),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModernFinanceActions() {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => FinanceFundsPage(
+                    coordinator: FinanceFundsCoordinator(
+                      financeStore: financeStore,
+                    ),
+                  ),
+                ),
+              );
+              if (mounted) setState(() {});
+            },
+            icon: const Icon(Icons.savings_rounded),
+            label: const Text('Gestisci fondi'),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => FinanceLedgerPage(
+                    coordinator: FinanceLedgerCoordinator(
+                      financeStore: financeStore,
+                    ),
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.receipt_long_rounded),
+            label: const Text('Movimenti della famiglia'),
           ),
         ),
       ],
@@ -922,6 +973,34 @@ class _FinanceScreenState extends State<FinanceScreen> {
           _detailRow("Metodo", _paymentMethodLabel(item.paymentMethod)),
           _detailRow("Categoria", _categoryLabel(item.category)),
           _detailRow("Stato", item.confirmed ? "Confermato" : "Da confermare"),
+          _detailRow(
+            "Obbligatorietà",
+            item.mandatory ? "Obbligatoria" : "Flessibile",
+          ),
+          _detailRow("Priorità", item.paymentPriority.name),
+          _detailRow("Variabilità", item.variability.name),
+          _detailRow("Protezione", item.protectionLevel.name),
+          _detailRow("Stabilità", item.stability.name),
+          _detailRow("Rischio sospensione", item.suspensionRisk.name),
+          if (item.splits.isNotEmpty)
+            _detailRow(
+              "Ripartizione",
+              item.splits
+                  .map(
+                    (split) =>
+                        '${split.personId}: €${split.amount.toStringAsFixed(2)}',
+                  )
+                  .join(' · '),
+            ),
+          _detailRow(
+            "Comportamento",
+            [
+              if (item.behaviorProfile.timeSensitive) 'sensibile al tempo',
+              if (item.behaviorProfile.canBeDelayed) 'rinviabile',
+              if (item.behaviorProfile.canBeSplit) 'divisibile',
+              if (item.behaviorProfile.canBeReduced) 'riducibile',
+            ].join(' · '),
+          ),
           if (item.description.trim().isNotEmpty)
             _detailRow("Note", item.description),
           const SizedBox(height: 14),
@@ -1073,6 +1152,38 @@ class _FinanceScreenState extends State<FinanceScreen> {
     FinanceCategory selectedCategory =
         existing?.category ??
         (isIncome ? FinanceCategory.salary : FinanceCategory.generic);
+
+    FinanceSmartTemplateType selectedTemplate = isIncome
+        ? FinanceSmartTemplateType.salary
+        : FinanceSmartTemplateType.generic;
+    bool useCustomSplit = existing?.splits.isNotEmpty ?? false;
+    double splitPercentage(String personId) {
+      if (existing == null || existing.expectedAmount == 0) return 50;
+      final matches = existing.splits.where(
+        (split) => split.personId == personId,
+      );
+      if (matches.isEmpty) return 50;
+      return matches.first.amount / existing.expectedAmount * 100;
+    }
+
+    final matteoPercentageController = TextEditingController(
+      text: splitPercentage('matteo').toStringAsFixed(0),
+    );
+    final chiaraPercentageController = TextEditingController(
+      text: splitPercentage('chiara').toStringAsFixed(0),
+    );
+    bool mandatory = existing?.mandatory ?? !isIncome;
+    FinancePaymentPriority selectedPriority =
+        existing?.paymentPriority ?? FinancePaymentPriority.normal;
+    FinanceVariability selectedVariability =
+        existing?.variability ?? FinanceVariability.variable;
+    FinanceProtectionLevel selectedProtection =
+        existing?.protectionLevel ?? FinanceProtectionLevel.none;
+    FinanceStability selectedStability =
+        existing?.stability ?? FinanceStability.stable;
+    FinanceSuspensionRisk selectedSuspensionRisk =
+        existing?.suspensionRisk ?? FinanceSuspensionRisk.low;
+    var behavior = existing?.behaviorProfile ?? const FinanceBehaviorProfile();
 
     String? selectedBalanceId = existing?.balanceId;
 
@@ -1319,6 +1430,178 @@ class _FinanceScreenState extends State<FinanceScreen> {
                   });
                 },
               ),
+              const SizedBox(height: 12),
+              ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                title: const Text('Opzioni avanzate'),
+                subtitle: const Text('Template, ripartizione e rischio'),
+                children: [
+                  DropdownButtonFormField<FinanceSmartTemplateType>(
+                    initialValue: selectedTemplate,
+                    decoration: _inputDecoration('Smart template'),
+                    items: financeSmartTemplates.map((template) {
+                      return DropdownMenuItem(
+                        value: template.type,
+                        child: Text(template.label),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      final defaults = FinanceRecurringCoordinator(
+                        financeStore: financeStore,
+                      ).defaultsFor(value);
+                      refreshDialog(() {
+                        selectedTemplate = value;
+                        selectedPaymentMethod = defaults.paymentMethod;
+                        selectedCategory = defaults.category;
+                        behavior = defaults.behaviorProfile;
+                      });
+                    },
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Ripartizione personalizzata'),
+                    value: useCustomSplit,
+                    onChanged: (value) =>
+                        refreshDialog(() => useCustomSplit = value),
+                  ),
+                  if (useCustomSplit)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: matteoPercentageController,
+                            keyboardType: TextInputType.number,
+                            decoration: _inputDecoration('Matteo %'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: chiaraPercentageController,
+                            keyboardType: TextInputType.number,
+                            decoration: _inputDecoration('Chiara %'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Obbligatoria'),
+                    value: mandatory,
+                    onChanged: (value) =>
+                        refreshDialog(() => mandatory = value),
+                  ),
+                  DropdownButtonFormField<FinancePaymentPriority>(
+                    initialValue: selectedPriority,
+                    decoration: _inputDecoration('Priorità'),
+                    items: FinancePaymentPriority.values
+                        .map(
+                          (value) => DropdownMenuItem(
+                            value: value,
+                            child: Text(value.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) => refreshDialog(
+                      () => selectedPriority = value ?? selectedPriority,
+                    ),
+                  ),
+                  DropdownButtonFormField<FinanceVariability>(
+                    initialValue: selectedVariability,
+                    decoration: _inputDecoration('Variabilità'),
+                    items: FinanceVariability.values
+                        .map(
+                          (value) => DropdownMenuItem(
+                            value: value,
+                            child: Text(value.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) => refreshDialog(
+                      () => selectedVariability = value ?? selectedVariability,
+                    ),
+                  ),
+                  DropdownButtonFormField<FinanceProtectionLevel>(
+                    initialValue: selectedProtection,
+                    decoration: _inputDecoration('Protezione'),
+                    items: FinanceProtectionLevel.values
+                        .map(
+                          (value) => DropdownMenuItem(
+                            value: value,
+                            child: Text(value.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) => refreshDialog(
+                      () => selectedProtection = value ?? selectedProtection,
+                    ),
+                  ),
+                  DropdownButtonFormField<FinanceStability>(
+                    initialValue: selectedStability,
+                    decoration: _inputDecoration('Stabilità'),
+                    items: FinanceStability.values
+                        .map(
+                          (value) => DropdownMenuItem(
+                            value: value,
+                            child: Text(value.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) => refreshDialog(
+                      () => selectedStability = value ?? selectedStability,
+                    ),
+                  ),
+                  DropdownButtonFormField<FinanceSuspensionRisk>(
+                    initialValue: selectedSuspensionRisk,
+                    decoration: _inputDecoration('Rischio sospensione'),
+                    items: FinanceSuspensionRisk.values
+                        .map(
+                          (value) => DropdownMenuItem(
+                            value: value,
+                            child: Text(value.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) => refreshDialog(
+                      () => selectedSuspensionRisk =
+                          value ?? selectedSuspensionRisk,
+                    ),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Sensibile al tempo'),
+                    value: behavior.timeSensitive,
+                    onChanged: (value) => refreshDialog(
+                      () => behavior = behavior.copyWith(timeSensitive: value),
+                    ),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Può essere rinviata'),
+                    value: behavior.canBeDelayed,
+                    onChanged: (value) => refreshDialog(
+                      () => behavior = behavior.copyWith(canBeDelayed: value),
+                    ),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Può essere suddivisa'),
+                    value: behavior.canBeSplit,
+                    onChanged: (value) => refreshDialog(
+                      () => behavior = behavior.copyWith(canBeSplit: value),
+                    ),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Può essere ridotta'),
+                    value: behavior.canBeReduced,
+                    onChanged: (value) => refreshDialog(
+                      () => behavior = behavior.copyWith(canBeReduced: value),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
@@ -1333,18 +1616,14 @@ class _FinanceScreenState extends State<FinanceScreen> {
 
                     if (name.isEmpty || amount == null) return;
 
-                    final now = DateTime.now();
-
                     final customInterval =
                         selectedRecurringType == FinanceRecurringType.custom
                         ? int.tryParse(customIntervalController.text.trim()) ??
                               1
                         : null;
 
-                    final item = FinanceRecurringItem(
-                      id:
-                          existing?.id ??
-                          'recurring_${now.microsecondsSinceEpoch}',
+                    final draft = FinanceRecurringDraft(
+                      existing: existing,
                       name: name,
                       description: descriptionController.text.trim(),
                       expectedAmount: amount,
@@ -1352,53 +1631,38 @@ class _FinanceScreenState extends State<FinanceScreen> {
                       isIncome: isIncome,
                       recurringType: selectedRecurringType,
                       customInterval: customInterval,
-                      customIntervalUnit:
-                          selectedRecurringType == FinanceRecurringType.custom
-                          ? 'months'
-                          : null,
                       category: selectedCategory,
-                      requiresManualConfirmation: true,
-                      mandatory: !isIncome,
-                      pressureLevel: isIncome
-                          ? FinancePressureLevel.low
-                          : FinancePressureLevel.medium,
-                      confirmed: existing?.confirmed ?? false,
-                      realAmount: existing?.realAmount,
-                      variability: FinanceVariability.variable,
-                      paymentPriority: isIncome
-                          ? FinancePaymentPriority.normal
-                          : FinancePaymentPriority.high,
-                      protectionLevel: FinanceProtectionLevel.none,
                       paymentOwner: selectedOwner,
                       subject: selectedSubject,
                       balanceId: selectedBalanceId,
                       paymentMethod: selectedPaymentMethod,
-                      stability: FinanceStability.stable,
-                      suspensionRisk: FinanceSuspensionRisk.low,
-                      originType: FinanceOriginType.manual,
-                      splits: existing?.splits ?? const [],
-                      behaviorProfile:
-                          existing?.behaviorProfile ??
-                          FinanceBehaviorProfile(
-                            predictable: true,
-                            lifeGenerated: false,
-                            timeSensitive: !isIncome,
-                            canBeDelayed: !isIncome,
-                            canBeSplit: !isIncome,
-                            canBeReduced: false,
-                            affectsResilience: true,
-                            affectsOperationalOxygen: true,
-                            rigidityScore: isIncome ? 0.2 : 0.6,
-                            maneuverabilityScore: isIncome ? 0.8 : 0.4,
-                            recoveryImpactScore: 0.5,
-                          ),
+                      templateType: selectedTemplate,
+                      matteoPercentage: useCustomSplit
+                          ? double.tryParse(matteoPercentageController.text)
+                          : null,
+                      chiaraPercentage: useCustomSplit
+                          ? double.tryParse(chiaraPercentageController.text)
+                          : null,
+                      mandatory: mandatory,
+                      paymentPriority: selectedPriority,
+                      variability: selectedVariability,
+                      protectionLevel: selectedProtection,
+                      stability: selectedStability,
+                      suspensionRisk: selectedSuspensionRisk,
+                      behaviorProfile: behavior,
                     );
 
-                    if (existing == null) {
-                      await financeStore.addRecurringItem(item);
-                    } else {
-                      await financeStore.updateRecurringItem(item);
+                    final coordinator = FinanceRecurringCoordinator(
+                      financeStore: financeStore,
+                    );
+                    final validationError = coordinator.validate(draft);
+                    if (validationError != null) {
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text(validationError)));
+                      return;
                     }
+                    await coordinator.save(draft);
 
                     if (mounted) {
                       setState(() {});

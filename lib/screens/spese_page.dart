@@ -8,9 +8,28 @@ import '../models/finance_recurring_item.dart';
 import '../models/frodo_observation.dart';
 import '../stores/expense_category_store.dart';
 import '../stores/cash_wallet_store.dart';
-import '../logic/spese/spese_month_reader.dart';
-import '../core/frododesk_bootstrap.dart';
-import '../engines/observation/observation_engine.dart';
+import '../logic/spese/spese_coordinator.dart';
+import '../logic/spese/builders/spese_command_builder.dart';
+import '../logic/spese/spese_mutation_coordinator.dart';
+import '../models/economic_event.dart';
+import '../models/spese_command.dart';
+import '../models/spese_snapshot.dart';
+
+const _speseCommandBuilder = SpeseCommandBuilder();
+
+SpeseCommand? _prepareSpeseCommand(
+  BuildContext context,
+  SpeseCommand Function() build,
+) {
+  try {
+    return build();
+  } on SpeseCommandValidationException catch (error) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(error.message)));
+    return null;
+  }
+}
 
 class SpesePage extends StatefulWidget {
   final FinanceStore financeStore;
@@ -25,107 +44,47 @@ class _SpesePageState extends State<SpesePage> {
   final ExpenseStore expenseStore = ExpenseStore();
   final ExpenseCategoryStore categoryStore = ExpenseCategoryStore();
   final CashWalletStore cashWalletStore = CashWalletStore();
+  late final SpeseCoordinator coordinator;
+  late final SpeseMutationCoordinator mutationCoordinator;
+  late SpeseSnapshot snapshot;
 
   @override
   void initState() {
     super.initState();
+    coordinator = SpeseCoordinator(
+      financeStore: widget.financeStore,
+      expenseStore: expenseStore,
+      categoryStore: categoryStore,
+      cashWalletStore: cashWalletStore,
+    );
+    mutationCoordinator = SpeseMutationCoordinator(
+      financeStore: widget.financeStore,
+      expenseStore: expenseStore,
+      cashWalletStore: cashWalletStore,
+    );
+    snapshot = coordinator.build(observedAt: DateTime.now());
     _loadStores();
   }
 
   Future<void> _loadStores() async {
-    await expenseStore.load();
-    await categoryStore.load();
-    await cashWalletStore.load();
-
+    final loadedSnapshot = await coordinator.initialize(
+      observedAt: DateTime.now(),
+    );
     if (mounted) {
-      setState(() {});
+      setState(() => snapshot = loadedSnapshot);
     }
   }
 
-  String _monthName(int month) {
-    const months = [
-      "Gennaio",
-      "Febbraio",
-      "Marzo",
-      "Aprile",
-      "Maggio",
-      "Giugno",
-      "Luglio",
-      "Agosto",
-      "Settembre",
-      "Ottobre",
-      "Novembre",
-      "Dicembre",
-    ];
-
-    return months[month - 1];
+  Future<void> _refreshSnapshot() async {
+    final refreshedSnapshot = coordinator.build(observedAt: DateTime.now());
+    if (mounted) {
+      setState(() => snapshot = refreshedSnapshot);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final monthTitle = "${_monthName(now.month)} ${now.year}";
-
-    final currentMonthExpenses = expenseStore.all.where((expense) {
-      return expense.date.year == now.year && expense.date.month == now.month;
-    }).toList()..sort((a, b) => b.date.compareTo(a.date));
-
-    final last7DaysTotal = expenseStore.all
-        .where(
-          (expense) =>
-              expense.date.isAfter(now.subtract(const Duration(days: 7))),
-        )
-        .fold<double>(0, (sum, expense) => sum + expense.amount);
-
-    final currentMonthTotal = currentMonthExpenses.fold<double>(
-      0,
-      (sum, expense) => sum + expense.amount,
-    );
-
-    final cashWalletTotal = cashWalletStore.all
-        .where((wallet) => wallet.active)
-        .fold<double>(0, (sum, wallet) => sum + wallet.currentAmount);
-
-    final previousMonth = DateTime(now.year, now.month - 1, 1);
-
-    final previousMonthExpenses = expenseStore.all.where((expense) {
-      return expense.date.year == previousMonth.year &&
-          expense.date.month == previousMonth.month;
-    }).toList();
-
-    FrodoDeskBootstrap.initialize(
-      expenses: expenseStore.all,
-      financeStore: widget.financeStore,
-    );
-
-    final monthObservations = ObservationEngine.collect()
-        .where((observation) => observation.module == 'spese')
-        .toList();
-
-    final monthSummary = monthObservations.first.message;
-
-    final categoryTotals = <String, double>{};
-
-    for (final expense in currentMonthExpenses) {
-      categoryTotals[expense.category] =
-          (categoryTotals[expense.category] ?? 0) + expense.amount;
-    }
-
-    String mainCategory = "-";
-
-    if (categoryTotals.isNotEmpty) {
-      final sortedCategories = categoryTotals.entries.toList()
-        ..sort((a, b) => b.value.compareTo(a.value));
-
-      final topValue = sortedCategories.first.value;
-
-      final topCategories = sortedCategories
-          .where((entry) => entry.value == topValue)
-          .map((entry) => entry.key)
-          .toList();
-
-      mainCategory = topCategories.take(3).join(" / ");
-    }
+    final currentMonthExpenses = snapshot.currentMonthExpenses;
 
     return Scaffold(
       backgroundColor: const Color(0xFF101820),
@@ -150,17 +109,22 @@ class _SpesePageState extends State<SpesePage> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 90),
                   children: [
-                    _SpeseHeroCard(currentMonthTotal: currentMonthTotal),
-                    const SizedBox(height: 16),
-                    _SpeseMainGrid(
-                      movementCount: currentMonthExpenses.length,
-                      last7DaysTotal: last7DaysTotal,
-                      mainCategory: mainCategory,
-                      currentMonthTotal: currentMonthTotal,
-                      cashWalletTotal: cashWalletTotal,
+                    _SpeseHeroCard(
+                      currentMonthTotal: snapshot.currentMonthTotal,
                     ),
                     const SizedBox(height: 16),
-                    _SpeseMonthStatusCard(observations: monthObservations),
+                    _SpeseMainGrid(
+                      movementCount: snapshot.movementCount,
+                      last7DaysTotal: snapshot.last7DaysTotal,
+                      mainCategory: snapshot.mainCategory,
+                      currentMonthTotal: snapshot.currentMonthTotal,
+                      cashWalletTotal: snapshot.cashWalletTotal,
+                    ),
+                    const SizedBox(height: 16),
+                    _SpeseMonthStatusCard(
+                      observations: snapshot.monthObservations,
+                      visibleObservations: snapshot.visibleMonthObservations,
+                    ),
                     const SizedBox(height: 18),
                     const Text(
                       "Movimenti del mese corrente",
@@ -172,7 +136,7 @@ class _SpesePageState extends State<SpesePage> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      monthTitle,
+                      snapshot.monthTitle,
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 13,
@@ -180,81 +144,68 @@ class _SpesePageState extends State<SpesePage> {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    ...currentMonthExpenses
-                        .take(3)
-                        .map(
-                          (expense) => Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: _SpeseGlassCard(
-                              child: Row(
-                                children: [
-                                  _SpeseIconBox(
-                                    icon: expense.isIncome
-                                        ? Icons.add_card_rounded
-                                        : (expense.isCashWithdrawal
-                                              ? Icons
-                                                    .account_balance_wallet_rounded
-                                              : Icons.receipt_long_rounded),
-                                    color: expense.isIncome
-                                        ? const Color(0xFF42A5F5)
-                                        : (expense.isCashWithdrawal
-                                              ? const Color(0xFF66BB6A)
-                                              : const Color(0xFFFF7043)),
-                                  ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: Column(
+                    if (currentMonthExpenses.isEmpty)
+                      const _EmptyMovementsCard(),
+                    ...snapshot.recentExpenses.map(
+                      (expense) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _SpeseGlassCard(
+                          child: Row(
+                            children: [
+                              _SpeseIconBox(
+                                icon: expense.isIncome
+                                    ? Icons.add_card_rounded
+                                    : (expense.isCashWithdrawal
+                                          ? Icons.account_balance_wallet_rounded
+                                          : Icons.receipt_long_rounded),
+                                color: expense.isIncome
+                                    ? const Color(0xFF42A5F5)
+                                    : (expense.isCashWithdrawal
+                                          ? const Color(0xFF66BB6A)
+                                          : const Color(0xFFFF7043)),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      expense.description,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          expense.description,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w900,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
                                         Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  "${expense.category} • ${expense.balanceName}",
-                                                  style: const TextStyle(
-                                                    color: Colors.white70,
-                                                    fontSize: 13,
-                                                    fontWeight: FontWeight.w700,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 2),
-                                                Text(
-                                                  switch (expense.subject) {
-                                                    FinanceSubject.matteo =>
-                                                      "👨 Matteo",
-                                                    FinanceSubject.chiara =>
-                                                      "👩 Chiara",
-                                                    FinanceSubject.alice =>
-                                                      "👧 Alice",
-                                                    FinanceSubject.shared =>
-                                                      "👨‍👩‍👧 Condiviso",
-                                                  },
-                                                  style: const TextStyle(
-                                                    color: Colors.white54,
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                              ],
+                                            Text(
+                                              "${expense.category} • ${expense.balanceName}",
+                                              style: const TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                              ),
                                             ),
                                             const SizedBox(height: 2),
                                             Text(
-                                              _formatMovementDate(expense.date),
+                                              switch (expense.subject) {
+                                                FinanceSubject.matteo =>
+                                                  "👨 Matteo",
+                                                FinanceSubject.chiara =>
+                                                  "👩 Chiara",
+                                                FinanceSubject.alice =>
+                                                  "👧 Alice",
+                                                FinanceSubject.shared =>
+                                                  "👨‍👩‍👧 Condiviso",
+                                              },
                                               style: const TextStyle(
                                                 color: Colors.white54,
                                                 fontSize: 11,
@@ -263,22 +214,33 @@ class _SpesePageState extends State<SpesePage> {
                                             ),
                                           ],
                                         ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          _formatMovementDate(expense.date),
+                                          style: const TextStyle(
+                                            color: Colors.white54,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
                                       ],
                                     ),
-                                  ),
-                                  Text(
-                                    expense.displayAmount,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
+                              Text(
+                                expense.displayAmount,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+                      ),
+                    ),
                     const SizedBox(height: 6),
                     if (currentMonthExpenses.isNotEmpty)
                       _MovementChoiceTile(
@@ -292,16 +254,15 @@ class _SpesePageState extends State<SpesePage> {
                             MaterialPageRoute(
                               builder: (_) => _ExpenseMonthHistoryPage(
                                 expenses: currentMonthExpenses,
-                                monthTitle: monthTitle,
-                                financeStore: widget.financeStore,
-                                expenseStore: expenseStore,
-                                categoryStore: categoryStore,
-                                cashWalletStore: cashWalletStore,
+                                monthTitle: snapshot.monthTitle,
+                                snapshot: snapshot,
+                                coordinator: coordinator,
+                                mutationCoordinator: mutationCoordinator,
                               ),
                             ),
                           );
 
-                          if (mounted) setState(() {});
+                          await _refreshSnapshot();
                         },
                       ),
                   ],
@@ -335,14 +296,14 @@ class _SpesePageState extends State<SpesePage> {
                           await Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) => _RealExpenseAccountPage(
-                                financeStore: widget.financeStore,
-                                expenseStore: expenseStore,
-                                categoryStore: categoryStore,
+                                snapshot: snapshot,
+                                coordinator: coordinator,
+                                mutationCoordinator: mutationCoordinator,
                               ),
                             ),
                           );
 
-                          if (mounted) setState(() {});
+                          await _refreshSnapshot();
                         },
                       ),
                       const SizedBox(height: 10),
@@ -357,14 +318,13 @@ class _SpesePageState extends State<SpesePage> {
                           await Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) => _CashWithdrawalAccountPage(
-                                financeStore: widget.financeStore,
-                                expenseStore: expenseStore,
-                                cashWalletStore: cashWalletStore,
+                                snapshot: snapshot,
+                                mutationCoordinator: mutationCoordinator,
                               ),
                             ),
                           );
 
-                          if (mounted) setState(() {});
+                          await _refreshSnapshot();
                         },
                       ),
                       const SizedBox(height: 10),
@@ -380,13 +340,13 @@ class _SpesePageState extends State<SpesePage> {
                           await Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) => _ExtraIncomeAccountPage(
-                                financeStore: widget.financeStore,
-                                expenseStore: expenseStore,
+                                snapshot: snapshot,
+                                mutationCoordinator: mutationCoordinator,
                               ),
                             ),
                           );
 
-                          if (mounted) setState(() {});
+                          await _refreshSnapshot();
                         },
                       ),
                     ],
@@ -406,21 +366,19 @@ class _SpesePageState extends State<SpesePage> {
 }
 
 class _RealExpenseAccountPage extends StatelessWidget {
-  final FinanceStore financeStore;
-  final ExpenseStore expenseStore;
-  final ExpenseCategoryStore categoryStore;
+  final SpeseSnapshot snapshot;
+  final SpeseCoordinator coordinator;
+  final SpeseMutationCoordinator mutationCoordinator;
 
   const _RealExpenseAccountPage({
-    required this.financeStore,
-    required this.expenseStore,
-    required this.categoryStore,
+    required this.snapshot,
+    required this.coordinator,
+    required this.mutationCoordinator,
   });
 
   @override
   Widget build(BuildContext context) {
-    final activeBalances = financeStore.balances
-        .where((balance) => balance.active)
-        .toList();
+    final activeBalances = snapshot.activeBalances;
 
     return Scaffold(
       backgroundColor: const Color(0xFF101820),
@@ -473,9 +431,9 @@ class _RealExpenseAccountPage extends StatelessWidget {
                                 balanceId: balance.balanceId,
                                 balanceName: balance.name,
                                 balanceAmount: balance.availableAmount,
-                                financeStore: financeStore,
-                                expenseStore: expenseStore,
-                                categoryStore: categoryStore,
+                                snapshot: snapshot,
+                                coordinator: coordinator,
+                                mutationCoordinator: mutationCoordinator,
                               ),
                             ),
                           );
@@ -496,18 +454,18 @@ class _RealExpenseFormPage extends StatefulWidget {
   final String balanceId;
   final String balanceName;
   final double balanceAmount;
-  final FinanceStore financeStore;
-  final ExpenseStore expenseStore;
-  final ExpenseCategoryStore categoryStore;
+  final SpeseSnapshot snapshot;
+  final SpeseCoordinator coordinator;
+  final SpeseMutationCoordinator mutationCoordinator;
   final RealExpense? editingExpense;
 
   const _RealExpenseFormPage({
     required this.balanceId,
     required this.balanceName,
     required this.balanceAmount,
-    required this.financeStore,
-    required this.expenseStore,
-    required this.categoryStore,
+    required this.snapshot,
+    required this.coordinator,
+    required this.mutationCoordinator,
     this.editingExpense,
   });
 
@@ -521,6 +479,8 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
 
   String? selectedCategory;
   FinanceSubject selectedSubject = FinanceSubject.shared;
+  late List<String> categories;
+  late SpeseCommandRegistry commandRegistry;
 
   DateTime selectedDate = DateTime.now();
 
@@ -529,6 +489,8 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
     super.initState();
 
     final editingExpense = widget.editingExpense;
+    categories = widget.snapshot.categories.toList();
+    commandRegistry = widget.snapshot.commandRegistry;
     selectedDate = editingExpense?.date ?? DateTime.now();
 
     if (editingExpense != null) {
@@ -622,14 +584,14 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: selectedCategory,
+                        initialValue: selectedCategory,
                         decoration: _inputDecoration(
                           label: "Categoria",
                           hint: "Seleziona categoria...",
                         ),
                         dropdownColor: Colors.white,
                         items: [
-                          ...widget.categoryStore.all.map((category) {
+                          ...categories.map((category) {
                             return DropdownMenuItem(
                               value: category,
                               child: Text(category),
@@ -681,11 +643,17 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
                               return;
                             }
 
-                            await widget.categoryStore.addCategory(newCategory);
+                            final updatedSnapshot = await widget.coordinator
+                                .addCategory(
+                                  category: newCategory,
+                                  observedAt: DateTime.now(),
+                                );
 
                             if (!mounted) return;
 
                             setState(() {
+                              categories = updatedSnapshot.categories.toList();
+                              commandRegistry = updatedSnapshot.commandRegistry;
                               selectedCategory = newCategory;
                             });
 
@@ -701,7 +669,7 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
                       const SizedBox(height: 12),
 
                       DropdownButtonFormField<FinanceSubject>(
-                        value: selectedSubject,
+                        initialValue: selectedSubject,
                         decoration: _inputDecoration(
                           label: "Di chi è",
                           hint: "",
@@ -738,59 +706,35 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: () async {
-                            final amount =
-                                double.tryParse(
-                                  amountController.text.replaceAll(",", "."),
-                                ) ??
-                                0;
-
-                            if (amount <= 0) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Inserisci un importo valido."),
+                            final preparedAt = DateTime.now();
+                            final command = _prepareSpeseCommand(
+                              context,
+                              () => _speseCommandBuilder.build(
+                                draft: SpeseCommandDraft(
+                                  id: preparedAt.millisecondsSinceEpoch
+                                      .toString(),
+                                  kind: SpeseCommandKind.expense,
+                                  preparedAt: preparedAt,
+                                  occurredAt: selectedDate,
+                                  origin: SpeseCommandEndpointDraft(
+                                    kind: EconomicEndpointKind.account,
+                                    referenceId: widget.balanceId,
+                                  ),
+                                  destination: const SpeseCommandEndpointDraft(
+                                    kind: EconomicEndpointKind.external,
+                                    label: 'Spesa',
+                                  ),
+                                  amountInput: amountController.text,
+                                  category: selectedCategory ?? '',
+                                  personId: selectedSubject.name,
+                                  description: descriptionController.text,
                                 ),
-                              );
-                              return;
-                            }
-
-                            if (descriptionController.text.trim().isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Inserisci una descrizione."),
-                                ),
-                              );
-                              return;
-                            }
-
-                            if (selectedCategory == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Seleziona una categoria."),
-                                ),
-                              );
-                              return;
-                            }
-
-                            await widget.financeStore.registerRealExpense(
-                              balanceId: widget.balanceId,
-                              amount: amount,
-                              description: descriptionController.text.trim(),
-                              notes: selectedCategory,
-                            );
-
-                            await widget.expenseStore.addExpense(
-                              RealExpense(
-                                id: DateTime.now().millisecondsSinceEpoch
-                                    .toString(),
-                                balanceId: widget.balanceId,
-                                balanceName: widget.balanceName,
-                                amount: amount,
-                                description: descriptionController.text.trim(),
-                                category: selectedCategory!,
-                                date: selectedDate,
-                                subject: selectedSubject,
+                                registry: commandRegistry,
                               ),
                             );
+                            if (command == null) return;
+
+                            await widget.mutationCoordinator.execute(command);
 
                             if (!context.mounted) return;
 
@@ -985,13 +929,15 @@ class _SpeseMainGrid extends StatelessWidget {
 
 class _SpeseMonthStatusCard extends StatelessWidget {
   final List<FrodoObservation> observations;
+  final List<FrodoObservation> visibleObservations;
 
-  const _SpeseMonthStatusCard({required this.observations});
+  const _SpeseMonthStatusCard({
+    required this.observations,
+    required this.visibleObservations,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final visibleObservations = observations.take(4).toList();
-
     return _SpeseGlassCard(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1316,19 +1262,29 @@ String _formatMovementDate(DateTime date) {
 class _ExpenseMonthHistoryPage extends StatelessWidget {
   final List<RealExpense> expenses;
   final String monthTitle;
-  final FinanceStore financeStore;
-  final ExpenseStore expenseStore;
-  final ExpenseCategoryStore categoryStore;
-  final CashWalletStore cashWalletStore;
+  final SpeseSnapshot snapshot;
+  final SpeseCoordinator coordinator;
+  final SpeseMutationCoordinator mutationCoordinator;
 
   const _ExpenseMonthHistoryPage({
     required this.expenses,
     required this.monthTitle,
-    required this.financeStore,
-    required this.expenseStore,
-    required this.categoryStore,
-    required this.cashWalletStore,
+    required this.snapshot,
+    required this.coordinator,
+    required this.mutationCoordinator,
   });
+
+  SpeseCommand _existingMovementCommand(
+    RealExpense expense,
+    SpeseCommandAction action,
+  ) {
+    return _speseCommandBuilder.buildExistingMovement(
+      expense: expense,
+      action: action,
+      preparedAt: DateTime.now(),
+      registry: snapshot.commandRegistry,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1404,21 +1360,11 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                     Navigator.of(dialogContext).pop();
 
                                     if (expense.isCashWithdrawal) {
-                                      await financeStore.restoreRealExpense(
-                                        balanceId: expense.balanceId,
-                                        amount: expense.amount,
-                                        description: expense.description,
-                                      );
-
-                                      if (expense.cashWalletId != null) {
-                                        await cashWalletStore.removeCash(
-                                          walletId: expense.cashWalletId!,
-                                          amount: expense.amount,
-                                        );
-                                      }
-
-                                      await expenseStore.removeExpense(
-                                        expense.id,
+                                      await mutationCoordinator.execute(
+                                        _existingMovementCommand(
+                                          expense,
+                                          SpeseCommandAction.removeForEdit,
+                                        ),
                                       );
 
                                       if (!context.mounted) return;
@@ -1438,10 +1384,9 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                                         'wallet_chiara'
                                                     ? 'chiara'
                                                     : 'matteo',
-                                                financeStore: financeStore,
-                                                expenseStore: expenseStore,
-                                                cashWalletStore:
-                                                    cashWalletStore,
+                                                snapshot: snapshot,
+                                                mutationCoordinator:
+                                                    mutationCoordinator,
                                                 editingExpense: expense,
                                               ),
                                         ),
@@ -1451,14 +1396,11 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                     }
 
                                     if (expense.isIncome) {
-                                      await financeStore.removeExtraIncome(
-                                        balanceId: expense.balanceId,
-                                        amount: expense.amount,
-                                        description: expense.description,
-                                      );
-
-                                      await expenseStore.removeExpense(
-                                        expense.id,
+                                      await mutationCoordinator.execute(
+                                        _existingMovementCommand(
+                                          expense,
+                                          SpeseCommandAction.removeForEdit,
+                                        ),
                                       );
 
                                       if (!context.mounted) return;
@@ -1471,8 +1413,9 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                             balanceId: expense.balanceId,
                                             balanceName: expense.balanceName,
                                             balanceAmount: 0,
-                                            financeStore: financeStore,
-                                            expenseStore: expenseStore,
+                                            snapshot: snapshot,
+                                            mutationCoordinator:
+                                                mutationCoordinator,
                                             editingExpense: expense,
                                           ),
                                         ),
@@ -1506,28 +1449,14 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                                   modifyContext,
                                                 ).pop();
 
-                                                await financeStore
-                                                    .restoreRealExpense(
-                                                      balanceId:
-                                                          expense.balanceId,
-                                                      amount: expense.amount,
-                                                      description:
-                                                          expense.description,
+                                                await mutationCoordinator
+                                                    .execute(
+                                                      _existingMovementCommand(
+                                                        expense,
+                                                        SpeseCommandAction
+                                                            .removeForEdit,
+                                                      ),
                                                     );
-
-                                                if (expense.isCashWithdrawal &&
-                                                    expense.cashWalletId !=
-                                                        null) {
-                                                  await cashWalletStore
-                                                      .removeCash(
-                                                        walletId: expense
-                                                            .cashWalletId!,
-                                                        amount: expense.amount,
-                                                      );
-                                                }
-
-                                                await expenseStore
-                                                    .removeExpense(expense.id);
 
                                                 if (!context.mounted) return;
 
@@ -1544,12 +1473,11 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                                           balanceName: expense
                                                               .balanceName,
                                                           balanceAmount: 0,
-                                                          financeStore:
-                                                              financeStore,
-                                                          expenseStore:
-                                                              expenseStore,
-                                                          categoryStore:
-                                                              categoryStore,
+                                                          snapshot: snapshot,
+                                                          coordinator:
+                                                              coordinator,
+                                                          mutationCoordinator:
+                                                              mutationCoordinator,
                                                           editingExpense:
                                                               expense,
                                                         ),
@@ -1570,30 +1498,11 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                   onPressed: () async {
                                     Navigator.of(dialogContext).pop();
 
-                                    if (expense.isIncome) {
-                                      await financeStore.removeExtraIncome(
-                                        balanceId: expense.balanceId,
-                                        amount: expense.amount,
-                                        description: expense.description,
-                                      );
-                                    } else {
-                                      await financeStore.restoreRealExpense(
-                                        balanceId: expense.balanceId,
-                                        amount: expense.amount,
-                                        description: expense.description,
-                                      );
-                                    }
-
-                                    if (expense.isCashWithdrawal &&
-                                        expense.cashWalletId != null) {
-                                      await cashWalletStore.removeCash(
-                                        walletId: expense.cashWalletId!,
-                                        amount: expense.amount,
-                                      );
-                                    }
-
-                                    await expenseStore.removeExpense(
-                                      expense.id,
+                                    await mutationCoordinator.execute(
+                                      _existingMovementCommand(
+                                        expense,
+                                        SpeseCommandAction.delete,
+                                      ),
                                     );
 
                                     if (!context.mounted) return;
@@ -1719,21 +1628,17 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
 }
 
 class _CashWithdrawalAccountPage extends StatelessWidget {
-  final FinanceStore financeStore;
-  final ExpenseStore expenseStore;
-  final CashWalletStore cashWalletStore;
+  final SpeseSnapshot snapshot;
+  final SpeseMutationCoordinator mutationCoordinator;
 
   const _CashWithdrawalAccountPage({
-    required this.financeStore,
-    required this.expenseStore,
-    required this.cashWalletStore,
+    required this.snapshot,
+    required this.mutationCoordinator,
   });
 
   @override
   Widget build(BuildContext context) {
-    final activeBalances = financeStore.balances
-        .where((balance) => balance.active)
-        .toList();
+    final activeBalances = snapshot.activeBalances;
 
     return Scaffold(
       backgroundColor: const Color(0xFF101820),
@@ -1787,9 +1692,8 @@ class _CashWithdrawalAccountPage extends StatelessWidget {
                                 balanceName: balance.name,
                                 balanceAmount: balance.availableAmount,
                                 balancePersonId: balance.personId,
-                                financeStore: financeStore,
-                                expenseStore: expenseStore,
-                                cashWalletStore: cashWalletStore,
+                                snapshot: snapshot,
+                                mutationCoordinator: mutationCoordinator,
                               ),
                             ),
                           );
@@ -1811,9 +1715,8 @@ class _CashWithdrawalFormPage extends StatefulWidget {
   final String balanceName;
   final double balanceAmount;
   final String balancePersonId;
-  final FinanceStore financeStore;
-  final ExpenseStore expenseStore;
-  final CashWalletStore cashWalletStore;
+  final SpeseSnapshot snapshot;
+  final SpeseMutationCoordinator mutationCoordinator;
   final RealExpense? editingExpense;
 
   const _CashWithdrawalFormPage({
@@ -1821,9 +1724,8 @@ class _CashWithdrawalFormPage extends StatefulWidget {
     required this.balanceName,
     required this.balanceAmount,
     required this.balancePersonId,
-    required this.financeStore,
-    required this.expenseStore,
-    required this.cashWalletStore,
+    required this.snapshot,
+    required this.mutationCoordinator,
     this.editingExpense,
   });
 
@@ -1932,63 +1834,36 @@ class _CashWithdrawalFormPageState extends State<_CashWithdrawalFormPage> {
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: () async {
-                            final amount =
-                                double.tryParse(
-                                  amountController.text.replaceAll(",", "."),
-                                ) ??
-                                0;
-
-                            if (amount <= 0) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Inserisci un importo valido."),
-                                ),
-                              );
-                              return;
-                            }
-
                             final walletId = 'wallet_${widget.balancePersonId}';
-                            final wallet = widget.cashWalletStore.findById(
-                              walletId,
-                            );
-
-                            if (wallet == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    "Portafoglio contanti non trovato.",
+                            final preparedAt = DateTime.now();
+                            final command = _prepareSpeseCommand(
+                              context,
+                              () => _speseCommandBuilder.build(
+                                draft: SpeseCommandDraft(
+                                  id: preparedAt.millisecondsSinceEpoch
+                                      .toString(),
+                                  kind: SpeseCommandKind.cashWithdrawal,
+                                  preparedAt: preparedAt,
+                                  occurredAt: selectedDate,
+                                  origin: SpeseCommandEndpointDraft(
+                                    kind: EconomicEndpointKind.account,
+                                    referenceId: widget.balanceId,
                                   ),
+                                  destination: SpeseCommandEndpointDraft(
+                                    kind: EconomicEndpointKind.cash,
+                                    referenceId: walletId,
+                                  ),
+                                  amountInput: amountController.text,
+                                  category: 'Portafoglio contanti',
+                                  personId: widget.balancePersonId,
+                                  description: 'Prelievo contanti',
                                 ),
-                              );
-                              return;
-                            }
-
-                            await widget.financeStore.registerRealExpense(
-                              balanceId: widget.balanceId,
-                              amount: amount,
-                              description: "Prelievo contanti",
-                              notes: wallet.name,
-                            );
-
-                            await widget.cashWalletStore.addCash(
-                              walletId: wallet.id,
-                              amount: amount,
-                            );
-
-                            await widget.expenseStore.addExpense(
-                              RealExpense(
-                                id: DateTime.now().millisecondsSinceEpoch
-                                    .toString(),
-                                balanceId: widget.balanceId,
-                                balanceName: widget.balanceName,
-                                amount: amount,
-                                description: "Prelievo contanti",
-                                category: "Portafoglio contanti",
-                                date: selectedDate,
-                                isCashWithdrawal: true,
-                                cashWalletId: wallet.id,
+                                registry: widget.snapshot.commandRegistry,
                               ),
                             );
+                            if (command == null) return;
+
+                            await widget.mutationCoordinator.execute(command);
 
                             if (!context.mounted) return;
 
@@ -1998,7 +1873,7 @@ class _CashWithdrawalFormPageState extends State<_CashWithdrawalFormPage> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  "Prelievo registrato in ${wallet.name}.",
+                                  "Prelievo registrato in ${command.destination.label}.",
                                 ),
                               ),
                             );
@@ -2055,6 +1930,7 @@ class _MovementDateSelector extends StatelessWidget {
         );
 
         if (pickedDate == null) return;
+        if (!context.mounted) return;
 
         final pickedTime = await showTimePicker(
           context: context,
@@ -2093,19 +1969,17 @@ class _MovementDateSelector extends StatelessWidget {
 }
 
 class _ExtraIncomeAccountPage extends StatelessWidget {
-  final FinanceStore financeStore;
-  final ExpenseStore expenseStore;
+  final SpeseSnapshot snapshot;
+  final SpeseMutationCoordinator mutationCoordinator;
 
   const _ExtraIncomeAccountPage({
-    required this.financeStore,
-    required this.expenseStore,
+    required this.snapshot,
+    required this.mutationCoordinator,
   });
 
   @override
   Widget build(BuildContext context) {
-    final activeBalances = financeStore.balances
-        .where((balance) => balance.active)
-        .toList();
+    final activeBalances = snapshot.activeBalances;
 
     return Scaffold(
       backgroundColor: const Color(0xFF101820),
@@ -2158,8 +2032,8 @@ class _ExtraIncomeAccountPage extends StatelessWidget {
                                 balanceId: balance.balanceId,
                                 balanceName: balance.name,
                                 balanceAmount: balance.availableAmount,
-                                financeStore: financeStore,
-                                expenseStore: expenseStore,
+                                snapshot: snapshot,
+                                mutationCoordinator: mutationCoordinator,
                               ),
                             ),
                           );
@@ -2180,16 +2054,16 @@ class _ExtraIncomeFormPage extends StatefulWidget {
   final String balanceId;
   final String balanceName;
   final double balanceAmount;
-  final FinanceStore financeStore;
-  final ExpenseStore expenseStore;
+  final SpeseSnapshot snapshot;
+  final SpeseMutationCoordinator mutationCoordinator;
   final RealExpense? editingExpense;
 
   const _ExtraIncomeFormPage({
     required this.balanceId,
     required this.balanceName,
     required this.balanceAmount,
-    required this.financeStore,
-    required this.expenseStore,
+    required this.snapshot,
+    required this.mutationCoordinator,
     this.editingExpense,
   });
 
@@ -2312,49 +2186,34 @@ class _ExtraIncomeFormPageState extends State<_ExtraIncomeFormPage> {
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: () async {
-                            final amount =
-                                double.tryParse(
-                                  amountController.text.replaceAll(",", "."),
-                                ) ??
-                                0;
-
-                            if (amount <= 0) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Inserisci un importo valido."),
+                            final preparedAt = DateTime.now();
+                            final command = _prepareSpeseCommand(
+                              context,
+                              () => _speseCommandBuilder.build(
+                                draft: SpeseCommandDraft(
+                                  id: preparedAt.millisecondsSinceEpoch
+                                      .toString(),
+                                  kind: SpeseCommandKind.extraIncome,
+                                  preparedAt: preparedAt,
+                                  occurredAt: selectedDate,
+                                  origin: const SpeseCommandEndpointDraft(
+                                    kind: EconomicEndpointKind.external,
+                                    label: 'Entrata esterna',
+                                  ),
+                                  destination: SpeseCommandEndpointDraft(
+                                    kind: EconomicEndpointKind.account,
+                                    referenceId: widget.balanceId,
+                                  ),
+                                  amountInput: amountController.text,
+                                  category: 'Entrata extra',
+                                  description: descriptionController.text,
                                 ),
-                              );
-                              return;
-                            }
-
-                            if (descriptionController.text.trim().isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Inserisci una descrizione."),
-                                ),
-                              );
-                              return;
-                            }
-
-                            await widget.financeStore.registerExtraIncome(
-                              balanceId: widget.balanceId,
-                              amount: amount,
-                              description: descriptionController.text.trim(),
-                            );
-
-                            await widget.expenseStore.addExpense(
-                              RealExpense(
-                                id: DateTime.now().millisecondsSinceEpoch
-                                    .toString(),
-                                balanceId: widget.balanceId,
-                                balanceName: widget.balanceName,
-                                amount: amount,
-                                description: descriptionController.text.trim(),
-                                category: "Entrata extra",
-                                date: selectedDate,
-                                isIncome: true,
+                                registry: widget.snapshot.commandRegistry,
                               ),
                             );
+                            if (command == null) return;
+
+                            await widget.mutationCoordinator.execute(command);
 
                             if (!context.mounted) return;
 

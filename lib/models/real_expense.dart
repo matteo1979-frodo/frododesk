@@ -24,6 +24,7 @@ class RealExpense {
   /// Id del portafoglio collegato al prelievo contanti.
   /// Esempio: wallet_matteo, wallet_chiara.
   final String? cashWalletId;
+  final String? economicFactId;
 
   const RealExpense({
     required this.id,
@@ -38,6 +39,7 @@ class RealExpense {
     this.isIncome = false,
     this.subject = FinanceSubject.shared,
     this.cashWalletId,
+    this.economicFactId,
   });
 
   String get displayAmount => "€${amount.toStringAsFixed(2)}";
@@ -56,6 +58,7 @@ class RealExpense {
       'cashWalletId': cashWalletId,
       'isIncome': isIncome,
       'subject': subject.name,
+      'economicFactId': economicFactId,
     };
   }
 
@@ -75,6 +78,7 @@ class RealExpense {
       subject: json['subject'] == null
           ? FinanceSubject.shared
           : FinanceSubject.values.firstWhere((e) => e.name == json['subject']),
+      economicFactId: json['economicFactId'] as String?,
     );
   }
 }
