@@ -3,6 +3,18 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+class PersistenceWriteVerification {
+  final bool backendAccepted;
+  final String? readBack;
+
+  const PersistenceWriteVerification({
+    required this.backendAccepted,
+    required this.readBack,
+  });
+
+  bool matches(String expected) => backendAccepted && readBack == expected;
+}
+
 class PersistenceStore {
   PersistenceStore._();
 
@@ -11,6 +23,20 @@ class PersistenceStore {
   static Future<void> saveString(String key, String value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('$_prefix$key', value);
+  }
+
+  static Future<PersistenceWriteVerification> saveStringVerified(
+    String key,
+    String value,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final storageKey = '$_prefix$key';
+    final backendAccepted = await prefs.setString(storageKey, value);
+    final readBack = prefs.getString(storageKey);
+    return PersistenceWriteVerification(
+      backendAccepted: backendAccepted,
+      readBack: readBack,
+    );
   }
 
   static Future<String?> loadString(String key) async {

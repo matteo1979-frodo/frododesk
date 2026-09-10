@@ -18,12 +18,15 @@ import '../models/finance_asset_movement.dart';
 import '../models/finance_fund_mutation_plan.dart';
 import '../logic/economics/economic_fact_id_generator.dart';
 import '../logic/finance/finance_portfolio_v3_contract.dart';
+import '../logic/finance/finance_portfolio_v3_writer.dart';
 
 class FinanceStore extends ChangeNotifier {
   final EconomicFactIdGenerator economicFactIdGenerator;
+  final FinancePortfolioV3Writer portfolioV3Writer;
 
   FinanceStore({
     EconomicFactIdGenerator? economicFactIdGenerator,
+    FinancePortfolioV3Writer? portfolioV3Writer,
     Iterable<FinanceBalance> initialBalances = const [],
     Iterable<FinanceAccountLinkedItem> initialLinkedItems = const [],
     Iterable<FinanceTransaction> initialTransactions = const [],
@@ -34,6 +37,7 @@ class FinanceStore extends ChangeNotifier {
     Iterable<FinanceAssetMovement> initialAssetMovements = const [],
   }) : economicFactIdGenerator =
            economicFactIdGenerator ?? EconomicFactIdGenerator.timestamped(),
+       portfolioV3Writer = portfolioV3Writer ?? FinancePortfolioV3Writer(),
        _balances = List<FinanceBalance>.of(initialBalances),
        _linkedItems = List<FinanceAccountLinkedItem>.of(initialLinkedItems),
        _transactions = List<FinanceTransaction>.of(initialTransactions),
@@ -1234,6 +1238,19 @@ class FinanceStore extends ChangeNotifier {
   }
 
   Future<bool> loadSavedPortfolio() => _runObservableLoad(_loadSavedPortfolio);
+
+  Future<FinancePortfolioV3WriteResult> writePortfolioV3() {
+    return portfolioV3Writer.write(
+      FinancePortfolioV3(
+        balances: balances,
+        funds: funds,
+        assetMovements: assetMovements,
+        transactions: transactions,
+        fundTransactions: fundTransactions,
+        linkedItems: linkedItems,
+      ),
+    );
+  }
 
   Future<bool> loadSavedPortfolioV3() =>
       _runObservableLoad(_loadSavedPortfolioV3);
