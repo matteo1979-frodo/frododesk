@@ -20,14 +20,17 @@ import '../logic/economics/economic_fact_id_generator.dart';
 import '../logic/finance/finance_portfolio_v3_contract.dart';
 import '../logic/finance/finance_portfolio_v3_commit.dart';
 import '../logic/finance/finance_portfolio_v3_writer.dart';
+import '../logic/finance/finance_prepaid_creation.dart';
 
 class FinanceStore extends ChangeNotifier {
   final EconomicFactIdGenerator economicFactIdGenerator;
   final FinancePortfolioV3Writer portfolioV3Writer;
+  final FinancePrepaidCreationBuilder prepaidCreationBuilder;
 
   FinanceStore({
     EconomicFactIdGenerator? economicFactIdGenerator,
     FinancePortfolioV3Writer? portfolioV3Writer,
+    FinancePrepaidCreationBuilder? prepaidCreationBuilder,
     Iterable<FinanceBalance> initialBalances = const [],
     Iterable<FinanceAccountLinkedItem> initialLinkedItems = const [],
     Iterable<FinanceTransaction> initialTransactions = const [],
@@ -39,6 +42,8 @@ class FinanceStore extends ChangeNotifier {
   }) : economicFactIdGenerator =
            economicFactIdGenerator ?? EconomicFactIdGenerator.timestamped(),
        portfolioV3Writer = portfolioV3Writer ?? FinancePortfolioV3Writer(),
+       prepaidCreationBuilder =
+           prepaidCreationBuilder ?? FinancePrepaidCreationBuilder(),
        _balances = List<FinanceBalance>.of(initialBalances),
        _linkedItems = List<FinanceAccountLinkedItem>.of(initialLinkedItems),
        _transactions = List<FinanceTransaction>.of(initialTransactions),
@@ -327,6 +332,54 @@ class FinanceStore extends ChangeNotifier {
     final index = _linkedItems.indexWhere((item) => item.id == itemId);
     if (index == -1 || _linkedItems[index].active == active) return false;
     return replaceLinkedItem(_linkedItems[index].copyWith(active: active));
+  }
+
+  Future<FinancePrepaidCreationResult> createLinkedPrepaid(
+    FinancePrepaidCreationInput input,
+  ) async {
+    if (!_portfolioV3Authoritative) {
+      return FinancePrepaidCreationResult.failed(
+        failure: FinancePrepaidCreationFailure.v3Required,
+        errors: const ['Finance Portfolio V3 must be authoritative'],
+      );
+    }
+    final parent = _balances.where(
+      (balance) => balance.balanceId == input.parentBalanceId,
+    );
+    if (parent.isEmpty) {
+      return FinancePrepaidCreationResult.failed(
+        failure: FinancePrepaidCreationFailure.parentNotFound,
+        errors: ['Parent balance not found: ${input.parentBalanceId}'],
+      );
+    }
+    if (parent.single.personId != input.personId) {
+      return FinancePrepaidCreationResult.failed(
+        failure: FinancePrepaidCreationFailure.personMismatch,
+        errors: [
+          'Person ${input.personId} does not own parent balance '
+              '${input.parentBalanceId}',
+        ],
+      );
+    }
+
+    final records = prepaidCreationBuilder.build(input);
+    final result = await commitPortfolioV3Candidate(
+      (current) => FinancePortfolioV3(
+        balances: [...current.balances, records.balance],
+        funds: current.funds,
+        assetMovements: current.assetMovements,
+        transactions: current.transactions,
+        fundTransactions: current.fundTransactions,
+        linkedItems: [...current.linkedItems, records.linkedItem],
+      ),
+    );
+    if (!result.isSuccess) {
+      return FinancePrepaidCreationResult.failed(
+        failure: FinancePrepaidCreationFailure.commitFailed,
+        errors: result.errors,
+      );
+    }
+    return FinancePrepaidCreationResult.success(records);
   }
 
   bool _sameBalance(FinanceBalance left, FinanceBalance right) =>
