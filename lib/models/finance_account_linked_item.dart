@@ -11,6 +11,7 @@ enum FinanceAccountLinkedItemType {
 class FinanceAccountLinkedItem {
   final String id;
   final String balanceId;
+  final String? autonomousBalanceId;
   final FinanceAccountLinkedItemType type;
   final String name;
   final String description;
@@ -21,6 +22,7 @@ class FinanceAccountLinkedItem {
   const FinanceAccountLinkedItem({
     required this.id,
     required this.balanceId,
+    this.autonomousBalanceId,
     required this.type,
     required this.name,
     required this.description,
@@ -33,6 +35,7 @@ class FinanceAccountLinkedItem {
     return {
       'id': id,
       'balanceId': balanceId,
+      'autonomousBalanceId': autonomousBalanceId,
       'type': type.name,
       'name': name,
       'description': description,
@@ -46,6 +49,7 @@ class FinanceAccountLinkedItem {
     return FinanceAccountLinkedItem(
       id: json['id'] as String,
       balanceId: json['balanceId'] as String,
+      autonomousBalanceId: json['autonomousBalanceId'] as String?,
       type: FinanceAccountLinkedItemType.values.firstWhere(
         (e) => e.name == json['type'],
       ),
@@ -66,10 +70,16 @@ class FinanceAccountLinkedItem {
     DateTime? expirationDate,
     double? amount,
     bool? active,
+    String? autonomousBalanceId,
+    bool clearAutonomousBalanceId = false,
   }) {
+    assert(!(clearAutonomousBalanceId && autonomousBalanceId != null));
     return FinanceAccountLinkedItem(
       id: id,
       balanceId: balanceId,
+      autonomousBalanceId: clearAutonomousBalanceId
+          ? null
+          : autonomousBalanceId ?? this.autonomousBalanceId,
       type: type ?? this.type,
       name: name ?? this.name,
       description: description ?? this.description,
