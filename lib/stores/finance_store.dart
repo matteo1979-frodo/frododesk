@@ -150,6 +150,10 @@ class FinanceStore extends ChangeNotifier {
     if (_balances.any((item) => item.balanceId == balance.balanceId)) {
       return false;
     }
+    if (_portfolioV3Authoritative) {
+      await _commitBalanceCandidate([..._balances, balance]);
+      return true;
+    }
     _balances.add(balance);
     try {
       await saveBalances();
@@ -164,6 +168,12 @@ class FinanceStore extends ChangeNotifier {
       (item) => item.balanceId == balance.balanceId,
     );
     if (index == -1 || _sameBalance(_balances[index], balance)) return false;
+    if (_portfolioV3Authoritative) {
+      final candidateBalances = List<FinanceBalance>.of(_balances);
+      candidateBalances[index] = balance;
+      await _commitBalanceCandidate(candidateBalances);
+      return true;
+    }
     _balances[index] = balance;
     try {
       await saveBalances();
@@ -171,6 +181,26 @@ class FinanceStore extends ChangeNotifier {
       _markChanged();
     }
     return true;
+  }
+
+  Future<void> _commitBalanceCandidate(
+    Iterable<FinanceBalance> candidateBalances,
+  ) async {
+    final result = await commitPortfolioV3Candidate(
+      (current) => FinancePortfolioV3(
+        balances: candidateBalances,
+        funds: current.funds,
+        assetMovements: current.assetMovements,
+        transactions: current.transactions,
+        fundTransactions: current.fundTransactions,
+        linkedItems: current.linkedItems,
+      ),
+    );
+    if (!result.isSuccess) {
+      throw StateError(
+        'Finance V3 balance commit failed: ${result.errors.join('; ')}',
+      );
+    }
   }
 
   Future<bool> setBalanceActive(String balanceId, bool active) async {
