@@ -18,6 +18,7 @@ import '../models/finance_asset_movement.dart';
 import '../models/finance_fund_mutation_plan.dart';
 import '../logic/economics/economic_fact_id_generator.dart';
 import '../logic/finance/finance_portfolio_v3_contract.dart';
+import '../logic/finance/finance_portfolio_v3_commit.dart';
 import '../logic/finance/finance_portfolio_v3_writer.dart';
 
 class FinanceStore extends ChangeNotifier {
@@ -1250,6 +1251,70 @@ class FinanceStore extends ChangeNotifier {
         linkedItems: linkedItems,
       ),
     );
+  }
+
+  Future<FinancePortfolioV3CommitResult> commitPortfolioV3Candidate(
+    FinancePortfolioV3Transformation transform,
+  ) async {
+    final current = FinancePortfolioV3(
+      balances: _balances,
+      funds: _funds,
+      assetMovements: _assetMovements,
+      transactions: _transactions,
+      fundTransactions: _fundTransactions,
+      linkedItems: _linkedItems,
+    );
+
+    late final FinancePortfolioV3 candidate;
+    try {
+      candidate = transform(current);
+    } catch (error) {
+      return FinancePortfolioV3CommitResult.failed(
+        failure: FinancePortfolioV3CommitFailure.transformationFailed,
+        errors: ['Portfolio V3 candidate transformation failed: $error'],
+      );
+    }
+
+    final validation = FinancePortfolioV3Validator.validate(candidate);
+    if (!validation.isValid) {
+      return FinancePortfolioV3CommitResult.failed(
+        failure: FinancePortfolioV3CommitFailure.validationFailed,
+        errors: validation.errors,
+      );
+    }
+
+    final writeResult = await portfolioV3Writer.write(candidate);
+    if (!writeResult.isSuccess) {
+      return FinancePortfolioV3CommitResult.failed(
+        failure: FinancePortfolioV3CommitFailure.writerFailed,
+        errors: writeResult.errors,
+        writeResult: writeResult,
+      );
+    }
+
+    _balances
+      ..clear()
+      ..addAll(candidate.balances);
+    _funds
+      ..clear()
+      ..addAll(candidate.funds);
+    _assetMovements
+      ..clear()
+      ..addAll(candidate.assetMovements);
+    _transactions
+      ..clear()
+      ..addAll(candidate.transactions);
+    _fundTransactions
+      ..clear()
+      ..addAll(candidate.fundTransactions);
+    _linkedItems
+      ..clear()
+      ..addAll(candidate.linkedItems);
+    _portfolioReady = false;
+    _portfolioV3Authoritative = true;
+    _markChanged();
+
+    return FinancePortfolioV3CommitResult.success(writeResult);
   }
 
   Future<bool> loadSavedPortfolioV3() =>
