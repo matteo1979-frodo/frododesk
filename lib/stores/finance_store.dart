@@ -17,6 +17,7 @@ import '../models/finance_account_linked_item.dart';
 import '../models/finance_asset_movement.dart';
 import '../models/finance_fund_mutation_plan.dart';
 import '../logic/economics/economic_fact_id_generator.dart';
+import '../logic/finance/finance_portfolio_v3_contract.dart';
 
 class FinanceStore extends ChangeNotifier {
   final EconomicFactIdGenerator economicFactIdGenerator;
@@ -57,6 +58,7 @@ class FinanceStore extends ChangeNotifier {
   final List<FinanceAccountLinkedItem> _linkedItems;
   final List<FinanceAssetMovement> _assetMovements;
   bool _portfolioReady = false;
+  bool _portfolioV3Authoritative = false;
   int _notificationBatchDepth = 0;
   bool _hasPendingNotification = false;
   bool _isDisposed = false;
@@ -83,6 +85,8 @@ class FinanceStore extends ChangeNotifier {
 
   UnmodifiableListView<FinanceAssetMovement> get assetMovements =>
       UnmodifiableListView(_assetMovements);
+
+  bool get isPortfolioV3Authoritative => _portfolioV3Authoritative;
 
   Future<T> runInNotificationBatch<T>(Future<T> Function() action) async {
     _notificationBatchDepth++;
@@ -1096,6 +1100,11 @@ class FinanceStore extends ChangeNotifier {
       _runObservableLoad(_loadInitialRealData);
 
   Future<void> _loadInitialRealData() async {
+    if (await loadSavedPortfolioV3()) {
+      await loadSavedRecurringItems();
+      await loadSavedSnapshots();
+      return;
+    }
     if (await loadSavedPortfolio()) {
       await loadSavedRecurringItems();
       await loadSavedSnapshots();
@@ -1226,6 +1235,61 @@ class FinanceStore extends ChangeNotifier {
 
   Future<bool> loadSavedPortfolio() => _runObservableLoad(_loadSavedPortfolio);
 
+  Future<bool> loadSavedPortfolioV3() =>
+      _runObservableLoad(_loadSavedPortfolioV3);
+
+  Future<bool> _loadSavedPortfolioV3() async {
+    final raw = await PersistenceStore.loadString('finance_portfolio_v3');
+    if (raw == null || raw.isEmpty) {
+      _portfolioV3Authoritative = false;
+      return false;
+    }
+
+    late final dynamic decoded;
+    try {
+      decoded = jsonDecode(raw);
+    } on FormatException catch (error) {
+      throw FormatException('Invalid Finance Portfolio V3: ${error.message}');
+    }
+    if (decoded is! Map) {
+      throw const FormatException(
+        'Invalid Finance Portfolio V3: root must be an object',
+      );
+    }
+
+    final result = FinancePortfolioV3Contract.parse(
+      Map<String, dynamic>.from(decoded),
+    );
+    if (!result.isSuccess) {
+      throw FormatException(
+        'Invalid Finance Portfolio V3: ${result.errors.join('; ')}',
+      );
+    }
+
+    final portfolio = result.value!;
+    _balances
+      ..clear()
+      ..addAll(portfolio.balances);
+    _funds
+      ..clear()
+      ..addAll(portfolio.funds);
+    _assetMovements
+      ..clear()
+      ..addAll(portfolio.assetMovements);
+    _transactions
+      ..clear()
+      ..addAll(portfolio.transactions);
+    _fundTransactions
+      ..clear()
+      ..addAll(portfolio.fundTransactions);
+    _linkedItems
+      ..clear()
+      ..addAll(portfolio.linkedItems);
+    _portfolioReady = false;
+    _portfolioV3Authoritative = true;
+    return true;
+  }
+
   Future<bool> _loadSavedPortfolio() async {
     final json = await PersistenceStore.loadJsonMap('finance_portfolio_v2');
     if (json == null || json['version'] != 2) {
@@ -1269,6 +1333,7 @@ class FinanceStore extends ChangeNotifier {
         ),
       );
     _portfolioReady = true;
+    _portfolioV3Authoritative = false;
     return true;
   }
 

@@ -15,8 +15,10 @@ class FinanceLifecycleLoader {
     await financeStore.runInNotificationBatch(() async {
       await financeStore.loadInitialRealData();
 
-      await financeStore.saveBalances();
-      await financeStore.saveFunds();
+      if (!financeStore.isPortfolioV3Authoritative) {
+        await financeStore.saveBalances();
+        await financeStore.saveFunds();
+      }
       await financeStore.saveRecurringItems();
 
       await financeStore.saveSnapshot(DateTime.now());
