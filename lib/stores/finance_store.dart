@@ -258,6 +258,23 @@ class FinanceStore extends ChangeNotifier {
     final profileChanged = !_sameBalance(current, profile);
     final amountChanged = current.currentAmount != newAmount;
     if (!profileChanged && !amountChanged) return false;
+    if (_portfolioV3Authoritative) {
+      final candidateBalances = List<FinanceBalance>.of(_balances);
+      final candidateTransactions = List<FinanceTransaction>.of(_transactions);
+      if (amountChanged) {
+        candidateBalances[index] = _balanceWithAmount(profile, newAmount);
+        candidateTransactions.add(
+          _adjustmentTransaction(current, newAmount - current.currentAmount),
+        );
+      } else {
+        candidateBalances[index] = profile;
+      }
+      await _commitBalanceAndTransactionsCandidate(
+        candidateBalances: candidateBalances,
+        candidateTransactions: candidateTransactions,
+      );
+      return true;
+    }
     _balances[index] = profile;
     if (amountChanged) {
       await updateBalance(balanceId: current.balanceId, newAmount: newAmount);
@@ -835,6 +852,20 @@ class FinanceStore extends ChangeNotifier {
     final old = balances[index];
     final difference = newAmount - old.currentAmount;
 
+    if (_portfolioV3Authoritative) {
+      final candidateBalances = List<FinanceBalance>.of(_balances);
+      candidateBalances[index] = _balanceWithAmount(old, newAmount);
+      final candidateTransactions = List<FinanceTransaction>.of(_transactions);
+      if (difference != 0) {
+        candidateTransactions.add(_adjustmentTransaction(old, difference));
+      }
+      await _commitBalanceAndTransactionsCandidate(
+        candidateBalances: candidateBalances,
+        candidateTransactions: candidateTransactions,
+      );
+      return;
+    }
+
     _balances[index] = FinanceBalance(
       balanceId: old.balanceId,
       personId: old.personId,
@@ -879,6 +910,64 @@ class FinanceStore extends ChangeNotifier {
         _markChanged();
       }
     });
+  }
+
+  FinanceBalance _balanceWithAmount(FinanceBalance current, double newAmount) =>
+      FinanceBalance(
+        balanceId: current.balanceId,
+        personId: current.personId,
+        name: current.name,
+        active: current.active,
+        initialAmount: current.initialAmount,
+        currentAmount: newAmount,
+        updatedAt: DateTime.now(),
+        balanceType: current.balanceType,
+        operational: current.operational,
+        reservedAmount: current.reservedAmount,
+        warningThreshold: current.warningThreshold,
+        persistentStressDays: current.persistentStressDays,
+        recoveryDays: current.recoveryDays,
+      );
+
+  FinanceTransaction _adjustmentTransaction(
+    FinanceBalance balance,
+    double difference,
+  ) => FinanceTransaction(
+    id: 'adjustment_${DateTime.now().microsecondsSinceEpoch}',
+    balanceId: balance.balanceId,
+    amount: difference.abs(),
+    date: DateTime.now(),
+    isIncome: difference > 0,
+    subject: _subjectForPersonId(balance.personId),
+    description: 'Correzione saldo ${balance.name}',
+    type: difference > 0
+        ? FinanceTransactionType.income
+        : FinanceTransactionType.expense,
+    origin: FinanceTransactionOrigin.adjustment,
+    economicFactId: economicFactIdGenerator.next(),
+    notes: 'Saldo modificato manualmente',
+  );
+
+  Future<void> _commitBalanceAndTransactionsCandidate({
+    required Iterable<FinanceBalance> candidateBalances,
+    required Iterable<FinanceTransaction> candidateTransactions,
+  }) async {
+    final result = await commitPortfolioV3Candidate(
+      (current) => FinancePortfolioV3(
+        balances: candidateBalances,
+        funds: current.funds,
+        assetMovements: current.assetMovements,
+        transactions: candidateTransactions,
+        fundTransactions: current.fundTransactions,
+        linkedItems: current.linkedItems,
+      ),
+    );
+    if (!result.isSuccess) {
+      throw StateError(
+        'Finance V3 balance adjustment commit failed: '
+        '${result.errors.join('; ')}',
+      );
+    }
   }
 
   Future<void> registerRealExpense({
