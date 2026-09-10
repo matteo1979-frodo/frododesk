@@ -1211,6 +1211,80 @@ class FinanceStore extends ChangeNotifier {
     final fromBalance = balances[fromIndex];
     final toBalance = balances[toIndex];
 
+    if (_portfolioV3Authoritative) {
+      final candidateBalances = List<FinanceBalance>.of(_balances);
+      candidateBalances[fromIndex] = FinanceBalance(
+        balanceId: fromBalance.balanceId,
+        personId: fromBalance.personId,
+        name: fromBalance.name,
+        active: fromBalance.active,
+        initialAmount: fromBalance.initialAmount,
+        currentAmount: fromBalance.currentAmount - amount,
+        updatedAt: DateTime.now(),
+        balanceType: fromBalance.balanceType,
+        operational: fromBalance.operational,
+        reservedAmount: fromBalance.reservedAmount,
+        warningThreshold: fromBalance.warningThreshold,
+        persistentStressDays: fromBalance.persistentStressDays,
+        recoveryDays: fromBalance.recoveryDays,
+      );
+      candidateBalances[toIndex] = FinanceBalance(
+        balanceId: toBalance.balanceId,
+        personId: toBalance.personId,
+        name: toBalance.name,
+        active: toBalance.active,
+        initialAmount: toBalance.initialAmount,
+        currentAmount: toBalance.currentAmount + amount,
+        updatedAt: DateTime.now(),
+        balanceType: toBalance.balanceType,
+        operational: toBalance.operational,
+        reservedAmount: toBalance.reservedAmount,
+        warningThreshold: toBalance.warningThreshold,
+        persistentStressDays: toBalance.persistentStressDays,
+        recoveryDays: toBalance.recoveryDays,
+      );
+
+      final transferId = DateTime.now().microsecondsSinceEpoch.toString();
+      final economicFactId = economicFactIdGenerator.next();
+      final candidateTransactions = List<FinanceTransaction>.of(_transactions)
+        ..add(
+          FinanceTransaction(
+            id: 'transfer_out_$transferId',
+            balanceId: fromBalance.balanceId,
+            amount: amount,
+            date: DateTime.now(),
+            isIncome: false,
+            subject: _subjectForPersonId(fromBalance.personId),
+            description: description,
+            type: FinanceTransactionType.transfer,
+            origin: FinanceTransactionOrigin.manual,
+            notes: 'Trasferimento verso ${toBalance.name}',
+            economicFactId: economicFactId,
+          ),
+        )
+        ..add(
+          FinanceTransaction(
+            id: 'transfer_in_$transferId',
+            balanceId: toBalance.balanceId,
+            amount: amount,
+            date: DateTime.now(),
+            isIncome: true,
+            subject: _subjectForPersonId(toBalance.personId),
+            description: description,
+            type: FinanceTransactionType.transfer,
+            origin: FinanceTransactionOrigin.manual,
+            notes: 'Trasferimento da ${fromBalance.name}',
+            economicFactId: economicFactId,
+          ),
+        );
+
+      await _commitBalanceAndTransactionsCandidate(
+        candidateBalances: candidateBalances,
+        candidateTransactions: candidateTransactions,
+      );
+      return;
+    }
+
     _balances[fromIndex] = FinanceBalance(
       balanceId: fromBalance.balanceId,
       personId: fromBalance.personId,
