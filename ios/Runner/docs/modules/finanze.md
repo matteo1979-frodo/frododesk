@@ -1904,3 +1904,167 @@ Regola:
 👉 non anticipare implementazioni finché l'architettura reale e la roadmap non richiederanno questi componenti.
 
 La fonte di verità operativa resta sempre il codice reale del progetto.
+
+---
+
+## AGGIORNAMENTO 9 SETTEMBRE 2026
+
+### H8.3J.0B.5 — VERBALE DI COLLAUDO
+
+**Stato: Collaudo superato nel perimetro verificato; chiusura proposta.**
+
+#### Perimetro
+
+Il collaudo è stato eseguito sulla copia diagnostica del profilo storico:
+
+`C:\Users\lenovo\Documents\FrodoDesk_Diagnostica\flutter_tools_chrome_device.70dc2ead_copy_2026-09-07`
+
+Profilo interno: `Default`.
+
+Origine verificata:
+
+`http://localhost:8080`
+
+Le conclusioni riguardano esclusivamente questo ambiente e il percorso controllato Conto → Fondo → Conto.
+
+Il codice collaudato apparteneva alla working tree locale basata su:
+
+`bc4ac93d97bba7ce8ba19e2190ebab471712b911`
+
+La working tree conteneva modifiche locali e file non tracciati. Il diff locale non è stato congelato: il commit non identifica integralmente il codice testato e la riproducibilità resta limitata.
+
+#### Baseline
+
+La baseline economica vuota è risultata stabile attraverso due avvii completi, separati dalla chiusura della finestra del browser e dall’arresto del server.
+
+Il reset non è stato ripetuto perché la copia risultava già conforme.
+
+Sono stati verificati:
+
+- Portfolio economico vuoto;
+- due wallet strutturali a zero;
+- snapshot tecnico ammesso;
+- 15/15 chiavi non economiche coincidenti con il backup completo del 28 agosto.
+
+#### Dataset eseguito tramite UI
+
+- Creazione di `conto test b5`, proprietario Matteo, saldo iniziale €1.000: Ledger vuoto.
+- Creazione di `fondo test b5`, finanziato dal conto per €200: conto €800, fondo €200.
+- Rientro di €50 al conto, causale `rientro test b5`: conto €850, fondo €150.
+
+#### Persistenza
+
+Dopo un ulteriore ciclo completo di chiusura e riavvio con il dataset popolato sono risultati conservati:
+
+- un conto con saldo corrente €850 e saldo iniziale €1.000;
+- un fondo con saldo €150;
+- due `assetMovements`;
+- ID del conto, del fondo e dei movimenti;
+- entrambi gli `economicFactId`, distinti e non nulli;
+- date, gambe e `referenceId`, tutti risolvibili;
+- due movimenti nel Ledger: allocazione €200 e rientro €50;
+- `transactions`, `fundTransactions` e spese vuote;
+- wallet Matteo e Chiara a zero;
+- 15/15 chiavi non economiche identiche al backup.
+
+#### Identità verificate
+
+- Conto: `balance_1788897466587000`
+- Fondo: `fund_1788897859681000`
+- Allocazione: `asset_1788897859690000`
+- Economic fact allocazione: `economic_fact_1788897859690000_0`
+- Rientro: `asset_1788898154372000`
+- Economic fact rientro: `economic_fact_1788898154372000_0`
+
+Le gambe dell’allocazione sono:
+
+- conto −200;
+- fondo +200.
+
+Le gambe del rientro sono:
+
+- fondo −50;
+- conto +50.
+
+#### Snapshot tecnico
+
+La chiave SharedPreferences Web effettiva è:
+
+`flutter.frododesk_finance_snapshots`
+
+È stato rilevato un unico snapshot datato `2026-09-08T00:00:00.000`, con:
+
+- `totalBalance`: 850;
+- `totalFunds`: 150;
+- `familyNetWorth`: 1000;
+- `operationalBalance`: 850;
+- `operationalStressRatio`: 0;
+- `operationalStressLevel`: `stable`.
+
+Il precedente esito “assente” dipendeva dall’impiego del nome errato `flutter.frododesk.finance_snapshots`, non dall’assenza dello snapshot.
+
+#### Limiti e osservazioni
+
+La causa dell’anomalia storica resta non dimostrata. Il collaudo non dichiara risolto retroattivamente il problema originario.
+
+Le anomalie WebSocket, BFCache, `client.js` e `removeChild` restano separate e non risolte da questo collaudo. Le evidenze raccolte non dimostrano un loro effetto sui dati persistiti verificati.
+
+L’assenza di elementi inattesi riguarda gli array estratti e le righe Ledger osservate; non equivale a una verifica generale di tutte le chiavi legacy.
+
+La dicitura “nessuna scrittura” riguarda esclusivamente gli snippet diagnostici. La creazione del dataset e il normale funzionamento dell’app hanno prodotto scritture.
+
+Il collector e l’interfaccia di Ledger 2.0 sono esclusi dal collaudo.
+
+#### Esito
+
+Le evidenze sostengono la chiusura di H8.3J.0B.5 limitatamente:
+
+- alla stabilità della baseline;
+- alla scrittura e rilettura del dataset controllato;
+- alla conservazione delle identità economiche;
+- alla risolvibilità dei riferimenti;
+- alla preservazione dei dati non economici.
+
+**Stato: Collaudo superato nel perimetro verificato; chiusura proposta.**
+
+---
+
+## AGGIORNAMENTO 9 SETTEMBRE 2026 — DECISIONE FINALE
+
+### H8.3J.0B.5 — CHIUSURA APPROVATA
+
+**H8.3J.0B.5 — Chiusura approvata il 9 settembre 2026 nel perimetro collaudato.**
+
+La decisione richiama il verbale di collaudo H8.3J.0B.5 registrato nella sezione precedente, senza modificarne perimetro, evidenze o limiti.
+
+La chiusura certifica il collaudo corrente eseguito nella copia diagnostica del profilo storico. Non certifica né comprende il ripristino della situazione economica reale.
+
+Le 15 chiavi non economiche verificate sono preservate rispetto al backup completo del 28 agosto e sono presenti anche nella copia diagnostica attuale. Non sono classificate come dati disponibili soltanto nei backup.
+
+Nelle fonti di backup esaminate risultano disponibili:
+
+- quattro fondi;
+- 14 movimenti patrimoniali;
+- due `fundTransactions`;
+- 81 transazioni legacy;
+- 37 ricorrenze;
+- 16 spese;
+- wallet storici;
+- 48 snapshot.
+
+Questi dati economici storici non sono stati ripristinati.
+
+Gli oggetti completi dei conti e i relativi saldi individuali non sono presenti nelle fonti esaminate. La loro perdita definitiva non è dimostrata.
+
+Il recupero dei dati economici richiede una fonte aggiuntiva oppure una ricostruzione verificata dei conti, seguita dalla riconciliazione dei riferimenti presenti in movimenti, spese ed elementi collegati.
+
+Nessun ripristino globale del backup diagnostico è autorizzato.
+
+Restano invariati e separati dalla chiusura:
+
+- la causa dell’anomalia storica, non dimostrata;
+- le anomalie browser/debug WebSocket, BFCache, `client.js` e `removeChild`;
+- il limite di riproducibilità della working tree locale, il cui diff non è stato congelato;
+- il collector e l’interfaccia di Ledger 2.0, esclusi dal collaudo.
+
+**Stato finale: H8.3J.0B.5 chiuso nel perimetro collaudato; recupero dei dati economici reali pendente.**

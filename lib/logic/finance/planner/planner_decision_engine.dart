@@ -1,5 +1,6 @@
 import '../../../models/finance_balance.dart';
 import '../../../models/finance_recurring_item.dart';
+import '../../../utils/euro_formatter.dart';
 import 'planner_decision.dart';
 
 class PlannerDecisionEngine {
@@ -134,7 +135,7 @@ class PlannerDecisionEngine {
           reason: PlannerDecisionReason.generic,
           level: PlannerDecisionTraceLevel.neutral,
           message:
-              'Ho considerato ${item.name} come uscita prevista da €${_money(item.expectedAmount)}.',
+              'Ho considerato ${item.name} come uscita prevista da ${EuroFormatter.format(item.expectedAmount)}.',
         ),
       );
     }
@@ -265,7 +266,7 @@ class PlannerDecisionEngine {
   }
 
   static String _incomeReason(FinanceRecurringItem item) {
-    return 'Ho visto che ${item.name} è un’entrata prevista da €${_money(item.expectedAmount)} per ${_ownerLabel(item.paymentOwner)}. Prima di usare fondi o forzare pagamenti, conviene considerare questa entrata nel piano.';
+    return 'Ho visto che ${item.name} è un’entrata prevista da ${EuroFormatter.format(item.expectedAmount)} per ${_ownerLabel(item.paymentOwner)}. Prima di usare fondi o forzare pagamenti, conviene considerare questa entrata nel piano.';
   }
 
   static String _automaticPaymentReason(FinanceRecurringItem item) {
@@ -277,7 +278,7 @@ class PlannerDecisionEngine {
   }
 
   static String _criticalReason(FinanceRecurringItem item) {
-    return 'Ho dato priorità a ${item.name}, perché è una spesa critica o obbligatoria da €${_money(item.expectedAmount)}. Prima vengono le voci che non possono essere lasciate indietro.';
+    return 'Ho dato priorità a ${item.name}, perché è una spesa critica o obbligatoria da ${EuroFormatter.format(item.expectedAmount)}. Prima vengono le voci che non possono essere lasciate indietro.';
   }
 
   static String _minimumBalanceReason(
@@ -294,7 +295,7 @@ class PlannerDecisionEngine {
     final after = before - item.expectedAmount;
     final owner = _personLabel(balance.personId);
 
-    return 'Ho controllato ${balance.name} di $owner. Prima di ${item.name} risultano disponibili circa €${_money(before)}. Dopo questa uscita da €${_money(item.expectedAmount)} resterebbero circa €${_money(after)}, sotto la soglia minima impostata di €${_money(balance.warningThreshold)}.';
+    return 'Ho controllato ${balance.name} di $owner. Prima di ${item.name} risultano disponibili circa €${_money(before)}. Dopo questa uscita da ${EuroFormatter.format(item.expectedAmount)} resterebbero circa €${_money(after)}, sotto la soglia minima impostata di ${EuroFormatter.format(balance.warningThreshold)}.';
   }
 
   static String _ownerUnderPressureReason(

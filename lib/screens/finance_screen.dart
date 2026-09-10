@@ -8,6 +8,8 @@ import '../models/finance_month_projection.dart';
 import '../models/finance_recurring_item.dart';
 import '../models/frodo_observation.dart';
 import '../stores/finance_store.dart';
+import '../stores/expense_store.dart';
+import '../stores/cash_wallet_store.dart';
 import '../widgets/finance/finance_info_card.dart';
 import '../widgets/finance/finance_month_detail_dialog.dart';
 import '../widgets/finance/finance_year_dashboard.dart';
@@ -21,11 +23,19 @@ import '../logic/finance/finance_funds_coordinator.dart';
 import '../logic/finance/finance_ledger_coordinator.dart';
 import '../logic/finance/finance_recurring_coordinator.dart';
 import '../models/finance_recurring_draft.dart';
+import '../utils/euro_formatter.dart';
 
 class FinanceScreen extends StatefulWidget {
   final FinanceStore financeStore;
+  final ExpenseStore expenseStore;
+  final CashWalletStore cashWalletStore;
 
-  const FinanceScreen({super.key, required this.financeStore});
+  const FinanceScreen({
+    super.key,
+    required this.financeStore,
+    required this.expenseStore,
+    required this.cashWalletStore,
+  });
 
   @override
   State<FinanceScreen> createState() => _FinanceScreenState();
@@ -118,10 +128,8 @@ class _FinanceScreenState extends State<FinanceScreen> {
 
     if (firstObservation == null && nextItems.isNotEmpty) {
       final first = nextItems.first;
-      final sign = first.isIncome ? "+" : "-";
-
       message =
-          "Prossima scadenza: ${_formatDate(first.nextDueDate)} • ${first.name} • $sign€${first.expectedAmount.toStringAsFixed(0)}";
+          "Prossima scadenza: ${_formatDate(first.nextDueDate)} • ${first.name} • ${EuroFormatter.formatSigned(first.isIncome ? first.expectedAmount : -first.expectedAmount)}";
     }
 
     return InkWell(
@@ -183,7 +191,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                         ),
                       ),
                       child: Text(
-                        "Prossima scadenza: ${_formatDate(nextItems.first.nextDueDate)} • ${nextItems.first.name} • ${nextItems.first.isIncome ? "+" : "-"}€${nextItems.first.expectedAmount.toStringAsFixed(0)}",
+                        "Prossima scadenza: ${_formatDate(nextItems.first.nextDueDate)} • ${nextItems.first.name} • ${EuroFormatter.formatSigned(nextItems.first.isIncome ? nextItems.first.expectedAmount : -nextItems.first.expectedAmount)}",
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.78),
                           fontSize: 13.5,
@@ -208,7 +216,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
         Expanded(
           child: FinanceInfoCard(
             title: "Saldo totale",
-            value: "€${financeStore.totalBalance().toStringAsFixed(0)}",
+            value: EuroFormatter.format(financeStore.totalBalance()),
             icon: Icons.account_balance_wallet_rounded,
             color: const Color(0xFF43A047),
           ),
@@ -217,7 +225,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
         Expanded(
           child: FinanceInfoCard(
             title: "Fondi",
-            value: "€${financeStore.totalFunds().toStringAsFixed(0)}",
+            value: EuroFormatter.format(financeStore.totalFunds()),
             icon: Icons.savings_rounded,
             color: const Color(0xFF1E88E5),
           ),
@@ -226,7 +234,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
         Expanded(
           child: FinanceInfoCard(
             title: "Disponibile mese",
-            value: "€${financeStore.availableThisMonth().toStringAsFixed(0)}",
+            value: EuroFormatter.format(financeStore.availableThisMonth()),
             icon: Icons.calendar_month_rounded,
             color: const Color(0xFFFB8C00),
           ),
@@ -280,11 +288,15 @@ class _FinanceScreenState extends State<FinanceScreen> {
 
   Widget _buildIncomeExpenseSection() {
     final incomeItems =
-        financeStore.recurringItems.where((item) => item.isIncome).toList()
+        financeStore.recurringItems
+            .where((item) => item.isIncome && !item.confirmed)
+            .toList()
           ..sort((a, b) => a.nextDueDate.compareTo(b.nextDueDate));
 
     final expenseItems =
-        financeStore.recurringItems.where((item) => !item.isIncome).toList()
+        financeStore.recurringItems
+            .where((item) => !item.isIncome && !item.confirmed)
+            .toList()
           ..sort((a, b) => a.nextDueDate.compareTo(b.nextDueDate));
 
     return Row(
@@ -295,7 +307,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
             child: _buildRecurringPreviewBlock(
               title: "Entrate previste",
               subtitle:
-                  "${incomeItems.length} voci • €${financeStore.totalRecurringAmount(incomeItems).toStringAsFixed(0)}",
+                  "${incomeItems.length} voci • ${EuroFormatter.format(financeStore.totalRecurringAmount(incomeItems))}",
               icon: Icons.arrow_downward_rounded,
               color: const Color(0xFF43A047),
               items: incomeItems,
@@ -314,7 +326,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
             child: _buildRecurringPreviewBlock(
               title: "Uscite previste",
               subtitle:
-                  "${expenseItems.length} voci • €${financeStore.totalRecurringAmount(expenseItems).toStringAsFixed(0)}",
+                  "${expenseItems.length} voci • ${EuroFormatter.format(financeStore.totalRecurringAmount(expenseItems))}",
               icon: Icons.arrow_upward_rounded,
               color: const Color(0xFFE53935),
               items: expenseItems,
@@ -438,7 +450,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
             child: FinanceInfoCard(
               title: "Storico",
               value:
-                  "${pastItems.length} • €${financeStore.totalRecurringAmount(pastItems).toStringAsFixed(0)}",
+                  "${pastItems.length} • ${EuroFormatter.format(financeStore.totalRecurringAmount(pastItems))}",
               icon: Icons.history_rounded,
               color: const Color(0xFF8D6E63),
             ),
@@ -458,7 +470,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
             child: FinanceInfoCard(
               title: "Presente",
               value:
-                  "${presentItems.length} • €${financeStore.totalRecurringAmount(presentItems).toStringAsFixed(0)}",
+                  "${presentItems.length} • ${EuroFormatter.format(financeStore.totalRecurringAmount(presentItems))}",
               icon: Icons.today_rounded,
               color: const Color(0xFFE53935),
             ),
@@ -478,7 +490,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
             child: FinanceInfoCard(
               title: "Prossime",
               value:
-                  "${futureItems.length} • €${financeStore.totalRecurringAmount(futureItems).toStringAsFixed(0)}",
+                  "${futureItems.length} • ${EuroFormatter.format(financeStore.totalRecurringAmount(futureItems))}",
               icon: Icons.event_available_rounded,
               color: const Color(0xFF1E88E5),
             ),
@@ -591,7 +603,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
                       ),
                     ),
                     Text(
-                      "€${fund.amount.toStringAsFixed(0)}",
+                      EuroFormatter.format(fund.amount),
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.82),
                         fontWeight: FontWeight.w800,
@@ -700,7 +712,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
         builder: (context, refreshDialog) {
           final items =
               financeStore.recurringItems
-                  .where((item) => item.isIncome == isIncome)
+                  .where((item) => item.isIncome == isIncome && !item.confirmed)
                   .toList()
                 ..sort((a, b) => a.nextDueDate.compareTo(b.nextDueDate));
 
@@ -792,8 +804,6 @@ class _FinanceScreenState extends State<FinanceScreen> {
     final color = item.isIncome
         ? const Color(0xFF43A047)
         : const Color(0xFFE53935);
-    final sign = item.isIncome ? "+" : "-";
-
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
@@ -838,7 +848,9 @@ class _FinanceScreenState extends State<FinanceScreen> {
               ),
             ),
             Text(
-              "$sign€${item.expectedAmount.toStringAsFixed(0)}",
+              EuroFormatter.formatSigned(
+                item.isIncome ? item.expectedAmount : -item.expectedAmount,
+              ),
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w900,
@@ -858,8 +870,6 @@ class _FinanceScreenState extends State<FinanceScreen> {
     final color = item.isIncome
         ? const Color(0xFF43A047)
         : const Color(0xFFE53935);
-    final sign = item.isIncome ? "+" : "-";
-
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 10),
@@ -917,7 +927,9 @@ class _FinanceScreenState extends State<FinanceScreen> {
             ),
           ),
           Text(
-            "$sign€${item.expectedAmount.toStringAsFixed(2)}",
+            EuroFormatter.formatSigned(
+              item.isIncome ? item.expectedAmount : -item.expectedAmount,
+            ),
             style: const TextStyle(
               color: Colors.black,
               fontWeight: FontWeight.w900,
@@ -961,12 +973,12 @@ class _FinanceScreenState extends State<FinanceScreen> {
           _detailRow("Data", _formatDate(item.nextDueDate)),
           _detailRow(
             "Importo previsto",
-            "€${item.expectedAmount.toStringAsFixed(2)}",
+            EuroFormatter.format(item.expectedAmount),
           ),
           if (item.realAmount != null)
             _detailRow(
               "Importo reale",
-              "€${item.realAmount!.toStringAsFixed(2)}",
+              EuroFormatter.format(item.realAmount!),
             ),
           _detailRow("Ricorrenza", _recurringTypeLabel(item.recurringType)),
           _detailRow("Proprietario", _ownerLabel(item.paymentOwner)),
@@ -988,7 +1000,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
               item.splits
                   .map(
                     (split) =>
-                        '${split.personId}: €${split.amount.toStringAsFixed(2)}',
+                        '${split.personId}: ${EuroFormatter.format(split.amount)}',
                   )
                   .join(' · '),
             ),
@@ -1995,7 +2007,7 @@ class _PersonBalanceCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              "€${amount.toStringAsFixed(0)}",
+              EuroFormatter.format(amount),
               style: TextStyle(
                 color: Colors.white.withOpacity(0.88),
                 fontWeight: FontWeight.w800,
@@ -2004,7 +2016,7 @@ class _PersonBalanceCard extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              "Previsione fine mese: €${availableThisMonth.toStringAsFixed(0)}",
+              "Previsione fine mese: ${EuroFormatter.format(availableThisMonth)}",
               style: TextStyle(
                 color: Colors.white.withOpacity(0.72),
                 fontSize: 12,

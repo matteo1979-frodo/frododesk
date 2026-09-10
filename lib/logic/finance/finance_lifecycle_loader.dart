@@ -12,13 +12,15 @@ class FinanceLifecycleLoader {
   });
 
   Future<void> load() async {
-    await financeStore.loadInitialRealData();
+    await financeStore.runInNotificationBatch(() async {
+      await financeStore.loadInitialRealData();
 
-    await financeStore.saveBalances();
-    await financeStore.saveFunds();
-    await financeStore.saveRecurringItems();
+      await financeStore.saveBalances();
+      await financeStore.saveFunds();
+      await financeStore.saveRecurringItems();
 
-    financeStore.saveSnapshot(DateTime.now());
+      await financeStore.saveSnapshot(DateTime.now());
+    });
 
     refresh();
   }

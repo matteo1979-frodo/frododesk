@@ -5,6 +5,7 @@ import '../../models/finance_fund.dart';
 import '../../models/finance_funds_view_data.dart';
 import '../../models/finance_asset_movement.dart';
 import '../../widgets/shared/frodo_person_avatar.dart';
+import '../../utils/euro_formatter.dart';
 
 class FinanceFundsPage extends StatefulWidget {
   final FinanceFundsCoordinator coordinator;
@@ -222,7 +223,7 @@ class _FinanceFundsPageState extends State<FinanceFundsPage> {
             ),
             const SizedBox(height: 14),
             Text(
-              _money(total),
+              EuroFormatter.format(total),
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 34,
@@ -567,11 +568,7 @@ class _FinanceFundsPageState extends State<FinanceFundsPage> {
           ),
           const SizedBox(width: 12),
           Text(
-            '${fundDelta > 0
-                ? '+'
-                : fundDelta < 0
-                ? '−'
-                : ''}${_money(fundDelta.abs())}',
+            EuroFormatter.formatSigned(fundDelta),
             style: TextStyle(
               color: color,
               fontSize: 15,
@@ -704,7 +701,7 @@ class _FinanceFundsPageState extends State<FinanceFundsPage> {
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerRight,
                   child: Text(
-                    _money(amount),
+                    EuroFormatter.format(amount),
                     maxLines: 1,
                     style: const TextStyle(
                       color: Colors.white,
@@ -841,8 +838,6 @@ class _FinanceFundsPageState extends State<FinanceFundsPage> {
     FinanceAssetMovementKind.legacyOpening ||
     FinanceAssetMovementKind.legacyUnclassified => const Color(0xFFB0BEC5),
   };
-
-  String _money(double value) => '€${value.toStringAsFixed(2)}';
 
   String _displayFundName(String value) {
     if (value.isEmpty) return value;
@@ -1168,7 +1163,7 @@ class _FinanceFundsPageState extends State<FinanceFundsPage> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${_displayFundName(fund.name)} · ${_money(fund.amount)} disponibili',
+                          '${_displayFundName(fund.name)} · ${EuroFormatter.format(fund.amount)} disponibili',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -1392,7 +1387,7 @@ class _FinanceFundsPageState extends State<FinanceFundsPage> {
       builder: (context) => AlertDialog(
         title: const Text('Chiudi fondo'),
         content: Text(
-          'Come vuoi gestire i €${fund.amount.toStringAsFixed(2)} rimasti?',
+          'Come vuoi gestire i ${EuroFormatter.format(fund.amount)} rimasti?',
         ),
         actions: [
           TextButton(
@@ -1625,7 +1620,7 @@ class _FinanceFundsPageState extends State<FinanceFundsPage> {
                     ),
                   ),
                   Text(
-                    _money(fund.amount),
+                    EuroFormatter.format(fund.amount),
                     style: const TextStyle(
                       color: Color(0xFF2F6841),
                       fontSize: 15,
@@ -1769,7 +1764,7 @@ class _FinanceFundsPageState extends State<FinanceFundsPage> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '€${source.availableAmount.toStringAsFixed(2)}',
+                      EuroFormatter.format(source.availableAmount),
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         color: financeStyle ? const Color(0xFF2F6841) : null,
                         fontSize: financeStyle ? 17 : null,
@@ -1837,7 +1832,7 @@ class _FinanceFundsPageState extends State<FinanceFundsPage> {
       children: [
         Expanded(child: Text(label)),
         Text(
-          '€${value.toStringAsFixed(2)}',
+          EuroFormatter.format(value),
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ],

@@ -532,3 +532,17 @@ Questo principio guida ogni scelta architetturale e rappresenta il confine tra i
 ---
 
 # FINE DOCUMENTO
+
+---
+
+## AGGIORNAMENTO 9 SETTEMBRE 2026
+
+### CHIUSURA H8.3J.0B.5
+
+**H8.3J.0B.5 — Chiusura approvata il 9 settembre 2026 nel perimetro collaudato.**
+
+Il perimetro, le evidenze e i limiti sono registrati nel verbale H8.3J.0B.5 del modulo Finanze e nel relativo aggiornamento del System State.
+
+La chiusura certifica il collaudo corrente nella copia diagnostica, non il ripristino della situazione economica reale. Il recupero dei dati economici storici resta pendente e nessun ripristino globale del backup diagnostico è autorizzato.
+
+La causa storica, le anomalie browser/debug, il limite di riproducibilità della working tree e l’esclusione del collector e della UI Ledger 2.0 restano invariati.

@@ -2,6 +2,7 @@ import '../../core/frododesk_modules.dart';
 import '../../models/finance_recurring_item.dart';
 import '../../models/frodo_observation.dart';
 import '../../stores/finance_store.dart';
+import '../../utils/euro_formatter.dart';
 import 'finance_planner_engine.dart';
 import 'planner/finance_observation_explanation_builder.dart';
 
@@ -79,7 +80,7 @@ class FinanceObservationReader {
     }
 
     String itemLine(FinanceRecurringItem item) {
-      return '• ${item.name}: -€${item.expectedAmount.toStringAsFixed(0)} (${dateOf(item)})';
+      return '• ${item.name}: ${EuroFormatter.formatSigned(-item.expectedAmount)} (${dateOf(item)})';
     }
 
     String section({
@@ -96,7 +97,7 @@ class FinanceObservationReader {
       final total = totalOf(items);
       final allItems = items.map(itemLine).join('\n');
 
-      return '$icon $title\n$count scadenze • €${total.toStringAsFixed(0)}\n$allItems';
+      return '$icon $title\n$count scadenze • ${EuroFormatter.format(total)}\n$allItems';
     }
 
     final overdue = pendingItems.where((item) {
@@ -126,17 +127,17 @@ class FinanceObservationReader {
     final hasHeavyWeek = next7Total >= 500;
 
     final message = hasOverdue
-        ? 'Priorità oggi: ${overdue.length} scadenze già in ritardo per €${overdueTotal.toStringAsFixed(0)}.'
+        ? 'Priorità oggi: ${overdue.length} scadenze già in ritardo per ${EuroFormatter.format(overdueTotal)}.'
         : next7Days.isNotEmpty
-        ? 'Nei prossimi 7 giorni hai ${next7Days.length} scadenze per €${next7Total.toStringAsFixed(0)}.'
-        : 'Nessuna scadenza urgente. Totale aperto: €${totalPending.toStringAsFixed(0)}.';
+        ? 'Nei prossimi 7 giorni hai ${next7Days.length} scadenze per ${EuroFormatter.format(next7Total)}.'
+        : 'Nessuna scadenza urgente. Totale aperto: ${EuroFormatter.format(totalPending)}.';
 
     final impact = hasOverdue
         ? 'Per rimettere in ordine le scadenze devi gestire prima i pagamenti già scaduti.'
         : hasHeavyWeek
         ? 'La settimana concentra molte uscite: conviene controllare la disponibilità prima di confermare nuovi pagamenti.'
         : future.isNotEmpty
-        ? 'Non ci sono ritardi immediati, ma restano €${futureTotal.toStringAsFixed(0)} di scadenze future da pianificare.'
+        ? 'Non ci sono ritardi immediati, ma restano ${EuroFormatter.format(futureTotal)} di scadenze future da pianificare.'
         : 'Le scadenze aperte non mostrano pressione immediata.';
 
     observations.add(
@@ -218,7 +219,7 @@ class FinanceObservationReader {
         title: 'Situazione economica',
         message: message,
         details:
-            'Matteo: €${matteoForecast.toStringAsFixed(0)}\nChiara: €${chiaraForecast.toStringAsFixed(0)}\nFamiglia: €${familyForecast.toStringAsFixed(0)}',
+            'Matteo: ${EuroFormatter.format(matteoForecast)}\nChiara: ${EuroFormatter.format(chiaraForecast)}\nFamiglia: ${EuroFormatter.format(familyForecast)}',
         impact: impact,
         priority: priority,
         level: level,
@@ -279,7 +280,7 @@ class FinanceObservationReader {
         .map(
           (fund) =>
               '${icon(fund.amount)} ${fund.name}: '
-              '€${fund.amount.toStringAsFixed(0)} '
+              '${EuroFormatter.format(fund.amount)} '
               '(${status(fund.amount)})',
         )
         .join('\n');
@@ -291,9 +292,9 @@ class FinanceObservationReader {
         category: FrodoObservationCategory.finance,
         title: 'Stato fondi',
         message:
-            'Totale fondi €${totalFunds.toStringAsFixed(0)} '
-            '(Protetti €${protectedAmount.toStringAsFixed(0)} • '
-            'Disponibili €${availableAmount.toStringAsFixed(0)}).',
+            'Totale fondi ${EuroFormatter.format(totalFunds)} '
+            '(Protetti ${EuroFormatter.format(protectedAmount)} • '
+            'Disponibili ${EuroFormatter.format(availableAmount)}).',
         details: details,
         impact:
             '$activeFunds fondi attivi • '
@@ -337,10 +338,10 @@ class FinanceObservationReader {
         title: 'Piano consigliato',
         message: planner.message,
         details:
-            'Matteo: €${matteoForecast.toStringAsFixed(0)}\n'
-            'Chiara: €${chiaraForecast.toStringAsFixed(0)}\n'
-            'Famiglia: €${familyForecast.toStringAsFixed(0)}\n'
-            'Fondi: €${totalFunds.toStringAsFixed(0)}',
+            'Matteo: ${EuroFormatter.format(matteoForecast)}\n'
+            'Chiara: ${EuroFormatter.format(chiaraForecast)}\n'
+            'Famiglia: ${EuroFormatter.format(familyForecast)}\n'
+            'Fondi: ${EuroFormatter.format(totalFunds)}',
         impact: planner.impact,
         explanations: FinanceObservationExplanationBuilder.build(
           decisions: planner.decisions,
@@ -384,7 +385,7 @@ class FinanceObservationReader {
     final details = sameDayIncomeItems
         .map(
           (item) =>
-              '${_ownerLabel(item.paymentOwner)}: +€${item.expectedAmount.toStringAsFixed(0)}',
+              '${_ownerLabel(item.paymentOwner)}: ${EuroFormatter.formatSigned(item.expectedAmount)}',
         )
         .join('\n');
 
@@ -395,7 +396,7 @@ class FinanceObservationReader {
         category: FrodoObservationCategory.finance,
         title: 'Entrate in arrivo',
         message:
-            'Il ${firstDate.day.toString().padLeft(2, '0')}/${firstDate.month.toString().padLeft(2, '0')} sono previste entrate per +€${totalIncome.toStringAsFixed(0)}.',
+            'Il ${firstDate.day.toString().padLeft(2, '0')}/${firstDate.month.toString().padLeft(2, '0')} sono previste entrate per ${EuroFormatter.formatSigned(totalIncome)}.',
         details: details,
         impact:
             'Queste entrate aumenteranno la disponibilità economica del mese.',

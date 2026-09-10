@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../logic/finance/finance_ledger_coordinator.dart';
 import '../../models/finance_asset_movement.dart';
 import '../../models/finance_ledger_view_data.dart';
+import '../../utils/euro_formatter.dart';
 
 class FinanceLedgerPage extends StatefulWidget {
   final FinanceLedgerCoordinator coordinator;
@@ -124,7 +125,7 @@ class _FinanceLedgerPageState extends State<FinanceLedgerPage> {
               ),
               const SizedBox(width: 12),
               Text(
-                '€${operation.amount.toStringAsFixed(2)}',
+                EuroFormatter.format(operation.amount),
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
@@ -161,7 +162,7 @@ class _FinanceLedgerPageState extends State<FinanceLedgerPage> {
                 : '${_displayName(party.name)} · ${party.ownerName}',
           ),
         ),
-        Text('€${party.amount.toStringAsFixed(2)}'),
+        Text(EuroFormatter.format(party.amount)),
       ],
     ),
   );
@@ -199,7 +200,11 @@ class _FinanceLedgerPageState extends State<FinanceLedgerPage> {
         ),
       ),
       trailing: Text(
-        '${entry.transaction.isIncome ? '+' : '-'}€${entry.transaction.amount.toStringAsFixed(2)}',
+        EuroFormatter.formatSigned(
+          entry.transaction.isIncome
+              ? entry.transaction.amount
+              : -entry.transaction.amount,
+        ),
         style: const TextStyle(fontWeight: FontWeight.w700),
       ),
       isThreeLine: true,
@@ -220,7 +225,7 @@ class _FinanceLedgerPageState extends State<FinanceLedgerPage> {
             _detailRow(entry.accountRoleLabel, entry.balanceName),
             _detailRow('Proprietario', entry.ownerName),
             _detailRow('Data', _dateLabel(transaction.date)),
-            _detailRow('Importo', '€${transaction.amount.toStringAsFixed(2)}'),
+            _detailRow('Importo', EuroFormatter.format(transaction.amount)),
             if (transaction.notes?.isNotEmpty ?? false)
               Text('Note: ${transaction.notes}'),
           ],

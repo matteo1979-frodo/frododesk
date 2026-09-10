@@ -1,5 +1,6 @@
 import '../../../models/finance_module_presentation.dart';
 import '../../../models/home_finance_snapshot.dart';
+import '../../../utils/euro_formatter.dart';
 
 class FinanceModulePresentationBuilder {
   const FinanceModulePresentationBuilder();
@@ -7,8 +8,8 @@ class FinanceModulePresentationBuilder {
   FinanceModulePresentation build(HomeFinanceSnapshot snapshot) {
     return FinanceModulePresentation(
       subtitle:
-          'Saldo €${snapshot.totalBalance.toStringAsFixed(0)} • '
-          'Margine €${snapshot.projectedMonthlyMargin.toStringAsFixed(0)}',
+          'Saldo ${EuroFormatter.format(snapshot.totalBalance)} • '
+          'Margine ${EuroFormatter.format(snapshot.projectedMonthlyMargin)}',
       badgeText: snapshot.underPressure ? 'Pressione' : 'Stabile',
       state: snapshot.underPressure
           ? FinanceModuleState.pressure

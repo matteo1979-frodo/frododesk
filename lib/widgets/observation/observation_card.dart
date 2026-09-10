@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../models/frodo_observation.dart';
+import '../../utils/euro_formatter.dart';
 
 import '../shared/frodo_explanation_dialog.dart';
 
@@ -267,7 +268,7 @@ class _ScenarioTile extends StatelessWidget {
           if (scenario.projectedBalance != null) ...[
             const SizedBox(height: 8),
             Text(
-              'Saldo previsto: €${scenario.projectedBalance!.toStringAsFixed(0)}',
+              'Saldo previsto: ${EuroFormatter.format(scenario.projectedBalance!)}',
               style: TextStyle(
                 color: color,
                 fontSize: 13,

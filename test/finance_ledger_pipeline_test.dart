@@ -12,40 +12,41 @@ import 'package:frododesk/screens/finance/finance_ledger_page.dart';
 
 void main() {
   test('ledger sorts, searches and filters the global family transactions', () {
-    final store = FinanceStore();
-    store.balances.add(
-      FinanceBalance(
-        balanceId: 'b1',
-        personId: 'matteo',
-        name: 'Conto casa',
-        active: true,
-        initialAmount: 0,
-        currentAmount: 0,
-        updatedAt: DateTime(2026),
-        balanceType: FinanceBalanceType.bankAccount,
-        operational: true,
-        reservedAmount: 0,
-        warningThreshold: 0,
-        persistentStressDays: 0,
-        recoveryDays: 0,
-      ),
+    final store = FinanceStore(
+      initialBalances: [
+        FinanceBalance(
+          balanceId: 'b1',
+          personId: 'matteo',
+          name: 'Conto casa',
+          active: true,
+          initialAmount: 0,
+          currentAmount: 0,
+          updatedAt: DateTime(2026),
+          balanceType: FinanceBalanceType.bankAccount,
+          operational: true,
+          reservedAmount: 0,
+          warningThreshold: 0,
+          persistentStressDays: 0,
+          recoveryDays: 0,
+        ),
+      ],
+      initialTransactions: [
+        _transaction(
+          'old',
+          DateTime(2026, 1, 1),
+          FinanceTransactionType.expense,
+          FinanceTransactionOrigin.manual,
+          'Spesa casa',
+        ),
+        _transaction(
+          'new',
+          DateTime(2026, 2, 1),
+          FinanceTransactionType.income,
+          FinanceTransactionOrigin.recurringItem,
+          'Stipendio',
+        ),
+      ],
     );
-    store.transactions.addAll([
-      _transaction(
-        'old',
-        DateTime(2026, 1, 1),
-        FinanceTransactionType.expense,
-        FinanceTransactionOrigin.manual,
-        'Spesa casa',
-      ),
-      _transaction(
-        'new',
-        DateTime(2026, 2, 1),
-        FinanceTransactionType.income,
-        FinanceTransactionOrigin.recurringItem,
-        'Stipendio',
-      ),
-    ]);
     final coordinator = FinanceLedgerCoordinator(financeStore: store);
 
     expect(coordinator.build().entries.map((entry) => entry.transaction.id), [
@@ -87,13 +88,13 @@ void main() {
   });
 
   test('presentation describes every account in a multi-account transfer', () {
-    final store = FinanceStore()
-      ..balances.addAll([
+    final store = FinanceStore(
+      initialBalances: [
         _balance('matteo-account', 'matteo', 'Conto Matteo'),
         _balance('chiara-account', 'chiara', 'Conto Chiara'),
-      ])
-      ..funds.add(
-        const FinanceFund(
+      ],
+      initialFunds: const [
+        FinanceFund(
           id: 'vacanze',
           name: 'Fondo Vacanze',
           description: '',
@@ -101,8 +102,8 @@ void main() {
           protected: false,
           category: FinanceFundCategory.generic,
         ),
-      )
-      ..assetMovements.add(
+      ],
+      initialAssetMovements: [
         FinanceAssetMovement(
           id: 'allocation',
           fundId: 'vacanze',
@@ -127,7 +128,8 @@ void main() {
             ),
           ],
         ),
-      );
+      ],
+    );
 
     final operation = FinanceLedgerCoordinator(
       financeStore: store,
@@ -161,9 +163,9 @@ void main() {
         delta: 200,
       ),
     ];
-    final store = FinanceStore()
-      ..funds.addAll([
-        const FinanceFund(
+    final store = FinanceStore(
+      initialFunds: const [
+        FinanceFund(
           id: 'vacanze',
           name: 'Vacanze',
           description: '',
@@ -171,7 +173,7 @@ void main() {
           protected: false,
           category: FinanceFundCategory.generic,
         ),
-        const FinanceFund(
+        FinanceFund(
           id: 'auto',
           name: 'Fondo Auto',
           description: '',
@@ -179,8 +181,8 @@ void main() {
           protected: false,
           category: FinanceFundCategory.auto,
         ),
-      ])
-      ..assetMovements.addAll([
+      ],
+      initialAssetMovements: [
         FinanceAssetMovement(
           id: 'transfer-out',
           fundId: 'vacanze',
@@ -197,7 +199,8 @@ void main() {
           occurredAt: occurredAt,
           legs: legs,
         ),
-      ]);
+      ],
+    );
 
     final operations = FinanceLedgerCoordinator(
       financeStore: store,
@@ -213,9 +216,9 @@ void main() {
   testWidgets('fund ledger uses transfer icon and visual fund names', (
     tester,
   ) async {
-    final store = FinanceStore()
-      ..funds.addAll([
-        const FinanceFund(
+    final store = FinanceStore(
+      initialFunds: const [
+        FinanceFund(
           id: 'vacanze',
           name: 'vacanze',
           description: '',
@@ -223,7 +226,7 @@ void main() {
           protected: false,
           category: FinanceFundCategory.generic,
         ),
-        const FinanceFund(
+        FinanceFund(
           id: 'auto',
           name: 'fondo Auto',
           description: '',
@@ -231,8 +234,8 @@ void main() {
           protected: false,
           category: FinanceFundCategory.auto,
         ),
-      ])
-      ..assetMovements.add(
+      ],
+      initialAssetMovements: [
         FinanceAssetMovement(
           id: 'transfer-out',
           fundId: 'vacanze',
@@ -252,7 +255,8 @@ void main() {
             ),
           ],
         ),
-      );
+      ],
+    );
 
     await tester.pumpWidget(
       MaterialApp(
@@ -271,9 +275,9 @@ void main() {
   test(
     'normal expense has a meaningful fallback and identifies its account',
     () {
-      final store = FinanceStore()
-        ..balances.add(_balance('b1', 'matteo', 'Banca di Imola'))
-        ..transactions.add(
+      final store = FinanceStore(
+        initialBalances: [_balance('b1', 'matteo', 'Banca di Imola')],
+        initialTransactions: [
           _transaction(
             'imu',
             DateTime(2026, 6, 16),
@@ -281,7 +285,8 @@ void main() {
             FinanceTransactionOrigin.manual,
             '',
           ),
-        );
+        ],
+      );
 
       final entry = FinanceLedgerCoordinator(
         financeStore: store,
@@ -298,9 +303,9 @@ void main() {
   testWidgets('history renders type, account, owner, date and amount', (
     tester,
   ) async {
-    final store = FinanceStore()
-      ..balances.add(_balance('b1', 'matteo', 'Banca di Imola'))
-      ..transactions.add(
+    final store = FinanceStore(
+      initialBalances: [_balance('b1', 'matteo', 'Banca di Imola')],
+      initialTransactions: [
         _transaction(
           'imu',
           DateTime(2026, 6, 16),
@@ -308,7 +313,8 @@ void main() {
           FinanceTransactionOrigin.manual,
           'IMU',
         ),
-      );
+      ],
+    );
 
     await tester.pumpWidget(
       MaterialApp(
@@ -325,7 +331,104 @@ void main() {
       findsOneWidget,
     );
     expect(find.textContaining('16/06/2026'), findsOneWidget);
-    expect(find.text('-€10.00'), findsOneWidget);
+    expect(find.text('-€10,00'), findsOneWidget);
+  });
+
+  testWidgets('visible legacy ledger uses Italian euro presentation', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(900, 2200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final store = FinanceStore(
+      initialBalances: [_balance('b1', 'matteo', 'Banca di Imola')],
+      initialTransactions: [
+        _transaction(
+          'income-100',
+          DateTime(2026, 8, 21),
+          FinanceTransactionType.income,
+          FinanceTransactionOrigin.manual,
+          'Entrata intera',
+          amount: 100,
+        ),
+        _transaction(
+          'expense-cents',
+          DateTime(2026, 8, 20),
+          FinanceTransactionType.expense,
+          FinanceTransactionOrigin.manual,
+          'Uscita precisa',
+          amount: 100.25,
+        ),
+        _transaction(
+          'transfer-large',
+          DateTime(2026, 8, 19),
+          FinanceTransactionType.transfer,
+          FinanceTransactionOrigin.manual,
+          'Trasferimento grande',
+          amount: 1234.56,
+        ),
+        _transaction(
+          'zero',
+          DateTime(2026, 8, 18),
+          FinanceTransactionType.expense,
+          FinanceTransactionOrigin.manual,
+          'Zero',
+          amount: -0.0,
+        ),
+      ],
+      initialFunds: const [
+        FinanceFund(
+          id: 'fund',
+          name: 'Fondo grande',
+          description: '',
+          amount: 1234567.89,
+          protected: false,
+          category: FinanceFundCategory.generic,
+        ),
+      ],
+      initialAssetMovements: [
+        FinanceAssetMovement(
+          id: 'fund-large',
+          fundId: 'fund',
+          kind: FinanceAssetMovementKind.fundOpening,
+          description: 'Apertura fondo',
+          occurredAt: DateTime(2026, 8, 17),
+          legs: const [
+            FinanceAssetLeg(
+              type: FinanceAssetLegType.openingBalance,
+              delta: -1234567.89,
+            ),
+            FinanceAssetLeg(
+              type: FinanceAssetLegType.fund,
+              referenceId: 'fund',
+              delta: 1234567.89,
+            ),
+          ],
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FinanceLedgerPage(
+          coordinator: FinanceLedgerCoordinator(financeStore: store),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('+€100,00'), findsOneWidget);
+    expect(find.text('-€100,25'), findsOneWidget);
+    expect(find.text('-€1.234,56'), findsOneWidget);
+    expect(find.text('€0,00'), findsOneWidget);
+    expect(find.text('€1.234.567,89'), findsWidgets);
+
+    await tester.tap(find.text('Uscita precisa'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Importo'), findsOneWidget);
+    expect(find.text('€100,25'), findsOneWidget);
   });
 }
 
@@ -351,12 +454,13 @@ FinanceTransaction _transaction(
   DateTime date,
   FinanceTransactionType type,
   FinanceTransactionOrigin origin,
-  String description,
-) {
+  String description, {
+  double amount = 10,
+}) {
   return FinanceTransaction(
     id: id,
     balanceId: 'b1',
-    amount: 10,
+    amount: amount,
     date: date,
     isIncome: type == FinanceTransactionType.income,
     subject: FinanceSubject.shared,

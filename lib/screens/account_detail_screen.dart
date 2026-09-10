@@ -4,6 +4,7 @@ import '../models/finance_account_linked_item.dart';
 import '../models/finance_balance.dart';
 import '../models/finance_transaction.dart';
 import '../stores/finance_store.dart';
+import '../utils/euro_formatter.dart';
 
 class AccountDetailScreen extends StatefulWidget {
   final FinanceStore financeStore;
@@ -127,7 +128,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            "€${balance.currentAmount.toStringAsFixed(2)}",
+            EuroFormatter.format(balance.currentAmount),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 34,
@@ -153,7 +154,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
     if (futureItems.isNotEmpty) {
       final first = futureItems.first;
       message =
-          "Prossima scadenza: ${_formatDate(first.nextDueDate)} • ${first.name} • €${first.expectedAmount.toStringAsFixed(0)}";
+          "Prossima scadenza: ${_formatDate(first.nextDueDate)} • ${first.name} • ${EuroFormatter.format(first.expectedAmount)}";
     }
 
     return _glassCard(
@@ -221,7 +222,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                 ),
               ),
               Text(
-                "€${item.expectedAmount.toStringAsFixed(0)}",
+                EuroFormatter.format(item.expectedAmount),
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w900,
@@ -339,8 +340,6 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
   }
 
   Widget _transactionTile(FinanceTransaction transaction) {
-    final sign = transaction.isIncome ? "+" : "-";
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: _glassCard(
@@ -376,7 +375,11 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
               ),
             ),
             Text(
-              "$sign€${transaction.amount.toStringAsFixed(2)}",
+              EuroFormatter.formatSigned(
+                transaction.isIncome
+                    ? transaction.amount
+                    : -transaction.amount,
+              ),
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w900,
@@ -511,65 +514,34 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                   if (existing == null) {
                     final now = DateTime.now();
                     final linkedId = 'linked_${now.microsecondsSinceEpoch}';
-
-                    financeStore.linkedItems.add(
+                    await financeStore.runInNotificationBatch(() async {
+                      await financeStore.addLinkedItem(
+                        FinanceAccountLinkedItem(
+                          id: linkedId,
+                          balanceId: balance.balanceId,
+                          type: selectedType,
+                          name: name,
+                          description: descriptionController.text.trim(),
+                          expirationDate: selectedExpiration,
+                          amount: amount,
+                          active: true,
+                        ),
+                      );
+                    });
+                  } else {
+                    await financeStore.replaceLinkedItem(
                       FinanceAccountLinkedItem(
-                        id: linkedId,
-                        balanceId: balance.balanceId,
+                        id: existing.id,
+                        balanceId: existing.balanceId,
                         type: selectedType,
                         name: name,
                         description: descriptionController.text.trim(),
                         expirationDate: selectedExpiration,
                         amount: amount,
-                        active: true,
+                        active: existing.active,
                       ),
                     );
-
-                    if (selectedType ==
-                        FinanceAccountLinkedItemType.prepaidCard) {
-                      final initialAmount = amount ?? 0;
-
-                      financeStore.balances.add(
-                        FinanceBalance(
-                          balanceId: 'balance_$linkedId',
-                          personId: balance.personId,
-                          name: name,
-                          initialAmount: initialAmount,
-                          currentAmount: initialAmount,
-                          updatedAt: now,
-                          balanceType: FinanceBalanceType.prepaidCard,
-                          operational: true,
-                          active: true,
-                          reservedAmount: 0,
-                          warningThreshold: 0,
-                          persistentStressDays: 0,
-                          recoveryDays: 0,
-                        ),
-                      );
-
-                      await financeStore.saveBalances();
-                    }
-                  } else {
-                    final index = financeStore.linkedItems.indexWhere(
-                      (item) => item.id == existing.id,
-                    );
-
-                    if (index != -1) {
-                      financeStore.linkedItems[index] =
-                          FinanceAccountLinkedItem(
-                            id: existing.id,
-                            balanceId: existing.balanceId,
-                            type: selectedType,
-                            name: name,
-                            description: descriptionController.text.trim(),
-                            expirationDate: selectedExpiration,
-                            amount: amount,
-                            active: existing.active,
-                          );
-                    }
                   }
-
-                  await financeStore.saveLinkedItems();
 
                   if (mounted) {
                     setState(() {});
@@ -679,22 +651,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
   }
 
   Future<void> _deleteLinkedItem(FinanceAccountLinkedItem item) async {
-    final index = financeStore.linkedItems.indexWhere((i) => i.id == item.id);
-
-    if (index == -1) return;
-
-    financeStore.linkedItems[index] = FinanceAccountLinkedItem(
-      id: item.id,
-      balanceId: item.balanceId,
-      type: item.type,
-      name: item.name,
-      description: item.description,
-      expirationDate: item.expirationDate,
-      amount: item.amount,
-      active: false,
-    );
-
-    await financeStore.saveLinkedItems();
+    await financeStore.setLinkedItemActive(item.id, false);
 
     if (mounted) {
       setState(() {});
@@ -811,7 +768,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
     }
 
     if (item.amount != null) {
-      parts.add("€${item.amount!.toStringAsFixed(2)}");
+      parts.add(EuroFormatter.format(item.amount!));
     }
 
     if (item.description.trim().isNotEmpty) {

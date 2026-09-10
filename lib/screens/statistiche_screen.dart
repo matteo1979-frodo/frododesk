@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../logic/core_store.dart';
+import '../utils/euro_formatter.dart';
 
 enum _StatsPeriod { currentDay, currentWeek, currentMonth, currentYear }
 
@@ -398,7 +399,7 @@ class _SupportFamilyStatCard extends StatelessWidget {
       icon: Icons.support_agent_rounded,
       title: "Supporto familiare",
       value: _formatMinutes(totalMinutes),
-      subtitle: "Sandra • €${totalCost.toStringAsFixed(2)}",
+      subtitle: "Sandra • ${EuroFormatter.format(totalCost)}",
       color: const Color(0xFFFFCA28),
       onTap: onTap,
     );
@@ -1180,7 +1181,7 @@ class _SandraHoursCard extends StatelessWidget {
                                     title: _currentLabel(),
                                     value: _formatMinutes(currentMinutes),
                                     subtitle:
-                                        "€${currentCost.toStringAsFixed(2)} stimati",
+                                        "${EuroFormatter.format(currentCost)} stimati",
                                   ),
                                 ),
                                 const SizedBox(width: 10),
@@ -1189,7 +1190,7 @@ class _SandraHoursCard extends StatelessWidget {
                                     title: _previousLabel(),
                                     value: _formatMinutes(previousMinutes),
                                     subtitle:
-                                        "€${previousCost.toStringAsFixed(2)} stimati",
+                                        "${EuroFormatter.format(previousCost)} stimati",
                                   ),
                                 ),
                               ],
@@ -1262,7 +1263,7 @@ class _SandraHoursCard extends StatelessWidget {
                                 width: itemWidth,
                                 child: _MonthSummaryBox(
                                   title: _summaryCostTitle(),
-                                  value: "€${currentCost.toStringAsFixed(2)}",
+                                  value: EuroFormatter.format(currentCost),
                                 ),
                               ),
                               SizedBox(
@@ -1364,8 +1365,8 @@ class _SandraHoursCard extends StatelessWidget {
 
     final totalLabel = _formatMinutes(totalMinutes);
     final summary = _summaryText(totalMinutes);
-    final costMainLabel = "€${totalCost.toStringAsFixed(2)}";
-    final hourlyRateLabel = "${hourlyRate.toStringAsFixed(2)} €/h";
+    final costMainLabel = EuroFormatter.format(totalCost);
+    final hourlyRateLabel = "${EuroFormatter.format(hourlyRate)}/h";
 
     return Container(
       width: double.infinity,

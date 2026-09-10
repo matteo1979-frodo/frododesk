@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/finance_balance.dart';
 import '../stores/finance_store.dart';
 import 'account_detail_screen.dart';
+import '../utils/euro_formatter.dart';
 
 class PersonFinanceScreen extends StatefulWidget {
   final FinanceStore financeStore;
@@ -92,7 +93,7 @@ class _PersonFinanceScreenState extends State<PersonFinanceScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            "€${total.toStringAsFixed(2)}",
+            EuroFormatter.format(total),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 34,
@@ -166,7 +167,7 @@ class _PersonFinanceScreenState extends State<PersonFinanceScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "€${balance.currentAmount.toStringAsFixed(2)}",
+                      EuroFormatter.format(balance.currentAmount),
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.82),
                         fontWeight: FontWeight.w800,
@@ -251,6 +252,7 @@ class _PersonFinanceScreenState extends State<PersonFinanceScreen> {
   Future<void> _showAddAccountDialog() async {
     final nameController = TextEditingController();
     final amountController = TextEditingController(text: "0");
+    var selectedType = FinanceBalanceType.bankAccount;
 
     await showDialog<void>(
       context: context,
@@ -270,6 +272,24 @@ class _PersonFinanceScreenState extends State<PersonFinanceScreen> {
               ),
               decoration: const InputDecoration(labelText: "Saldo iniziale"),
             ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<FinanceBalanceType>(
+              initialValue: selectedType,
+              decoration: const InputDecoration(labelText: "Tipo conto"),
+              items: const [
+                DropdownMenuItem(
+                  value: FinanceBalanceType.bankAccount,
+                  child: Text("Conto bancario"),
+                ),
+                DropdownMenuItem(
+                  value: FinanceBalanceType.prepaidCard,
+                  child: Text("Carta prepagata"),
+                ),
+              ],
+              onChanged: (value) {
+                if (value != null) selectedType = value;
+              },
+            ),
           ],
         ),
         actions: [
@@ -287,7 +307,7 @@ class _PersonFinanceScreenState extends State<PersonFinanceScreen> {
 
               final now = DateTime.now();
 
-              widget.financeStore.balances.add(
+              await widget.financeStore.addBalance(
                 FinanceBalance(
                   balanceId: 'balance_${now.microsecondsSinceEpoch}',
                   personId: widget.personId,
@@ -295,7 +315,7 @@ class _PersonFinanceScreenState extends State<PersonFinanceScreen> {
                   initialAmount: amount,
                   currentAmount: amount,
                   updatedAt: now,
-                  balanceType: FinanceBalanceType.bankAccount,
+                  balanceType: selectedType,
                   operational: true,
                   active: true,
                   reservedAmount: 0,
@@ -304,8 +324,6 @@ class _PersonFinanceScreenState extends State<PersonFinanceScreen> {
                   recoveryDays: 0,
                 ),
               );
-
-              await widget.financeStore.saveBalances();
 
               if (mounted) {
                 setState(() {});
@@ -366,7 +384,7 @@ class _PersonFinanceScreenState extends State<PersonFinanceScreen> {
 
               final old = widget.financeStore.balances[index];
 
-              widget.financeStore.balances[index] = FinanceBalance(
+              await widget.financeStore.replaceBalance(FinanceBalance(
                 balanceId: old.balanceId,
                 personId: old.personId,
                 name: nameController.text.trim(),
@@ -380,9 +398,7 @@ class _PersonFinanceScreenState extends State<PersonFinanceScreen> {
                 warningThreshold: old.warningThreshold,
                 persistentStressDays: old.persistentStressDays,
                 recoveryDays: old.recoveryDays,
-              );
-
-              await widget.financeStore.saveBalances();
+              ));
 
               if (mounted) {
                 setState(() {});
@@ -494,23 +510,7 @@ class _PersonFinanceScreenState extends State<PersonFinanceScreen> {
 
     final old = widget.financeStore.balances[index];
 
-    widget.financeStore.balances[index] = FinanceBalance(
-      balanceId: old.balanceId,
-      personId: old.personId,
-      name: old.name,
-      initialAmount: old.initialAmount,
-      currentAmount: old.currentAmount,
-      updatedAt: DateTime.now(),
-      balanceType: old.balanceType,
-      operational: old.operational,
-      active: false,
-      reservedAmount: old.reservedAmount,
-      warningThreshold: old.warningThreshold,
-      persistentStressDays: old.persistentStressDays,
-      recoveryDays: old.recoveryDays,
-    );
-
-    await widget.financeStore.saveBalances();
+    await widget.financeStore.setBalanceActive(old.balanceId, false);
 
     if (mounted) {
       setState(() {});

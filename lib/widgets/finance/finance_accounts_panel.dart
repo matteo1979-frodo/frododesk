@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/finance_balance.dart';
 import '../../stores/finance_store.dart';
+import '../../utils/euro_formatter.dart';
 
 class FinanceAccountsPanel extends StatefulWidget {
   final FinanceStore financeStore;
@@ -159,7 +160,7 @@ class _FinanceAccountsPanelState extends State<FinanceAccountsPanel> {
 
                     final now = DateTime.now();
 
-                    widget.financeStore.balances.add(
+                    await widget.financeStore.addBalance(
                       FinanceBalance(
                         balanceId: 'balance_${now.microsecondsSinceEpoch}',
                         personId: selectedPersonId,
@@ -176,8 +177,6 @@ class _FinanceAccountsPanelState extends State<FinanceAccountsPanel> {
                         recoveryDays: 0,
                       ),
                     );
-
-                    await widget.financeStore.saveBalances();
 
                     if (mounted) {
                       setState(() {});
@@ -590,13 +589,9 @@ class _FinanceAccountsPanelState extends State<FinanceAccountsPanel> {
                                             final oldAmount =
                                                 current.currentAmount;
 
-                                            final difference =
-                                                amount - oldAmount;
-
-                                            widget
-                                                    .financeStore
-                                                    .balances[index] =
-                                                FinanceBalance(
+                                            await widget.financeStore
+                                                .updateBalanceDetailsAndAmount(
+                                                  details: FinanceBalance(
                                                   balanceId: current.balanceId,
                                                   personId: selectedPersonId,
                                                   name: nameController.text
@@ -617,19 +612,9 @@ class _FinanceAccountsPanelState extends State<FinanceAccountsPanel> {
                                                       .persistentStressDays,
                                                   recoveryDays:
                                                       current.recoveryDays,
+                                                  ),
+                                                  newAmount: amount,
                                                 );
-
-                                            if (difference != 0) {
-                                              await widget.financeStore
-                                                  .updateBalance(
-                                                    balanceId:
-                                                        current.balanceId,
-                                                    newAmount: amount,
-                                                  );
-                                            } else {
-                                              await widget.financeStore
-                                                  .saveBalances();
-                                            }
 
                                             if (mounted) {
                                               setState(() {});
@@ -657,27 +642,10 @@ class _FinanceAccountsPanelState extends State<FinanceAccountsPanel> {
 
                             if (index == -1) return;
 
-                            final current = widget.financeStore.balances[index];
-
-                            widget.financeStore.balances[index] =
-                                FinanceBalance(
-                                  balanceId: current.balanceId,
-                                  personId: current.personId,
-                                  name: current.name,
-                                  initialAmount: current.initialAmount,
-                                  currentAmount: current.currentAmount,
-                                  updatedAt: current.updatedAt,
-                                  balanceType: current.balanceType,
-                                  operational: current.operational,
-                                  active: false,
-                                  reservedAmount: current.reservedAmount,
-                                  warningThreshold: current.warningThreshold,
-                                  persistentStressDays:
-                                      current.persistentStressDays,
-                                  recoveryDays: current.recoveryDays,
-                                );
-
-                            await widget.financeStore.saveBalances();
+                            await widget.financeStore.setBalanceActive(
+                              balance.balanceId,
+                              false,
+                            );
 
                             if (mounted) {
                               setState(() {});
@@ -710,7 +678,7 @@ class _FinanceAccountsPanelState extends State<FinanceAccountsPanel> {
                       ),
 
                       Text(
-                        '€ ${balance.currentAmount.toStringAsFixed(2)}',
+                        EuroFormatter.format(balance.currentAmount),
                         style: const TextStyle(
                           color: Colors.black87,
                           fontWeight: FontWeight.w700,

@@ -1,3 +1,8 @@
+import 'dart:collection';
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+
 import '../models/finance_balance.dart';
 import '../models/finance_fund.dart';
 import '../models/finance_person.dart';
@@ -13,12 +18,29 @@ import '../models/finance_asset_movement.dart';
 import '../models/finance_fund_mutation_plan.dart';
 import '../logic/economics/economic_fact_id_generator.dart';
 
-class FinanceStore {
+class FinanceStore extends ChangeNotifier {
   final EconomicFactIdGenerator economicFactIdGenerator;
 
-  FinanceStore({EconomicFactIdGenerator? economicFactIdGenerator})
-    : economicFactIdGenerator =
-          economicFactIdGenerator ?? EconomicFactIdGenerator.timestamped();
+  FinanceStore({
+    EconomicFactIdGenerator? economicFactIdGenerator,
+    Iterable<FinanceBalance> initialBalances = const [],
+    Iterable<FinanceAccountLinkedItem> initialLinkedItems = const [],
+    Iterable<FinanceTransaction> initialTransactions = const [],
+    Iterable<FinanceRecurringItem> initialRecurringItems = const [],
+    Iterable<FinanceSnapshot> initialSnapshots = const [],
+    Iterable<FinanceFund> initialFunds = const [],
+    Iterable<FundTransaction> initialFundTransactions = const [],
+    Iterable<FinanceAssetMovement> initialAssetMovements = const [],
+  }) : economicFactIdGenerator =
+           economicFactIdGenerator ?? EconomicFactIdGenerator.timestamped(),
+       _balances = List<FinanceBalance>.of(initialBalances),
+       _linkedItems = List<FinanceAccountLinkedItem>.of(initialLinkedItems),
+       _transactions = List<FinanceTransaction>.of(initialTransactions),
+       _recurringItems = List<FinanceRecurringItem>.of(initialRecurringItems),
+       _snapshots = List<FinanceSnapshot>.of(initialSnapshots),
+       _funds = List<FinanceFund>.of(initialFunds),
+       _fundTransactions = List<FundTransaction>.of(initialFundTransactions),
+       _assetMovements = List<FinanceAssetMovement>.of(initialAssetMovements);
 
   final List<FinancePerson> people = const [
     FinancePerson(id: 'matteo', name: 'Matteo'),
@@ -26,15 +48,243 @@ class FinanceStore {
     FinancePerson(id: 'alice', name: 'Alice'),
   ];
 
-  final List<FinanceBalance> balances = [];
-  final List<FinanceFund> funds = [];
-  final List<FinanceRecurringItem> recurringItems = [];
-  final List<FinanceSnapshot> snapshots = [];
-  final List<FundTransaction> fundTransactions = [];
-  final List<FinanceTransaction> transactions = [];
-  final List<FinanceAccountLinkedItem> linkedItems = [];
-  final List<FinanceAssetMovement> assetMovements = [];
+  final List<FinanceBalance> _balances;
+  final List<FinanceFund> _funds;
+  final List<FinanceRecurringItem> _recurringItems;
+  final List<FinanceSnapshot> _snapshots;
+  final List<FundTransaction> _fundTransactions;
+  final List<FinanceTransaction> _transactions;
+  final List<FinanceAccountLinkedItem> _linkedItems;
+  final List<FinanceAssetMovement> _assetMovements;
   bool _portfolioReady = false;
+  int _notificationBatchDepth = 0;
+  bool _hasPendingNotification = false;
+  bool _isDisposed = false;
+
+  UnmodifiableListView<FinanceBalance> get balances =>
+      UnmodifiableListView(_balances);
+
+  UnmodifiableListView<FinanceAccountLinkedItem> get linkedItems =>
+      UnmodifiableListView(_linkedItems);
+
+  UnmodifiableListView<FinanceTransaction> get transactions =>
+      UnmodifiableListView(_transactions);
+
+  UnmodifiableListView<FinanceRecurringItem> get recurringItems =>
+      UnmodifiableListView(_recurringItems);
+
+  UnmodifiableListView<FinanceSnapshot> get snapshots =>
+      UnmodifiableListView(_snapshots);
+
+  UnmodifiableListView<FinanceFund> get funds => UnmodifiableListView(_funds);
+
+  UnmodifiableListView<FundTransaction> get fundTransactions =>
+      UnmodifiableListView(_fundTransactions);
+
+  UnmodifiableListView<FinanceAssetMovement> get assetMovements =>
+      UnmodifiableListView(_assetMovements);
+
+  Future<T> runInNotificationBatch<T>(Future<T> Function() action) async {
+    _notificationBatchDepth++;
+    try {
+      return await action();
+    } finally {
+      _notificationBatchDepth--;
+      assert(_notificationBatchDepth >= 0);
+      if (_notificationBatchDepth == 0 && _hasPendingNotification) {
+        _hasPendingNotification = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  void _markChanged() {
+    if (_isDisposed) return;
+    if (_notificationBatchDepth > 0) {
+      _hasPendingNotification = true;
+      return;
+    }
+    notifyListeners();
+  }
+
+  Future<T> _runObservableLoad<T>(Future<T> Function() action) async {
+    return runInNotificationBatch(() async {
+      final before = _observableStateFingerprint();
+      try {
+        return await action();
+      } finally {
+        if (before != _observableStateFingerprint()) {
+          _markChanged();
+        }
+      }
+    });
+  }
+
+  String _observableStateFingerprint() => jsonEncode({
+    'balances': _balances.map((item) => item.toJson()).toList(),
+    'linkedItems': _linkedItems.map((item) => item.toJson()).toList(),
+    'transactions': _transactions.map((item) => item.toJson()).toList(),
+    'recurringItems': _recurringItems.map((item) => item.toJson()).toList(),
+    'snapshots': _snapshots.map((item) => item.toJson()).toList(),
+    'funds': _funds.map((item) => item.toJson()).toList(),
+    'fundTransactions': _fundTransactions.map((item) => item.toJson()).toList(),
+    'assetMovements': _assetMovements.map((item) => item.toJson()).toList(),
+  });
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
+  Future<bool> addBalance(FinanceBalance balance) async {
+    if (_balances.any((item) => item.balanceId == balance.balanceId)) {
+      return false;
+    }
+    _balances.add(balance);
+    try {
+      await saveBalances();
+    } finally {
+      _markChanged();
+    }
+    return true;
+  }
+
+  Future<bool> replaceBalance(FinanceBalance balance) async {
+    final index = _balances.indexWhere(
+      (item) => item.balanceId == balance.balanceId,
+    );
+    if (index == -1 || _sameBalance(_balances[index], balance)) return false;
+    _balances[index] = balance;
+    try {
+      await saveBalances();
+    } finally {
+      _markChanged();
+    }
+    return true;
+  }
+
+  Future<bool> setBalanceActive(String balanceId, bool active) async {
+    final index = _balances.indexWhere((item) => item.balanceId == balanceId);
+    if (index == -1 || _balances[index].active == active) return false;
+    final current = _balances[index];
+    return replaceBalance(
+      FinanceBalance(
+        balanceId: current.balanceId,
+        personId: current.personId,
+        name: current.name,
+        initialAmount: current.initialAmount,
+        currentAmount: current.currentAmount,
+        updatedAt: current.updatedAt,
+        balanceType: current.balanceType,
+        operational: current.operational,
+        active: active,
+        reservedAmount: current.reservedAmount,
+        warningThreshold: current.warningThreshold,
+        persistentStressDays: current.persistentStressDays,
+        recoveryDays: current.recoveryDays,
+      ),
+    );
+  }
+
+  Future<bool> updateBalanceDetailsAndAmount({
+    required FinanceBalance details,
+    required double newAmount,
+  }) async {
+    final index = _balances.indexWhere(
+      (item) => item.balanceId == details.balanceId,
+    );
+    if (index == -1) return false;
+    final current = _balances[index];
+    final profile = FinanceBalance(
+      balanceId: current.balanceId,
+      personId: details.personId,
+      name: details.name,
+      initialAmount: current.initialAmount,
+      currentAmount: current.currentAmount,
+      updatedAt: details.updatedAt,
+      balanceType: details.balanceType,
+      operational: details.operational,
+      active: details.active,
+      reservedAmount: details.reservedAmount,
+      warningThreshold: details.warningThreshold,
+      persistentStressDays: details.persistentStressDays,
+      recoveryDays: details.recoveryDays,
+    );
+    final profileChanged = !_sameBalance(current, profile);
+    final amountChanged = current.currentAmount != newAmount;
+    if (!profileChanged && !amountChanged) return false;
+    _balances[index] = profile;
+    if (amountChanged) {
+      await updateBalance(balanceId: current.balanceId, newAmount: newAmount);
+    } else {
+      try {
+        await saveBalances();
+      } finally {
+        _markChanged();
+      }
+    }
+    return true;
+  }
+
+  Future<bool> addLinkedItem(FinanceAccountLinkedItem item) async {
+    if (_linkedItems.any((current) => current.id == item.id)) return false;
+    _linkedItems.add(item);
+    try {
+      await saveLinkedItems();
+    } finally {
+      _markChanged();
+    }
+    return true;
+  }
+
+  Future<bool> replaceLinkedItem(FinanceAccountLinkedItem item) async {
+    final index = _linkedItems.indexWhere((current) => current.id == item.id);
+    if (index == -1 || _sameLinkedItem(_linkedItems[index], item)) {
+      return false;
+    }
+    _linkedItems[index] = item;
+    try {
+      await saveLinkedItems();
+    } finally {
+      _markChanged();
+    }
+    return true;
+  }
+
+  Future<bool> setLinkedItemActive(String itemId, bool active) async {
+    final index = _linkedItems.indexWhere((item) => item.id == itemId);
+    if (index == -1 || _linkedItems[index].active == active) return false;
+    return replaceLinkedItem(_linkedItems[index].copyWith(active: active));
+  }
+
+  bool _sameBalance(FinanceBalance left, FinanceBalance right) =>
+      left.balanceId == right.balanceId &&
+      left.personId == right.personId &&
+      left.name == right.name &&
+      left.initialAmount == right.initialAmount &&
+      left.currentAmount == right.currentAmount &&
+      left.updatedAt == right.updatedAt &&
+      left.balanceType == right.balanceType &&
+      left.operational == right.operational &&
+      left.active == right.active &&
+      left.reservedAmount == right.reservedAmount &&
+      left.warningThreshold == right.warningThreshold &&
+      left.persistentStressDays == right.persistentStressDays &&
+      left.recoveryDays == right.recoveryDays;
+
+  bool _sameLinkedItem(
+    FinanceAccountLinkedItem left,
+    FinanceAccountLinkedItem right,
+  ) =>
+      left.id == right.id &&
+      left.balanceId == right.balanceId &&
+      left.type == right.type &&
+      left.name == right.name &&
+      left.description == right.description &&
+      left.expirationDate == right.expirationDate &&
+      left.amount == right.amount &&
+      left.active == right.active;
 
   double totalBalance() {
     return balances
@@ -369,12 +619,20 @@ class FinanceStore {
     });
 
     if (existingIndex == -1) {
-      snapshots.add(snapshot);
+      _snapshots.add(snapshot);
     } else {
-      snapshots[existingIndex] = snapshot;
+      if (jsonEncode(_snapshots[existingIndex].toJson()) ==
+          jsonEncode(snapshot.toJson())) {
+        return;
+      }
+      _snapshots[existingIndex] = snapshot;
     }
 
-    await saveSnapshots();
+    try {
+      await saveSnapshots();
+    } finally {
+      _markChanged();
+    }
   }
 
   FinanceSnapshot? latestSnapshot() {
@@ -452,7 +710,7 @@ class FinanceStore {
     final old = balances[index];
     final difference = newAmount - old.currentAmount;
 
-    balances[index] = FinanceBalance(
+    _balances[index] = FinanceBalance(
       balanceId: old.balanceId,
       personId: old.personId,
       name: old.name,
@@ -469,7 +727,7 @@ class FinanceStore {
     );
 
     if (difference != 0) {
-      transactions.add(
+      _transactions.add(
         FinanceTransaction(
           id: 'adjustment_${DateTime.now().microsecondsSinceEpoch}',
           balanceId: old.balanceId,
@@ -488,8 +746,14 @@ class FinanceStore {
       );
     }
 
-    await saveBalances();
-    await saveTransactions();
+    await runInNotificationBatch(() async {
+      try {
+        await saveBalances();
+        await saveTransactions();
+      } finally {
+        _markChanged();
+      }
+    });
   }
 
   Future<void> registerRealExpense({
@@ -507,7 +771,7 @@ class FinanceStore {
 
     final old = balances[index];
 
-    balances[index] = FinanceBalance(
+    _balances[index] = FinanceBalance(
       balanceId: old.balanceId,
       personId: old.personId,
       name: old.name,
@@ -523,7 +787,7 @@ class FinanceStore {
       recoveryDays: old.recoveryDays,
     );
 
-    transactions.add(
+    _transactions.add(
       FinanceTransaction(
         id: 'real_expense_${DateTime.now().microsecondsSinceEpoch}',
         balanceId: old.balanceId,
@@ -539,8 +803,14 @@ class FinanceStore {
       ),
     );
 
-    await saveBalances();
-    await saveTransactions();
+    await runInNotificationBatch(() async {
+      try {
+        await saveBalances();
+        await saveTransactions();
+      } finally {
+        _markChanged();
+      }
+    });
   }
 
   Future<void> registerExtraIncome({
@@ -558,7 +828,7 @@ class FinanceStore {
 
     final old = balances[index];
 
-    balances[index] = FinanceBalance(
+    _balances[index] = FinanceBalance(
       balanceId: old.balanceId,
       personId: old.personId,
       name: old.name,
@@ -574,7 +844,7 @@ class FinanceStore {
       recoveryDays: old.recoveryDays,
     );
 
-    transactions.add(
+    _transactions.add(
       FinanceTransaction(
         id: 'extra_income_${DateTime.now().microsecondsSinceEpoch}',
         balanceId: old.balanceId,
@@ -590,8 +860,14 @@ class FinanceStore {
       ),
     );
 
-    await saveBalances();
-    await saveTransactions();
+    await runInNotificationBatch(() async {
+      try {
+        await saveBalances();
+        await saveTransactions();
+      } finally {
+        _markChanged();
+      }
+    });
   }
 
   Future<void> removeExtraIncome({
@@ -607,7 +883,7 @@ class FinanceStore {
 
     final old = balances[index];
 
-    balances[index] = FinanceBalance(
+    _balances[index] = FinanceBalance(
       balanceId: old.balanceId,
       personId: old.personId,
       name: old.name,
@@ -623,7 +899,7 @@ class FinanceStore {
       recoveryDays: old.recoveryDays,
     );
 
-    transactions.add(
+    _transactions.add(
       FinanceTransaction(
         id: 'remove_extra_income_${DateTime.now().microsecondsSinceEpoch}',
         balanceId: old.balanceId,
@@ -639,8 +915,14 @@ class FinanceStore {
       ),
     );
 
-    await saveBalances();
-    await saveTransactions();
+    await runInNotificationBatch(() async {
+      try {
+        await saveBalances();
+        await saveTransactions();
+      } finally {
+        _markChanged();
+      }
+    });
   }
 
   Future<void> restoreRealExpense({
@@ -656,7 +938,7 @@ class FinanceStore {
 
     final old = balances[index];
 
-    balances[index] = FinanceBalance(
+    _balances[index] = FinanceBalance(
       balanceId: old.balanceId,
       personId: old.personId,
       name: old.name,
@@ -672,7 +954,7 @@ class FinanceStore {
       recoveryDays: old.recoveryDays,
     );
 
-    transactions.add(
+    _transactions.add(
       FinanceTransaction(
         id: 'restore_expense_${DateTime.now().microsecondsSinceEpoch}',
         balanceId: old.balanceId,
@@ -688,8 +970,14 @@ class FinanceStore {
       ),
     );
 
-    await saveBalances();
-    await saveTransactions();
+    await runInNotificationBatch(() async {
+      try {
+        await saveBalances();
+        await saveTransactions();
+      } finally {
+        _markChanged();
+      }
+    });
   }
 
   Future<void> transferBetweenBalances({
@@ -709,7 +997,7 @@ class FinanceStore {
     final fromBalance = balances[fromIndex];
     final toBalance = balances[toIndex];
 
-    balances[fromIndex] = FinanceBalance(
+    _balances[fromIndex] = FinanceBalance(
       balanceId: fromBalance.balanceId,
       personId: fromBalance.personId,
       name: fromBalance.name,
@@ -725,7 +1013,7 @@ class FinanceStore {
       recoveryDays: fromBalance.recoveryDays,
     );
 
-    balances[toIndex] = FinanceBalance(
+    _balances[toIndex] = FinanceBalance(
       balanceId: toBalance.balanceId,
       personId: toBalance.personId,
       name: toBalance.name,
@@ -744,7 +1032,7 @@ class FinanceStore {
     final transferId = DateTime.now().microsecondsSinceEpoch.toString();
     final economicFactId = economicFactIdGenerator.next();
 
-    transactions.add(
+    _transactions.add(
       FinanceTransaction(
         id: 'transfer_out_$transferId',
         balanceId: fromBalance.balanceId,
@@ -760,7 +1048,7 @@ class FinanceStore {
       ),
     );
 
-    transactions.add(
+    _transactions.add(
       FinanceTransaction(
         id: 'transfer_in_$transferId',
         balanceId: toBalance.balanceId,
@@ -776,25 +1064,38 @@ class FinanceStore {
       ),
     );
 
-    await saveBalances();
-    await saveTransactions();
+    await runInNotificationBatch(() async {
+      try {
+        await saveBalances();
+        await saveTransactions();
+      } finally {
+        _markChanged();
+      }
+    });
   }
 
   void loadDemoData() {
-    balances
+    final before = _observableStateFingerprint();
+    _balances
       ..clear()
       ..addAll(demoBalances);
 
-    funds
+    _funds
       ..clear()
       ..addAll(demoFunds);
 
-    recurringItems
+    _recurringItems
       ..clear()
       ..addAll(demoRecurringItems);
+    if (before != _observableStateFingerprint()) {
+      _markChanged();
+    }
   }
 
-  Future<void> loadInitialRealData() async {
+  Future<void> loadInitialRealData() =>
+      _runObservableLoad(_loadInitialRealData);
+
+  Future<void> _loadInitialRealData() async {
     if (await loadSavedPortfolio()) {
       await loadSavedRecurringItems();
       await loadSavedSnapshots();
@@ -816,7 +1117,7 @@ class FinanceStore {
         await loadSavedLinkedItems();
 
         if (!fundsLoaded) {
-          funds
+          _funds
             ..clear()
             ..addAll(demoFunds);
 
@@ -826,7 +1127,7 @@ class FinanceStore {
         final recurringItemsLoaded = await loadSavedRecurringItems();
 
         if (!recurringItemsLoaded) {
-          recurringItems
+          _recurringItems
             ..clear()
             ..addAll(demoRecurringItems);
 
@@ -840,7 +1141,7 @@ class FinanceStore {
         final old = balances[i];
 
         if (old.name == old.balanceId) {
-          balances[i] = FinanceBalance(
+          _balances[i] = FinanceBalance(
             balanceId: old.balanceId,
             personId: old.personId,
             name: old.personId == 'matteo'
@@ -865,7 +1166,7 @@ class FinanceStore {
       await saveBalances();
     }
 
-    balances
+    _balances
       ..clear()
       ..addAll([
         FinanceBalance(
@@ -909,40 +1210,42 @@ class FinanceStore {
     await loadSavedLinkedItems();
 
     if (!fundsLoaded) {
-      funds
+      _funds
         ..clear()
         ..addAll(demoFunds);
 
       await saveFunds();
     }
 
-    recurringItems
+    _recurringItems
       ..clear()
       ..addAll(demoRecurringItems);
     await saveRecurringItems();
     await migrateLegacyPortfolio();
   }
 
-  Future<bool> loadSavedPortfolio() async {
+  Future<bool> loadSavedPortfolio() => _runObservableLoad(_loadSavedPortfolio);
+
+  Future<bool> _loadSavedPortfolio() async {
     final json = await PersistenceStore.loadJsonMap('finance_portfolio_v2');
     if (json == null || json['version'] != 2) {
       return false;
     }
-    balances
+    _balances
       ..clear()
       ..addAll(
         (json['balances'] as List).map(
           (item) => FinanceBalance.fromJson(Map<String, dynamic>.from(item)),
         ),
       );
-    funds
+    _funds
       ..clear()
       ..addAll(
         (json['funds'] as List).map(
           (item) => FinanceFund.fromJson(Map<String, dynamic>.from(item)),
         ),
       );
-    assetMovements
+    _assetMovements
       ..clear()
       ..addAll(
         (json['assetMovements'] as List).map(
@@ -950,7 +1253,7 @@ class FinanceStore {
               FinanceAssetMovement.fromJson(Map<String, dynamic>.from(item)),
         ),
       );
-    transactions
+    _transactions
       ..clear()
       ..addAll(
         (json['transactions'] as List).map(
@@ -958,23 +1261,26 @@ class FinanceStore {
               FinanceTransaction.fromJson(Map<String, dynamic>.from(item)),
         ),
       );
-    fundTransactions
+    _fundTransactions
       ..clear()
       ..addAll(
         (json['fundTransactions'] as List? ?? const []).map(
           (item) => FundTransaction.fromJson(Map<String, dynamic>.from(item)),
         ),
-    );
+      );
     _portfolioReady = true;
     return true;
   }
 
-  Future<void> migrateLegacyPortfolio() async {
+  Future<void> migrateLegacyPortfolio() =>
+      _runObservableLoad(_migrateLegacyPortfolio);
+
+  Future<void> _migrateLegacyPortfolio() async {
     if (assetMovements.isEmpty) {
       final migratedAt = DateTime.now();
       for (var index = 0; index < funds.length; index++) {
         final fund = funds[index];
-        funds[index] = FinanceFund(
+        _funds[index] = FinanceFund(
           id: fund.id,
           name: fund.name,
           description: fund.description,
@@ -987,7 +1293,7 @@ class FinanceStore {
           closedAt: fund.closedAt,
         );
         if (fund.amount > 0) {
-          assetMovements.add(
+          _assetMovements.add(
             FinanceAssetMovement(
               id: 'legacy_${fund.id}',
               fundId: fund.id,
@@ -1017,7 +1323,7 @@ class FinanceStore {
       final fundDelta = transaction.type == FundTransactionType.deposit
           ? transaction.amount
           : -transaction.amount;
-      assetMovements.add(
+      _assetMovements.add(
         FinanceAssetMovement(
           id: movementId,
           fundId: transaction.fundId,
@@ -1050,8 +1356,10 @@ class FinanceStore {
   );
 
   Future<void> commitFundPlan(FinanceFundMutationPlan plan) async {
-    await PersistenceStore.saveJsonMap(
-      'finance_portfolio_v2',
+    final current = jsonEncode(
+      _portfolioJson(balances, funds, assetMovements, transactions),
+    );
+    final next = jsonEncode(
       _portfolioJson(
         plan.balances,
         plan.funds,
@@ -1059,19 +1367,28 @@ class FinanceStore {
         plan.transactions,
       ),
     );
-    balances
-      ..clear()
-      ..addAll(plan.balances);
-    funds
-      ..clear()
-      ..addAll(plan.funds);
-    assetMovements
-      ..clear()
-      ..addAll(plan.movements);
-    transactions
-      ..clear()
-      ..addAll(plan.transactions);
-    _portfolioReady = true;
+    if (current == next) return;
+
+    await runInNotificationBatch(() async {
+      _balances
+        ..clear()
+        ..addAll(plan.balances);
+      _funds
+        ..clear()
+        ..addAll(plan.funds);
+      _assetMovements
+        ..clear()
+        ..addAll(plan.movements);
+      _transactions
+        ..clear()
+        ..addAll(plan.transactions);
+      try {
+        await savePortfolio();
+        _portfolioReady = true;
+      } finally {
+        _markChanged();
+      }
+    });
   }
 
   Map<String, dynamic> _portfolioJson(
@@ -1095,35 +1412,42 @@ class FinanceStore {
     if (_portfolioReady) await savePortfolio();
   }
 
-  Future<bool> loadSavedBalances() async {
+  Future<bool> loadSavedBalances() => _runObservableLoad(_loadSavedBalances);
+
+  Future<bool> _loadSavedBalances() async {
     final jsonList = await PersistenceStore.loadJsonList('finance_balances');
 
     if (jsonList.isEmpty) {
       return false;
     }
 
-    balances
+    _balances
       ..clear()
       ..addAll(jsonList.map(FinanceBalance.fromJson));
 
     return true;
   }
 
-  Future<bool> loadSavedFunds() async {
+  Future<bool> loadSavedFunds() => _runObservableLoad(_loadSavedFunds);
+
+  Future<bool> _loadSavedFunds() async {
     final jsonList = await PersistenceStore.loadJsonList('finance_funds');
 
     if (jsonList.isEmpty) {
       return false;
     }
 
-    funds
+    _funds
       ..clear()
       ..addAll(jsonList.map(FinanceFund.fromJson));
 
     return true;
   }
 
-  Future<bool> loadSavedFundTransactions() async {
+  Future<bool> loadSavedFundTransactions() =>
+      _runObservableLoad(_loadSavedFundTransactions);
+
+  Future<bool> _loadSavedFundTransactions() async {
     final jsonList = await PersistenceStore.loadJsonList(
       'finance_fund_transactions',
     );
@@ -1132,7 +1456,7 @@ class FinanceStore {
       return false;
     }
 
-    fundTransactions
+    _fundTransactions
       ..clear()
       ..addAll(jsonList.map(FundTransaction.fromJson));
 
@@ -1155,7 +1479,10 @@ class FinanceStore {
     );
   }
 
-  Future<bool> loadSavedLinkedItems() async {
+  Future<bool> loadSavedLinkedItems() =>
+      _runObservableLoad(_loadSavedLinkedItems);
+
+  Future<bool> _loadSavedLinkedItems() async {
     final jsonList = await PersistenceStore.loadJsonList(
       'finance_account_linked_items',
     );
@@ -1164,7 +1491,7 @@ class FinanceStore {
       return false;
     }
 
-    linkedItems
+    _linkedItems
       ..clear()
       ..addAll(jsonList.map(FinanceAccountLinkedItem.fromJson));
 
@@ -1177,7 +1504,10 @@ class FinanceStore {
     await PersistenceStore.saveJsonList('finance_snapshots', jsonList);
   }
 
-  Future<bool> loadSavedTransactions() async {
+  Future<bool> loadSavedTransactions() =>
+      _runObservableLoad(_loadSavedTransactions);
+
+  Future<bool> _loadSavedTransactions() async {
     final jsonList = await PersistenceStore.loadJsonList(
       'finance_transactions',
     );
@@ -1186,21 +1516,23 @@ class FinanceStore {
       return false;
     }
 
-    transactions
+    _transactions
       ..clear()
       ..addAll(jsonList.map(FinanceTransaction.fromJson));
 
     return true;
   }
 
-  Future<bool> loadSavedSnapshots() async {
+  Future<bool> loadSavedSnapshots() => _runObservableLoad(_loadSavedSnapshots);
+
+  Future<bool> _loadSavedSnapshots() async {
     final jsonList = await PersistenceStore.loadJsonList('finance_snapshots');
 
     if (jsonList.isEmpty) {
       return false;
     }
 
-    snapshots
+    _snapshots
       ..clear()
       ..addAll(jsonList.map(FinanceSnapshot.fromJson));
 
@@ -1219,8 +1551,9 @@ class FinanceStore {
     }
 
     final old = funds[index];
+    if (old.amount == newAmount) return;
 
-    funds[index] = FinanceFund(
+    _funds[index] = FinanceFund(
       id: old.id,
       name: old.name,
       description: old.description,
@@ -1229,19 +1562,28 @@ class FinanceStore {
       category: old.category,
     );
 
-    await saveFunds();
+    try {
+      await saveFunds();
+    } finally {
+      _markChanged();
+    }
   }
 
   Future<void> updateFund(FinanceFund updatedFund) async {
     final index = funds.indexWhere((f) => f.id == updatedFund.id);
 
-    if (index == -1) {
+    if (index == -1 ||
+        jsonEncode(funds[index].toJson()) == jsonEncode(updatedFund.toJson())) {
       return;
     }
 
-    funds[index] = updatedFund;
+    _funds[index] = updatedFund;
 
-    await saveFunds();
+    try {
+      await saveFunds();
+    } finally {
+      _markChanged();
+    }
   }
 
   @Deprecated('Usa FinanceFundLifecycleCoordinator con controparti esplicite')
@@ -1271,7 +1613,7 @@ class FinanceStore {
       newAmount = 0;
     }
 
-    funds[fundIndex] = FinanceFund(
+    _funds[fundIndex] = FinanceFund(
       id: oldFund.id,
       name: oldFund.name,
       description: oldFund.description,
@@ -1282,7 +1624,7 @@ class FinanceStore {
 
     final transactionId = DateTime.now().millisecondsSinceEpoch.toString();
 
-    fundTransactions.add(
+    _fundTransactions.add(
       FundTransaction(
         id: transactionId,
         fundId: fundId,
@@ -1293,7 +1635,7 @@ class FinanceStore {
       ),
     );
 
-    transactions.add(
+    _transactions.add(
       FinanceTransaction(
         id: 'fund_$transactionId',
         balanceId: fundId,
@@ -1311,20 +1653,40 @@ class FinanceStore {
       ),
     );
 
-    await saveFunds();
-    await saveFundTransactions();
-    await saveTransactions();
+    await runInNotificationBatch(() async {
+      try {
+        await saveFunds();
+        await saveFundTransactions();
+        await saveTransactions();
+      } finally {
+        _markChanged();
+      }
+    });
   }
 
   @Deprecated('Chiudi il fondo tramite FinanceFundLifecycleCoordinator')
   Future<void> removeFund(String fundId) async {
-    funds.removeWhere((f) => f.id == fundId);
-    fundTransactions.removeWhere((transaction) => transaction.fundId == fundId);
-    transactions.removeWhere((transaction) => transaction.balanceId == fundId);
+    final hasChanges =
+        _funds.any((fund) => fund.id == fundId) ||
+        _fundTransactions.any((transaction) => transaction.fundId == fundId) ||
+        _transactions.any((transaction) => transaction.balanceId == fundId);
+    if (!hasChanges) return;
 
-    await saveFunds();
-    await saveFundTransactions();
-    await saveTransactions();
+    _funds.removeWhere((f) => f.id == fundId);
+    _fundTransactions.removeWhere(
+      (transaction) => transaction.fundId == fundId,
+    );
+    _transactions.removeWhere((transaction) => transaction.balanceId == fundId);
+
+    await runInNotificationBatch(() async {
+      try {
+        await saveFunds();
+        await saveFundTransactions();
+        await saveTransactions();
+      } finally {
+        _markChanged();
+      }
+    });
   }
 
   Future<void> confirmRecurringItem(String itemId, {double? realAmount}) async {
@@ -1334,85 +1696,104 @@ class FinanceStore {
       return;
     }
 
-    final item = recurringItems[index];
-    final amount = realAmount ?? item.expectedAmount;
+    if (recurringItems[index].confirmed) {
+      return;
+    }
 
-    if (item.balanceId != null) {
-      final balanceIndex = balances.indexWhere(
-        (balance) => balance.balanceId == item.balanceId,
-      );
+    await runInNotificationBatch(() async {
+      final item = recurringItems[index];
+      final amount = realAmount ?? item.expectedAmount;
+      var changed = false;
 
-      if (balanceIndex != -1) {
-        final oldBalance = balances[balanceIndex];
+      try {
+        if (item.balanceId != null) {
+          final balanceIndex = balances.indexWhere(
+            (balance) => balance.balanceId == item.balanceId,
+          );
 
-        final newAmount = item.isIncome
-            ? oldBalance.currentAmount + amount
-            : oldBalance.currentAmount - amount;
+          if (balanceIndex != -1) {
+            final oldBalance = balances[balanceIndex];
 
-        balances[balanceIndex] = FinanceBalance(
-          balanceId: oldBalance.balanceId,
-          personId: oldBalance.personId,
-          name: oldBalance.name,
-          initialAmount: oldBalance.initialAmount,
-          currentAmount: newAmount,
-          updatedAt: DateTime.now(),
-          balanceType: oldBalance.balanceType,
-          operational: oldBalance.operational,
-          active: oldBalance.active,
-          reservedAmount: oldBalance.reservedAmount,
-          warningThreshold: oldBalance.warningThreshold,
-          persistentStressDays: oldBalance.persistentStressDays,
-          recoveryDays: oldBalance.recoveryDays,
+            final newAmount = item.isIncome
+                ? oldBalance.currentAmount + amount
+                : oldBalance.currentAmount - amount;
+
+            _balances[balanceIndex] = FinanceBalance(
+              balanceId: oldBalance.balanceId,
+              personId: oldBalance.personId,
+              name: oldBalance.name,
+              initialAmount: oldBalance.initialAmount,
+              currentAmount: newAmount,
+              updatedAt: DateTime.now(),
+              balanceType: oldBalance.balanceType,
+              operational: oldBalance.operational,
+              active: oldBalance.active,
+              reservedAmount: oldBalance.reservedAmount,
+              warningThreshold: oldBalance.warningThreshold,
+              persistentStressDays: oldBalance.persistentStressDays,
+              recoveryDays: oldBalance.recoveryDays,
+            );
+
+            _transactions.add(
+              FinanceTransaction(
+                id: 'transaction_${DateTime.now().microsecondsSinceEpoch}',
+                balanceId: oldBalance.balanceId,
+                amount: amount,
+                date: DateTime.now(),
+                isIncome: item.isIncome,
+                subject: item.subject,
+                description: item.name,
+                type: item.isIncome
+                    ? FinanceTransactionType.income
+                    : FinanceTransactionType.expense,
+                origin: FinanceTransactionOrigin.recurringItem,
+                recurringItemId: item.id,
+                economicFactId: economicFactIdGenerator.next(),
+                notes: item.description,
+              ),
+            );
+
+            changed = true;
+            await saveBalances();
+            await saveTransactions();
+          }
+        }
+
+        _recurringItems[index] = item.copyWith(
+          confirmed: true,
+          realAmount: amount,
         );
+        changed = true;
 
-        transactions.add(
-          FinanceTransaction(
-            id: 'transaction_${DateTime.now().microsecondsSinceEpoch}',
-            balanceId: oldBalance.balanceId,
-            amount: amount,
-            date: DateTime.now(),
-            isIncome: item.isIncome,
-            subject: item.subject,
-            description: item.name,
-            type: item.isIncome
-                ? FinanceTransactionType.income
-                : FinanceTransactionType.expense,
-            origin: FinanceTransactionOrigin.recurringItem,
-            recurringItemId: item.id,
-            economicFactId: economicFactIdGenerator.next(),
-            notes: item.description,
-          ),
-        );
+        if (item.recurringType != FinanceRecurringType.oneShot) {
+          final nextDate = nextDueDateAfterConfirmation(item);
+          final now = DateTime.now();
 
-        await saveBalances();
-        await saveTransactions();
+          _recurringItems.add(
+            item.copyWith(
+              id: 'recurring_${now.microsecondsSinceEpoch}',
+              nextDueDate: nextDate,
+              confirmed: false,
+              realAmount: null,
+            ),
+          );
+        }
+
+        await saveRecurringItems();
+      } finally {
+        if (changed) _markChanged();
       }
-    }
-
-    recurringItems[index] = item.copyWith(confirmed: true, realAmount: amount);
-
-    if (item.recurringType != FinanceRecurringType.oneShot) {
-      final nextDate = nextDueDateAfterConfirmation(item);
-
-      final now = DateTime.now();
-
-      recurringItems.add(
-        item.copyWith(
-          id: 'recurring_${now.microsecondsSinceEpoch}',
-          nextDueDate: nextDate,
-          confirmed: false,
-          realAmount: null,
-        ),
-      );
-    }
-
-    await saveRecurringItems();
+    });
   }
 
   Future<void> addRecurringItem(FinanceRecurringItem item) async {
-    recurringItems.add(item);
+    _recurringItems.add(item);
 
-    await saveRecurringItems();
+    try {
+      await saveRecurringItems();
+    } finally {
+      _markChanged();
+    }
   }
 
   Future<void> removeRecurringItem(String itemId) async {
@@ -1441,7 +1822,7 @@ class FinanceStore {
           ? oldBalance.currentAmount - transaction.amount
           : oldBalance.currentAmount + transaction.amount;
 
-      balances[balanceIndex] = FinanceBalance(
+      _balances[balanceIndex] = FinanceBalance(
         balanceId: oldBalance.balanceId,
         personId: oldBalance.personId,
         name: oldBalance.name,
@@ -1458,15 +1839,21 @@ class FinanceStore {
       );
     }
 
-    transactions.removeWhere(
+    _transactions.removeWhere(
       (transaction) => transaction.recurringItemId == item.id,
     );
 
-    recurringItems.removeAt(itemIndex);
+    _recurringItems.removeAt(itemIndex);
 
-    await saveBalances();
-    await saveTransactions();
-    await saveRecurringItems();
+    await runInNotificationBatch(() async {
+      try {
+        await saveBalances();
+        await saveTransactions();
+        await saveRecurringItems();
+      } finally {
+        _markChanged();
+      }
+    });
   }
 
   Future<void> updateRecurringItem(FinanceRecurringItem updatedItem) async {
@@ -1478,12 +1865,24 @@ class FinanceStore {
       return;
     }
 
-    recurringItems[index] = updatedItem;
+    if (jsonEncode(_recurringItems[index].toJson()) ==
+        jsonEncode(updatedItem.toJson())) {
+      return;
+    }
 
-    await saveRecurringItems();
+    _recurringItems[index] = updatedItem;
+
+    try {
+      await saveRecurringItems();
+    } finally {
+      _markChanged();
+    }
   }
 
-  Future<bool> loadSavedRecurringItems() async {
+  Future<bool> loadSavedRecurringItems() =>
+      _runObservableLoad(_loadSavedRecurringItems);
+
+  Future<bool> _loadSavedRecurringItems() async {
     final jsonList = await PersistenceStore.loadJsonList(
       'finance_recurring_items',
     );
@@ -1492,7 +1891,7 @@ class FinanceStore {
       return false;
     }
 
-    recurringItems
+    _recurringItems
       ..clear()
       ..addAll(jsonList.map(FinanceRecurringItem.fromJson));
 

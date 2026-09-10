@@ -20,6 +20,8 @@ import 'statistiche_screen.dart';
 import 'finance_screen.dart';
 import '../widgets/home_people_panel.dart';
 import '../stores/finance_store.dart';
+import '../stores/expense_store.dart';
+import '../stores/cash_wallet_store.dart';
 
 import '../widgets/finance/finance_time_item_card.dart';
 import '../models/fund_transaction.dart';
@@ -73,6 +75,8 @@ class _HomeScreenState extends State<HomeScreen> {
   IpsStore get ipsStore => widget.ipsStore;
 
   final FinanceStore financeStore = FinanceStore();
+  final ExpenseStore expenseStore = ExpenseStore();
+  final CashWalletStore cashWalletStore = CashWalletStore();
 
   @override
   void initState() {
@@ -80,8 +84,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadFinanceData();
   }
 
-  Future<void> _loadFinanceData() {
-    return FinanceLifecycleCoordinator(
+  Future<void> _loadFinanceData() async {
+    await FinanceLifecycleCoordinator(
       financeStore: financeStore,
       refresh: () {
         if (mounted) {
@@ -89,6 +93,16 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       },
     ).initialize();
+    await expenseStore.load();
+    await cashWalletStore.load();
+  }
+
+  @override
+  void dispose() {
+    financeStore.dispose();
+    expenseStore.dispose();
+    cashWalletStore.dispose();
+    super.dispose();
   }
 
   Future<void> _showDataTransferDialog() async {
@@ -4042,8 +4056,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) =>
-                            FinanceScreen(financeStore: financeStore),
+                        builder: (_) => FinanceScreen(
+                          financeStore: financeStore,
+                          expenseStore: expenseStore,
+                          cashWalletStore: cashWalletStore,
+                        ),
                       ),
                     );
                   },
@@ -4059,7 +4076,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => SpesePage(financeStore: financeStore),
+                        builder: (_) => SpesePage(
+                          financeStore: financeStore,
+                          expenseStore: expenseStore,
+                          cashWalletStore: cashWalletStore,
+                        ),
                       ),
                     );
                   },

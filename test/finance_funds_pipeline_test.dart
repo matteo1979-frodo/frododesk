@@ -6,40 +6,47 @@ import 'package:frododesk/models/finance_fund.dart';
 import 'package:frododesk/models/finance_balance.dart';
 import 'package:frododesk/models/fund_transaction.dart';
 import 'package:frododesk/models/finance_fund_mutation_plan.dart';
+import 'package:frododesk/models/finance_asset_movement.dart';
 import 'package:frododesk/stores/finance_store.dart';
 import 'package:frododesk/screens/finance/finance_funds_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
   test('funds builder groups newest transactions without mutating store', () {
-    final store = FinanceStore();
-    store.funds.add(
-      const FinanceFund(
-        id: 'f1',
-        name: 'Emergenze',
-        description: 'Riserva',
-        amount: 500,
-        protected: true,
-        category: FinanceFundCategory.emergency,
-      ),
+    final store = FinanceStore(
+      initialFunds: const [
+        FinanceFund(
+          id: 'f1',
+          name: 'Emergenze',
+          description: 'Riserva',
+          amount: 500,
+          protected: true,
+          category: FinanceFundCategory.emergency,
+        ),
+      ],
+      initialFundTransactions: [
+        FundTransaction(
+          id: 'old',
+          fundId: 'f1',
+          description: 'A',
+          amount: 10,
+          date: DateTime(2026, 1, 1),
+          type: FundTransactionType.deposit,
+        ),
+        FundTransaction(
+          id: 'new',
+          fundId: 'f1',
+          description: 'B',
+          amount: 20,
+          date: DateTime(2026, 2, 1),
+          type: FundTransactionType.withdraw,
+        ),
+      ],
     );
-    store.fundTransactions.addAll([
-      FundTransaction(
-        id: 'old',
-        fundId: 'f1',
-        description: 'A',
-        amount: 10,
-        date: DateTime(2026, 1, 1),
-        type: FundTransactionType.deposit,
-      ),
-      FundTransaction(
-        id: 'new',
-        fundId: 'f1',
-        description: 'B',
-        amount: 20,
-        date: DateTime(2026, 2, 1),
-        type: FundTransactionType.withdraw,
-      ),
-    ]);
 
     final viewData = const FinanceFundsViewBuilder().build(store);
 
@@ -88,9 +95,9 @@ void main() {
   );
 
   test('funds coordinator commits a direct transfer between funds', () async {
-    final store = _RecordingFundStore()
-      ..funds.addAll([
-        const FinanceFund(
+    final store = _RecordingFundStore(
+      initialFunds: const [
+        FinanceFund(
           id: 'vacanze',
           name: 'Vacanze',
           description: '',
@@ -98,7 +105,7 @@ void main() {
           protected: false,
           category: FinanceFundCategory.generic,
         ),
-        const FinanceFund(
+        FinanceFund(
           id: 'auto',
           name: 'Auto',
           description: '',
@@ -106,7 +113,8 @@ void main() {
           protected: false,
           category: FinanceFundCategory.auto,
         ),
-      ]);
+      ],
+    );
     final coordinator = FinanceFundsCoordinator(
       financeStore: store,
       clock: () => DateTime(2026, 8, 15),
@@ -142,11 +150,146 @@ void main() {
   });
 
   testWidgets(
+    'funds page uses Italian euro presentation for balances and history',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(900, 2200));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final store = FinanceStore(
+        initialFunds: const [
+          FinanceFund(
+            id: 'integer',
+            name: 'Intero',
+            description: '',
+            amount: 100,
+            protected: false,
+            category: FinanceFundCategory.generic,
+          ),
+          FinanceFund(
+            id: 'cents',
+            name: 'Centesimi',
+            description: '',
+            amount: 100.25,
+            protected: false,
+            category: FinanceFundCategory.generic,
+          ),
+          FinanceFund(
+            id: 'large',
+            name: 'Milioni',
+            description: '',
+            amount: 1234567.89,
+            protected: false,
+            category: FinanceFundCategory.generic,
+          ),
+          FinanceFund(
+            id: 'negative',
+            name: 'Negativo',
+            description: '',
+            amount: -100.25,
+            protected: false,
+            category: FinanceFundCategory.generic,
+          ),
+          FinanceFund(
+            id: 'zero',
+            name: 'Zero',
+            description: '',
+            amount: -0.0,
+            protected: false,
+            category: FinanceFundCategory.generic,
+          ),
+        ],
+        initialAssetMovements: [
+          FinanceAssetMovement(
+            id: 'deposit',
+            fundId: 'integer',
+            kind: FinanceAssetMovementKind.fundAllocation,
+            description: 'Versamento',
+            occurredAt: DateTime(2026, 8, 21),
+            legs: const [
+              FinanceAssetLeg(
+                type: FinanceAssetLegType.balance,
+                referenceId: 'account',
+                delta: -100,
+              ),
+              FinanceAssetLeg(
+                type: FinanceAssetLegType.fund,
+                referenceId: 'integer',
+                delta: 100,
+              ),
+            ],
+          ),
+          FinanceAssetMovement(
+            id: 'withdrawal',
+            fundId: 'integer',
+            kind: FinanceAssetMovementKind.fundRelease,
+            description: 'Prelievo',
+            occurredAt: DateTime(2026, 8, 20),
+            legs: const [
+              FinanceAssetLeg(
+                type: FinanceAssetLegType.fund,
+                referenceId: 'integer',
+                delta: -100.25,
+              ),
+              FinanceAssetLeg(
+                type: FinanceAssetLegType.balance,
+                referenceId: 'account',
+                delta: 100.25,
+              ),
+            ],
+          ),
+          FinanceAssetMovement(
+            id: 'fund-transfer',
+            fundId: 'integer',
+            kind: FinanceAssetMovementKind.fundTransferOut,
+            description: 'Trasferimento',
+            occurredAt: DateTime(2026, 8, 19),
+            legs: const [
+              FinanceAssetLeg(
+                type: FinanceAssetLegType.fund,
+                referenceId: 'integer',
+                delta: -1234.56,
+              ),
+              FinanceAssetLeg(
+                type: FinanceAssetLegType.fund,
+                referenceId: 'cents',
+                delta: 1234.56,
+              ),
+            ],
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: FinanceFundsPage(
+            coordinator: FinanceFundsCoordinator(financeStore: store),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('€100,00'), findsOneWidget);
+      expect(find.text('€100,25'), findsOneWidget);
+      expect(find.text('€1.234.567,89'), findsOneWidget);
+      expect(find.text('-€100,25'), findsOneWidget);
+      expect(find.text('€0,00'), findsOneWidget);
+
+      await tester.tap(find.text('Intero'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('+€100,00'), findsOneWidget);
+      expect(find.text('-€100,25'), findsWidgets);
+      expect(find.text('-€1.234,56'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
     'new fund guides account selection and enables save only when totals match',
     (tester) async {
-      final store = FinanceStore()
-        ..balances.add(_balance('matteo', 50))
-        ..balances.add(_balance('chiara', 100));
+      final store = FinanceStore(
+        initialBalances: [_balance('matteo', 50), _balance('chiara', 100)],
+      );
       await tester.pumpWidget(
         MaterialApp(
           home: FinanceFundsPage(
@@ -200,10 +343,10 @@ void main() {
   testWidgets('move money shows account amount only after selection', (
     tester,
   ) async {
-    final store = FinanceStore()
-      ..balances.add(_balance('matteo', 300))
-      ..funds.add(
-        const FinanceFund(
+    final store = FinanceStore(
+      initialBalances: [_balance('matteo', 300)],
+      initialFunds: const [
+        FinanceFund(
           id: 'vacanze',
           name: 'Vacanze',
           description: 'Estate',
@@ -211,7 +354,8 @@ void main() {
           protected: false,
           category: FinanceFundCategory.generic,
         ),
-      );
+      ],
+    );
     await tester.pumpWidget(
       MaterialApp(
         home: FinanceFundsPage(
@@ -245,9 +389,9 @@ void main() {
   testWidgets('move money transfers directly between two funds', (
     tester,
   ) async {
-    final store = FinanceStore()
-      ..funds.addAll([
-        const FinanceFund(
+    final store = FinanceStore(
+      initialFunds: const [
+        FinanceFund(
           id: 'vacanze',
           name: 'Vacanze',
           description: 'Estate',
@@ -255,7 +399,7 @@ void main() {
           protected: false,
           category: FinanceFundCategory.generic,
         ),
-        const FinanceFund(
+        FinanceFund(
           id: 'auto',
           name: 'Fondo Auto',
           description: 'Manutenzione',
@@ -263,7 +407,8 @@ void main() {
           protected: false,
           category: FinanceFundCategory.auto,
         ),
-      ]);
+      ],
+    );
     await tester.pumpWidget(
       MaterialApp(
         home: FinanceFundsPage(
@@ -296,9 +441,9 @@ void main() {
   testWidgets('fund transfer history resolves both fund names from its legs', (
     tester,
   ) async {
-    final store = _RecordingFundStore()
-      ..funds.addAll([
-        const FinanceFund(
+    final store = _RecordingFundStore(
+      initialFunds: const [
+        FinanceFund(
           id: 'vacanze',
           name: 'vacanze',
           description: 'Estate',
@@ -306,7 +451,7 @@ void main() {
           protected: false,
           category: FinanceFundCategory.generic,
         ),
-        const FinanceFund(
+        FinanceFund(
           id: 'auto',
           name: 'fondo Auto',
           description: 'Manutenzione',
@@ -314,7 +459,8 @@ void main() {
           protected: false,
           category: FinanceFundCategory.auto,
         ),
-      ]);
+      ],
+    );
     final coordinator = FinanceFundsCoordinator(
       financeStore: store,
       clock: () => DateTime(2026, 8, 16),
@@ -350,29 +496,19 @@ FinanceBalance _balance(String id, double amount) => FinanceBalance(
 );
 
 class _RecordingFundStore extends FinanceStore {
+  _RecordingFundStore({super.initialFunds});
+
   final operations = <String>[];
 
   @override
   Future<void> updateFund(FinanceFund updatedFund) async {
     operations.add('updateFund');
-    final index = funds.indexWhere((fund) => fund.id == updatedFund.id);
-    funds[index] = updatedFund;
+    await super.updateFund(updatedFund);
   }
 
   @override
   Future<void> commitFundPlan(FinanceFundMutationPlan plan) async {
     operations.add('commitFundPlan');
-    balances
-      ..clear()
-      ..addAll(plan.balances);
-    funds
-      ..clear()
-      ..addAll(plan.funds);
-    assetMovements
-      ..clear()
-      ..addAll(plan.movements);
-    transactions
-      ..clear()
-      ..addAll(plan.transactions);
+    await super.commitFundPlan(plan);
   }
 }

@@ -1,40 +1,45 @@
+import 'package:flutter/foundation.dart';
+
 import '../logic/persistence_store.dart';
 import '../models/real_expense.dart';
 
-class ExpenseStore {
+class ExpenseStore extends ChangeNotifier {
   static const String _storageKey = 'real_expenses_v1';
 
-  final List<RealExpense> expenses = [];
+  final List<RealExpense> _expenses = [];
 
-  List<RealExpense> get all => List.unmodifiable(expenses);
+  List<RealExpense> get all => List.unmodifiable(_expenses);
 
   Future<void> load() async {
     final jsonList = await PersistenceStore.loadJsonList(_storageKey);
 
-    expenses
+    _expenses
       ..clear()
       ..addAll(jsonList.map(RealExpense.fromJson));
+    notifyListeners();
   }
 
   Future<void> save() async {
-    final jsonList = expenses.map((expense) => expense.toJson()).toList();
+    final jsonList = _expenses.map((expense) => expense.toJson()).toList();
 
     await PersistenceStore.saveJsonList(_storageKey, jsonList);
   }
 
   Future<void> addExpense(RealExpense expense) async {
-    expenses.add(expense);
+    _expenses.add(expense);
     await save();
+    notifyListeners();
   }
 
   Future<void> removeExpense(String expenseId) async {
-    expenses.removeWhere((expense) => expense.id == expenseId);
+    _expenses.removeWhere((expense) => expense.id == expenseId);
     await save();
+    notifyListeners();
   }
 
   RealExpense? findById(String expenseId) {
     try {
-      return expenses.firstWhere((expense) => expense.id == expenseId);
+      return _expenses.firstWhere((expense) => expense.id == expenseId);
     } catch (_) {
       return null;
     }

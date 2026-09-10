@@ -152,8 +152,8 @@ void main() {
       economicFactIdGenerator: EconomicFactIdGenerator.from(
         () => 'fact_${sequence++}',
       ),
+      initialBalances: [_balance('from', 1000), _balance('to', 0)],
     );
-    store.balances.addAll([_balance('from', 1000), _balance('to', 0)]);
 
     await store.transferBetweenBalances(
       fromBalanceId: 'from',

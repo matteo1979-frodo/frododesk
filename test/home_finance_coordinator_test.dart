@@ -16,7 +16,10 @@ void main() {
       financeStore: financeStore,
     ).build(observedAt: observedAt);
 
-    expect(viewData.modulePresentation.subtitle, 'Saldo €3750 • Margine €3882');
+    expect(
+      viewData.modulePresentation.subtitle,
+      'Saldo €3.750,00 • Margine €3.882,00',
+    );
     expect(viewData.modulePresentation.badgeText, 'Stabile');
     expect(viewData.modulePresentation.state, FinanceModuleState.stable);
     expect(viewData.pressurePresentation.state, isA<FinancePressureState>());

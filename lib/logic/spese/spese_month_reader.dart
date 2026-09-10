@@ -2,6 +2,7 @@ import '../../models/real_expense.dart';
 import '../../models/finance_recurring_item.dart';
 import '../../models/frodo_observation.dart';
 import '../../core/frododesk_modules.dart';
+import '../../utils/euro_formatter.dart';
 
 class SpeseMonthReader {
   static List<FrodoObservation> analyze({
@@ -314,7 +315,7 @@ class SpeseMonthReader {
       category: FrodoObservationCategory.expenses,
       title: 'Totale mese',
       message:
-          'Il totale delle spese reali registrate nel mese è €${total.toStringAsFixed(0)}.',
+          'Il totale delle spese reali registrate nel mese è ${EuroFormatter.format(total)}.',
       priority: 20,
       level: FrodoObservationLevel.info,
       createdAt: now,

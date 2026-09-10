@@ -11,17 +11,18 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   test('legacy migration preserves funds and their previous history', () async {
-    final store = FinanceStore();
-    store.funds.add(_fund(500));
-    store.fundTransactions.add(
-      FundTransaction(
-        id: 'old-withdraw',
-        fundId: 'vacanze',
-        description: 'Acconto viaggio',
-        amount: 100,
-        date: DateTime(2025, 6, 1),
-        type: FundTransactionType.withdraw,
-      ),
+    final store = FinanceStore(
+      initialFunds: [_fund(500)],
+      initialFundTransactions: [
+        FundTransaction(
+          id: 'old-withdraw',
+          fundId: 'vacanze',
+          description: 'Acconto viaggio',
+          amount: 100,
+          date: DateTime(2025, 6, 1),
+          type: FundTransactionType.withdraw,
+        ),
+      ],
     );
 
     await store.migrateLegacyPortfolio();
@@ -46,13 +47,13 @@ void main() {
   });
 
   test('later account saves keep the versioned portfolio coherent', () async {
-    final store = FinanceStore();
-    store.balances.add(_balance(1000));
-    store.funds.add(_fund(500));
+    final store = FinanceStore(
+      initialBalances: [_balance(1000)],
+      initialFunds: [_fund(500)],
+    );
     await store.migrateLegacyPortfolio();
 
-    store.balances[0] = _balance(750);
-    await store.saveBalances();
+    await store.replaceBalance(_balance(750));
 
     final restored = FinanceStore();
     expect(await restored.loadSavedPortfolio(), isTrue);

@@ -782,3 +782,61 @@ L'obiettivo sarà consolidare definitivamente l'architettura interna di FrodoDes
 ━━━━━━━━━━━━━━━━━━
 
 FINE DOCUMENTO
+
+---
+
+## AGGIORNAMENTO 9 SETTEMBRE 2026
+
+### H8.3J.0B.5 — STATO DEL COLLAUDO
+
+**Stato: Collaudo superato nel perimetro verificato; chiusura proposta.**
+
+Il collaudo è stato eseguito sulla copia diagnostica del profilo storico, profilo interno `Default`, all’origine `http://localhost:8080`.
+
+È stata verificata la stabilità della baseline economica vuota attraverso due bootstrap completi.
+
+Il percorso controllato Conto → Fondo → Conto ha confermato, anche dopo chiusura e nuovo avvio:
+
+- saldo conto €850;
+- saldo fondo €150;
+- due movimenti patrimoniali persistenti;
+- conservazione di ID, `economicFactId`, date, gambe e `referenceId`;
+- riferimenti risolvibili;
+- due movimenti nuovamente visibili nel Ledger;
+- wallet strutturali a zero;
+- 15/15 chiavi non economiche invariate;
+- snapshot tecnico coerente con patrimonio complessivo €1.000.
+
+La causa dell’anomalia storica resta non dimostrata.
+
+Le anomalie WebSocket, BFCache, `client.js` e `removeChild` restano osservazioni separate e non risolte.
+
+Collector e interfaccia di Ledger 2.0 non rientrano nel collaudo.
+
+Il codice verificato apparteneva alla working tree locale basata su `bc4ac93d97bba7ce8ba19e2190ebab471712b911`, contenente modifiche locali e file non tracciati. Il diff non è stato congelato e la riproducibilità resta limitata.
+
+**Stato: Collaudo superato nel perimetro verificato; chiusura proposta.**
+
+---
+
+## AGGIORNAMENTO 9 SETTEMBRE 2026 — DECISIONE FINALE
+
+### H8.3J.0B.5 — CHIUSURA APPROVATA E RECUPERO DATI PENDENTE
+
+**H8.3J.0B.5 — Chiusura approvata il 9 settembre 2026 nel perimetro collaudato.**
+
+La chiusura certifica il collaudo corrente nella copia diagnostica del profilo storico e non il ripristino della situazione economica reale.
+
+Le 15 chiavi non economiche verificate sono preservate rispetto al backup del 28 agosto e risultano presenti anche nella copia diagnostica attuale.
+
+Nei backup esaminati sono presenti quattro fondi, 14 movimenti patrimoniali, due `fundTransactions`, 81 transazioni legacy, 37 ricorrenze, 16 spese, wallet storici e 48 snapshot. Questi dati economici storici non sono stati ripristinati.
+
+Gli oggetti completi dei conti e i saldi individuali mancano nelle fonti esaminate; la perdita definitiva non è dimostrata. Il recupero richiede una fonte aggiuntiva o una ricostruzione verificata dei conti e la successiva riconciliazione dei riferimenti.
+
+Nessun ripristino globale del backup diagnostico è autorizzato.
+
+Restano invariati la causa storica non dimostrata, le anomalie browser/debug separate e il limite di riproducibilità della working tree non congelata.
+
+Collector e interfaccia di Ledger 2.0 restano esclusi.
+
+**Stato finale: H8.3J.0B.5 chiuso nel perimetro collaudato; recupero dei dati economici reali pendente.**

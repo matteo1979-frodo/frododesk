@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../models/finance_month_projection.dart';
 import '../../stores/finance_store.dart';
+import '../../utils/euro_formatter.dart';
 
 typedef FinanceMonthTap =
     Future<void> Function(FinanceMonthProjection projection, Color color);
@@ -173,7 +174,7 @@ class _FinanceYearDashboardState extends State<FinanceYearDashboard> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        "€${projection.expectedMargin.toStringAsFixed(0)}",
+                        EuroFormatter.format(projection.expectedMargin),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: color,

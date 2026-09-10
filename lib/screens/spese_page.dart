@@ -14,6 +14,7 @@ import '../logic/spese/spese_mutation_coordinator.dart';
 import '../models/economic_event.dart';
 import '../models/spese_command.dart';
 import '../models/spese_snapshot.dart';
+import '../utils/euro_formatter.dart';
 
 const _speseCommandBuilder = SpeseCommandBuilder();
 
@@ -33,17 +34,22 @@ SpeseCommand? _prepareSpeseCommand(
 
 class SpesePage extends StatefulWidget {
   final FinanceStore financeStore;
+  final ExpenseStore expenseStore;
+  final CashWalletStore cashWalletStore;
 
-  const SpesePage({super.key, required this.financeStore});
+  const SpesePage({
+    super.key,
+    required this.financeStore,
+    required this.expenseStore,
+    required this.cashWalletStore,
+  });
 
   @override
   State<SpesePage> createState() => _SpesePageState();
 }
 
 class _SpesePageState extends State<SpesePage> {
-  final ExpenseStore expenseStore = ExpenseStore();
   final ExpenseCategoryStore categoryStore = ExpenseCategoryStore();
-  final CashWalletStore cashWalletStore = CashWalletStore();
   late final SpeseCoordinator coordinator;
   late final SpeseMutationCoordinator mutationCoordinator;
   late SpeseSnapshot snapshot;
@@ -53,23 +59,22 @@ class _SpesePageState extends State<SpesePage> {
     super.initState();
     coordinator = SpeseCoordinator(
       financeStore: widget.financeStore,
-      expenseStore: expenseStore,
+      expenseStore: widget.expenseStore,
       categoryStore: categoryStore,
-      cashWalletStore: cashWalletStore,
+      cashWalletStore: widget.cashWalletStore,
     );
     mutationCoordinator = SpeseMutationCoordinator(
       financeStore: widget.financeStore,
-      expenseStore: expenseStore,
-      cashWalletStore: cashWalletStore,
+      expenseStore: widget.expenseStore,
+      cashWalletStore: widget.cashWalletStore,
     );
     snapshot = coordinator.build(observedAt: DateTime.now());
-    _loadStores();
+    _loadCategoryStore();
   }
 
-  Future<void> _loadStores() async {
-    final loadedSnapshot = await coordinator.initialize(
-      observedAt: DateTime.now(),
-    );
+  Future<void> _loadCategoryStore() async {
+    await categoryStore.load();
+    final loadedSnapshot = coordinator.build(observedAt: DateTime.now());
     if (mounted) {
       setState(() => snapshot = loadedSnapshot);
     }
@@ -229,7 +234,7 @@ class _SpesePageState extends State<SpesePage> {
                                 ),
                               ),
                               Text(
-                                expense.displayAmount,
+                                EuroFormatter.format(expense.amount),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 18,
@@ -422,7 +427,7 @@ class _RealExpenseAccountPage extends StatelessWidget {
                         icon: Icons.account_balance_wallet_rounded,
                         title: balance.name,
                         subtitle:
-                            "Saldo: €${balance.availableAmount.toStringAsFixed(2)}",
+                            "Saldo: ${EuroFormatter.format(balance.availableAmount)}",
                         color: const Color(0xFF42A5F5),
                         onTap: () {
                           Navigator.of(context).push(
@@ -534,7 +539,7 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  "Saldo attuale: €${widget.balanceAmount.toStringAsFixed(2)}",
+                  "Saldo attuale: ${EuroFormatter.format(widget.balanceAmount)}",
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 14,
@@ -833,7 +838,7 @@ class _SpeseHeroCard extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           Text(
-            "€${currentMonthTotal.toStringAsFixed(0)}",
+            EuroFormatter.format(currentMonthTotal),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 42,
@@ -884,7 +889,7 @@ class _SpeseMainGrid extends StatelessWidget {
             Expanded(
               child: _MiniSpeseCard(
                 title: "Portafogli contanti",
-                value: "€${cashWalletTotal.toStringAsFixed(0)}",
+                value: EuroFormatter.format(cashWalletTotal),
                 icon: Icons.payments_rounded,
                 color: Color(0xFF66BB6A),
               ),
@@ -906,7 +911,7 @@ class _SpeseMainGrid extends StatelessWidget {
             Expanded(
               child: _MiniSpeseCard(
                 title: "Ultimi 7 giorni",
-                value: "€${last7DaysTotal.toStringAsFixed(0)}",
+                value: EuroFormatter.format(last7DaysTotal),
                 icon: Icons.calendar_month_rounded,
                 color: Color(0xFFAB47BC),
               ),
@@ -1343,7 +1348,9 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  Text("Importo: ${expense.displayAmount}"),
+                                  Text(
+                                    "Importo: ${EuroFormatter.format(expense.amount)}",
+                                  ),
                                   Text("Categoria: ${expense.category}"),
                                   Text("Conto: ${expense.balanceName}"),
                                 ],
@@ -1604,8 +1611,8 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                             ),
                             Text(
                               expense.isIncome
-                                  ? "+${expense.displayAmount}"
-                                  : expense.displayAmount,
+                                  ? EuroFormatter.formatSigned(expense.amount)
+                                  : EuroFormatter.format(expense.amount),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
@@ -1682,7 +1689,7 @@ class _CashWithdrawalAccountPage extends StatelessWidget {
                         icon: Icons.account_balance_wallet_rounded,
                         title: balance.name,
                         subtitle:
-                            "Saldo: €${balance.availableAmount.toStringAsFixed(2)}",
+                            "Saldo: ${EuroFormatter.format(balance.availableAmount)}",
                         color: const Color(0xFF66BB6A),
                         onTap: () {
                           Navigator.of(context).push(
@@ -1784,7 +1791,7 @@ class _CashWithdrawalFormPageState extends State<_CashWithdrawalFormPage> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  "Saldo attuale: €${widget.balanceAmount.toStringAsFixed(2)}",
+                  "Saldo attuale: ${EuroFormatter.format(widget.balanceAmount)}",
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 14,
@@ -2023,7 +2030,7 @@ class _ExtraIncomeAccountPage extends StatelessWidget {
                         icon: Icons.account_balance_wallet_rounded,
                         title: balance.name,
                         subtitle:
-                            "Saldo: €${balance.availableAmount.toStringAsFixed(2)}",
+                            "Saldo: ${EuroFormatter.format(balance.availableAmount)}",
                         color: const Color(0xFF42A5F5),
                         onTap: () {
                           Navigator.of(context).push(
@@ -2123,7 +2130,7 @@ class _ExtraIncomeFormPageState extends State<_ExtraIncomeFormPage> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  "Saldo attuale: €${widget.balanceAmount.toStringAsFixed(2)}",
+                  "Saldo attuale: ${EuroFormatter.format(widget.balanceAmount)}",
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 14,

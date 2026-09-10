@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../models/finance_month_projection.dart';
 import '../../models/finance_recurring_item.dart';
 import '../../stores/finance_store.dart';
+import '../../utils/euro_formatter.dart';
 
 class FinanceMonthDetailDialog extends StatelessWidget {
   final FinanceStore financeStore;
@@ -28,21 +29,21 @@ class FinanceMonthDetailDialog extends StatelessWidget {
           children: [
             _compactMonthStat(
               title: "Entrate",
-              value: "€${projection.expectedIncome.toStringAsFixed(0)}",
+              value: EuroFormatter.format(projection.expectedIncome),
               icon: Icons.arrow_downward_rounded,
               color: const Color(0xFF43A047),
             ),
             const SizedBox(width: 10),
             _compactMonthStat(
               title: "Uscite",
-              value: "€${projection.expectedExpenses.toStringAsFixed(0)}",
+              value: EuroFormatter.format(projection.expectedExpenses),
               icon: Icons.arrow_upward_rounded,
               color: const Color(0xFFE53935),
             ),
             const SizedBox(width: 10),
             _compactMonthStat(
               title: "Margine",
-              value: "€${projection.expectedMargin.toStringAsFixed(0)}",
+              value: EuroFormatter.format(projection.expectedMargin),
               icon: Icons.trending_up_rounded,
               color: projection.expectedMargin < 0
                   ? const Color(0xFFE53935)
@@ -266,7 +267,7 @@ class FinanceMonthDetailDialog extends StatelessWidget {
           ),
         ),
         Text(
-          "€${value.toStringAsFixed(0)}",
+          EuroFormatter.format(value),
           style: TextStyle(
             fontWeight: FontWeight.w900,
             fontSize: 17,
@@ -414,7 +415,7 @@ class FinanceMonthDetailDialog extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            "€${item.expectedAmount.toStringAsFixed(0)}",
+            EuroFormatter.format(item.expectedAmount),
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.w900,

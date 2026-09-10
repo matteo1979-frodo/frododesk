@@ -53,21 +53,18 @@ void main() {
   });
 
   test('finance and expenses cards navigate with the Home finance store', () {
-    expect(
-      financeModuleCard,
-      contains('FinanceScreen(financeStore: financeStore)'),
-    );
-    expect(
-      expensesModuleCard,
-      contains('SpesePage(financeStore: financeStore)'),
-    );
+    expect(financeModuleCard, contains('FinanceScreen('));
+    expect(financeModuleCard, contains('financeStore: financeStore'));
+    expect(financeModuleCard, contains('expenseStore: expenseStore'));
+    expect(financeModuleCard, contains('cashWalletStore: cashWalletStore'));
+    expect(expensesModuleCard, contains('SpesePage('));
+    expect(expensesModuleCard, contains('financeStore: financeStore'));
+    expect(expensesModuleCard, contains('expenseStore: expenseStore'));
+    expect(expensesModuleCard, contains('cashWalletStore: cashWalletStore'));
   });
 
   test('finance card opens FinanceScreen and not the legacy finance popup', () {
-    expect(
-      financeModuleCard,
-      contains('FinanceScreen(financeStore: financeStore)'),
-    );
+    expect(financeModuleCard, contains('FinanceScreen('));
     expect(financeModuleCard, isNot(contains('_showFinancePopup')));
     expect(financeModuleCard, isNot(contains('showDialog')));
     expect(

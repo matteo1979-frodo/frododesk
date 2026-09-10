@@ -87,8 +87,9 @@ void main() {
 
   test('coordinator orchestrates stores and delegates aggregation', () async {
     final operations = <String>[];
-    final expenseStore = _RecordingExpenseStore(operations)
-      ..expenses.add(_expense('one', 25, 'Casa', DateTime(2026, 8, 12)));
+    final expenseStore = _RecordingExpenseStore(operations, [
+      _expense('one', 25, 'Casa', DateTime(2026, 8, 12)),
+    ]);
     final categoryStore = _RecordingCategoryStore(operations);
     final walletStore = _RecordingCashWalletStore(operations);
     final coordinator = SpeseCoordinator(
@@ -111,7 +112,13 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(home: SpesePage(financeStore: FinanceStore())),
+      MaterialApp(
+        home: SpesePage(
+          financeStore: FinanceStore(),
+          expenseStore: ExpenseStore(),
+          cashWalletStore: CashWalletStore(),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -119,6 +126,154 @@ void main() {
     expect(find.text('Controllo Spese Reali'), findsOneWidget);
     expect(find.text('Nuovo movimento'), findsOneWidget);
     expect(find.text('Lettura del mese'), findsOneWidget);
+  });
+
+  testWidgets('Spese monetary totals preserve cents in Italian format', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1400, 1800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final now = DateTime.now();
+    final expenseStore = ExpenseStore();
+    await expenseStore.addExpense(
+      _expense('older-cents', 37.57, 'Casa', DateTime(now.year, now.month, 1)),
+    );
+    await expenseStore.addExpense(
+      _expense(
+        'one-cent',
+        0.01,
+        'Casa',
+        DateTime(now.year, now.month, now.day),
+      ),
+    );
+    final walletStore = CashWalletStore();
+    await walletStore.addCash(walletId: 'wallet_matteo', amount: 1234.56);
+
+    final snapshot = const SpeseMonthSnapshotBuilder().build(
+      expenses: expenseStore.all,
+      cashWallets: walletStore.all,
+      balances: const [],
+      categories: const [],
+      observations: const [],
+      observedAt: now,
+    );
+    expect(snapshot.currentMonthTotal, closeTo(37.58, 0.000001));
+    expect(snapshot.last7DaysTotal, closeTo(0.01, 0.000001));
+    expect(snapshot.cashWalletTotal, closeTo(1234.56, 0.000001));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SpesePage(
+          financeStore: FinanceStore(),
+          expenseStore: expenseStore,
+          cashWalletStore: walletStore,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('€37,58'), findsOneWidget);
+    expect(find.text('€0,01'), findsNWidgets(2));
+    expect(find.text('€1.234,56'), findsOneWidget);
+  });
+
+  testWidgets('Spese monetary totals always show two decimal digits', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1400, 1800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final now = DateTime.now();
+    final expenseStore = ExpenseStore();
+    await expenseStore.addExpense(
+      _expense('integer', 38, 'Casa', DateTime(now.year, now.month, now.day)),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SpesePage(
+          financeStore: FinanceStore(),
+          expenseStore: expenseStore,
+          cashWalletStore: CashWalletStore(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('€38,00'), findsNWidgets(3));
+  });
+
+  testWidgets('Spese movements use the shared Italian euro presentation', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(900, 1800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final now = DateTime.now();
+    final expenseStore = ExpenseStore();
+    for (final expense in <RealExpense>[
+      _expense('Intera', 100, 'Casa', now),
+      _expense('Centesimi', 100.25, 'Casa', now),
+      _expense('Grande', 1234567.89, 'Casa', now),
+      _expense('Negativa', -100.25, 'Casa', now),
+      _expense('Zero', -0.0, 'Casa', now),
+      RealExpense(
+        id: 'income',
+        balanceId: 'conto',
+        balanceName: 'Conto',
+        amount: 10,
+        description: 'Entrata extra',
+        category: 'Entrata extra',
+        date: now,
+        isIncome: true,
+      ),
+      RealExpense(
+        id: 'withdrawal',
+        balanceId: 'conto',
+        balanceName: 'Conto',
+        amount: 1234.56,
+        description: 'Prelievo contanti',
+        category: 'Portafoglio contanti',
+        date: now,
+        isCashWithdrawal: true,
+        cashWalletId: 'wallet_matteo',
+      ),
+    ]) {
+      await expenseStore.addExpense(expense);
+    }
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SpesePage(
+          financeStore: FinanceStore(),
+          expenseStore: expenseStore,
+          cashWalletStore: CashWalletStore(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Vedi storico mese'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('€100,00'), findsWidgets);
+    expect(find.text('€100,25'), findsWidgets);
+    expect(find.text('€1.234.567,89'), findsWidgets);
+    expect(find.text('-€100,25'), findsWidgets);
+    expect(find.text('€0,00'), findsWidgets);
+    expect(find.text('+€10,00'), findsWidgets);
+    expect(find.text('€1.234,56'), findsWidgets);
+
+    await tester.tap(find.text('Centesimi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Importo: €100,25'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  test('Spese page delegates monetary output to EuroFormatter', () {
+    final page = File('lib/screens/spese_page.dart').readAsStringSync();
+
+    expect(page, contains("import '../utils/euro_formatter.dart';"));
+    expect(page, isNot(contains('_speseMoneyFormat')));
+    expect(page, isNot(contains('_formatSpeseMoney')));
   });
 
   test(
@@ -177,8 +332,12 @@ FrodoObservation _observation(DateTime createdAt) => FrodoObservation(
 
 class _RecordingExpenseStore extends ExpenseStore {
   final List<String> operations;
+  final List<RealExpense> seed;
 
-  _RecordingExpenseStore(this.operations);
+  _RecordingExpenseStore(this.operations, [this.seed = const []]);
+
+  @override
+  List<RealExpense> get all => List.unmodifiable(seed);
 
   @override
   Future<void> load() async => operations.add('expenses.load');

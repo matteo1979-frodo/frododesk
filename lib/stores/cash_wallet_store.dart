@@ -1,10 +1,12 @@
+import 'package:flutter/foundation.dart';
+
 import '../logic/persistence_store.dart';
 import '../models/cash_wallet.dart';
 
-class CashWalletStore {
+class CashWalletStore extends ChangeNotifier {
   static const String _storageKey = 'cash_wallets_v1';
 
-  final List<CashWallet> wallets = [
+  final List<CashWallet> _wallets = [
     const CashWallet(
       id: 'wallet_matteo',
       personId: 'matteo',
@@ -19,27 +21,28 @@ class CashWalletStore {
     ),
   ];
 
-  List<CashWallet> get all => List.unmodifiable(wallets);
+  List<CashWallet> get all => List.unmodifiable(_wallets);
 
   Future<void> load() async {
     final jsonList = await PersistenceStore.loadJsonList(_storageKey);
 
-    if (jsonList.isEmpty) return;
-
-    wallets
-      ..clear()
-      ..addAll(jsonList.map(CashWallet.fromJson));
+    if (jsonList.isNotEmpty) {
+      _wallets
+        ..clear()
+        ..addAll(jsonList.map(CashWallet.fromJson));
+    }
+    notifyListeners();
   }
 
   Future<void> save() async {
-    final jsonList = wallets.map((wallet) => wallet.toJson()).toList();
+    final jsonList = _wallets.map((wallet) => wallet.toJson()).toList();
 
     await PersistenceStore.saveJsonList(_storageKey, jsonList);
   }
 
   CashWallet? findById(String id) {
     try {
-      return wallets.firstWhere((wallet) => wallet.id == id);
+      return _wallets.firstWhere((wallet) => wallet.id == id);
     } catch (_) {
       return null;
     }
@@ -49,29 +52,31 @@ class CashWalletStore {
     required String walletId,
     required double amount,
   }) async {
-    final index = wallets.indexWhere((wallet) => wallet.id == walletId);
+    final index = _wallets.indexWhere((wallet) => wallet.id == walletId);
 
     if (index == -1) return;
 
-    final old = wallets[index];
+    final old = _wallets[index];
 
-    wallets[index] = old.copyWith(currentAmount: old.currentAmount + amount);
+    _wallets[index] = old.copyWith(currentAmount: old.currentAmount + amount);
 
     await save();
+    notifyListeners();
   }
 
   Future<void> removeCash({
     required String walletId,
     required double amount,
   }) async {
-    final index = wallets.indexWhere((wallet) => wallet.id == walletId);
+    final index = _wallets.indexWhere((wallet) => wallet.id == walletId);
 
     if (index == -1) return;
 
-    final old = wallets[index];
+    final old = _wallets[index];
 
-    wallets[index] = old.copyWith(currentAmount: old.currentAmount - amount);
+    _wallets[index] = old.copyWith(currentAmount: old.currentAmount - amount);
 
     await save();
+    notifyListeners();
   }
 }
