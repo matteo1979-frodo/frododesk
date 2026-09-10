@@ -268,6 +268,10 @@ class FinanceStore extends ChangeNotifier {
 
   Future<bool> addLinkedItem(FinanceAccountLinkedItem item) async {
     if (_linkedItems.any((current) => current.id == item.id)) return false;
+    if (_portfolioV3Authoritative) {
+      await _commitLinkedItemsCandidate([..._linkedItems, item]);
+      return true;
+    }
     _linkedItems.add(item);
     try {
       await saveLinkedItems();
@@ -282,6 +286,14 @@ class FinanceStore extends ChangeNotifier {
     if (index == -1 || _sameLinkedItem(_linkedItems[index], item)) {
       return false;
     }
+    if (_portfolioV3Authoritative) {
+      final candidateLinkedItems = List<FinanceAccountLinkedItem>.of(
+        _linkedItems,
+      );
+      candidateLinkedItems[index] = item;
+      await _commitLinkedItemsCandidate(candidateLinkedItems);
+      return true;
+    }
     _linkedItems[index] = item;
     try {
       await saveLinkedItems();
@@ -289,6 +301,26 @@ class FinanceStore extends ChangeNotifier {
       _markChanged();
     }
     return true;
+  }
+
+  Future<void> _commitLinkedItemsCandidate(
+    Iterable<FinanceAccountLinkedItem> candidateLinkedItems,
+  ) async {
+    final result = await commitPortfolioV3Candidate(
+      (current) => FinancePortfolioV3(
+        balances: current.balances,
+        funds: current.funds,
+        assetMovements: current.assetMovements,
+        transactions: current.transactions,
+        fundTransactions: current.fundTransactions,
+        linkedItems: candidateLinkedItems,
+      ),
+    );
+    if (!result.isSuccess) {
+      throw StateError(
+        'Finance V3 linked item commit failed: ${result.errors.join('; ')}',
+      );
+    }
   }
 
   Future<bool> setLinkedItemActive(String itemId, bool active) async {
@@ -318,6 +350,7 @@ class FinanceStore extends ChangeNotifier {
   ) =>
       left.id == right.id &&
       left.balanceId == right.balanceId &&
+      left.autonomousBalanceId == right.autonomousBalanceId &&
       left.type == right.type &&
       left.name == right.name &&
       left.description == right.description &&
