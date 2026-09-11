@@ -2263,6 +2263,91 @@ class FinanceStore extends ChangeNotifier {
       return;
     }
 
+    if (_portfolioV3Authoritative) {
+      await runInNotificationBatch(() async {
+        final item = recurringItems[index];
+        final amount = realAmount ?? item.expectedAmount;
+        if (item.balanceId != null) {
+          final balanceIndex = balances.indexWhere(
+            (balance) => balance.balanceId == item.balanceId,
+          );
+
+          if (balanceIndex != -1) {
+            final oldBalance = balances[balanceIndex];
+            final candidateBalances = List<FinanceBalance>.of(_balances);
+            candidateBalances[balanceIndex] = FinanceBalance(
+              balanceId: oldBalance.balanceId,
+              personId: oldBalance.personId,
+              name: oldBalance.name,
+              initialAmount: oldBalance.initialAmount,
+              currentAmount: item.isIncome
+                  ? oldBalance.currentAmount + amount
+                  : oldBalance.currentAmount - amount,
+              updatedAt: DateTime.now(),
+              balanceType: oldBalance.balanceType,
+              operational: oldBalance.operational,
+              active: oldBalance.active,
+              reservedAmount: oldBalance.reservedAmount,
+              warningThreshold: oldBalance.warningThreshold,
+              persistentStressDays: oldBalance.persistentStressDays,
+              recoveryDays: oldBalance.recoveryDays,
+            );
+            final candidateTransactions = List<FinanceTransaction>.of(
+              _transactions,
+            )..add(
+                FinanceTransaction(
+                  id: 'transaction_${DateTime.now().microsecondsSinceEpoch}',
+                  balanceId: oldBalance.balanceId,
+                  amount: amount,
+                  date: DateTime.now(),
+                  isIncome: item.isIncome,
+                  subject: item.subject,
+                  description: item.name,
+                  type: item.isIncome
+                      ? FinanceTransactionType.income
+                      : FinanceTransactionType.expense,
+                  origin: FinanceTransactionOrigin.recurringItem,
+                  recurringItemId: item.id,
+                  economicFactId: economicFactIdGenerator.next(),
+                  notes: item.description,
+                ),
+              );
+
+            await _commitBalanceAndTransactionsCandidate(
+              candidateBalances: candidateBalances,
+              candidateTransactions: candidateTransactions,
+            );
+          }
+        }
+
+        _recurringItems[index] = item.copyWith(
+          confirmed: true,
+          realAmount: amount,
+        );
+
+        if (item.recurringType != FinanceRecurringType.oneShot) {
+          final nextDate = nextDueDateAfterConfirmation(item);
+          final now = DateTime.now();
+
+          _recurringItems.add(
+            item.copyWith(
+              id: 'recurring_${now.microsecondsSinceEpoch}',
+              nextDueDate: nextDate,
+              confirmed: false,
+              realAmount: null,
+            ),
+          );
+        }
+
+        try {
+          await saveRecurringItems();
+        } finally {
+          _markChanged();
+        }
+      });
+      return;
+    }
+
     await runInNotificationBatch(() async {
       final item = recurringItems[index];
       final amount = realAmount ?? item.expectedAmount;
@@ -2371,6 +2456,56 @@ class FinanceStore extends ChangeNotifier {
     final linkedTransactions = transactions
         .where((transaction) => transaction.recurringItemId == item.id)
         .toList();
+
+    if (_portfolioV3Authoritative) {
+      await runInNotificationBatch(() async {
+        if (linkedTransactions.isNotEmpty) {
+          final candidateBalances = List<FinanceBalance>.of(_balances);
+          for (final transaction in linkedTransactions) {
+            final balanceIndex = candidateBalances.indexWhere(
+              (balance) => balance.balanceId == transaction.balanceId,
+            );
+
+            if (balanceIndex == -1) continue;
+
+            final oldBalance = candidateBalances[balanceIndex];
+            candidateBalances[balanceIndex] = FinanceBalance(
+              balanceId: oldBalance.balanceId,
+              personId: oldBalance.personId,
+              name: oldBalance.name,
+              initialAmount: oldBalance.initialAmount,
+              currentAmount: transaction.isIncome
+                  ? oldBalance.currentAmount - transaction.amount
+                  : oldBalance.currentAmount + transaction.amount,
+              updatedAt: DateTime.now(),
+              balanceType: oldBalance.balanceType,
+              operational: oldBalance.operational,
+              active: oldBalance.active,
+              reservedAmount: oldBalance.reservedAmount,
+              warningThreshold: oldBalance.warningThreshold,
+              persistentStressDays: oldBalance.persistentStressDays,
+              recoveryDays: oldBalance.recoveryDays,
+            );
+          }
+          final candidateTransactions = _transactions
+              .where((transaction) => transaction.recurringItemId != item.id)
+              .toList();
+
+          await _commitBalanceAndTransactionsCandidate(
+            candidateBalances: candidateBalances,
+            candidateTransactions: candidateTransactions,
+          );
+        }
+
+        _recurringItems.removeAt(itemIndex);
+        try {
+          await saveRecurringItems();
+        } finally {
+          _markChanged();
+        }
+      });
+      return;
+    }
 
     for (final transaction in linkedTransactions) {
       final balanceIndex = balances.indexWhere(
