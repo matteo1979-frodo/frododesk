@@ -1795,6 +1795,25 @@ class FinanceStore extends ChangeNotifier {
     );
     if (current == next) return;
 
+    if (_portfolioV3Authoritative) {
+      final result = await commitPortfolioV3Candidate(
+        (current) => FinancePortfolioV3(
+          balances: plan.balances,
+          funds: plan.funds,
+          assetMovements: plan.movements,
+          transactions: plan.transactions,
+          fundTransactions: current.fundTransactions,
+          linkedItems: current.linkedItems,
+        ),
+      );
+      if (!result.isSuccess) {
+        throw StateError(
+          'Finance V3 fund plan commit failed: ${result.errors.join('; ')}',
+        );
+      }
+      return;
+    }
+
     await runInNotificationBatch(() async {
       _balances
         ..clear()
