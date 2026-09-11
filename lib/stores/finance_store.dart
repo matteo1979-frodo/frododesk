@@ -22,6 +22,55 @@ import '../logic/finance/finance_portfolio_v3_commit.dart';
 import '../logic/finance/finance_portfolio_v3_writer.dart';
 import '../logic/finance/finance_prepaid_creation.dart';
 
+enum FinancePortfolioV3PromotionStatus {
+  promoted,
+  alreadyAuthoritative,
+  notReady,
+  invalidCandidate,
+  writerFailed,
+}
+
+class FinancePortfolioV3PromotionResult {
+  final FinancePortfolioV3PromotionStatus status;
+  final FinancePortfolioV3WriteResult? writeResult;
+  final List<String> errors;
+
+  FinancePortfolioV3PromotionResult._({
+    required this.status,
+    required this.writeResult,
+    required Iterable<String> errors,
+  }) : errors = List.unmodifiable(errors);
+
+  factory FinancePortfolioV3PromotionResult.promoted(
+    FinancePortfolioV3WriteResult writeResult,
+  ) => FinancePortfolioV3PromotionResult._(
+    status: FinancePortfolioV3PromotionStatus.promoted,
+    writeResult: writeResult,
+    errors: const [],
+  );
+
+  factory FinancePortfolioV3PromotionResult.alreadyAuthoritative() =>
+      FinancePortfolioV3PromotionResult._(
+        status: FinancePortfolioV3PromotionStatus.alreadyAuthoritative,
+        writeResult: null,
+        errors: const [],
+      );
+
+  factory FinancePortfolioV3PromotionResult.failed({
+    required FinancePortfolioV3PromotionStatus status,
+    required Iterable<String> errors,
+    FinancePortfolioV3WriteResult? writeResult,
+  }) => FinancePortfolioV3PromotionResult._(
+    status: status,
+    writeResult: writeResult,
+    errors: errors,
+  );
+
+  bool get isSuccess =>
+      status == FinancePortfolioV3PromotionStatus.promoted ||
+      status == FinancePortfolioV3PromotionStatus.alreadyAuthoritative;
+}
+
 class FinanceStore extends ChangeNotifier {
   final EconomicFactIdGenerator economicFactIdGenerator;
   final FinancePortfolioV3Writer portfolioV3Writer;
@@ -69,6 +118,7 @@ class FinanceStore extends ChangeNotifier {
   final List<FinanceAssetMovement> _assetMovements;
   bool _portfolioReady = false;
   bool _portfolioV3Authoritative = false;
+  bool _legacyLinkedItemsHydrated = false;
   int _notificationBatchDepth = 0;
   bool _hasPendingNotification = false;
   bool _isDisposed = false;
@@ -1650,6 +1700,47 @@ class FinanceStore extends ChangeNotifier {
     );
   }
 
+  Future<FinancePortfolioV3PromotionResult> promotePortfolioV3() async {
+    if (_portfolioV3Authoritative) {
+      return FinancePortfolioV3PromotionResult.alreadyAuthoritative();
+    }
+    if (!_portfolioReady || !_legacyLinkedItemsHydrated) {
+      return FinancePortfolioV3PromotionResult.failed(
+        status: FinancePortfolioV3PromotionStatus.notReady,
+        errors: const ['Finance portfolio is not ready for V3 promotion'],
+      );
+    }
+
+    final candidate = FinancePortfolioV3(
+      balances: List<FinanceBalance>.of(_balances),
+      funds: List<FinanceFund>.of(_funds),
+      assetMovements: List<FinanceAssetMovement>.of(_assetMovements),
+      transactions: List<FinanceTransaction>.of(_transactions),
+      fundTransactions: List<FundTransaction>.of(_fundTransactions),
+      linkedItems: List<FinanceAccountLinkedItem>.of(_linkedItems),
+    );
+    final validation = FinancePortfolioV3Validator.validate(candidate);
+    if (!validation.isValid) {
+      return FinancePortfolioV3PromotionResult.failed(
+        status: FinancePortfolioV3PromotionStatus.invalidCandidate,
+        errors: validation.errors,
+      );
+    }
+
+    final writeResult = await portfolioV3Writer.write(candidate);
+    if (!writeResult.isSuccess) {
+      return FinancePortfolioV3PromotionResult.failed(
+        status: FinancePortfolioV3PromotionStatus.writerFailed,
+        errors: writeResult.errors,
+        writeResult: writeResult,
+      );
+    }
+
+    _portfolioReady = false;
+    _portfolioV3Authoritative = true;
+    return FinancePortfolioV3PromotionResult.promoted(writeResult);
+  }
+
   Future<FinancePortfolioV3CommitResult> commitPortfolioV3Candidate(
     FinancePortfolioV3Transformation transform,
   ) async {
@@ -2049,6 +2140,7 @@ class FinanceStore extends ChangeNotifier {
     final jsonList = await PersistenceStore.loadJsonList(
       'finance_account_linked_items',
     );
+    _legacyLinkedItemsHydrated = true;
 
     if (jsonList.isEmpty) {
       return false;
