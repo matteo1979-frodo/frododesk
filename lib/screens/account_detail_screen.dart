@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../logic/finance/finance_prepaid_creation.dart';
 import '../models/finance_account_linked_item.dart';
 import '../models/finance_balance.dart';
 import '../models/finance_transaction.dart';
@@ -507,27 +508,71 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
 
                   if (name.isEmpty) return;
 
+                  final amountText = amountController.text.trim();
                   final amount = double.tryParse(
-                    amountController.text.trim().replaceAll(',', '.'),
+                    amountText.replaceAll(',', '.'),
                   );
 
+                  if (existing == null &&
+                      selectedType ==
+                          FinanceAccountLinkedItemType.prepaidCard &&
+                      amountText.isNotEmpty &&
+                      amount == null) {
+                    ScaffoldMessenger.of(this.context).showSnackBar(
+                      const SnackBar(content: Text("Importo non valido")),
+                    );
+                    return;
+                  }
+
                   if (existing == null) {
-                    final now = DateTime.now();
-                    final linkedId = 'linked_${now.microsecondsSinceEpoch}';
-                    await financeStore.runInNotificationBatch(() async {
-                      await financeStore.addLinkedItem(
-                        FinanceAccountLinkedItem(
-                          id: linkedId,
-                          balanceId: balance.balanceId,
-                          type: selectedType,
-                          name: name,
+                    if (selectedType ==
+                        FinanceAccountLinkedItemType.prepaidCard) {
+                      final result = await financeStore.createLinkedPrepaid(
+                        FinancePrepaidCreationInput(
+                          parentBalanceId: balance.balanceId,
+                          personId: balance.personId,
+                          prepaidName: name,
+                          amount: amount ?? 0,
+                          linkedItemName: name,
                           description: descriptionController.text.trim(),
                           expirationDate: selectedExpiration,
-                          amount: amount,
                           active: true,
+                          occurredAt: DateTime.now(),
                         ),
                       );
-                    });
+                      if (!result.isSuccess) {
+                        if (mounted) {
+                          final details = result.errors.isEmpty
+                              ? result.failure?.name ?? "Errore sconosciuto"
+                              : result.errors.join('\n');
+                          ScaffoldMessenger.of(this.context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                "Creazione prepagata non riuscita: $details",
+                              ),
+                            ),
+                          );
+                        }
+                        return;
+                      }
+                    } else {
+                      final now = DateTime.now();
+                      final linkedId = 'linked_${now.microsecondsSinceEpoch}';
+                      await financeStore.runInNotificationBatch(() async {
+                        await financeStore.addLinkedItem(
+                          FinanceAccountLinkedItem(
+                            id: linkedId,
+                            balanceId: balance.balanceId,
+                            type: selectedType,
+                            name: name,
+                            description: descriptionController.text.trim(),
+                            expirationDate: selectedExpiration,
+                            amount: amount,
+                            active: true,
+                          ),
+                        );
+                      });
+                    }
                   } else {
                     await financeStore.replaceLinkedItem(
                       FinanceAccountLinkedItem(

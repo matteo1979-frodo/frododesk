@@ -13,15 +13,14 @@ void main() {
   });
 
   testWidgets(
-    'linked prepaid with null amount does not create an autonomous balance',
+    'linked prepaid with null amount creates an autonomous zero balance',
     (tester) async {
       final account = _balance(
         id: 'findomestic',
         name: 'Findomestic',
         amount: 120.40,
       );
-      final store = FinanceStore(initialBalances: [account]);
-      await store.migrateLegacyPortfolio();
+      final store = await _promotedStore(account);
 
       await _pumpAccountDetail(tester, store: store, account: account);
       await _addLinkedPrepaid(tester, name: 'Prepagata Findomestic');
@@ -31,24 +30,27 @@ void main() {
         store.linkedItems.single.type,
         FinanceAccountLinkedItemType.prepaidCard,
       );
-      expect(store.linkedItems.single.amount, isNull);
-      expect(store.balances, hasLength(1));
-      expect(store.balances.single.balanceId, account.balanceId);
+      expect(store.linkedItems.single.amount, 0);
+      expect(store.balances, hasLength(2));
+      final prepaid = store.balances.singleWhere(
+        (item) => item.balanceType == FinanceBalanceType.prepaidCard,
+      );
+      expect(prepaid.currentAmount, 0);
+      expect(store.linkedItems.single.autonomousBalanceId, prepaid.balanceId);
       expect(store.totalBalance(), 120.40);
       expect(store.familyNetWorth(), 120.40);
     },
   );
 
   testWidgets(
-    'linked prepaid amount remains informational and does not duplicate wealth',
+    'linked prepaid amount becomes its single autonomous wealth pool',
     (tester) async {
       final account = _balance(
         id: 'findomestic',
         name: 'Findomestic',
         amount: 120.40,
       );
-      final store = FinanceStore(initialBalances: [account]);
-      await store.migrateLegacyPortfolio();
+      final store = await _promotedStore(account);
 
       await _pumpAccountDetail(tester, store: store, account: account);
       await _addLinkedPrepaid(
@@ -58,22 +60,25 @@ void main() {
       );
 
       expect(store.linkedItems.single.amount, 120.40);
-      expect(store.balances, hasLength(1));
-      expect(store.totalBalance(), 120.40);
-      expect(store.familyNetWorth(), 120.40);
+      expect(store.balances, hasLength(2));
+      expect(store.totalBalance(), 240.80);
+      expect(store.familyNetWorth(), 240.80);
+      final prepaid = store.balances.singleWhere(
+        (item) => item.balanceType == FinanceBalanceType.prepaidCard,
+      );
+      expect(store.linkedItems.single.autonomousBalanceId, prepaid.balanceId);
     },
   );
 
   testWidgets(
-    'linked prepaid persists and reloads without generating a balance',
+    'linked prepaid and autonomous balance persist and reload together',
     (tester) async {
       final account = _balance(
         id: 'findomestic',
         name: 'Findomestic',
         amount: 120.40,
       );
-      final store = FinanceStore(initialBalances: [account]);
-      await store.migrateLegacyPortfolio();
+      final store = await _promotedStore(account);
 
       await _pumpAccountDetail(tester, store: store, account: account);
       await _addLinkedPrepaid(
@@ -88,11 +93,17 @@ void main() {
       expect(restored.linkedItems, hasLength(1));
       expect(restored.linkedItems.single.name, 'Prepagata Findomestic');
       expect(restored.linkedItems.single.amount, 120.40);
-      expect(restored.balances, hasLength(1));
-      expect(restored.balances.single.balanceId, account.balanceId);
-      expect(restored.balances.single.currentAmount, 120.40);
-      expect(restored.totalBalance(), 120.40);
-      expect(restored.familyNetWorth(), 120.40);
+      expect(restored.balances, hasLength(2));
+      final prepaid = restored.balances.singleWhere(
+        (item) => item.balanceType == FinanceBalanceType.prepaidCard,
+      );
+      expect(prepaid.currentAmount, 120.40);
+      expect(
+        restored.linkedItems.single.autonomousBalanceId,
+        prepaid.balanceId,
+      );
+      expect(restored.totalBalance(), 240.80);
+      expect(restored.familyNetWorth(), 240.80);
     },
   );
 
@@ -104,8 +115,7 @@ void main() {
         name: 'Findomestic',
         amount: 120.40,
       );
-      final store = FinanceStore(initialBalances: [account]);
-      await store.migrateLegacyPortfolio();
+      final store = await _promotedStore(account);
 
       await _pumpAccountDetail(tester, store: store, account: account);
       await _addLinkedPrepaid(tester, name: 'Prepagata Findomestic');
@@ -179,6 +189,15 @@ Future<void> _pumpAccountDetail(
     ),
   );
   await tester.pump();
+}
+
+Future<FinanceStore> _promotedStore(FinanceBalance account) async {
+  final legacy = FinanceStore(initialBalances: [account]);
+  await legacy.migrateLegacyPortfolio();
+  final store = FinanceStore();
+  await store.loadInitialRealData();
+  expect((await store.promotePortfolioV3()).isSuccess, isTrue);
+  return store;
 }
 
 Future<void> _addLinkedPrepaid(
