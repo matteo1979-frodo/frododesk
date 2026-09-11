@@ -985,6 +985,36 @@ class FinanceStore extends ChangeNotifier {
 
     final old = balances[index];
 
+    if (_portfolioV3Authoritative) {
+      final candidateBalances = List<FinanceBalance>.of(_balances);
+      candidateBalances[index] = _balanceWithAmount(
+        old,
+        old.currentAmount - amount,
+      );
+      final candidateTransactions = List<FinanceTransaction>.of(_transactions)
+        ..add(
+          FinanceTransaction(
+            id: 'real_expense_${DateTime.now().microsecondsSinceEpoch}',
+            balanceId: old.balanceId,
+            amount: amount,
+            date: DateTime.now(),
+            isIncome: false,
+            subject: _subjectForPersonId(old.personId),
+            description: description,
+            type: FinanceTransactionType.expense,
+            origin: FinanceTransactionOrigin.manual,
+            notes: notes,
+            economicFactId:
+                economicFactId ?? economicFactIdGenerator.next(),
+          ),
+        );
+      await _commitBalanceAndTransactionsCandidate(
+        candidateBalances: candidateBalances,
+        candidateTransactions: candidateTransactions,
+      );
+      return;
+    }
+
     _balances[index] = FinanceBalance(
       balanceId: old.balanceId,
       personId: old.personId,
@@ -1042,6 +1072,36 @@ class FinanceStore extends ChangeNotifier {
 
     final old = balances[index];
 
+    if (_portfolioV3Authoritative) {
+      final candidateBalances = List<FinanceBalance>.of(_balances);
+      candidateBalances[index] = _balanceWithAmount(
+        old,
+        old.currentAmount + amount,
+      );
+      final candidateTransactions = List<FinanceTransaction>.of(_transactions)
+        ..add(
+          FinanceTransaction(
+            id: 'extra_income_${DateTime.now().microsecondsSinceEpoch}',
+            balanceId: old.balanceId,
+            amount: amount,
+            date: DateTime.now(),
+            isIncome: true,
+            subject: _subjectForPersonId(old.personId),
+            description: description,
+            type: FinanceTransactionType.income,
+            origin: FinanceTransactionOrigin.manual,
+            notes: notes,
+            economicFactId:
+                economicFactId ?? economicFactIdGenerator.next(),
+          ),
+        );
+      await _commitBalanceAndTransactionsCandidate(
+        candidateBalances: candidateBalances,
+        candidateTransactions: candidateTransactions,
+      );
+      return;
+    }
+
     _balances[index] = FinanceBalance(
       balanceId: old.balanceId,
       personId: old.personId,
@@ -1097,6 +1157,35 @@ class FinanceStore extends ChangeNotifier {
 
     final old = balances[index];
 
+    if (_portfolioV3Authoritative) {
+      final candidateBalances = List<FinanceBalance>.of(_balances);
+      candidateBalances[index] = _balanceWithAmount(
+        old,
+        old.currentAmount - amount,
+      );
+      final candidateTransactions = List<FinanceTransaction>.of(_transactions)
+        ..add(
+          FinanceTransaction(
+            id: 'remove_extra_income_${DateTime.now().microsecondsSinceEpoch}',
+            balanceId: old.balanceId,
+            amount: amount,
+            date: DateTime.now(),
+            isIncome: false,
+            subject: _subjectForPersonId(old.personId),
+            description: "Annullamento $description",
+            type: FinanceTransactionType.expense,
+            origin: FinanceTransactionOrigin.manual,
+            notes: 'Rimozione entrata extra',
+            economicFactId: economicFactIdGenerator.next(),
+          ),
+        );
+      await _commitBalanceAndTransactionsCandidate(
+        candidateBalances: candidateBalances,
+        candidateTransactions: candidateTransactions,
+      );
+      return;
+    }
+
     _balances[index] = FinanceBalance(
       balanceId: old.balanceId,
       personId: old.personId,
@@ -1151,6 +1240,35 @@ class FinanceStore extends ChangeNotifier {
     }
 
     final old = balances[index];
+
+    if (_portfolioV3Authoritative) {
+      final candidateBalances = List<FinanceBalance>.of(_balances);
+      candidateBalances[index] = _balanceWithAmount(
+        old,
+        old.currentAmount + amount,
+      );
+      final candidateTransactions = List<FinanceTransaction>.of(_transactions)
+        ..add(
+          FinanceTransaction(
+            id: 'restore_expense_${DateTime.now().microsecondsSinceEpoch}',
+            balanceId: old.balanceId,
+            amount: amount,
+            date: DateTime.now(),
+            isIncome: true,
+            subject: _subjectForPersonId(old.personId),
+            description: "Annullamento $description",
+            type: FinanceTransactionType.income,
+            origin: FinanceTransactionOrigin.manual,
+            notes: 'Ripristino movimento eliminato',
+            economicFactId: economicFactIdGenerator.next(),
+          ),
+        );
+      await _commitBalanceAndTransactionsCandidate(
+        candidateBalances: candidateBalances,
+        candidateTransactions: candidateTransactions,
+      );
+      return;
+    }
 
     _balances[index] = FinanceBalance(
       balanceId: old.balanceId,
