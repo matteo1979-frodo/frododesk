@@ -437,12 +437,14 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                         child: Text(_typeLabel(type)),
                       );
                     }).toList(),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      refresh(() {
-                        selectedType = value;
-                      });
-                    },
+                    onChanged: existing?.autonomousBalanceId != null
+                        ? null
+                        : (value) {
+                            if (value == null) return;
+                            refresh(() {
+                              selectedType = value;
+                            });
+                          },
                   ),
                   TextField(
                     controller: nameController,
@@ -573,11 +575,30 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                         );
                       });
                     }
+                  } else if (existing.type ==
+                          FinanceAccountLinkedItemType.prepaidCard &&
+                      existing.autonomousBalanceId != null) {
+                    final result = await financeStore.updateLinkedPrepaidPair(
+                      linkedItemId: existing.id,
+                      name: name,
+                      description: descriptionController.text.trim(),
+                      expirationDate: selectedExpiration,
+                      amount: amount,
+                    );
+                    if (!result.isSuccess) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(this.context).showSnackBar(
+                          SnackBar(content: Text(result.errors.join('\n'))),
+                        );
+                      }
+                      return;
+                    }
                   } else {
                     await financeStore.replaceLinkedItem(
                       FinanceAccountLinkedItem(
                         id: existing.id,
                         balanceId: existing.balanceId,
+                        autonomousBalanceId: existing.autonomousBalanceId,
                         type: selectedType,
                         name: name,
                         description: descriptionController.text.trim(),

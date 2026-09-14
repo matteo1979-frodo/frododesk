@@ -449,6 +449,108 @@ class FinanceStore extends ChangeNotifier {
     return FinancePrepaidCreationResult.success(records);
   }
 
+  Future<FinancePortfolioV3CommitResult> updateLinkedPrepaidPair({
+    required String linkedItemId,
+    required String name,
+    required String description,
+    required DateTime? expirationDate,
+    required double? amount,
+  }) async {
+    if (!isPortfolioV3Authoritative) {
+      return FinancePortfolioV3CommitResult.failed(
+        failure: FinancePortfolioV3CommitFailure.transformationFailed,
+        errors: const ['Finance Portfolio V3 must be authoritative'],
+      );
+    }
+
+    final linkedIndex = _linkedItems.indexWhere(
+      (item) => item.id == linkedItemId,
+    );
+    if (linkedIndex == -1) {
+      return FinancePortfolioV3CommitResult.failed(
+        failure: FinancePortfolioV3CommitFailure.transformationFailed,
+        errors: ['Linked prepaid not found: $linkedItemId'],
+      );
+    }
+
+    final linked = _linkedItems[linkedIndex];
+    if (linked.type != FinanceAccountLinkedItemType.prepaidCard) {
+      return FinancePortfolioV3CommitResult.failed(
+        failure: FinancePortfolioV3CommitFailure.transformationFailed,
+        errors: ['Linked item is not prepaidCard: $linkedItemId'],
+      );
+    }
+
+    final autonomousBalanceId = linked.autonomousBalanceId;
+    if (autonomousBalanceId == null) {
+      return FinancePortfolioV3CommitResult.failed(
+        failure: FinancePortfolioV3CommitFailure.transformationFailed,
+        errors: ['Linked prepaid has no autonomous balance: $linkedItemId'],
+      );
+    }
+
+    final balanceIndex = _balances.indexWhere(
+      (balance) => balance.balanceId == autonomousBalanceId,
+    );
+    if (balanceIndex == -1) {
+      return FinancePortfolioV3CommitResult.failed(
+        failure: FinancePortfolioV3CommitFailure.transformationFailed,
+        errors: ['Autonomous prepaid balance not found: $autonomousBalanceId'],
+      );
+    }
+
+    final autonomousBalance = _balances[balanceIndex];
+    if (autonomousBalance.balanceType != FinanceBalanceType.prepaidCard) {
+      return FinancePortfolioV3CommitResult.failed(
+        failure: FinancePortfolioV3CommitFailure.transformationFailed,
+        errors: ['Autonomous balance is not prepaidCard: $autonomousBalanceId'],
+      );
+    }
+
+    return commitPortfolioV3Candidate((current) {
+      final candidateBalances = List<FinanceBalance>.of(current.balances);
+      candidateBalances[balanceIndex] = FinanceBalance(
+        balanceId: autonomousBalance.balanceId,
+        personId: autonomousBalance.personId,
+        name: name,
+        initialAmount: autonomousBalance.initialAmount,
+        currentAmount: autonomousBalance.currentAmount,
+        updatedAt: autonomousBalance.updatedAt,
+        balanceType: autonomousBalance.balanceType,
+        operational: autonomousBalance.operational,
+        active: autonomousBalance.active,
+        reservedAmount: autonomousBalance.reservedAmount,
+        warningThreshold: autonomousBalance.warningThreshold,
+        persistentStressDays: autonomousBalance.persistentStressDays,
+        recoveryDays: autonomousBalance.recoveryDays,
+      );
+
+      final candidateLinkedItems = List<FinanceAccountLinkedItem>.of(
+        current.linkedItems,
+      );
+      candidateLinkedItems[linkedIndex] = FinanceAccountLinkedItem(
+        id: linked.id,
+        balanceId: linked.balanceId,
+        autonomousBalanceId: autonomousBalanceId,
+        type: linked.type,
+        name: name,
+        description: description,
+        expirationDate: expirationDate,
+        amount: amount,
+        active: linked.active,
+      );
+
+      return FinancePortfolioV3(
+        balances: candidateBalances,
+        funds: current.funds,
+        assetMovements: current.assetMovements,
+        transactions: current.transactions,
+        fundTransactions: current.fundTransactions,
+        linkedItems: candidateLinkedItems,
+      );
+    });
+  }
+
   bool _sameBalance(FinanceBalance left, FinanceBalance right) =>
       left.balanceId == right.balanceId &&
       left.personId == right.personId &&

@@ -338,6 +338,11 @@ class _PersonFinanceScreenState extends State<PersonFinanceScreen> {
   }
 
   Future<void> _showEditAccountDialog(FinanceBalance balance) async {
+    final isLinkedAutonomousPrepaid =
+        balance.balanceType == FinanceBalanceType.prepaidCard &&
+        widget.financeStore.linkedItems.any(
+          (item) => item.autonomousBalanceId == balance.balanceId,
+        );
     final nameController = TextEditingController(text: balance.name);
     final amountController = TextEditingController(
       text: balance.currentAmount.toStringAsFixed(2),
@@ -352,7 +357,13 @@ class _PersonFinanceScreenState extends State<PersonFinanceScreen> {
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(labelText: "Nome conto"),
+              readOnly: isLinkedAutonomousPrepaid,
+              decoration: InputDecoration(
+                labelText: "Nome conto",
+                helperText: isLinkedAutonomousPrepaid
+                    ? "Modifica il nome dal rapporto collegato"
+                    : null,
+              ),
             ),
             TextField(
               controller: amountController,
@@ -384,21 +395,25 @@ class _PersonFinanceScreenState extends State<PersonFinanceScreen> {
 
               final old = widget.financeStore.balances[index];
 
-              await widget.financeStore.replaceBalance(FinanceBalance(
-                balanceId: old.balanceId,
-                personId: old.personId,
-                name: nameController.text.trim(),
-                initialAmount: old.initialAmount,
-                currentAmount: amount,
-                updatedAt: DateTime.now(),
-                balanceType: old.balanceType,
-                operational: old.operational,
-                active: old.active,
-                reservedAmount: old.reservedAmount,
-                warningThreshold: old.warningThreshold,
-                persistentStressDays: old.persistentStressDays,
-                recoveryDays: old.recoveryDays,
-              ));
+              await widget.financeStore.replaceBalance(
+                FinanceBalance(
+                  balanceId: old.balanceId,
+                  personId: old.personId,
+                  name: isLinkedAutonomousPrepaid
+                      ? old.name
+                      : nameController.text.trim(),
+                  initialAmount: old.initialAmount,
+                  currentAmount: amount,
+                  updatedAt: DateTime.now(),
+                  balanceType: old.balanceType,
+                  operational: old.operational,
+                  active: old.active,
+                  reservedAmount: old.reservedAmount,
+                  warningThreshold: old.warningThreshold,
+                  persistentStressDays: old.persistentStressDays,
+                  recoveryDays: old.recoveryDays,
+                ),
+              );
 
               if (mounted) {
                 setState(() {});
