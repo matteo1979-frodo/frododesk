@@ -334,7 +334,7 @@ class _SpesePageState extends State<SpesePage> {
                       _MovementChoiceTile(
                         icon: Icons.payments_rounded,
                         title: "Prelievo contanti",
-                        subtitle: "Scala un conto e carica un portafoglio",
+                        subtitle: "Scala un conto e registra il prelievo",
                         color: const Color(0xFF66BB6A),
                         onTap: () async {
                           Navigator.of(context).pop();
@@ -1402,8 +1402,10 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                                     expense.balanceName,
                                                 balanceAmount: 0,
                                                 balancePersonId:
-                                                    expense.cashWalletId ==
-                                                        'wallet_chiara'
+                                                    expense.nonTrackedCash
+                                                    ? expense.subject.name
+                                                    : expense.cashWalletId ==
+                                                          'wallet_chiara'
                                                     ? 'chiara'
                                                     : 'matteo',
                                                 snapshot: snapshot,
@@ -1738,6 +1740,8 @@ class _CashWithdrawalFormPage extends StatefulWidget {
 
 class _CashWithdrawalFormPageState extends State<_CashWithdrawalFormPage> {
   final amountController = TextEditingController();
+  final descriptionController = TextEditingController();
+  String? selectedCategory;
   DateTime selectedDate = DateTime.now();
 
   @override
@@ -1750,17 +1754,28 @@ class _CashWithdrawalFormPageState extends State<_CashWithdrawalFormPage> {
 
     if (editingExpense != null) {
       amountController.text = editingExpense.amount.toStringAsFixed(2);
+      descriptionController.text = editingExpense.description;
+      selectedCategory = editingExpense.category;
     }
   }
 
   @override
   void dispose() {
     amountController.dispose();
+    descriptionController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final withdrawalCategories = widget.snapshot.categories.toSet();
+    final currentCategory = selectedCategory;
+    if (currentCategory != null) {
+      withdrawalCategories.add(currentCategory);
+    }
+    final editingTrackedCash =
+        widget.editingExpense != null && !widget.editingExpense!.nonTrackedCash;
+
     return Scaffold(
       backgroundColor: const Color(0xFF101820),
       appBar: AppBar(
@@ -1831,12 +1846,49 @@ class _CashWithdrawalFormPageState extends State<_CashWithdrawalFormPage> {
                           });
                         },
                       ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedCategory,
+                        decoration: InputDecoration(
+                          labelText: 'Categoria (facoltativa)',
+                          hintText: 'Contanti / non tracciato',
+                          filled: true,
+                          fillColor: Colors.white.withValues(alpha: 0.86),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                        dropdownColor: Colors.white,
+                        items: withdrawalCategories
+                            .map(
+                              (category) => DropdownMenuItem(
+                                value: category,
+                                child: Text(category),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() => selectedCategory = value);
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: descriptionController,
+                        decoration: InputDecoration(
+                          labelText: 'Nota / descrizione (facoltativa)',
+                          hintText: 'Prelievo contanti',
+                          filled: true,
+                          fillColor: Colors.white.withValues(alpha: 0.86),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: () async {
-                            final walletId = 'wallet_${widget.balancePersonId}';
                             final preparedAt = DateTime.now();
                             final command = _prepareSpeseCommand(
                               context,
@@ -1851,14 +1903,26 @@ class _CashWithdrawalFormPageState extends State<_CashWithdrawalFormPage> {
                                     kind: EconomicEndpointKind.account,
                                     referenceId: widget.balanceId,
                                   ),
-                                  destination: SpeseCommandEndpointDraft(
-                                    kind: EconomicEndpointKind.cash,
-                                    referenceId: walletId,
-                                  ),
+                                  destination: editingTrackedCash
+                                      ? SpeseCommandEndpointDraft(
+                                          kind: EconomicEndpointKind.cash,
+                                          referenceId: widget
+                                              .editingExpense!
+                                              .cashWalletId,
+                                        )
+                                      : const SpeseCommandEndpointDraft(
+                                          kind: EconomicEndpointKind.external,
+                                          label: 'Contanti non tracciati',
+                                        ),
                                   amountInput: amountController.text,
-                                  category: 'Portafoglio contanti',
+                                  category:
+                                      selectedCategory ??
+                                      'Contanti / non tracciato',
                                   personId: widget.balancePersonId,
-                                  description: 'Prelievo contanti',
+                                  description:
+                                      descriptionController.text.trim().isEmpty
+                                      ? 'Prelievo contanti'
+                                      : descriptionController.text,
                                 ),
                                 registry: widget.snapshot.commandRegistry,
                               ),
@@ -1879,9 +1943,7 @@ class _CashWithdrawalFormPageState extends State<_CashWithdrawalFormPage> {
 
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(
-                                  "Prelievo registrato in ${command.destination.label}.",
-                                ),
+                                content: Text('Prelievo contanti registrato.'),
                               ),
                             );
                           },

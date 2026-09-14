@@ -117,10 +117,15 @@ class SpeseCommandBuilder {
       label: 'Movimento esterno',
     );
     final destination = expense.isCashWithdrawal
-        ? SpeseCommandEndpointDraft(
-            kind: EconomicEndpointKind.cash,
-            referenceId: expense.cashWalletId,
-          )
+        ? expense.nonTrackedCash
+              ? const SpeseCommandEndpointDraft(
+                  kind: EconomicEndpointKind.external,
+                  label: 'Contanti non tracciati',
+                )
+              : SpeseCommandEndpointDraft(
+                  kind: EconomicEndpointKind.cash,
+                  referenceId: expense.cashWalletId,
+                )
         : expense.isIncome
         ? account
         : external;

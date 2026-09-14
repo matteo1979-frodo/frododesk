@@ -1,5 +1,6 @@
 import '../../models/real_expense.dart';
 import '../../models/finance_recurring_item.dart';
+import '../../models/economic_event.dart';
 import '../../models/spese_command.dart';
 import '../../models/spese_mutation_plan.dart';
 import '../../stores/cash_wallet_store.dart';
@@ -76,10 +77,12 @@ class SpeseMutationCoordinator {
           notes: command.destination.label,
           economicFactId: economicFactId,
         );
-        await cashWalletStore.addCash(
-          walletId: command.destination.referenceId!,
-          amount: command.amount,
-        );
+        if (command.destination.kind == EconomicEndpointKind.cash) {
+          await cashWalletStore.addCash(
+            walletId: command.destination.referenceId!,
+            amount: command.amount,
+          );
+        }
     }
     await expenseStore.addExpense(expense);
   }
@@ -104,10 +107,12 @@ class SpeseMutationCoordinator {
           amount: command.amount,
           description: command.description,
         );
-        await cashWalletStore.removeCash(
-          walletId: command.destination.referenceId!,
-          amount: command.amount,
-        );
+        if (command.destination.kind == EconomicEndpointKind.cash) {
+          await cashWalletStore.removeCash(
+            walletId: command.destination.referenceId!,
+            amount: command.amount,
+          );
+        }
     }
     await expenseStore.removeExpense(expenseId);
   }
@@ -127,8 +132,13 @@ class SpeseMutationCoordinator {
       category: command.category,
       date: command.occurredAt,
       isCashWithdrawal: command.kind == SpeseCommandKind.cashWithdrawal,
+      nonTrackedCash:
+          command.kind == SpeseCommandKind.cashWithdrawal &&
+          command.destination.kind == EconomicEndpointKind.external,
       cashWalletId: command.kind == SpeseCommandKind.cashWithdrawal
-          ? command.destination.referenceId
+          ? command.destination.kind == EconomicEndpointKind.cash
+                ? command.destination.referenceId
+                : null
           : null,
       isIncome: command.kind == SpeseCommandKind.extraIncome,
       subject: FinanceSubject.values.firstWhere(

@@ -14,9 +14,7 @@ class RealExpenseEventAdapter implements EconomicEventAdapter<RealExpense> {
   }) {
     final amount = source.amount.abs();
     final account = EconomicEndpoint(
-      kind: source.nonTrackedCash
-          ? EconomicEndpointKind.cash
-          : EconomicEndpointKind.account,
+      kind: EconomicEndpointKind.account,
       referenceId: source.balanceId,
       label: source.balanceName,
       amount: amount,
@@ -29,7 +27,11 @@ class RealExpenseEventAdapter implements EconomicEventAdapter<RealExpense> {
     );
     final external = EconomicEndpoint(
       kind: EconomicEndpointKind.external,
-      label: source.isIncome ? 'Provenienza esterna' : 'Spesa sostenuta',
+      label: source.isIncome
+          ? 'Provenienza esterna'
+          : source.nonTrackedCash
+          ? 'Contanti non tracciati'
+          : 'Spesa sostenuta',
       amount: amount,
     );
 
@@ -42,7 +44,9 @@ class RealExpenseEventAdapter implements EconomicEventAdapter<RealExpense> {
       destinations: source.isIncome
           ? [account]
           : source.isCashWithdrawal
-          ? [cashWallet]
+          ? source.nonTrackedCash
+                ? [external]
+                : [cashWallet]
           : [external],
       category: EconomicCategoryRef.fromLabel(source.category),
       personId: _personId(source.subject),
@@ -51,7 +55,9 @@ class RealExpenseEventAdapter implements EconomicEventAdapter<RealExpense> {
       nature: source.isIncome
           ? EconomicNature.income
           : source.isCashWithdrawal
-          ? EconomicNature.internalTransfer
+          ? source.nonTrackedCash
+                ? EconomicNature.outflow
+                : EconomicNature.internalTransfer
           : EconomicNature.outflow,
       sourceLinks: [
         EconomicSourceLink(
