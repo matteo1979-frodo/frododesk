@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/logic/finance/finance_ledger_coordinator.dart';
+import 'package:frododesk/logic/finance/finance_ledger_presentation_coordinator.dart';
 import 'package:frododesk/models/finance_balance.dart';
 import 'package:frododesk/models/finance_asset_movement.dart';
 import 'package:frododesk/models/finance_fund.dart';
@@ -8,6 +9,8 @@ import 'package:frododesk/models/finance_ledger_view_data.dart';
 import 'package:frododesk/models/finance_recurring_item.dart';
 import 'package:frododesk/models/finance_transaction.dart';
 import 'package:frododesk/stores/finance_store.dart';
+import 'package:frododesk/stores/expense_store.dart';
+import 'package:frododesk/stores/cash_wallet_store.dart';
 import 'package:frododesk/screens/finance/finance_ledger_page.dart';
 
 void main() {
@@ -77,14 +80,15 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: FinanceLedgerPage(
-          coordinator: FinanceLedgerCoordinator(financeStore: FinanceStore()),
+          coordinator: _presentationCoordinator(FinanceStore()),
         ),
       ),
     );
 
     expect(find.text('Movimenti della famiglia'), findsOneWidget);
     expect(find.text('Cerca descrizione, conto, fondo o note'), findsOneWidget);
-    expect(find.text('Nessun movimento trovato'), findsOneWidget);
+    expect(find.text('Nessun movimento disponibile'), findsOneWidget);
+    expect(find.text('Tutte le origini'), findsNothing);
   });
 
   test('presentation describes every account in a multi-account transfer', () {
@@ -260,15 +264,12 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        home: FinanceLedgerPage(
-          coordinator: FinanceLedgerCoordinator(financeStore: store),
-        ),
+        home: FinanceLedgerPage(coordinator: _presentationCoordinator(store)),
       ),
     );
 
     expect(find.byIcon(Icons.swap_horiz_rounded), findsOneWidget);
-    expect(find.text('Vacanze'), findsOneWidget);
-    expect(find.text('Fondo Auto'), findsOneWidget);
+    expect(find.textContaining('vacanze → fondo Auto'), findsOneWidget);
     expect(find.text('vacanze'), findsNothing);
   });
 
@@ -318,18 +319,12 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        home: FinanceLedgerPage(
-          coordinator: FinanceLedgerCoordinator(financeStore: store),
-        ),
+        home: FinanceLedgerPage(coordinator: _presentationCoordinator(store)),
       ),
     );
 
-    expect(find.text('Uscita'), findsOneWidget);
     expect(find.text('IMU'), findsOneWidget);
-    expect(
-      find.textContaining('Pagato con: Banca di Imola · Matteo'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('Banca di Imola →'), findsOneWidget);
     expect(find.textContaining('16/06/2026'), findsOneWidget);
     expect(find.text('-€10,00'), findsOneWidget);
   });
@@ -409,9 +404,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        home: FinanceLedgerPage(
-          coordinator: FinanceLedgerCoordinator(financeStore: store),
-        ),
+        home: FinanceLedgerPage(coordinator: _presentationCoordinator(store)),
       ),
     );
     await tester.pump();
@@ -419,7 +412,7 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('+€100,00'), findsOneWidget);
     expect(find.text('-€100,25'), findsOneWidget);
-    expect(find.text('-€1.234,56'), findsOneWidget);
+    expect(find.text('€1.234,56'), findsOneWidget);
     expect(find.text('€0,00'), findsOneWidget);
     expect(find.text('€1.234.567,89'), findsWidgets);
 
@@ -431,6 +424,14 @@ void main() {
     expect(find.text('€100,25'), findsOneWidget);
   });
 }
+
+FinanceLedgerPresentationCoordinator _presentationCoordinator(
+  FinanceStore store,
+) => FinanceLedgerPresentationCoordinator(
+  financeStore: store,
+  expenseStore: ExpenseStore(),
+  cashWalletStore: CashWalletStore(),
+);
 
 FinanceBalance _balance(String id, String personId, String name) =>
     FinanceBalance(

@@ -20,7 +20,7 @@ import 'finance/finance_observations_page.dart';
 import 'finance/finance_funds_page.dart';
 import 'finance/finance_ledger_page.dart';
 import '../logic/finance/finance_funds_coordinator.dart';
-import '../logic/finance/finance_ledger_coordinator.dart';
+import '../logic/finance/finance_ledger_presentation_coordinator.dart';
 import '../logic/finance/finance_recurring_coordinator.dart';
 import '../models/finance_recurring_draft.dart';
 import '../utils/euro_formatter.dart';
@@ -271,8 +271,10 @@ class _FinanceScreenState extends State<FinanceScreen> {
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => FinanceLedgerPage(
-                    coordinator: FinanceLedgerCoordinator(
+                    coordinator: FinanceLedgerPresentationCoordinator(
                       financeStore: financeStore,
+                      expenseStore: widget.expenseStore,
+                      cashWalletStore: widget.cashWalletStore,
                     ),
                   ),
                 ),

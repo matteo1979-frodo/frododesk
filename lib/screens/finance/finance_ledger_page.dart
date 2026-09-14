@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
-import '../../logic/finance/finance_ledger_coordinator.dart';
-import '../../models/finance_asset_movement.dart';
-import '../../models/finance_ledger_view_data.dart';
+import '../../logic/finance/finance_ledger_presentation_coordinator.dart';
+import '../../models/economic_event.dart';
+import '../../models/ledger_event_view_model.dart';
+import '../../models/ledger_presentation_data.dart';
 import '../../utils/euro_formatter.dart';
 
+enum FinanceLedgerNatureFilter { all, income, outflow, internalTransfer }
+
 class FinanceLedgerPage extends StatefulWidget {
-  final FinanceLedgerCoordinator coordinator;
+  final FinanceLedgerPresentationCoordinator coordinator;
 
   const FinanceLedgerPage({super.key, required this.coordinator});
 
@@ -15,16 +18,16 @@ class FinanceLedgerPage extends StatefulWidget {
 }
 
 class _FinanceLedgerPageState extends State<FinanceLedgerPage> {
+  final DateTime observedAt = DateTime.now();
   String query = '';
-  FinanceLedgerTypeFilter type = FinanceLedgerTypeFilter.all;
-  FinanceLedgerOriginFilter origin = FinanceLedgerOriginFilter.all;
+  FinanceLedgerNatureFilter type = FinanceLedgerNatureFilter.all;
 
   @override
   Widget build(BuildContext context) {
-    final viewData = widget.coordinator.build(
+    final data = widget.coordinator.build(
+      observedAt: observedAt,
       query: query,
-      type: type,
-      origin: origin,
+      selectedFilterIds: _selectedFilterIds(type),
     );
     return Scaffold(
       appBar: AppBar(title: const Text('Movimenti della famiglia')),
@@ -39,196 +42,93 @@ class _FinanceLedgerPageState extends State<FinanceLedgerPage> {
             onChanged: (value) => setState(() => query = value),
           ),
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            children: [
-              DropdownButton<FinanceLedgerTypeFilter>(
-                value: type,
-                items: FinanceLedgerTypeFilter.values
-                    .map(
-                      (value) => DropdownMenuItem(
-                        value: value,
-                        child: Text(_typeLabel(value)),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) => setState(() => type = value ?? type),
-              ),
-              DropdownButton<FinanceLedgerOriginFilter>(
-                value: origin,
-                items: FinanceLedgerOriginFilter.values
-                    .map(
-                      (value) => DropdownMenuItem(
-                        value: value,
-                        child: Text(_originLabel(value)),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) => setState(() => origin = value ?? origin),
-              ),
-            ],
+          DropdownButton<FinanceLedgerNatureFilter>(
+            value: type,
+            items: FinanceLedgerNatureFilter.values
+                .map(
+                  (value) => DropdownMenuItem(
+                    value: value,
+                    child: Text(_typeLabel(value)),
+                  ),
+                )
+                .toList(),
+            onChanged: (value) => setState(() => type = value ?? type),
           ),
           const SizedBox(height: 12),
-          ...viewData.fundOperations.map(_fundOperationCard),
-          ...viewData.entries.map(_entryCard),
-          if (viewData.entries.isEmpty && viewData.fundOperations.isEmpty)
+          if (data.state == LedgerPresentationState.archiveEmpty)
             const Card(
-              child: ListTile(title: Text('Nessun movimento trovato')),
-            ),
+              child: ListTile(title: Text('Nessun movimento disponibile')),
+            )
+          else if (data.state == LedgerPresentationState.noResults)
+            const Card(child: ListTile(title: Text('Nessun movimento trovato')))
+          else
+            ...data.entries.map(_entryCard),
         ],
       ),
     );
   }
 
-  Widget _fundOperationCard(FinanceFundOperationViewData operation) => Card(
-    margin: const EdgeInsets.only(bottom: 12),
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CircleAvatar(
-                backgroundColor: _fundOperationColor(
-                  operation.movement.kind,
-                ).withValues(alpha: 0.16),
-                child: Icon(
-                  _fundOperationIcon(operation.movement.kind),
-                  color: _fundOperationColor(operation.movement.kind),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      operation.typeLabel,
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      operation.description,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(_dateLabel(operation.movement.occurredAt)),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                EuroFormatter.format(operation.amount),
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
-            ],
-          ),
-          if (operation.origins.isNotEmpty) ...[
-            const Divider(height: 24),
-            Text('Da', style: Theme.of(context).textTheme.labelLarge),
-            const SizedBox(height: 6),
-            ...operation.origins.map(_partyRow),
-          ],
-          if (operation.destinations.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text('A', style: Theme.of(context).textTheme.labelLarge),
-            const SizedBox(height: 6),
-            ...operation.destinations.map(_partyRow),
-          ],
-        ],
-      ),
-    ),
-  );
-
-  Widget _partyRow(FinanceLedgerPartyViewData party) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 3),
-    child: Row(
-      children: [
-        const Icon(Icons.arrow_right, size: 18),
-        const SizedBox(width: 4),
-        Expanded(
-          child: Text(
-            party.ownerName == null
-                ? _displayName(party.name)
-                : '${_displayName(party.name)} · ${party.ownerName}',
-          ),
-        ),
-        Text(EuroFormatter.format(party.amount)),
-      ],
-    ),
-  );
-
-  Widget _entryCard(FinanceLedgerEntryViewData entry) => Card(
+  Widget _entryCard(LedgerEventViewModel entry) => Card(
     margin: const EdgeInsets.only(bottom: 12),
     child: ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       onTap: () => _showDetail(entry),
-      leading: CircleAvatar(
-        child: Icon(
-          entry.transaction.isIncome ? Icons.south_west : Icons.north_east,
-        ),
-      ),
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            entry.typeLabel,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-          Text(
-            entry.description,
-            style: const TextStyle(fontWeight: FontWeight.w700),
-          ),
-        ],
+      leading: CircleAvatar(child: Icon(_icon(entry))),
+      title: Text(
+        entry.title,
+        style: const TextStyle(fontWeight: FontWeight.w700),
       ),
       subtitle: Padding(
         padding: const EdgeInsets.only(top: 5),
         child: Text(
-          '${entry.accountRoleLabel}: ${entry.balanceName} · ${entry.ownerName}\n'
-          '${_dateLabel(entry.transaction.date)}',
+          [
+            if (entry.subtitle.isNotEmpty) entry.subtitle,
+            _dateLabel(entry.occurredAt),
+          ].join('\n'),
         ),
       ),
       trailing: Text(
-        EuroFormatter.formatSigned(
-          entry.transaction.isIncome
-              ? entry.transaction.amount
-              : -entry.transaction.amount,
-        ),
+        _amountLabel(entry),
         style: const TextStyle(fontWeight: FontWeight.w700),
       ),
-      isThreeLine: true,
+      isThreeLine: entry.subtitle.isNotEmpty,
     ),
   );
 
-  Future<void> _showDetail(FinanceLedgerEntryViewData entry) {
-    final transaction = entry.transaction;
+  Future<void> _showDetail(LedgerEventViewModel entry) {
+    final origins = _counterpartyLabels(entry, LedgerCounterpartyRole.origin);
+    final destinations = _counterpartyLabels(
+      entry,
+      LedgerCounterpartyRole.destination,
+    );
+    final recurring = entry.transactionOrigins.contains(
+      EconomicTransactionOrigin.recurringItem,
+    );
     return showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(entry.description),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _detailRow('Tipo', entry.typeLabel),
-            _detailRow(entry.accountRoleLabel, entry.balanceName),
-            _detailRow('Proprietario', entry.ownerName),
-            _detailRow('Data', _dateLabel(transaction.date)),
-            _detailRow('Importo', EuroFormatter.format(transaction.amount)),
-            if (transaction.notes?.isNotEmpty ?? false)
-              Text('Note: ${transaction.notes}'),
-          ],
+        title: Text(entry.title),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _detailRow('Importo', EuroFormatter.format(entry.amount)),
+              _detailRow('Data', _dateLabel(entry.occurredAt)),
+              if (origins.isNotEmpty) _detailRow('Da', origins),
+              if (destinations.isNotEmpty) _detailRow('A', destinations),
+              if (entry.personLabel?.isNotEmpty ?? false)
+                _detailRow('Persona', entry.personLabel!),
+              if (entry.category != null)
+                _detailRow('Categoria', entry.category!.label),
+              if (recurring) _detailRow('Ricorrenza', 'Ricorrente'),
+              for (final note in entry.notes) _detailRow('Nota', note),
+              for (final badge in entry.badges.where(
+                (badge) => badge.tone == LedgerBadgeTone.warning,
+              ))
+                _detailRow('Stato', badge.label),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -257,47 +157,45 @@ class _FinanceLedgerPageState extends State<FinanceLedgerPage> {
     ),
   );
 
-  String _typeLabel(FinanceLedgerTypeFilter value) => switch (value) {
-    FinanceLedgerTypeFilter.all => 'Tutti i tipi',
-    FinanceLedgerTypeFilter.income => 'Entrate',
-    FinanceLedgerTypeFilter.expense => 'Uscite',
-    FinanceLedgerTypeFilter.transfer => 'Trasferimenti',
+  Set<String> _selectedFilterIds(FinanceLedgerNatureFilter value) =>
+      switch (value) {
+        FinanceLedgerNatureFilter.all => const {},
+        FinanceLedgerNatureFilter.income => const {'nature:income'},
+        FinanceLedgerNatureFilter.outflow => const {'nature:outflow'},
+        FinanceLedgerNatureFilter.internalTransfer => const {
+          'nature:internalTransfer',
+        },
+      };
+
+  String _typeLabel(FinanceLedgerNatureFilter value) => switch (value) {
+    FinanceLedgerNatureFilter.all => 'Tutti i tipi',
+    FinanceLedgerNatureFilter.income => 'Entrate',
+    FinanceLedgerNatureFilter.outflow => 'Uscite',
+    FinanceLedgerNatureFilter.internalTransfer => 'Trasferimenti',
   };
 
-  String _originLabel(FinanceLedgerOriginFilter value) => switch (value) {
-    FinanceLedgerOriginFilter.all => 'Tutte le origini',
-    FinanceLedgerOriginFilter.recurringItem => 'Ricorrenze',
-    FinanceLedgerOriginFilter.manual => 'Manuali',
-    FinanceLedgerOriginFilter.fund => 'Fondi',
-    FinanceLedgerOriginFilter.adjustment => 'Rettifiche',
+  IconData _icon(LedgerEventViewModel entry) => switch (entry.nature) {
+    EconomicNature.income => Icons.south_west,
+    EconomicNature.outflow => Icons.north_east,
+    EconomicNature.internalTransfer => Icons.swap_horiz_rounded,
   };
 
-  IconData _fundOperationIcon(FinanceAssetMovementKind kind) => switch (kind) {
-    FinanceAssetMovementKind.fundOpening => Icons.flag_outlined,
-    FinanceAssetMovementKind.fundAllocation => Icons.south_east_rounded,
-    FinanceAssetMovementKind.fundRelease => Icons.north_west_rounded,
-    FinanceAssetMovementKind.fundExpense => Icons.receipt_long_outlined,
-    FinanceAssetMovementKind.fundTransferOut ||
-    FinanceAssetMovementKind.fundTransferIn => Icons.swap_horiz_rounded,
-    FinanceAssetMovementKind.legacyOpening => Icons.history_rounded,
-    FinanceAssetMovementKind.legacyUnclassified => Icons.help_outline_rounded,
-  };
+  String _amountLabel(LedgerEventViewModel entry) =>
+      switch (entry.economicSign) {
+        LedgerEconomicSign.positive => EuroFormatter.formatSigned(entry.amount),
+        LedgerEconomicSign.negative => EuroFormatter.formatSigned(
+          -entry.amount,
+        ),
+        LedgerEconomicSign.neutral => EuroFormatter.format(entry.amount),
+      };
 
-  Color _fundOperationColor(FinanceAssetMovementKind kind) => switch (kind) {
-    FinanceAssetMovementKind.fundOpening ||
-    FinanceAssetMovementKind.fundAllocation => const Color(0xFF43A047),
-    FinanceAssetMovementKind.fundRelease ||
-    FinanceAssetMovementKind.fundTransferOut ||
-    FinanceAssetMovementKind.fundTransferIn => const Color(0xFF1976D2),
-    FinanceAssetMovementKind.fundExpense => const Color(0xFFE53935),
-    FinanceAssetMovementKind.legacyOpening ||
-    FinanceAssetMovementKind.legacyUnclassified => const Color(0xFF78909C),
-  };
-
-  String _displayName(String value) {
-    if (value.isEmpty) return value;
-    return '${value[0].toUpperCase()}${value.substring(1)}';
-  }
+  String _counterpartyLabels(
+    LedgerEventViewModel entry,
+    LedgerCounterpartyRole role,
+  ) => entry.counterparties
+      .where((counterparty) => counterparty.role == role)
+      .map((counterparty) => counterparty.label)
+      .join(', ');
 
   String _dateLabel(DateTime date) =>
       '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';

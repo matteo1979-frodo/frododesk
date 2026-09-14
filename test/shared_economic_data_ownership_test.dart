@@ -68,7 +68,7 @@ void main() {
   });
 
   test(
-    'pages cannot create silent fallback stores and Ledger stays legacy',
+    'pages cannot create silent fallback stores and Finance wires Ledger 2.0',
     () {
       final spese = File('lib/screens/spese_page.dart').readAsStringSync();
       final finance = File(
@@ -82,11 +82,8 @@ void main() {
       expect(spese, isNot(contains('CashWalletStore()')));
       expect(finance, isNot(contains('ExpenseStore()')));
       expect(finance, isNot(contains('CashWalletStore()')));
-      expect(ledger, contains('FinanceLedgerCoordinator'));
-      expect(
-        ledger,
-        isNot(contains("import '../../logic/ledger/ledger_coordinator.dart'")),
-      );
+      expect(ledger, contains('FinanceLedgerPresentationCoordinator'));
+      expect(ledger, isNot(contains('FinanceLedgerCoordinator')));
     },
   );
 }
