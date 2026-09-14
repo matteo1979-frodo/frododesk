@@ -393,6 +393,31 @@ void main() {
     expect(result.origins, hasLength(2));
   });
 
+  test(
+    'merges semantic fields conservatively without inventing duplicates',
+    () {
+      final result = correlator.correlate([
+        _event(
+          id: 'out',
+          factId: 'transfer',
+          notes: const ['Verso destinazione'],
+          transactionOrigins: const [EconomicTransactionOrigin.manual],
+        ),
+        _event(
+          id: 'in',
+          factId: 'transfer',
+          notes: const ['Da origine', 'Verso destinazione'],
+          transactionOrigins: const [EconomicTransactionOrigin.manual],
+          recurringItemIds: const ['rule'],
+        ),
+      ]).single;
+
+      expect(result.notes, ['Da origine', 'Verso destinazione']);
+      expect(result.transactionOrigins, [EconomicTransactionOrigin.manual]);
+      expect(result.recurringItemIds, ['rule']);
+    },
+  );
+
   test('fails explicitly for structurally correlated incompatible amounts', () {
     expect(
       () => correlator.correlate([
@@ -433,6 +458,9 @@ EconomicEvent _event({
   String? personId,
   String description = 'Descrizione',
   List<String> relatedEventIds = const [],
+  List<String> notes = const [],
+  List<EconomicTransactionOrigin> transactionOrigins = const [],
+  List<String> recurringItemIds = const [],
 }) => EconomicEvent(
   id: id,
   economicFactId: factId,
@@ -447,6 +475,9 @@ EconomicEvent _event({
   nature: nature,
   sourceLinks: [EconomicSourceLink(kind: sourceKind, recordId: id)],
   relatedEventIds: relatedEventIds,
+  notes: notes,
+  transactionOrigins: transactionOrigins,
+  recurringItemIds: recurringItemIds,
 );
 
 EconomicEvent _fundTransfer(String id, String factId) => _event(

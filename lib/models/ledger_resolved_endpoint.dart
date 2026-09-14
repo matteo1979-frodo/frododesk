@@ -1,16 +1,19 @@
 import 'dart:collection';
 
 import 'economic_event.dart';
+import 'finance_balance.dart';
 
 class LedgerEndpointRecord {
   final String id;
   final String label;
   final String? personId;
+  final FinanceBalanceType? balanceType;
 
   const LedgerEndpointRecord({
     required this.id,
     required this.label,
     this.personId,
+    this.balanceType,
   }) : assert(id != ''),
        assert(label != '');
 }
@@ -47,6 +50,7 @@ class LedgerResolvedEndpoint {
   final String label;
   final String? personId;
   final String? personLabel;
+  final FinanceBalanceType? balanceType;
   final double amount;
   final bool usesHistoricalFallback;
 
@@ -58,6 +62,7 @@ class LedgerResolvedEndpoint {
     this.referenceId,
     this.personId,
     this.personLabel,
+    this.balanceType,
   }) : assert(label != ''),
        assert(amount >= 0);
 }

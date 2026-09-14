@@ -57,11 +57,31 @@ class FinanceTransactionEventAdapter
           recordId: source.id,
         ),
       ],
+      notes: _optionalText(source.notes),
+      transactionOrigins: [_origin(source.origin)],
+      recurringItemIds: source.recurringItemId == null
+          ? const []
+          : [source.recurringItemId!],
       relatedEventIds: source.recurringItemId == null
           ? const []
           : ['recurring_item:${source.recurringItemId}'],
     );
   }
+
+  List<String> _optionalText(String? value) {
+    final normalized = value?.trim();
+    return normalized == null || normalized.isEmpty ? const [] : [normalized];
+  }
+
+  EconomicTransactionOrigin _origin(FinanceTransactionOrigin origin) =>
+      switch (origin) {
+        FinanceTransactionOrigin.recurringItem =>
+          EconomicTransactionOrigin.recurringItem,
+        FinanceTransactionOrigin.manual => EconomicTransactionOrigin.manual,
+        FinanceTransactionOrigin.fund => EconomicTransactionOrigin.fund,
+        FinanceTransactionOrigin.adjustment =>
+          EconomicTransactionOrigin.adjustment,
+      };
 
   String? _personId(FinanceSubject subject) => switch (subject) {
     FinanceSubject.matteo => 'matteo',

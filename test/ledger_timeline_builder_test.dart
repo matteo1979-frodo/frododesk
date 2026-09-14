@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/logic/ledger/ledger_endpoint_resolver.dart';
 import 'package:frododesk/logic/ledger/ledger_timeline_builder.dart';
 import 'package:frododesk/models/economic_event.dart';
+import 'package:frododesk/models/finance_balance.dart';
 import 'package:frododesk/models/ledger_event_view_model.dart';
 import 'package:frododesk/models/ledger_resolved_endpoint.dart';
 
@@ -19,11 +20,13 @@ void main() {
               id: 'account-a',
               label: 'Banca Matteo',
               personId: 'matteo',
+              balanceType: FinanceBalanceType.bankAccount,
             ),
             'account-b': LedgerEndpointRecord(
               id: 'account-b',
               label: 'Banca Chiara',
               personId: 'chiara',
+              balanceType: FinanceBalanceType.prepaidCard,
             ),
           },
           funds: const {
@@ -103,6 +106,35 @@ void main() {
       LedgerCounterpartyRole.origin,
       LedgerCounterpartyRole.destination,
     ]);
+  });
+
+  test('preserves notes, provenance and structural prepaid endpoint type', () {
+    final event = _event(
+      id: 'prepaid-transfer',
+      nature: EconomicNature.internalTransfer,
+      origins: [_account('account-a')],
+      destinations: [_account('account-b')],
+      notes: const ['Nota trasferimento'],
+      transactionOrigins: const [EconomicTransactionOrigin.recurringItem],
+      recurringItemIds: const ['rule'],
+    );
+
+    final viewModel = builder.build([event]).single;
+
+    expect(viewModel.notes, ['Nota trasferimento']);
+    expect(viewModel.transactionOrigins, [
+      EconomicTransactionOrigin.recurringItem,
+    ]);
+    expect(viewModel.recurringItemIds, ['rule']);
+    expect(
+      viewModel.counterparties.first.balanceType,
+      FinanceBalanceType.bankAccount,
+    );
+    expect(
+      viewModel.counterparties.last.balanceType,
+      FinanceBalanceType.prepaidCard,
+    );
+    expect(viewModel.isInternalTransfer, isTrue);
   });
 
   test('uses cash and fund structural icons for internal transfers', () {
@@ -305,6 +337,9 @@ EconomicEvent _event({
   EconomicSourceKind sourceKind = EconomicSourceKind.other,
   String? personId,
   EconomicCategoryRef? category,
+  List<String> notes = const [],
+  List<EconomicTransactionOrigin> transactionOrigins = const [],
+  List<String> recurringItemIds = const [],
 }) => EconomicEvent(
   id: id,
   economicFactId: factId,
@@ -318,6 +353,9 @@ EconomicEvent _event({
   personId: personId,
   category: category,
   sourceLinks: [EconomicSourceLink(kind: sourceKind, recordId: id)],
+  notes: notes,
+  transactionOrigins: transactionOrigins,
+  recurringItemIds: recurringItemIds,
 );
 
 EconomicEndpoint _account(String id) => EconomicEndpoint(

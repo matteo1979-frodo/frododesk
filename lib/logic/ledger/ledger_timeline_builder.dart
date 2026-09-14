@@ -52,6 +52,9 @@ class LedgerTimelineBuilder {
       counterparties: counterparties,
       badges: _badges(event, resolved),
       sourceLinks: event.sourceLinks,
+      notes: event.notes,
+      transactionOrigins: event.transactionOrigins,
+      recurringItemIds: event.recurringItemIds,
     );
   }
 
@@ -159,6 +162,7 @@ class LedgerTimelineBuilder {
     label: endpoint.label,
     personId: endpoint.personId,
     personLabel: endpoint.personLabel,
+    balanceType: endpoint.balanceType,
     amount: endpoint.amount,
   );
 

@@ -18,6 +18,8 @@ enum EconomicSourceKind {
   other,
 }
 
+enum EconomicTransactionOrigin { recurringItem, manual, fund, adjustment }
+
 class EconomicEndpoint {
   final EconomicEndpointKind kind;
   final String? referenceId;
@@ -73,6 +75,9 @@ class EconomicEvent {
   final EconomicNature nature;
   final UnmodifiableListView<EconomicSourceLink> sourceLinks;
   final UnmodifiableListView<String> relatedEventIds;
+  final UnmodifiableListView<String> notes;
+  final UnmodifiableListView<EconomicTransactionOrigin> transactionOrigins;
+  final UnmodifiableListView<String> recurringItemIds;
   final String? economicFactId;
 
   EconomicEvent({
@@ -86,6 +91,9 @@ class EconomicEvent {
     required this.nature,
     List<EconomicSourceLink> sourceLinks = const [],
     List<String> relatedEventIds = const [],
+    List<String> notes = const [],
+    List<EconomicTransactionOrigin> transactionOrigins = const [],
+    List<String> recurringItemIds = const [],
     this.category,
     this.personId,
     this.economicFactId,
@@ -98,5 +106,12 @@ class EconomicEvent {
        sourceLinks = UnmodifiableListView(
          List<EconomicSourceLink>.of(sourceLinks),
        ),
-       relatedEventIds = UnmodifiableListView(List<String>.of(relatedEventIds));
+       relatedEventIds = UnmodifiableListView(List<String>.of(relatedEventIds)),
+       notes = UnmodifiableListView(List<String>.of(notes)),
+       transactionOrigins = UnmodifiableListView(
+         List<EconomicTransactionOrigin>.of(transactionOrigins),
+       ),
+       recurringItemIds = UnmodifiableListView(
+         List<String>.of(recurringItemIds),
+       );
 }

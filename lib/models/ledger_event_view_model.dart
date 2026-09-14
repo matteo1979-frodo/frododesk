@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'economic_event.dart';
+import 'finance_balance.dart';
 
 enum LedgerEconomicSign { positive, negative, neutral }
 
@@ -28,6 +29,7 @@ class LedgerEventCounterparty {
   final String label;
   final String? personId;
   final String? personLabel;
+  final FinanceBalanceType? balanceType;
   final double amount;
 
   const LedgerEventCounterparty({
@@ -38,6 +40,7 @@ class LedgerEventCounterparty {
     this.referenceId,
     this.personId,
     this.personLabel,
+    this.balanceType,
   }) : assert(label != ''),
        assert(amount >= 0);
 }
@@ -68,6 +71,9 @@ class LedgerEventViewModel {
   final UnmodifiableListView<LedgerEventCounterparty> counterparties;
   final UnmodifiableListView<LedgerEventBadge> badges;
   final UnmodifiableListView<EconomicSourceLink> sourceLinks;
+  final UnmodifiableListView<String> notes;
+  final UnmodifiableListView<EconomicTransactionOrigin> transactionOrigins;
+  final UnmodifiableListView<String> recurringItemIds;
 
   LedgerEventViewModel({
     required this.eventId,
@@ -84,6 +90,9 @@ class LedgerEventViewModel {
     required List<LedgerEventCounterparty> counterparties,
     required List<LedgerEventBadge> badges,
     List<EconomicSourceLink> sourceLinks = const [],
+    List<String> notes = const [],
+    List<EconomicTransactionOrigin> transactionOrigins = const [],
+    List<String> recurringItemIds = const [],
     this.personId,
     this.personLabel,
     this.category,
@@ -97,6 +106,13 @@ class LedgerEventViewModel {
        badges = UnmodifiableListView(List<LedgerEventBadge>.of(badges)),
        sourceLinks = UnmodifiableListView(
          List<EconomicSourceLink>.of(sourceLinks),
+       ),
+       notes = UnmodifiableListView(List<String>.of(notes)),
+       transactionOrigins = UnmodifiableListView(
+         List<EconomicTransactionOrigin>.of(transactionOrigins),
+       ),
+       recurringItemIds = UnmodifiableListView(
+         List<String>.of(recurringItemIds),
        );
 
   bool get isInternalTransfer => nature == EconomicNature.internalTransfer;

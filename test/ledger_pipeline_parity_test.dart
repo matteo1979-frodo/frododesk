@@ -6,6 +6,7 @@ import 'package:frododesk/logic/ledger/ledger_endpoint_resolver.dart';
 import 'package:frododesk/logic/ledger/ledger_timeline_builder.dart';
 import 'package:frododesk/models/economic_event.dart';
 import 'package:frododesk/models/finance_asset_movement.dart';
+import 'package:frododesk/models/finance_balance.dart';
 import 'package:frododesk/models/finance_recurring_item.dart';
 import 'package:frododesk/models/finance_transaction.dart';
 import 'package:frododesk/models/ledger_event_view_model.dart';
@@ -166,6 +167,45 @@ void main() {
       accountTransfer.timeline.single,
       'Conto Matteo',
       'Conto Chiara',
+    );
+  });
+
+  test('semantic metadata survives the full prepaid transfer pipeline', () {
+    final snapshot = coordinator.build(
+      transactions: [
+        _transaction(
+          'prepaid-out',
+          factId: 'prepaid-transfer',
+          type: FinanceTransactionType.transfer,
+          balanceId: 'account-a',
+          notes: 'Verso prepagata',
+        ),
+        _transaction(
+          'prepaid-in',
+          factId: 'prepaid-transfer',
+          type: FinanceTransactionType.transfer,
+          balanceId: 'account-b',
+          income: true,
+          notes: 'Da conto corrente',
+        ),
+      ],
+      assetMovements: const [],
+      realExpenses: const [],
+      observedAt: observedAt,
+      query: 'verso prepagata',
+    );
+
+    final event = snapshot.timeline.single;
+    expect(event.nature, EconomicNature.internalTransfer);
+    expect(event.notes, ['Da conto corrente', 'Verso prepagata']);
+    expect(event.transactionOrigins, [EconomicTransactionOrigin.manual]);
+    expect(
+      event.counterparties.first.balanceType,
+      FinanceBalanceType.bankAccount,
+    );
+    expect(
+      event.counterparties.last.balanceType,
+      FinanceBalanceType.prepaidCard,
     );
   });
 
@@ -435,16 +475,19 @@ LedgerCoordinator _coordinator() => LedgerCoordinator(
             id: 'account',
             label: 'Conto Famiglia',
             personId: 'matteo',
+            balanceType: FinanceBalanceType.bankAccount,
           ),
           'account-a': LedgerEndpointRecord(
             id: 'account-a',
             label: 'Conto Matteo',
             personId: 'matteo',
+            balanceType: FinanceBalanceType.bankAccount,
           ),
           'account-b': LedgerEndpointRecord(
             id: 'account-b',
             label: 'Conto Chiara',
             personId: 'chiara',
+            balanceType: FinanceBalanceType.prepaidCard,
           ),
         },
         funds: const {
@@ -490,6 +533,7 @@ FinanceTransaction _transaction(
   String? description,
   String? recurringItemId,
   DateTime? date,
+  String? notes,
 }) => FinanceTransaction(
   id: id,
   economicFactId: factId,
@@ -504,6 +548,7 @@ FinanceTransaction _transaction(
       (income ? FinanceTransactionType.income : FinanceTransactionType.expense),
   origin: origin,
   recurringItemId: recurringItemId,
+  notes: notes,
 );
 
 RealExpense _expense(

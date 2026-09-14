@@ -22,6 +22,7 @@ class LedgerEndpointRegistryBuilder {
             id: account.balanceId,
             label: account.name,
             personId: account.personId,
+            balanceType: account.balanceType,
           ),
         ),
       ),
@@ -67,7 +68,8 @@ class LedgerEndpointRegistryBuilder {
       final existing = records[candidate.id];
       if (existing != null &&
           (existing.label != candidate.label ||
-              existing.personId != candidate.personId)) {
+              existing.personId != candidate.personId ||
+              existing.balanceType != candidate.balanceType)) {
         throw StateError('Conflicting $kind referenceId: ${candidate.id}');
       }
       records[candidate.id] = candidate;

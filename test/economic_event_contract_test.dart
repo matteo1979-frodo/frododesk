@@ -53,6 +53,11 @@ void main() {
     expect(event.sourceLinks, hasLength(1));
     expect(() => event.origins.clear(), throwsUnsupportedError);
     expect(() => event.relatedEventIds.add('other'), throwsUnsupportedError);
+    expect(() => event.notes.add('other'), throwsUnsupportedError);
+    expect(
+      () => event.transactionOrigins.add(EconomicTransactionOrigin.manual),
+      throwsUnsupportedError,
+    );
   });
 
   test(
@@ -109,6 +114,7 @@ void main() {
           type: FinanceTransactionType.expense,
           origin: FinanceTransactionOrigin.manual,
           recurringItemId: 'recurring',
+          notes: '  Nota conservata  ',
         ),
         observedAt: observedAt,
       );
@@ -119,9 +125,35 @@ void main() {
       expect(event.nature, EconomicNature.outflow);
       expect(event.personId, 'chiara');
       expect(event.relatedEventIds, ['recurring_item:recurring']);
+      expect(event.notes, ['Nota conservata']);
+      expect(event.transactionOrigins, [EconomicTransactionOrigin.manual]);
+      expect(event.recurringItemIds, ['recurring']);
       expect(event.sourceLinks.single.recordId, 'transaction');
     },
   );
+
+  test('finance transaction adapter preserves every typed origin', () {
+    for (final origin in FinanceTransactionOrigin.values) {
+      final event = const FinanceTransactionEventAdapter().adapt(
+        FinanceTransaction(
+          id: 'transaction',
+          balanceId: 'account',
+          amount: 10,
+          date: DateTime(2026, 8, 10),
+          isIncome: false,
+          subject: FinanceSubject.matteo,
+          description: 'Movimento',
+          type: FinanceTransactionType.expense,
+          origin: origin,
+          notes: '   ',
+        ),
+        observedAt: observedAt,
+      );
+
+      expect(event.transactionOrigins.single.name, origin.name);
+      expect(event.notes, isEmpty);
+    }
+  });
 
   test(
     'asset movement adapter supports multiple origins and fund destinations',

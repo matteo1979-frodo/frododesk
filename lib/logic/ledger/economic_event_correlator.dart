@@ -100,6 +100,13 @@ class EconomicEventCorrelator {
       relatedEventIds: _sortedUnique(
         ordered.expand((event) => event.relatedEventIds),
       ),
+      notes: _sortedUnique(ordered.expand((event) => event.notes)),
+      transactionOrigins: _sortedUniqueOrigins(
+        ordered.expand((event) => event.transactionOrigins),
+      ),
+      recurringItemIds: _sortedUnique(
+        ordered.expand((event) => event.recurringItemIds),
+      ),
     );
   }
 
@@ -280,6 +287,10 @@ class EconomicEventCorrelator {
 
   List<String> _sortedUnique(Iterable<String> values) =>
       values.toSet().toList()..sort();
+
+  List<EconomicTransactionOrigin> _sortedUniqueOrigins(
+    Iterable<EconomicTransactionOrigin> values,
+  ) => values.toSet().toList()..sort((left, right) => left.index - right.index);
 
   int _compareSourceFidelity(EconomicEvent left, EconomicEvent right) {
     final rank = _sourceFidelity(left).compareTo(_sourceFidelity(right));

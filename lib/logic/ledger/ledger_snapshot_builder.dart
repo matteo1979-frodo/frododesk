@@ -159,6 +159,7 @@ class LedgerSnapshotBuilder {
       ...event.badges.map((item) => item.label),
       event.category?.label ?? '',
       event.personLabel ?? '',
+      ...event.notes,
       ...event.sourceLinks.map((item) => _sourceLabel(item.kind)),
     ];
     return searchable.any((value) => _normalizeText(value).contains(query));

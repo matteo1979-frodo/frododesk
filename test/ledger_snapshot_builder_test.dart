@@ -45,6 +45,7 @@ void main() {
         ],
         category: const EconomicCategoryRef(id: 'utenze', label: 'Utenze'),
         sourceKind: EconomicSourceKind.financeTransaction,
+        notes: const ['Pagamento tramite addebito automatico'],
       ),
     ];
 
@@ -55,6 +56,7 @@ void main() {
       'urgente',
       'utenze',
       'movimenti dei conti',
+      'addebito automatico',
     ]) {
       expect(
         builder
@@ -398,6 +400,7 @@ LedgerEventViewModel _event({
   List<LedgerEventBadge> badges = const [],
   EconomicCategoryRef? category,
   EconomicSourceKind sourceKind = EconomicSourceKind.other,
+  List<String> notes = const [],
 }) => LedgerEventViewModel(
   eventId: id,
   title: title,
@@ -420,6 +423,7 @@ LedgerEventViewModel _event({
   counterparties: counterparties,
   badges: badges,
   sourceLinks: [EconomicSourceLink(kind: sourceKind, recordId: id)],
+  notes: notes,
 );
 
 LedgerEventCounterparty _party({

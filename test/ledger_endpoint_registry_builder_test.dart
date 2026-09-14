@@ -39,11 +39,41 @@ void main() {
 
     expect(registry.accounts['account-a']?.label, 'Conto A');
     expect(registry.accounts['account-a']?.personId, 'matteo');
+    expect(
+      registry.accounts['account-a']?.balanceType,
+      FinanceBalanceType.bankAccount,
+    );
     expect(registry.funds['fund-a']?.label, 'Vacanze');
     expect(registry.funds['fund-a']?.personId, isNull);
     expect(registry.cashWallets['wallet-a']?.label, 'Portafoglio Matteo');
     expect(registry.cashWallets['wallet-a']?.personId, 'matteo');
     expect(registry.people['matteo']?.label, 'Matteo');
+  });
+
+  test('preserves structural bank account and prepaid balance types', () {
+    final registry = builder.build(
+      accounts: [
+        _balance(id: 'bank'),
+        _balance(id: 'prepaid', type: FinanceBalanceType.prepaidCard),
+      ],
+      funds: const [],
+      wallets: const [],
+      people: const [],
+    );
+    final resolver = LedgerEndpointResolver(registry: registry);
+
+    expect(
+      resolver
+          .resolve(_endpoint(EconomicEndpointKind.account, 'bank'))
+          .balanceType,
+      FinanceBalanceType.bankAccount,
+    );
+    expect(
+      resolver
+          .resolve(_endpoint(EconomicEndpointKind.account, 'prepaid'))
+          .balanceType,
+      FinanceBalanceType.prepaidCard,
+    );
   });
 
   test('unknown owner is preserved without inventing a person label', () {
@@ -312,6 +342,7 @@ FinanceBalance _balance({
   String id = 'account-a',
   String name = 'Conto A',
   String personId = 'matteo',
+  FinanceBalanceType type = FinanceBalanceType.bankAccount,
 }) => FinanceBalance(
   personId: personId,
   balanceId: id,
@@ -319,7 +350,7 @@ FinanceBalance _balance({
   initialAmount: 100,
   currentAmount: 100,
   updatedAt: DateTime(2026, 8, 20),
-  balanceType: FinanceBalanceType.bankAccount,
+  balanceType: type,
   operational: true,
   active: true,
   reservedAmount: 0,

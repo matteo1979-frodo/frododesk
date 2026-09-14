@@ -25,6 +25,7 @@ class LedgerEndpointResolver {
         label: record?.label ?? _missingReferenceLabel(endpoint.kind),
         personId: personId,
         personLabel: _personLabel(personId),
+        balanceType: record?.balanceType,
         amount: endpoint.amount,
         usesHistoricalFallback: record == null,
       );
