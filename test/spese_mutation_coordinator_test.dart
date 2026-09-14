@@ -127,7 +127,7 @@ void main() {
     ]) {
       expect(page, isNot(contains(mutation)));
     }
-    expect(page, contains('.mutationCoordinator.execute(command)'));
+    expect(page, contains('_executeSpeseCreationOrEdit('));
   });
 }
 

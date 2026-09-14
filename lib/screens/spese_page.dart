@@ -32,6 +32,25 @@ SpeseCommand? _prepareSpeseCommand(
   }
 }
 
+Future<void> _executeSpeseCreationOrEdit({
+  required SpeseMutationCoordinator mutationCoordinator,
+  required SpeseCommand command,
+  required SpeseCommandRegistry registry,
+  RealExpense? editingExpense,
+}) async {
+  if (editingExpense != null) {
+    final removalCommand = _speseCommandBuilder.buildExistingMovement(
+      expense: editingExpense,
+      action: SpeseCommandAction.removeForEdit,
+      preparedAt: command.preparedAt,
+      registry: registry,
+    );
+    await mutationCoordinator.execute(removalCommand);
+  }
+
+  await mutationCoordinator.execute(command);
+}
+
 class SpesePage extends StatefulWidget {
   final FinanceStore financeStore;
   final ExpenseStore expenseStore;
@@ -739,7 +758,12 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
                             );
                             if (command == null) return;
 
-                            await widget.mutationCoordinator.execute(command);
+                            await _executeSpeseCreationOrEdit(
+                              mutationCoordinator: widget.mutationCoordinator,
+                              command: command,
+                              registry: commandRegistry,
+                              editingExpense: widget.editingExpense,
+                            );
 
                             if (!context.mounted) return;
 
@@ -1367,15 +1391,6 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                     Navigator.of(dialogContext).pop();
 
                                     if (expense.isCashWithdrawal) {
-                                      await mutationCoordinator.execute(
-                                        _existingMovementCommand(
-                                          expense,
-                                          SpeseCommandAction.removeForEdit,
-                                        ),
-                                      );
-
-                                      if (!context.mounted) return;
-
                                       Navigator.of(context).pop();
 
                                       await Navigator.of(context).push(
@@ -1403,15 +1418,6 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                     }
 
                                     if (expense.isIncome) {
-                                      await mutationCoordinator.execute(
-                                        _existingMovementCommand(
-                                          expense,
-                                          SpeseCommandAction.removeForEdit,
-                                        ),
-                                      );
-
-                                      if (!context.mounted) return;
-
                                       Navigator.of(context).pop();
 
                                       await Navigator.of(context).push(
@@ -1455,17 +1461,6 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                                 Navigator.of(
                                                   modifyContext,
                                                 ).pop();
-
-                                                await mutationCoordinator
-                                                    .execute(
-                                                      _existingMovementCommand(
-                                                        expense,
-                                                        SpeseCommandAction
-                                                            .removeForEdit,
-                                                      ),
-                                                    );
-
-                                                if (!context.mounted) return;
 
                                                 Navigator.of(context).pop();
 
@@ -1870,7 +1865,12 @@ class _CashWithdrawalFormPageState extends State<_CashWithdrawalFormPage> {
                             );
                             if (command == null) return;
 
-                            await widget.mutationCoordinator.execute(command);
+                            await _executeSpeseCreationOrEdit(
+                              mutationCoordinator: widget.mutationCoordinator,
+                              command: command,
+                              registry: widget.snapshot.commandRegistry,
+                              editingExpense: widget.editingExpense,
+                            );
 
                             if (!context.mounted) return;
 
@@ -2220,7 +2220,12 @@ class _ExtraIncomeFormPageState extends State<_ExtraIncomeFormPage> {
                             );
                             if (command == null) return;
 
-                            await widget.mutationCoordinator.execute(command);
+                            await _executeSpeseCreationOrEdit(
+                              mutationCoordinator: widget.mutationCoordinator,
+                              command: command,
+                              registry: widget.snapshot.commandRegistry,
+                              editingExpense: widget.editingExpense,
+                            );
 
                             if (!context.mounted) return;
 
