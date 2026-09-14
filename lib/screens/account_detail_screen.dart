@@ -46,6 +46,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
       backgroundColor: const Color(0xFF0F1D12),
       appBar: AppBar(
         backgroundColor: Colors.black.withOpacity(0.08),
+        foregroundColor: Colors.white,
         elevation: 0,
         title: Text(balance.name),
       ),
