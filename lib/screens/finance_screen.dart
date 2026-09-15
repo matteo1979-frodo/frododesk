@@ -7,6 +7,7 @@ import '../models/finance_category_template.dart';
 import '../models/finance_month_projection.dart';
 import '../models/finance_recurring_item.dart';
 import '../models/finite_financial_plan.dart';
+import '../models/finite_financial_plan_installment_confirmation.dart';
 import '../models/frodo_observation.dart';
 import '../stores/finance_store.dart';
 import '../stores/expense_store.dart';
@@ -21,6 +22,7 @@ import 'finance/finance_observations_page.dart';
 import 'finance/finance_funds_page.dart';
 import 'finance/finance_ledger_page.dart';
 import '../logic/finance/finance_funds_coordinator.dart';
+import '../logic/finance/finite_financial_plan_installment_confirmation_coordinator.dart';
 import '../logic/finance/finance_ledger_presentation_coordinator.dart';
 import '../logic/finance/finance_recurring_coordinator.dart';
 import '../models/finance_recurring_draft.dart';
@@ -661,6 +663,20 @@ class _FinanceScreenState extends State<FinanceScreen> {
               '${EuroFormatter.format(installment.expectedAmount)} • ${_formatDate(installment.dueDate)}',
               style: TextStyle(color: Colors.white.withValues(alpha: 0.82)),
             ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton.icon(
+                key: Key('confirm-finite-plan-installment-${plan.id}'),
+                onPressed: () => _showConfirmFinitePlanInstallmentDialog(
+                  plan,
+                  installment,
+                  accountName ?? 'Conto non disponibile',
+                ),
+                icon: const Icon(Icons.check_circle_outline_rounded),
+                label: Text('Registra rata ${installment.number}'),
+              ),
+            ),
           ],
           const SizedBox(height: 4),
           Text(
@@ -668,6 +684,243 @@ class _FinanceScreenState extends State<FinanceScreen> {
             style: TextStyle(color: Colors.white.withValues(alpha: 0.70)),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _showConfirmFinitePlanInstallmentDialog(
+    FiniteFinancialPlan plan,
+    FiniteFinancialPlanInstallment installment,
+    String accountName,
+  ) async {
+    final amountController = TextEditingController(
+      text: installment.expectedAmount.toStringAsFixed(2),
+    );
+    final descriptionController = TextEditingController();
+    final feeController = TextEditingController();
+    DateTime? economicDate;
+    FinanceCategory? mainCategory;
+    FinanceCategory? feeCategory;
+    String? formError;
+    var submitting = false;
+
+    await _showFinanceDialog(
+      icon: Icons.receipt_long_rounded,
+      color: const Color(0xFF6D4C41),
+      title: 'Registra rata ${installment.number}',
+      subtitle: plan.name,
+      child: StatefulBuilder(
+        builder: (context, refreshDialog) {
+          final fee = double.tryParse(
+            feeController.text.trim().replaceAll(',', '.'),
+          );
+
+          Future<void> submit() async {
+            if (submitting) return;
+            final amount = double.tryParse(
+              amountController.text.trim().replaceAll(',', '.'),
+            );
+            final description = descriptionController.text.trim();
+            final feeText = feeController.text.trim();
+            final effectiveFee = fee == null || fee == 0 ? null : fee;
+            if (amount == null ||
+                amount <= 0 ||
+                economicDate == null ||
+                description.isEmpty ||
+                mainCategory == null ||
+                (feeText.isNotEmpty && fee == null) ||
+                (effectiveFee != null &&
+                    (effectiveFee < 0 || feeCategory == null))) {
+              refreshDialog(() {
+                formError = effectiveFee != null && feeCategory == null
+                    ? 'Seleziona la categoria della commissione.'
+                    : 'Compila tutti i campi obbligatori con valori validi.';
+              });
+              return;
+            }
+
+            refreshDialog(() {
+              submitting = true;
+              formError = null;
+            });
+            try {
+              final confirmation = FiniteFinancialPlanInstallmentConfirmation(
+                planId: plan.id,
+                installmentNumber: installment.number,
+                debitBalanceId: plan.debitBalanceId ?? '',
+                subject: plan.subject,
+                mainAmount: amount,
+                economicDate: economicDate!,
+                description: description,
+                mainCategory: _categoryLabel(mainCategory!),
+                bankFee: effectiveFee,
+                bankFeeCategory: effectiveFee == null
+                    ? null
+                    : _categoryLabel(feeCategory!),
+              );
+              final result =
+                  await FiniteFinancialPlanInstallmentConfirmationCoordinator(
+                    financeStore: financeStore,
+                    expenseStore: widget.expenseStore,
+                  ).confirm(confirmation);
+              if (!context.mounted || !mounted) return;
+              switch (result.status) {
+                case FinitePlanInstallmentConfirmationStatus.completed:
+                case FinitePlanInstallmentConfirmationStatus.alreadyComplete:
+                  Navigator.of(context).pop();
+                  setState(() {});
+                case FinitePlanInstallmentConfirmationStatus.inconsistent:
+                  refreshDialog(() {
+                    submitting = false;
+                    formError =
+                        'I dati non sono coerenti: la rata non può essere registrata in sicurezza.';
+                  });
+                case FinitePlanInstallmentConfirmationStatus.failed:
+                  refreshDialog(() {
+                    submitting = false;
+                    formError =
+                        'Registrazione non completata. Verifica i dati e riprova.';
+                  });
+              }
+            } catch (_) {
+              if (!context.mounted) return;
+              refreshDialog(() {
+                submitting = false;
+                formError =
+                    'Registrazione non completata. Verifica i dati e riprova.';
+              });
+            }
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Piano: ${plan.name}'),
+              Text('Rata: ${installment.number} di ${plan.totalInstallments}'),
+              Text('Conto: $accountName'),
+              Text('Soggetto: ${_financeSubjectLabel(plan.subject)}'),
+              Text(
+                'Importo previsto: ${EuroFormatter.format(installment.expectedAmount)}',
+              ),
+              Text('Data pianificata: ${_formatDate(installment.dueDate)}'),
+              const SizedBox(height: 16),
+              TextField(
+                key: const Key('finite-installment-amount'),
+                controller: amountController,
+                enabled: !submitting,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: _inputDecoration('Importo reale rata'),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                key: const Key('finite-installment-economic-date'),
+                contentPadding: EdgeInsets.zero,
+                enabled: !submitting,
+                title: const Text('Data effettiva'),
+                subtitle: Text(
+                  economicDate == null
+                      ? 'Seleziona la data'
+                      : _formatDate(economicDate!),
+                ),
+                trailing: const Icon(Icons.calendar_today_rounded),
+                onTap: submitting
+                    ? null
+                    : () async {
+                        final selected = await showDatePicker(
+                          context: context,
+                          initialDate: installment.dueDate,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2100, 12, 31),
+                        );
+                        if (selected != null && context.mounted) {
+                          refreshDialog(() => economicDate = selected);
+                        }
+                      },
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                key: const Key('finite-installment-description'),
+                controller: descriptionController,
+                enabled: !submitting,
+                decoration: _inputDecoration('Causale / descrizione'),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<FinanceCategory>(
+                key: const Key('finite-installment-main-category'),
+                initialValue: mainCategory,
+                decoration: _inputDecoration('Categoria rata'),
+                items: FinanceCategory.values
+                    .map(
+                      (category) => DropdownMenuItem(
+                        value: category,
+                        child: Text(_categoryLabel(category)),
+                      ),
+                    )
+                    .toList(),
+                onChanged: submitting
+                    ? null
+                    : (value) => refreshDialog(() => mainCategory = value),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                key: const Key('finite-installment-fee'),
+                controller: feeController,
+                enabled: !submitting,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                onChanged: (_) => refreshDialog(() {}),
+                decoration: _inputDecoration(
+                  'Commissione bancaria (facoltativa)',
+                ),
+              ),
+              if (fee != null && fee > 0) ...[
+                const SizedBox(height: 12),
+                DropdownButtonFormField<FinanceCategory>(
+                  key: const Key('finite-installment-fee-category'),
+                  initialValue: feeCategory,
+                  decoration: _inputDecoration('Categoria commissione'),
+                  items: FinanceCategory.values
+                      .map(
+                        (category) => DropdownMenuItem(
+                          value: category,
+                          child: Text(_categoryLabel(category)),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: submitting
+                      ? null
+                      : (value) => refreshDialog(() => feeCategory = value),
+                ),
+              ],
+              if (formError != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  formError!,
+                  key: const Key('finite-installment-error'),
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ],
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton.icon(
+                  key: const Key('confirm-finite-plan-installment'),
+                  onPressed: submitting ? null : submit,
+                  icon: submitting
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.check_rounded),
+                  label: Text(submitting ? 'Registrazione…' : 'Conferma'),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
