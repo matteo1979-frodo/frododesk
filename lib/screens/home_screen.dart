@@ -4053,8 +4053,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   badgeColor: const Color(0xFFB08D57),
                   startColor: const Color(0xFF8D6E63),
                   endColor: const Color(0xFFBCAAA4),
-                  onTap: () {
-                    Navigator.of(context).push(
+                  onTap: () async {
+                    await Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => FinanceScreen(
                           financeStore: financeStore,
@@ -4063,6 +4063,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     );
+                    if (!mounted) return;
+                    setState(() {});
                   },
                 ),
                 _DashboardModuleCard(
@@ -4073,8 +4075,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   badgeColor: const Color(0xFF5D6D7E),
                   startColor: const Color(0xFF3FA2D6),
                   endColor: const Color(0xFF7FDBFF),
-                  onTap: () {
-                    Navigator.of(context).push(
+                  onTap: () async {
+                    await Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => SpesePage(
                           financeStore: financeStore,
@@ -4083,6 +4085,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     );
+                    if (!mounted) return;
+                    setState(() {});
                   },
                 ),
                 _DashboardModuleCard(
