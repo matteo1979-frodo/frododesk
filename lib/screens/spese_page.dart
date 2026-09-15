@@ -521,6 +521,7 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
       amountController.text = editingExpense.amount.toStringAsFixed(2);
       descriptionController.text = editingExpense.description;
       selectedCategory = editingExpense.category;
+      selectedSubject = editingExpense.subject;
     }
   }
 
@@ -1464,6 +1465,42 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                                   modifyContext,
                                                 ).pop();
 
+                                                var matchingBalanceIndex = -1;
+                                                for (
+                                                  var index = 0;
+                                                  index <
+                                                      snapshot
+                                                          .activeBalances
+                                                          .length;
+                                                  index++
+                                                ) {
+                                                  if (snapshot
+                                                          .activeBalances[index]
+                                                          .balanceId !=
+                                                      expense.balanceId) {
+                                                    continue;
+                                                  }
+                                                  if (matchingBalanceIndex !=
+                                                      -1) {
+                                                    matchingBalanceIndex = -2;
+                                                    break;
+                                                  }
+                                                  matchingBalanceIndex = index;
+                                                }
+                                                if (matchingBalanceIndex < 0) {
+                                                  if (!context.mounted) return;
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    const SnackBar(
+                                                      content: Text(
+                                                        'Conto originale non disponibile.',
+                                                      ),
+                                                    ),
+                                                  );
+                                                  return;
+                                                }
+
                                                 Navigator.of(context).pop();
 
                                                 await Navigator.of(
@@ -1476,7 +1513,9 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                                               expense.balanceId,
                                                           balanceName: expense
                                                               .balanceName,
-                                                          balanceAmount: 0,
+                                                          balanceAmount: snapshot
+                                                              .activeBalances[matchingBalanceIndex]
+                                                              .currentAmount,
                                                           snapshot: snapshot,
                                                           coordinator:
                                                               coordinator,

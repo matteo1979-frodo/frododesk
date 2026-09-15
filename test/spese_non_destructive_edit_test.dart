@@ -5,6 +5,7 @@ import 'package:frododesk/logic/ledger/economic_event_correlator.dart';
 import 'package:frododesk/logic/spese/spese_mutation_coordinator.dart';
 import 'package:frododesk/models/economic_event.dart';
 import 'package:frododesk/models/finance_balance.dart';
+import 'package:frododesk/models/finance_recurring_item.dart';
 import 'package:frododesk/models/spese_command.dart';
 import 'package:frododesk/screens/spese_page.dart';
 import 'package:frododesk/stores/cash_wallet_store.dart';
@@ -33,6 +34,68 @@ void main() {
 
     expect(fixture.capture(), before);
   });
+
+  testWidgets(
+    'expense editor shows current balance and preserves unchanged context',
+    (tester) async {
+      final fixture = await _fixture(
+        SpeseCommandKind.expense,
+        initialAmount: 2417.47,
+        expenseAmount: 13.30,
+        description: 'Farmacia',
+        category: 'Salute',
+        subject: FinanceSubject.matteo,
+        occurredAt: DateTime(2026, 9, 14, 18, 30),
+        balanceName: 'Banca di Imola',
+      );
+
+      await _pumpPage(tester, fixture);
+      await _openEditForm(tester, fixture.originalDescription);
+
+      expect(find.text('Saldo attuale: €2.404,17'), findsOneWidget);
+      expect(find.text('👨 Matteo'), findsOneWidget);
+      expect(find.text('👨‍👩‍👧 Condiviso'), findsNothing);
+
+      await tester.tap(find.text('Salva modifiche'));
+      await tester.pumpAndSettle();
+
+      expect(
+        fixture.financeStore.balances.single.currentAmount,
+        closeTo(2404.17, 0.000001),
+      );
+      final replacement = fixture.expenseStore.all.single;
+      expect(replacement.amount, 13.30);
+      expect(replacement.description, 'Farmacia');
+      expect(replacement.category, 'Salute');
+      expect(replacement.subject, FinanceSubject.matteo);
+      expect(replacement.balanceId, 'account');
+      expect(replacement.balanceName, 'Banca di Imola');
+      expect(replacement.date, DateTime(2026, 9, 14, 18, 30));
+    },
+  );
+
+  for (final subject in [
+    FinanceSubject.matteo,
+    FinanceSubject.chiara,
+    FinanceSubject.shared,
+  ]) {
+    testWidgets('expense editor prefills ${subject.name} canonically', (
+      tester,
+    ) async {
+      final fixture = await _fixture(
+        SpeseCommandKind.expense,
+        subject: subject,
+      );
+
+      await _pumpPage(tester, fixture);
+      await _openEditForm(tester, fixture.originalDescription);
+
+      final dropdown = tester.widget<DropdownButtonFormField<FinanceSubject>>(
+        find.byType(DropdownButtonFormField<FinanceSubject>),
+      );
+      expect(dropdown.initialValue, subject);
+    });
+  }
 
   for (final type in [
     FinanceBalanceType.bankAccount,
@@ -92,8 +155,24 @@ void main() {
 Future<_Fixture> _fixture(
   SpeseCommandKind kind, {
   FinanceBalanceType balanceType = FinanceBalanceType.bankAccount,
+  double initialAmount = 100,
+  double expenseAmount = 10,
+  String? description,
+  String? category,
+  FinanceSubject subject = FinanceSubject.matteo,
+  DateTime? occurredAt,
+  String? balanceName,
 }) async {
-  final financeStore = FinanceStore(initialBalances: [_balance(balanceType)]);
+  final financeStore = FinanceStore(
+    initialBalances: [
+      _balance(
+        balanceType,
+        personId: subject.name,
+        initialAmount: initialAmount,
+        name: balanceName,
+      ),
+    ],
+  );
   final expenseStore = ExpenseStore();
   final cashWalletStore = CashWalletStore();
   final coordinator = SpeseMutationCoordinator(
@@ -101,7 +180,16 @@ Future<_Fixture> _fixture(
     expenseStore: expenseStore,
     cashWalletStore: cashWalletStore,
   );
-  final command = _command(kind, id: 'original');
+  final command = _command(
+    kind,
+    id: 'original',
+    amount: expenseAmount,
+    description: description,
+    category: category,
+    subject: subject,
+    occurredAt: occurredAt,
+    balanceName: balanceName,
+  );
   await coordinator.execute(command);
 
   return _Fixture(
@@ -173,12 +261,18 @@ void _expectCompletedEdit(_Fixture fixture, {required double expectedBalance}) {
   );
 }
 
-FinanceBalance _balance(FinanceBalanceType type) => FinanceBalance(
-  personId: 'matteo',
+FinanceBalance _balance(
+  FinanceBalanceType type, {
+  required String personId,
+  required double initialAmount,
+  String? name,
+}) => FinanceBalance(
+  personId: personId,
   balanceId: 'account',
-  name: type == FinanceBalanceType.prepaidCard ? 'Prepagata' : 'Conto',
-  initialAmount: 100,
-  currentAmount: 100,
+  name:
+      name ?? (type == FinanceBalanceType.prepaidCard ? 'Prepagata' : 'Conto'),
+  initialAmount: initialAmount,
+  currentAmount: initialAmount,
   updatedAt: DateTime(2026, 9, 14),
   balanceType: type,
   operational: true,
@@ -189,7 +283,16 @@ FinanceBalance _balance(FinanceBalanceType type) => FinanceBalance(
   recoveryDays: 0,
 );
 
-SpeseCommand _command(SpeseCommandKind kind, {required String id}) {
+SpeseCommand _command(
+  SpeseCommandKind kind, {
+  required String id,
+  double amount = 10,
+  String? description,
+  String? category,
+  FinanceSubject subject = FinanceSubject.matteo,
+  DateTime? occurredAt,
+  String? balanceName,
+}) {
   final income = kind == SpeseCommandKind.extraIncome;
   final cash = kind == SpeseCommandKind.cashWithdrawal;
   const account = SpeseCommandEndpoint(
@@ -211,19 +314,29 @@ SpeseCommand _command(SpeseCommandKind kind, {required String id}) {
     kind: kind,
     action: SpeseCommandAction.create,
     preparedAt: DateTime.now(),
-    occurredAt: DateTime.now(),
-    origin: income ? external : account,
+    occurredAt: occurredAt ?? DateTime.now(),
+    origin: income
+        ? external
+        : SpeseCommandEndpoint(
+            kind: account.kind,
+            referenceId: account.referenceId,
+            label: balanceName ?? account.label,
+          ),
     destination: income ? account : (cash ? wallet : external),
-    amount: 10,
-    category: income
-        ? 'Entrata extra'
-        : (cash ? 'Portafoglio contanti' : 'Alimentazione'),
-    personId: 'matteo',
-    description: switch (kind) {
-      SpeseCommandKind.expense => 'Spesa originale',
-      SpeseCommandKind.extraIncome => 'Entrata originale',
-      SpeseCommandKind.cashWithdrawal => 'Prelievo contanti',
-    },
+    amount: amount,
+    category:
+        category ??
+        (income
+            ? 'Entrata extra'
+            : (cash ? 'Portafoglio contanti' : 'Alimentazione')),
+    personId: subject.name,
+    description:
+        description ??
+        switch (kind) {
+          SpeseCommandKind.expense => 'Spesa originale',
+          SpeseCommandKind.extraIncome => 'Entrata originale',
+          SpeseCommandKind.cashWithdrawal => 'Prelievo contanti',
+        },
   );
 }
 
