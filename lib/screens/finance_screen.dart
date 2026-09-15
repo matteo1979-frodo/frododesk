@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../models/finance_category_template.dart';
 import '../models/finance_month_projection.dart';
 import '../models/finance_recurring_item.dart';
+import '../models/finite_financial_plan.dart';
 import '../models/frodo_observation.dart';
 import '../stores/finance_store.dart';
 import '../stores/expense_store.dart';
@@ -93,6 +94,8 @@ class _FinanceScreenState extends State<FinanceScreen> {
                       presentItems: presentItems,
                       futureItems: futureItems,
                     ),
+                    const SizedBox(height: 18),
+                    _buildFiniteFinancialPlansSection(),
                     const SizedBox(height: 18),
                     _buildPeopleSection(context),
                     const SizedBox(height: 18),
@@ -568,6 +571,315 @@ class _FinanceScreenState extends State<FinanceScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildFiniteFinancialPlansSection() {
+    return _FinanceGlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Piani finanziari',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                key: const Key('add-finite-financial-plan'),
+                onPressed: _showAddFiniteFinancialPlanDialog,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Aggiungi piano'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (financeStore.finiteFinancialPlans.isEmpty)
+            _emptyMini('Nessun piano finanziario inserito.')
+          else
+            ...financeStore.finiteFinancialPlans.map(
+              (plan) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _buildFiniteFinancialPlanCard(plan),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFiniteFinancialPlanCard(FiniteFinancialPlan plan) {
+    final installment = plan.nextInstallment;
+    final accountName = financeStore.balances
+        .where((balance) => balance.balanceId == plan.debitBalanceId)
+        .map((balance) => balance.name)
+        .firstOrNull;
+
+    return Container(
+      key: Key('finite-financial-plan-${plan.id}'),
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            plan.name,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 6),
+          if (installment == null)
+            const Text(
+              'Completato',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            )
+          else ...[
+            Text(
+              'Rata ${installment.number} di ${plan.totalInstallments}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              '${EuroFormatter.format(installment.expectedAmount)} • ${_formatDate(installment.dueDate)}',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.82)),
+            ),
+          ],
+          const SizedBox(height: 4),
+          Text(
+            '${_financeSubjectLabel(plan.subject)} • ${accountName ?? 'Nessun conto associato'}',
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.70)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showAddFiniteFinancialPlanDialog() async {
+    final nameController = TextEditingController();
+    final creditorController = TextEditingController();
+    final totalController = TextEditingController();
+    final amountController = TextEditingController();
+    final completedController = TextEditingController(text: '0');
+    var selectedSubject = FinanceSubject.shared;
+    String? selectedBalanceId = financeStore.balances
+        .where((balance) => balance.active)
+        .map((balance) => balance.balanceId)
+        .cast<String?>()
+        .firstOrNull;
+    DateTime? selectedDate;
+    String? formError;
+
+    await _showFinanceDialog(
+      icon: Icons.event_note_rounded,
+      color: const Color(0xFF6D4C41),
+      title: 'Nuovo piano finanziario',
+      subtitle: 'Piano rateale senza movimenti economici',
+      child: StatefulBuilder(
+        builder: (context, refreshDialog) {
+          Future<void> save() async {
+            final name = nameController.text.trim();
+            final creditor = creditorController.text.trim();
+            final total = int.tryParse(totalController.text.trim());
+            final amount = double.tryParse(
+              amountController.text.trim().replaceAll(',', '.'),
+            );
+            final completed = int.tryParse(completedController.text.trim());
+            final activeBalanceIds = financeStore.balances
+                .where((balance) => balance.active)
+                .map((balance) => balance.balanceId)
+                .toSet();
+
+            if (name.isEmpty ||
+                creditor.isEmpty ||
+                total == null ||
+                amount == null ||
+                completed == null ||
+                selectedDate == null ||
+                selectedBalanceId == null ||
+                !activeBalanceIds.contains(selectedBalanceId)) {
+              refreshDialog(() {
+                formError = 'Compila tutti i campi con valori validi.';
+              });
+              return;
+            }
+
+            try {
+              final now = DateTime.now();
+              final plan = FiniteFinancialPlan(
+                id: 'finite_plan_${now.microsecondsSinceEpoch}',
+                name: name,
+                creditor: creditor,
+                subject: selectedSubject,
+                debitBalanceId: selectedBalanceId,
+                totalInstallments: total,
+                expectedInstallmentAmount: amount,
+                firstInstallmentDate: selectedDate!,
+                scheduledDayOfMonth: selectedDate!.day,
+                completedInstallments: completed,
+              );
+              final saved = await financeStore.addFiniteFinancialPlan(plan);
+              if (!saved) {
+                throw StateError('Il piano esiste già.');
+              }
+              if (!mounted || !context.mounted) return;
+              setState(() {});
+              Navigator.of(context).pop();
+            } catch (error) {
+              if (!context.mounted) return;
+              refreshDialog(() {
+                formError = 'Impossibile salvare il piano: $error';
+              });
+            }
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                key: const Key('finite-plan-name'),
+                controller: nameController,
+                decoration: _inputDecoration('Nome piano'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                key: const Key('finite-plan-creditor'),
+                controller: creditorController,
+                decoration: _inputDecoration('Creditore'),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<FinanceSubject>(
+                key: const Key('finite-plan-subject'),
+                initialValue: selectedSubject,
+                decoration: _inputDecoration('Soggetto'),
+                items: FinanceSubject.values
+                    .map(
+                      (subject) => DropdownMenuItem(
+                        value: subject,
+                        child: Text(_financeSubjectLabel(subject)),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  refreshDialog(() => selectedSubject = value);
+                },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                key: const Key('finite-plan-balance'),
+                initialValue: selectedBalanceId,
+                decoration: _inputDecoration('Conto di addebito'),
+                items: financeStore.balances
+                    .where((balance) => balance.active)
+                    .map(
+                      (balance) => DropdownMenuItem(
+                        value: balance.balanceId,
+                        child: Text(balance.name),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  refreshDialog(() => selectedBalanceId = value);
+                },
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                key: const Key('finite-plan-total'),
+                controller: totalController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration('Numero totale rate'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                key: const Key('finite-plan-amount'),
+                controller: amountController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: _inputDecoration('Importo previsto rata'),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                key: const Key('finite-plan-first-date'),
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate ?? DateTime.now(),
+                    firstDate: DateTime(1900),
+                    lastDate: DateTime(2200),
+                  );
+                  if (picked != null) {
+                    refreshDialog(() => selectedDate = picked);
+                  }
+                },
+                icon: const Icon(Icons.calendar_month_rounded),
+                label: Text(
+                  selectedDate == null
+                      ? 'Data prima rata'
+                      : 'Data prima rata: ${_formatDate(selectedDate!)}',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                key: const Key('finite-plan-completed'),
+                controller: completedController,
+                keyboardType: TextInputType.number,
+                decoration: _inputDecoration('Rate già completate'),
+              ),
+              if (formError != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  formError!,
+                  key: const Key('finite-plan-error'),
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ],
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  key: const Key('save-finite-financial-plan'),
+                  onPressed: save,
+                  icon: const Icon(Icons.save_rounded),
+                  label: const Text('Salva piano'),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  String _financeSubjectLabel(FinanceSubject subject) {
+    switch (subject) {
+      case FinanceSubject.matteo:
+        return 'Matteo';
+      case FinanceSubject.chiara:
+        return 'Chiara';
+      case FinanceSubject.alice:
+        return 'Alice';
+      case FinanceSubject.shared:
+        return 'Condiviso';
+    }
   }
 
   Widget _buildFundsSection() {
