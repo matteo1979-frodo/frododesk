@@ -101,7 +101,7 @@ void main() {
     ).readAsStringSync();
 
     expect(finance, contains('FinanceFundsCoordinator('));
-    expect(finance, contains('FinanceLedgerCoordinator('));
+    expect(finance, contains('FinanceLedgerPresentationCoordinator('));
     expect(finance, contains('FinanceRecurringCoordinator('));
     expect(funds, isNot(contains('FinanceStore')));
     expect(ledger, isNot(contains('FinanceStore')));
