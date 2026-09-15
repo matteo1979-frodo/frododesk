@@ -14,6 +14,7 @@ class FinanceLifecycleLoader {
   Future<void> load() async {
     await financeStore.runInNotificationBatch(() async {
       await financeStore.loadInitialRealData();
+      await financeStore.loadSavedFiniteFinancialPlans();
 
       if (!financeStore.isPortfolioV3Authoritative) {
         await financeStore.saveBalances();

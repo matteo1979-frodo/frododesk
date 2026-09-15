@@ -15,6 +15,7 @@ void main() {
 
     expect(operations, [
       'loadInitialRealData',
+      'loadSavedFiniteFinancialPlans',
       'saveBalances',
       'saveFunds',
       'saveRecurringItems',
@@ -34,6 +35,11 @@ class _RecordingFinanceStore extends FinanceStore {
   @override
   Future<void> loadInitialRealData() async {
     operations.add('loadInitialRealData');
+  }
+
+  @override
+  Future<void> loadSavedFiniteFinancialPlans() async {
+    operations.add('loadSavedFiniteFinancialPlans');
   }
 
   @override

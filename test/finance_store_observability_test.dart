@@ -776,7 +776,7 @@ void main() {
       expect(storeSource, isNot(contains('mutableTransactionsForTest')));
       expect(storeSource, isNot(contains('mutableRecurringItemsForTest')));
       expect(storeSource, isNot(contains('mutableSnapshotsForTest')));
-      expect(ledger, contains('FinanceLedgerCoordinator'));
+      expect(ledger, contains('FinanceLedgerPresentationCoordinator'));
       expect(ledger, isNot(contains('LedgerSnapshot')));
     },
   );

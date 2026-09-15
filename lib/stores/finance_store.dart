@@ -21,6 +21,8 @@ import '../logic/finance/finance_portfolio_v3_contract.dart';
 import '../logic/finance/finance_portfolio_v3_commit.dart';
 import '../logic/finance/finance_portfolio_v3_writer.dart';
 import '../logic/finance/finance_prepaid_creation.dart';
+import '../logic/finance/finite_financial_plan_persistence.dart';
+import '../models/finite_financial_plan.dart';
 
 enum FinancePortfolioV3PromotionStatus {
   promoted,
@@ -75,11 +77,13 @@ class FinanceStore extends ChangeNotifier {
   final EconomicFactIdGenerator economicFactIdGenerator;
   final FinancePortfolioV3Writer portfolioV3Writer;
   final FinancePrepaidCreationBuilder prepaidCreationBuilder;
+  final FiniteFinancialPlanPersistence finiteFinancialPlanPersistence;
 
   FinanceStore({
     EconomicFactIdGenerator? economicFactIdGenerator,
     FinancePortfolioV3Writer? portfolioV3Writer,
     FinancePrepaidCreationBuilder? prepaidCreationBuilder,
+    FiniteFinancialPlanPersistence? finiteFinancialPlanPersistence,
     Iterable<FinanceBalance> initialBalances = const [],
     Iterable<FinanceAccountLinkedItem> initialLinkedItems = const [],
     Iterable<FinanceTransaction> initialTransactions = const [],
@@ -88,11 +92,14 @@ class FinanceStore extends ChangeNotifier {
     Iterable<FinanceFund> initialFunds = const [],
     Iterable<FundTransaction> initialFundTransactions = const [],
     Iterable<FinanceAssetMovement> initialAssetMovements = const [],
+    Iterable<FiniteFinancialPlan> initialFiniteFinancialPlans = const [],
   }) : economicFactIdGenerator =
            economicFactIdGenerator ?? EconomicFactIdGenerator.timestamped(),
        portfolioV3Writer = portfolioV3Writer ?? FinancePortfolioV3Writer(),
        prepaidCreationBuilder =
            prepaidCreationBuilder ?? FinancePrepaidCreationBuilder(),
+       finiteFinancialPlanPersistence =
+           finiteFinancialPlanPersistence ?? FiniteFinancialPlanPersistence(),
        _balances = List<FinanceBalance>.of(initialBalances),
        _linkedItems = List<FinanceAccountLinkedItem>.of(initialLinkedItems),
        _transactions = List<FinanceTransaction>.of(initialTransactions),
@@ -100,7 +107,10 @@ class FinanceStore extends ChangeNotifier {
        _snapshots = List<FinanceSnapshot>.of(initialSnapshots),
        _funds = List<FinanceFund>.of(initialFunds),
        _fundTransactions = List<FundTransaction>.of(initialFundTransactions),
-       _assetMovements = List<FinanceAssetMovement>.of(initialAssetMovements);
+       _assetMovements = List<FinanceAssetMovement>.of(initialAssetMovements),
+       _finiteFinancialPlans = List<FiniteFinancialPlan>.of(
+         initialFiniteFinancialPlans,
+       );
 
   final List<FinancePerson> people = const [
     FinancePerson(id: 'matteo', name: 'Matteo'),
@@ -116,6 +126,7 @@ class FinanceStore extends ChangeNotifier {
   final List<FinanceTransaction> _transactions;
   final List<FinanceAccountLinkedItem> _linkedItems;
   final List<FinanceAssetMovement> _assetMovements;
+  final List<FiniteFinancialPlan> _finiteFinancialPlans;
   bool _portfolioReady = false;
   bool _portfolioV3Authoritative = false;
   bool _legacyLinkedItemsHydrated = false;
@@ -145,6 +156,9 @@ class FinanceStore extends ChangeNotifier {
 
   UnmodifiableListView<FinanceAssetMovement> get assetMovements =>
       UnmodifiableListView(_assetMovements);
+
+  UnmodifiableListView<FiniteFinancialPlan> get finiteFinancialPlans =>
+      UnmodifiableListView(_finiteFinancialPlans);
 
   bool get isPortfolioV3Authoritative => _portfolioV3Authoritative;
 
@@ -193,7 +207,60 @@ class FinanceStore extends ChangeNotifier {
     'funds': _funds.map((item) => item.toJson()).toList(),
     'fundTransactions': _fundTransactions.map((item) => item.toJson()).toList(),
     'assetMovements': _assetMovements.map((item) => item.toJson()).toList(),
+    'finiteFinancialPlans': _finiteFinancialPlans
+        .map((item) => item.toJson())
+        .toList(),
   });
+
+  Future<bool> addFiniteFinancialPlan(FiniteFinancialPlan plan) async {
+    if (_finiteFinancialPlans.any((item) => item.id == plan.id)) return false;
+    final candidate = [..._finiteFinancialPlans, plan];
+    final result = await finiteFinancialPlanPersistence.write(candidate);
+    if (!result.isSuccess) {
+      throw StateError(
+        'Finite financial plan write failed: ${result.errors.join('; ')}',
+      );
+    }
+    _finiteFinancialPlans
+      ..clear()
+      ..addAll(candidate);
+    _markChanged();
+    return true;
+  }
+
+  Future<bool> updateFiniteFinancialPlan(FiniteFinancialPlan plan) async {
+    final index = _finiteFinancialPlans.indexWhere(
+      (item) => item.id == plan.id,
+    );
+    if (index == -1) return false;
+    if (jsonEncode(_finiteFinancialPlans[index].toJson()) ==
+        jsonEncode(plan.toJson())) {
+      return false;
+    }
+    final candidate = List<FiniteFinancialPlan>.of(_finiteFinancialPlans);
+    candidate[index] = plan;
+    final result = await finiteFinancialPlanPersistence.write(candidate);
+    if (!result.isSuccess) {
+      throw StateError(
+        'Finite financial plan write failed: ${result.errors.join('; ')}',
+      );
+    }
+    _finiteFinancialPlans
+      ..clear()
+      ..addAll(candidate);
+    _markChanged();
+    return true;
+  }
+
+  Future<void> loadSavedFiniteFinancialPlans() =>
+      _runObservableLoad(_loadSavedFiniteFinancialPlans);
+
+  Future<void> _loadSavedFiniteFinancialPlans() async {
+    final loaded = await finiteFinancialPlanPersistence.load();
+    _finiteFinancialPlans
+      ..clear()
+      ..addAll(loaded);
+  }
 
   @override
   void dispose() {
