@@ -316,99 +316,102 @@ class _SpesePageState extends State<SpesePage> {
             backgroundColor: const Color(0xFF101820),
             builder: (context) {
               return SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 8, 18, 22),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _MovementChoiceTile(
-                        icon: Icons.shopping_bag_rounded,
-                        title: "Spesa reale",
-                        subtitle: "McDonald's, Sandra, benzina, ferramenta...",
-                        color: const Color(0xFFFF7043),
-                        onTap: () async {
-                          Navigator.of(context).pop();
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 8, 18, 22),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _MovementChoiceTile(
+                          icon: Icons.shopping_bag_rounded,
+                          title: "Spesa reale",
+                          subtitle:
+                              "McDonald's, Sandra, benzina, ferramenta...",
+                          color: const Color(0xFFFF7043),
+                          onTap: () async {
+                            Navigator.of(context).pop();
 
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => _RealExpenseAccountPage(
-                                snapshot: snapshot,
-                                coordinator: coordinator,
-                                mutationCoordinator: mutationCoordinator,
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => _RealExpenseAccountPage(
+                                  snapshot: snapshot,
+                                  coordinator: coordinator,
+                                  mutationCoordinator: mutationCoordinator,
+                                ),
                               ),
-                            ),
-                          );
+                            );
 
-                          await _refreshSnapshot();
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      _MovementChoiceTile(
-                        icon: Icons.receipt_long_rounded,
-                        title: "Bolletta con costi accessori",
-                        subtitle:
-                            "Importo principale, commissione e costo postale",
-                        color: const Color(0xFFAB47BC),
-                        onTap: () async {
-                          Navigator.of(context).pop();
+                            await _refreshSnapshot();
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        _MovementChoiceTile(
+                          icon: Icons.receipt_long_rounded,
+                          title: "Bolletta con costi accessori",
+                          subtitle:
+                              "Importo principale, commissione e costo postale",
+                          color: const Color(0xFFAB47BC),
+                          onTap: () async {
+                            Navigator.of(context).pop();
 
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => _UtilityBillAccountPage(
-                                snapshot: snapshot,
-                                coordinator: coordinator,
-                                compositeCoordinator: compositeCoordinator,
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => _UtilityBillAccountPage(
+                                  snapshot: snapshot,
+                                  coordinator: coordinator,
+                                  compositeCoordinator: compositeCoordinator,
+                                ),
                               ),
-                            ),
-                          );
+                            );
 
-                          await _refreshSnapshot();
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      _MovementChoiceTile(
-                        icon: Icons.payments_rounded,
-                        title: "Prelievo contanti",
-                        subtitle: "Scala un conto e registra il prelievo",
-                        color: const Color(0xFF66BB6A),
-                        onTap: () async {
-                          Navigator.of(context).pop();
+                            await _refreshSnapshot();
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        _MovementChoiceTile(
+                          icon: Icons.payments_rounded,
+                          title: "Prelievo contanti",
+                          subtitle: "Scala un conto e registra il prelievo",
+                          color: const Color(0xFF66BB6A),
+                          onTap: () async {
+                            Navigator.of(context).pop();
 
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => _CashWithdrawalAccountPage(
-                                snapshot: snapshot,
-                                mutationCoordinator: mutationCoordinator,
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => _CashWithdrawalAccountPage(
+                                  snapshot: snapshot,
+                                  mutationCoordinator: mutationCoordinator,
+                                ),
                               ),
-                            ),
-                          );
+                            );
 
-                          await _refreshSnapshot();
-                        },
-                      ),
-                      const SizedBox(height: 10),
-                      _MovementChoiceTile(
-                        icon: Icons.add_card_rounded,
-                        title: "Entrata extra",
-                        subtitle:
-                            "Rimborso, regalo, vendita, entrata occasionale",
-                        color: const Color(0xFF42A5F5),
-                        onTap: () async {
-                          Navigator.of(context).pop();
+                            await _refreshSnapshot();
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        _MovementChoiceTile(
+                          icon: Icons.add_card_rounded,
+                          title: "Entrata extra",
+                          subtitle:
+                              "Rimborso, regalo, vendita, entrata occasionale",
+                          color: const Color(0xFF42A5F5),
+                          onTap: () async {
+                            Navigator.of(context).pop();
 
-                          await Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => _ExtraIncomeAccountPage(
-                                snapshot: snapshot,
-                                mutationCoordinator: mutationCoordinator,
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => _ExtraIncomeAccountPage(
+                                  snapshot: snapshot,
+                                  mutationCoordinator: mutationCoordinator,
+                                ),
                               ),
-                            ),
-                          );
+                            );
 
-                          await _refreshSnapshot();
-                        },
-                      ),
-                    ],
+                            await _refreshSnapshot();
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -543,8 +546,7 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
   @override
   void initState() {
     super.initState();
-    operationIdentity =
-        'utility_bill_${DateTime.now().microsecondsSinceEpoch}';
+    operationIdentity = 'utility_bill_${DateTime.now().microsecondsSinceEpoch}';
     categories = widget.snapshot.categories.toList();
     selectedSubject = FinanceSubject.values.firstWhere(
       (subject) => subject.name == widget.balancePersonId,
@@ -575,9 +577,7 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
 
   CompositeEconomicOperation? _buildOperation() {
     final mainAmount = _parseRequiredAmount(mainAmountController.text);
-    final bankCommission = _parseOptionalAmount(
-      bankCommissionController.text,
-    );
+    final bankCommission = _parseOptionalAmount(bankCommissionController.text);
     final postalAcceptance = _parseOptionalAmount(
       postalAcceptanceController.text,
     );
@@ -1898,180 +1898,185 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                   ),
                                 if (expense.operationMetadata == null)
                                   ElevatedButton.icon(
-                                  onPressed: () async {
-                                    Navigator.of(dialogContext).pop();
+                                    onPressed: () async {
+                                      Navigator.of(dialogContext).pop();
 
-                                    if (expense.isCashWithdrawal) {
-                                      Navigator.of(context).pop();
+                                      if (expense.isCashWithdrawal) {
+                                        Navigator.of(context).pop();
 
-                                      await Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              _CashWithdrawalFormPage(
-                                                balanceId: expense.balanceId,
-                                                balanceName:
-                                                    expense.balanceName,
-                                                balanceAmount: 0,
-                                                balancePersonId:
-                                                    expense.nonTrackedCash
-                                                    ? expense.subject.name
-                                                    : expense.cashWalletId ==
-                                                          'wallet_chiara'
-                                                    ? 'chiara'
-                                                    : 'matteo',
-                                                snapshot: snapshot,
-                                                mutationCoordinator:
-                                                    mutationCoordinator,
-                                                editingExpense: expense,
-                                              ),
-                                        ),
-                                      );
-
-                                      return;
-                                    }
-
-                                    if (expense.isIncome) {
-                                      Navigator.of(context).pop();
-
-                                      await Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) => _ExtraIncomeFormPage(
-                                            balanceId: expense.balanceId,
-                                            balanceName: expense.balanceName,
-                                            balanceAmount: 0,
-                                            snapshot: snapshot,
-                                            mutationCoordinator:
-                                                mutationCoordinator,
-                                            editingExpense: expense,
+                                        await Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                _CashWithdrawalFormPage(
+                                                  balanceId: expense.balanceId,
+                                                  balanceName:
+                                                      expense.balanceName,
+                                                  balanceAmount: 0,
+                                                  balancePersonId:
+                                                      expense.nonTrackedCash
+                                                      ? expense.subject.name
+                                                      : expense.cashWalletId ==
+                                                            'wallet_chiara'
+                                                      ? 'chiara'
+                                                      : 'matteo',
+                                                  snapshot: snapshot,
+                                                  mutationCoordinator:
+                                                      mutationCoordinator,
+                                                  editingExpense: expense,
+                                                ),
                                           ),
-                                        ),
-                                      );
+                                        );
 
-                                      return;
-                                    }
+                                        return;
+                                      }
 
-                                    showDialog(
-                                      context: context,
-                                      builder: (modifyContext) {
-                                        return AlertDialog(
-                                          title: const Text(
-                                            "Modifica movimento",
+                                      if (expense.isIncome) {
+                                        Navigator.of(context).pop();
+
+                                        await Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                _ExtraIncomeFormPage(
+                                                  balanceId: expense.balanceId,
+                                                  balanceName:
+                                                      expense.balanceName,
+                                                  balanceAmount: 0,
+                                                  snapshot: snapshot,
+                                                  mutationCoordinator:
+                                                      mutationCoordinator,
+                                                  editingExpense: expense,
+                                                ),
                                           ),
-                                          content: const Text(
-                                            "FrodoDesk preparerà la modifica di questa spesa mantenendo importo, descrizione, categoria e data già compilati.",
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () {
-                                                Navigator.of(
-                                                  modifyContext,
-                                                ).pop();
-                                              },
-                                              child: const Text("Annulla"),
+                                        );
+
+                                        return;
+                                      }
+
+                                      showDialog(
+                                        context: context,
+                                        builder: (modifyContext) {
+                                          return AlertDialog(
+                                            title: const Text(
+                                              "Modifica movimento",
                                             ),
-                                            ElevatedButton(
-                                              onPressed: () async {
-                                                Navigator.of(
-                                                  modifyContext,
-                                                ).pop();
+                                            content: const Text(
+                                              "FrodoDesk preparerà la modifica di questa spesa mantenendo importo, descrizione, categoria e data già compilati.",
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(
+                                                    modifyContext,
+                                                  ).pop();
+                                                },
+                                                child: const Text("Annulla"),
+                                              ),
+                                              ElevatedButton(
+                                                onPressed: () async {
+                                                  Navigator.of(
+                                                    modifyContext,
+                                                  ).pop();
 
-                                                var matchingBalanceIndex = -1;
-                                                for (
-                                                  var index = 0;
-                                                  index <
-                                                      snapshot
-                                                          .activeBalances
-                                                          .length;
-                                                  index++
-                                                ) {
-                                                  if (snapshot
-                                                          .activeBalances[index]
-                                                          .balanceId !=
-                                                      expense.balanceId) {
-                                                    continue;
+                                                  var matchingBalanceIndex = -1;
+                                                  for (
+                                                    var index = 0;
+                                                    index <
+                                                        snapshot
+                                                            .activeBalances
+                                                            .length;
+                                                    index++
+                                                  ) {
+                                                    if (snapshot
+                                                            .activeBalances[index]
+                                                            .balanceId !=
+                                                        expense.balanceId) {
+                                                      continue;
+                                                    }
+                                                    if (matchingBalanceIndex !=
+                                                        -1) {
+                                                      matchingBalanceIndex = -2;
+                                                      break;
+                                                    }
+                                                    matchingBalanceIndex =
+                                                        index;
                                                   }
-                                                  if (matchingBalanceIndex !=
-                                                      -1) {
-                                                    matchingBalanceIndex = -2;
-                                                    break;
+                                                  if (matchingBalanceIndex <
+                                                      0) {
+                                                    if (!context.mounted)
+                                                      return;
+                                                    ScaffoldMessenger.of(
+                                                      context,
+                                                    ).showSnackBar(
+                                                      const SnackBar(
+                                                        content: Text(
+                                                          'Conto originale non disponibile.',
+                                                        ),
+                                                      ),
+                                                    );
+                                                    return;
                                                   }
-                                                  matchingBalanceIndex = index;
-                                                }
-                                                if (matchingBalanceIndex < 0) {
-                                                  if (!context.mounted) return;
-                                                  ScaffoldMessenger.of(
+
+                                                  Navigator.of(context).pop();
+
+                                                  await Navigator.of(
                                                     context,
-                                                  ).showSnackBar(
-                                                    const SnackBar(
-                                                      content: Text(
-                                                        'Conto originale non disponibile.',
+                                                  ).push(
+                                                    MaterialPageRoute(
+                                                      builder: (_) => _RealExpenseFormPage(
+                                                        balanceId:
+                                                            expense.balanceId,
+                                                        balanceName:
+                                                            expense.balanceName,
+                                                        balanceAmount: snapshot
+                                                            .activeBalances[matchingBalanceIndex]
+                                                            .currentAmount,
+                                                        snapshot: snapshot,
+                                                        coordinator:
+                                                            coordinator,
+                                                        mutationCoordinator:
+                                                            mutationCoordinator,
+                                                        editingExpense: expense,
                                                       ),
                                                     ),
                                                   );
-                                                  return;
-                                                }
-
-                                                Navigator.of(context).pop();
-
-                                                await Navigator.of(
-                                                  context,
-                                                ).push(
-                                                  MaterialPageRoute(
-                                                    builder: (_) =>
-                                                        _RealExpenseFormPage(
-                                                          balanceId:
-                                                              expense.balanceId,
-                                                          balanceName: expense
-                                                              .balanceName,
-                                                          balanceAmount: snapshot
-                                                              .activeBalances[matchingBalanceIndex]
-                                                              .currentAmount,
-                                                          snapshot: snapshot,
-                                                          coordinator:
-                                                              coordinator,
-                                                          mutationCoordinator:
-                                                              mutationCoordinator,
-                                                          editingExpense:
-                                                              expense,
-                                                        ),
-                                                  ),
-                                                );
-                                              },
-                                              child: const Text("Continua"),
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    );
-                                  },
-                                  icon: const Icon(Icons.edit_outlined),
-                                  label: const Text("Modifica"),
-                                ),
+                                                },
+                                                child: const Text("Continua"),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    },
+                                    icon: const Icon(Icons.edit_outlined),
+                                    label: const Text("Modifica"),
+                                  ),
                                 if (expense.operationMetadata == null)
                                   ElevatedButton.icon(
-                                  onPressed: () async {
-                                    Navigator.of(dialogContext).pop();
+                                    onPressed: () async {
+                                      Navigator.of(dialogContext).pop();
 
-                                    await mutationCoordinator.execute(
-                                      _existingMovementCommand(
-                                        expense,
-                                        SpeseCommandAction.delete,
-                                      ),
-                                    );
+                                      await mutationCoordinator.execute(
+                                        _existingMovementCommand(
+                                          expense,
+                                          SpeseCommandAction.delete,
+                                        ),
+                                      );
 
-                                    if (!context.mounted) return;
+                                      if (!context.mounted) return;
 
-                                    Navigator.of(context).pop();
+                                      Navigator.of(context).pop();
 
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text("Movimento eliminato."),
-                                      ),
-                                    );
-                                  },
-                                  icon: const Icon(Icons.delete_outline),
-                                  label: const Text("Elimina"),
-                                ),
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text("Movimento eliminato."),
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.delete_outline),
+                                    label: const Text("Elimina"),
+                                  ),
                               ],
                             );
                           },

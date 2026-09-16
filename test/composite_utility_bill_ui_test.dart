@@ -51,22 +51,16 @@ void main() {
         final operation = fixture.coordinator.postings.single.operation;
         expect(operation.main.amount, 59.63);
         expect(operation.accessories, hasLength(testCase.accessories));
-        expect(
-          {
-            operation.main.economicFactId,
-            ...operation.accessories.map((fact) => fact.economicFactId),
-          },
-          hasLength(testCase.accessories + 1),
-        );
-        expect(
-          {
-            operation.main.operationMetadata.operationId,
-            ...operation.accessories.map(
-              (fact) => fact.operationMetadata.operationId,
-            ),
-          },
-          hasLength(1),
-        );
+        expect({
+          operation.main.economicFactId,
+          ...operation.accessories.map((fact) => fact.economicFactId),
+        }, hasLength(testCase.accessories + 1));
+        expect({
+          operation.main.operationMetadata.operationId,
+          ...operation.accessories.map(
+            (fact) => fact.operationMetadata.operationId,
+          ),
+        }, hasLength(1));
         if (testCase.accessories == 2) {
           expect(operation.totalAmount, closeTo(62.63, 1e-9));
           expect(
@@ -158,6 +152,50 @@ void main() {
     expect(find.text('Bolletta con costi accessori'), findsOneWidget);
   });
 
+  testWidgets(
+    'new movement picker scrolls without overflow on a short viewport',
+    (tester) async {
+      await _pumpPage(
+        tester,
+        _Fixture.create(),
+        surfaceSize: const Size(1200, 500),
+      );
+
+      await tester.tap(find.text('Nuovo movimento'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Spesa reale'), findsOneWidget);
+      expect(find.text('Bolletta con costi accessori'), findsOneWidget);
+      expect(find.text('Prelievo contanti'), findsOneWidget);
+      expect(find.text('Entrata extra'), findsOneWidget);
+
+      final scrollable = find.descendant(
+        of: find.byType(SingleChildScrollView).last,
+        matching: find.byType(Scrollable),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Entrata extra'),
+        150,
+        scrollable: scrollable,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Entrata extra'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.scrollUntilVisible(
+        find.text('Bolletta con costi accessori'),
+        -150,
+        scrollable: scrollable,
+      );
+      await tester.tap(find.text('Bolletta con costi accessori'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Nuova bolletta'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('composite expense detail blocks single-fact edit and delete', (
     tester,
   ) async {
@@ -198,8 +236,12 @@ void main() {
   });
 }
 
-Future<void> _pumpPage(WidgetTester tester, _Fixture fixture) async {
-  await tester.binding.setSurfaceSize(const Size(1200, 1800));
+Future<void> _pumpPage(
+  WidgetTester tester,
+  _Fixture fixture, {
+  Size surfaceSize = const Size(1200, 1800),
+}) async {
+  await tester.binding.setSurfaceSize(surfaceSize);
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     MaterialApp(
@@ -230,10 +272,7 @@ Future<void> _fillUtilityForm(
 }) async {
   await tester.enterText(_field('Importo principale'), '59,63');
   if (bank.isNotEmpty) {
-    await tester.enterText(
-      _field('Commissione bancaria (facoltativa)'),
-      bank,
-    );
+    await tester.enterText(_field('Commissione bancaria (facoltativa)'), bank);
   }
   if (postal.isNotEmpty) {
     await tester.enterText(
@@ -249,8 +288,7 @@ Future<void> _fillUtilityForm(
 }
 
 Finder _field(String label) => find.byWidgetPredicate(
-  (widget) =>
-      widget is TextField && widget.decoration?.labelText == label,
+  (widget) => widget is TextField && widget.decoration?.labelText == label,
 );
 
 class _Fixture {
