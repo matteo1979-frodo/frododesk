@@ -1,6 +1,6 @@
 enum OperationRole { main, accessory }
 
-enum OperationContext { cashWithdrawal, financialPlanInstallment }
+enum OperationContext { cashWithdrawal, financialPlanInstallment, utilityBill }
 
 enum AccessoryCostType { bankCommission }
 

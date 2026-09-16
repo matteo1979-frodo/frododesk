@@ -27,6 +27,17 @@ void main() {
       expect(metadata.context, OperationContext.financialPlanInstallment);
     });
 
+    test('accepts main utility bill metadata', () {
+      final metadata = EconomicOperationMetadata(
+        operationId: 'utility_bill_1',
+        role: OperationRole.main,
+        context: OperationContext.utilityBill,
+      );
+
+      expect(metadata.context, OperationContext.utilityBill);
+      expect(metadata.accessoryCostType, isNull);
+    });
+
     test('accepts bank commission accessory for a cash withdrawal', () {
       final metadata = EconomicOperationMetadata(
         operationId: 'withdrawal_1',
@@ -46,6 +57,18 @@ void main() {
         accessoryCostType: AccessoryCostType.bankCommission,
       );
 
+      expect(metadata.accessoryCostType, AccessoryCostType.bankCommission);
+    });
+
+    test('accepts bank commission accessory for a utility bill', () {
+      final metadata = EconomicOperationMetadata(
+        operationId: 'utility_bill_1',
+        role: OperationRole.accessory,
+        context: OperationContext.utilityBill,
+        accessoryCostType: AccessoryCostType.bankCommission,
+      );
+
+      expect(metadata.context, OperationContext.utilityBill);
       expect(metadata.accessoryCostType, AccessoryCostType.bankCommission);
     });
 
@@ -140,6 +163,21 @@ void main() {
       expect(restored.accessoryCostType, source.accessoryCostType);
     });
 
+    test('round-trips utility bill metadata through its stable JSON name', () {
+      final source = EconomicOperationMetadata(
+        operationId: 'utility_bill_1',
+        role: OperationRole.accessory,
+        context: OperationContext.utilityBill,
+        accessoryCostType: AccessoryCostType.bankCommission,
+      );
+
+      final json = source.toJson();
+      final restored = EconomicOperationMetadata.fromJson(json);
+
+      expect(json['context'], 'utilityBill');
+      expect(restored.context, OperationContext.utilityBill);
+    });
+
     test('rejects unknown enum values without a fallback', () {
       final validMain = {
         'operationId': 'operation_1',
@@ -150,7 +188,7 @@ void main() {
 
       for (final invalidJson in [
         {...validMain, 'role': 'other'},
-        {...validMain, 'context': 'utilityBill'},
+        {...validMain, 'context': 'mortgage'},
         {
           ...validMain,
           'role': 'accessory',
@@ -207,6 +245,23 @@ void main() {
       );
 
       expect(first.operationId, second.operationId);
+    });
+
+    test('allows utility bill facts to share one operation identifier', () {
+      final main = EconomicOperationMetadata(
+        operationId: 'utility_bill_1',
+        role: OperationRole.main,
+        context: OperationContext.utilityBill,
+      );
+      final accessory = EconomicOperationMetadata(
+        operationId: 'utility_bill_1',
+        role: OperationRole.accessory,
+        context: OperationContext.utilityBill,
+        accessoryCostType: AccessoryCostType.bankCommission,
+      );
+
+      expect(main.operationId, accessory.operationId);
+      expect(main.context, accessory.context);
     });
   });
 }
