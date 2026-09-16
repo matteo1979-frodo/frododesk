@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../stores/finance_store.dart';
 import '../stores/expense_store.dart';
 import '../models/real_expense.dart';
+import '../models/expense_replacement_intent.dart';
 import '../models/finance_recurring_item.dart';
 import '../models/frodo_observation.dart';
 import '../stores/expense_category_store.dart';
@@ -11,6 +12,8 @@ import '../stores/cash_wallet_store.dart';
 import '../logic/spese/spese_coordinator.dart';
 import '../logic/spese/builders/spese_command_builder.dart';
 import '../logic/spese/spese_mutation_coordinator.dart';
+import '../logic/spese/expense_replacement_coordinator.dart';
+import '../logic/spese/expense_replacement_persistence.dart';
 import '../logic/finance/composite_economic_operation_coordinator.dart';
 import '../models/composite_economic_operation.dart';
 import '../models/economic_operation_metadata.dart';
@@ -71,6 +74,8 @@ class SpesePage extends StatefulWidget {
   final ExpenseStore expenseStore;
   final CashWalletStore cashWalletStore;
   final CompositeEconomicOperationCoordinator? compositeCoordinator;
+  final ExpenseReplacementPersistence? expenseReplacementPersistence;
+  final ExpenseReplacementCoordinator? expenseReplacementCoordinator;
 
   const SpesePage({
     super.key,
@@ -78,6 +83,8 @@ class SpesePage extends StatefulWidget {
     required this.expenseStore,
     required this.cashWalletStore,
     this.compositeCoordinator,
+    this.expenseReplacementPersistence,
+    this.expenseReplacementCoordinator,
   });
 
   @override
@@ -89,7 +96,10 @@ class _SpesePageState extends State<SpesePage> {
   late final SpeseCoordinator coordinator;
   late final SpeseMutationCoordinator mutationCoordinator;
   late final CompositeEconomicOperationCoordinator compositeCoordinator;
+  late final ExpenseReplacementPersistence expenseReplacementPersistence;
+  late final ExpenseReplacementCoordinator expenseReplacementCoordinator;
   late SpeseSnapshot snapshot;
+  bool _replacementRecoveryStarted = false;
 
   @override
   void initState() {
@@ -111,15 +121,58 @@ class _SpesePageState extends State<SpesePage> {
           financeStore: widget.financeStore,
           expenseStore: widget.expenseStore,
         );
+    expenseReplacementPersistence =
+        widget.expenseReplacementPersistence ?? ExpenseReplacementPersistence();
+    expenseReplacementCoordinator =
+        widget.expenseReplacementCoordinator ??
+        ExpenseReplacementCoordinator(
+          financeStore: widget.financeStore,
+          expenseStore: widget.expenseStore,
+          persistence: expenseReplacementPersistence,
+        );
     snapshot = coordinator.build(observedAt: DateTime.now());
-    _loadCategoryStore();
+    _initializePage();
   }
 
-  Future<void> _loadCategoryStore() async {
+  Future<void> _initializePage() async {
     await categoryStore.load();
+    await _recoverPendingExpenseReplacements();
     final loadedSnapshot = coordinator.build(observedAt: DateTime.now());
     if (mounted) {
       setState(() => snapshot = loadedSnapshot);
+    }
+  }
+
+  Future<void> _recoverPendingExpenseReplacements() async {
+    if (_replacementRecoveryStarted) return;
+    _replacementRecoveryStarted = true;
+
+    late final List<ExpenseReplacementIntent> intents;
+    try {
+      intents = await expenseReplacementPersistence.load();
+    } catch (error, stackTrace) {
+      debugPrint('Expense replacement recovery load failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      return;
+    }
+
+    for (final intent in intents) {
+      try {
+        final result = await expenseReplacementCoordinator.complete(intent);
+        if (result.status == ExpenseReplacementStatus.conflict ||
+            result.status == ExpenseReplacementStatus.failed) {
+          debugPrint(
+            'Expense replacement recovery ${intent.replacementId} '
+            '${result.status.name}: ${result.errors.join('; ')}',
+          );
+        }
+      } catch (error, stackTrace) {
+        debugPrint(
+          'Expense replacement recovery ${intent.replacementId} failed: '
+          '$error',
+        );
+        debugPrintStack(stackTrace: stackTrace);
+      }
     }
   }
 
