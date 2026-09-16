@@ -21,6 +21,18 @@ import '../utils/euro_formatter.dart';
 
 const _speseCommandBuilder = SpeseCommandBuilder();
 
+String _expensePresentationTitle(RealExpense expense) {
+  final metadata = expense.operationMetadata;
+  if (metadata == null || metadata.role == OperationRole.main) {
+    return expense.description;
+  }
+  return switch (metadata.accessoryCostType) {
+    AccessoryCostType.bankCommission => 'Commissione bancaria',
+    AccessoryCostType.postalAcceptanceCharge => 'Costo accettazione postale',
+    null => expense.description,
+  };
+}
+
 SpeseCommand? _prepareSpeseCommand(
   BuildContext context,
   SpeseCommand Function() build,
@@ -206,7 +218,7 @@ class _SpesePageState extends State<SpesePage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      expense.description,
+                                      _expensePresentationTitle(expense),
                                       style: const TextStyle(
                                         color: Colors.white,
                                         fontSize: 16,
@@ -1867,11 +1879,16 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    expense.description,
+                                    _expensePresentationTitle(expense),
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
+                                  if (expense.operationMetadata?.role ==
+                                      OperationRole.accessory) ...[
+                                    const SizedBox(height: 4),
+                                    Text('Operazione: ${expense.description}'),
+                                  ],
                                   const SizedBox(height: 8),
                                   Text(
                                     "Importo: ${EuroFormatter.format(expense.amount)}",
@@ -2103,7 +2120,7 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    expense.description,
+                                    _expensePresentationTitle(expense),
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 16,

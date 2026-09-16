@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/logic/ledger/ledger_endpoint_resolver.dart';
 import 'package:frododesk/logic/ledger/ledger_timeline_builder.dart';
 import 'package:frododesk/models/economic_event.dart';
+import 'package:frododesk/models/economic_operation_metadata.dart';
 import 'package:frododesk/models/finance_balance.dart';
 import 'package:frododesk/models/ledger_event_view_model.dart';
 import 'package:frododesk/models/ledger_resolved_endpoint.dart';
@@ -83,6 +84,86 @@ void main() {
     expect(outflow.economicSign, LedgerEconomicSign.negative);
     expect(outflow.logicalIcon, LedgerLogicalIcon.expense);
     expect(outflow.badges.single.label, 'Uscita');
+  });
+
+  test('presents composite accessory costs without merging their facts', () {
+    final timeline = builder.build([
+      _event(
+        id: 'main',
+        factId: 'fact-main',
+        description: 'Bolletta acqua Hera',
+        operationMetadata: EconomicOperationMetadata(
+          operationId: 'operation-hera',
+          role: OperationRole.main,
+          context: OperationContext.utilityBill,
+        ),
+      ),
+      _event(
+        id: 'bank',
+        factId: 'fact-bank',
+        description: 'Bolletta acqua Hera',
+        operationMetadata: EconomicOperationMetadata(
+          operationId: 'operation-hera',
+          role: OperationRole.accessory,
+          context: OperationContext.utilityBill,
+          accessoryCostType: AccessoryCostType.bankCommission,
+        ),
+      ),
+      _event(
+        id: 'postal',
+        factId: 'fact-postal',
+        description: 'Bolletta acqua Hera',
+        operationMetadata: EconomicOperationMetadata(
+          operationId: 'operation-hera',
+          role: OperationRole.accessory,
+          context: OperationContext.utilityBill,
+          accessoryCostType: AccessoryCostType.postalAcceptanceCharge,
+        ),
+      ),
+    ]);
+
+    expect(timeline, hasLength(3));
+    expect(timeline.map((event) => event.title).toSet(), {
+      'Bolletta acqua Hera',
+      'Commissione bancaria',
+      'Costo accettazione postale',
+    });
+    expect(
+      timeline
+          .singleWhere((event) => event.eventId == 'main')
+          .operationDescription,
+      isNull,
+    );
+    expect(
+      timeline
+          .singleWhere((event) => event.eventId == 'bank')
+          .operationDescription,
+      'Bolletta acqua Hera',
+    );
+  });
+
+  test('legacy and main titles keep their original descriptions', () {
+    final timeline = builder.build([
+      _event(id: 'legacy', description: 'Spesa legacy'),
+      _event(
+        id: 'main',
+        description: 'Bolletta originale',
+        operationMetadata: EconomicOperationMetadata(
+          operationId: 'operation',
+          role: OperationRole.main,
+          context: OperationContext.utilityBill,
+        ),
+      ),
+    ]);
+
+    expect(
+      timeline.singleWhere((event) => event.eventId == 'legacy').title,
+      'Spesa legacy',
+    );
+    expect(
+      timeline.singleWhere((event) => event.eventId == 'main').title,
+      'Bolletta originale',
+    );
   });
 
   test('maps one internal transfer preserving origin and destination', () {
@@ -340,6 +421,7 @@ EconomicEvent _event({
   List<String> notes = const [],
   List<EconomicTransactionOrigin> transactionOrigins = const [],
   List<String> recurringItemIds = const [],
+  EconomicOperationMetadata? operationMetadata,
 }) => EconomicEvent(
   id: id,
   economicFactId: factId,
@@ -356,6 +438,7 @@ EconomicEvent _event({
   notes: notes,
   transactionOrigins: transactionOrigins,
   recurringItemIds: recurringItemIds,
+  operationMetadata: operationMetadata,
 );
 
 EconomicEndpoint _account(String id) => EconomicEndpoint(

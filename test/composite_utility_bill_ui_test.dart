@@ -152,6 +152,98 @@ void main() {
     expect(find.text('Bolletta con costi accessori'), findsOneWidget);
   });
 
+  final presentationCases =
+      <({String name, EconomicOperationMetadata? metadata, String expected})>[
+        (name: 'legacy', metadata: null, expected: 'Bolletta acqua Hera'),
+        (
+          name: 'main',
+          metadata: EconomicOperationMetadata(
+            operationId: 'operation-hera',
+            role: OperationRole.main,
+            context: OperationContext.utilityBill,
+          ),
+          expected: 'Bolletta acqua Hera',
+        ),
+        (
+          name: 'bank commission',
+          metadata: EconomicOperationMetadata(
+            operationId: 'operation-hera',
+            role: OperationRole.accessory,
+            context: OperationContext.utilityBill,
+            accessoryCostType: AccessoryCostType.bankCommission,
+          ),
+          expected: 'Commissione bancaria',
+        ),
+        (
+          name: 'postal acceptance',
+          metadata: EconomicOperationMetadata(
+            operationId: 'operation-hera',
+            role: OperationRole.accessory,
+            context: OperationContext.utilityBill,
+            accessoryCostType: AccessoryCostType.postalAcceptanceCharge,
+          ),
+          expected: 'Costo accettazione postale',
+        ),
+      ];
+  for (final testCase in presentationCases) {
+    testWidgets('expense card presents ${testCase.name} semantically', (
+      tester,
+    ) async {
+      final fixture = _Fixture.create();
+      await fixture.expenseStore.addExpense(
+        RealExpense(
+          id: 'expense-${testCase.name}',
+          balanceId: 'account',
+          balanceName: 'Conto test',
+          amount: 1,
+          description: 'Bolletta acqua Hera',
+          category: 'Acqua',
+          date: DateTime.now(),
+          subject: FinanceSubject.matteo,
+          economicFactId: 'fact-${testCase.name}',
+          operationMetadata: testCase.metadata,
+        ),
+      );
+
+      await _pumpPage(tester, fixture);
+
+      expect(find.text(testCase.expected), findsOneWidget);
+    });
+  }
+
+  testWidgets('accessory detail preserves the operation description', (
+    tester,
+  ) async {
+    final fixture = _Fixture.create();
+    await fixture.expenseStore.addExpense(
+      RealExpense(
+        id: 'expense-bank',
+        balanceId: 'account',
+        balanceName: 'Conto test',
+        amount: 2,
+        description: 'Bolletta acqua Hera',
+        category: 'Acqua',
+        date: DateTime.now(),
+        subject: FinanceSubject.matteo,
+        economicFactId: 'fact-bank',
+        operationMetadata: EconomicOperationMetadata(
+          operationId: 'operation-hera',
+          role: OperationRole.accessory,
+          context: OperationContext.utilityBill,
+          accessoryCostType: AccessoryCostType.bankCommission,
+        ),
+      ),
+    );
+    await _pumpPage(tester, fixture);
+
+    await tester.tap(find.text('Vedi storico mese'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Commissione bancaria'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Operazione: Bolletta acqua Hera'), findsOneWidget);
+  });
+
   testWidgets(
     'new movement picker scrolls without overflow on a short viewport',
     (tester) async {

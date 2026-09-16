@@ -121,6 +121,8 @@ class _FinanceLedgerPageState extends State<FinanceLedgerPage> {
                 _detailRow('Persona', entry.personLabel!),
               if (entry.category != null)
                 _detailRow('Categoria', entry.category!.label),
+              if (entry.operationDescription != null)
+                _detailRow('Operazione', entry.operationDescription!),
               if (recurring) _detailRow('Ricorrenza', 'Ricorrente'),
               for (final note in entry.notes) _detailRow('Nota', note),
               for (final badge in entry.badges.where(

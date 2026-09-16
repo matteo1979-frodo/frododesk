@@ -74,6 +74,7 @@ class LedgerEventViewModel {
   final UnmodifiableListView<String> notes;
   final UnmodifiableListView<EconomicTransactionOrigin> transactionOrigins;
   final UnmodifiableListView<String> recurringItemIds;
+  final String? operationDescription;
 
   LedgerEventViewModel({
     required this.eventId,
@@ -93,6 +94,7 @@ class LedgerEventViewModel {
     List<String> notes = const [],
     List<EconomicTransactionOrigin> transactionOrigins = const [],
     List<String> recurringItemIds = const [],
+    this.operationDescription,
     this.personId,
     this.personLabel,
     this.category,

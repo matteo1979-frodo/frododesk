@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import '../../models/economic_event.dart';
+import '../../models/economic_operation_metadata.dart';
 import '../../models/ledger_event_view_model.dart';
 import '../../models/ledger_resolved_endpoint.dart';
 import 'ledger_endpoint_resolver.dart';
@@ -55,10 +56,26 @@ class LedgerTimelineBuilder {
       notes: event.notes,
       transactionOrigins: event.transactionOrigins,
       recurringItemIds: event.recurringItemIds,
+      operationDescription:
+          event.operationMetadata?.role == OperationRole.accessory
+          ? event.description
+          : null,
     );
   }
 
   String _title(EconomicEvent event) {
+    final metadata = event.operationMetadata;
+    if (metadata?.role == OperationRole.accessory) {
+      return switch (metadata!.accessoryCostType) {
+        AccessoryCostType.bankCommission => 'Commissione bancaria',
+        AccessoryCostType.postalAcceptanceCharge =>
+          'Costo accettazione postale',
+        null =>
+          event.description.trim().isEmpty
+              ? 'Uscita'
+              : event.description.trim(),
+      };
+    }
     final description = event.description.trim();
     if (description.isNotEmpty) return description;
     return switch (event.nature) {
