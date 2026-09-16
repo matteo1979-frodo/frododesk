@@ -1,5 +1,7 @@
 import 'dart:collection';
 
+import 'economic_operation_metadata.dart';
+
 enum EconomicNature { income, outflow, internalTransfer }
 
 enum EconomicEndpointKind {
@@ -79,6 +81,7 @@ class EconomicEvent {
   final UnmodifiableListView<EconomicTransactionOrigin> transactionOrigins;
   final UnmodifiableListView<String> recurringItemIds;
   final String? economicFactId;
+  final EconomicOperationMetadata? operationMetadata;
 
   EconomicEvent({
     required this.id,
@@ -97,6 +100,7 @@ class EconomicEvent {
     this.category,
     this.personId,
     this.economicFactId,
+    this.operationMetadata,
   }) : assert(id != ''),
        assert(amount >= 0),
        origins = UnmodifiableListView(List<EconomicEndpoint>.of(origins)),

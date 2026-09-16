@@ -5,6 +5,7 @@ import 'package:frododesk/logic/economics/adapters/finance_asset_movement_event_
 import 'package:frododesk/logic/economics/adapters/finance_transaction_event_adapter.dart';
 import 'package:frododesk/logic/economics/adapters/real_expense_event_adapter.dart';
 import 'package:frododesk/models/economic_event.dart';
+import 'package:frododesk/models/economic_operation_metadata.dart';
 import 'package:frododesk/models/finance_asset_movement.dart';
 import 'package:frododesk/models/finance_recurring_item.dart';
 import 'package:frododesk/models/finance_transaction.dart';
@@ -155,6 +156,45 @@ void main() {
     }
   });
 
+  test('source adapters preserve optional operation metadata', () {
+    final metadata = EconomicOperationMetadata(
+      operationId: 'utility-operation',
+      role: OperationRole.main,
+      context: OperationContext.utilityBill,
+    );
+    final transaction = const FinanceTransactionEventAdapter().adapt(
+      FinanceTransaction(
+        id: 'transaction-with-metadata',
+        balanceId: 'account',
+        amount: 59.63,
+        date: DateTime(2026, 9, 16),
+        isIncome: false,
+        subject: FinanceSubject.matteo,
+        description: 'Bolletta',
+        type: FinanceTransactionType.expense,
+        origin: FinanceTransactionOrigin.manual,
+        operationMetadata: metadata,
+      ),
+      observedAt: observedAt,
+    );
+    final expense = const RealExpenseEventAdapter().adapt(
+      _expense(
+        id: 'expense-with-metadata',
+        amount: 59.63,
+        operationMetadata: metadata,
+      ),
+      observedAt: observedAt,
+    );
+    final legacy = const RealExpenseEventAdapter().adapt(
+      _expense(id: 'legacy', amount: 10),
+      observedAt: observedAt,
+    );
+
+    expect(transaction.operationMetadata, same(metadata));
+    expect(expense.operationMetadata, same(metadata));
+    expect(legacy.operationMetadata, isNull);
+  });
+
   test(
     'asset movement adapter supports multiple origins and fund destinations',
     () {
@@ -245,6 +285,7 @@ RealExpense _expense({
   bool isIncome = false,
   bool isCashWithdrawal = false,
   String? cashWalletId,
+  EconomicOperationMetadata? operationMetadata,
 }) => RealExpense(
   id: id,
   balanceId: 'account',
@@ -257,4 +298,5 @@ RealExpense _expense({
   isCashWithdrawal: isCashWithdrawal,
   cashWalletId: cashWalletId,
   subject: FinanceSubject.matteo,
+  operationMetadata: operationMetadata,
 );

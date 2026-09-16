@@ -38,6 +38,7 @@ class RealExpenseEventAdapter implements EconomicEventAdapter<RealExpense> {
     return EconomicEvent(
       id: eventId ?? 'real_expense:${source.id}',
       economicFactId: source.economicFactId,
+      operationMetadata: source.operationMetadata,
       observedAt: observedAt,
       occurredAt: source.date,
       origins: source.isIncome ? [external] : [account],

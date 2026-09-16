@@ -43,6 +43,7 @@ class FinanceTransactionEventAdapter
     return EconomicEvent(
       id: eventId ?? 'finance_transaction:${source.id}',
       economicFactId: source.economicFactId,
+      operationMetadata: source.operationMetadata,
       observedAt: observedAt,
       occurredAt: source.date,
       origins: source.isIncome ? [counterpart] : [account],

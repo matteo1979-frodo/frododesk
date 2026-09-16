@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import '../../models/economic_event.dart';
+import '../../models/economic_operation_metadata.dart';
 
 /// Raised only after structural correlation has been established through an
 /// equal, non-null [EconomicEvent.economicFactId].
@@ -69,10 +70,17 @@ class EconomicEventCorrelator {
       ordered.map((event) => event.personId),
       (left, right) => left == right,
     );
+    final operationMetadata = _singleOptional(
+      factId,
+      'operationMetadata',
+      ordered.map((event) => event.operationMetadata),
+      _sameOperationMetadata,
+    );
 
     return EconomicEvent(
       id: 'economic_fact:$factId',
       economicFactId: factId,
+      operationMetadata: operationMetadata,
       observedAt: ordered
           .map((event) => event.observedAt)
           .reduce((left, right) => left.isAfter(right) ? left : right),
@@ -275,6 +283,15 @@ class EconomicEventCorrelator {
     }
     return first;
   }
+
+  bool _sameOperationMetadata(
+    EconomicOperationMetadata left,
+    EconomicOperationMetadata right,
+  ) =>
+      left.operationId == right.operationId &&
+      left.role == right.role &&
+      left.context == right.context &&
+      left.accessoryCostType == right.accessoryCostType;
 
   String _mostInformativeDescription(Iterable<String> values) {
     final candidates = values.map((value) => value.trim()).toSet().toList()

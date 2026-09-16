@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/logic/ledger/economic_event_correlator.dart';
 import 'package:frododesk/models/economic_event.dart';
+import 'package:frododesk/models/economic_operation_metadata.dart';
 
 void main() {
   const correlator = EconomicEventCorrelator();
@@ -324,6 +325,137 @@ void main() {
     expect(result.where((event) => event.economicFactId == null), hasLength(2));
   });
 
+  group('operation metadata', () {
+    test('merges null/null as null and enriches metadata/null', () {
+      final nullResult = correlator.correlate([
+        _event(id: 'a', factId: 'null-metadata'),
+        _event(id: 'b', factId: 'null-metadata'),
+      ]).single;
+      final metadata = _metadata();
+      final enriched = correlator.correlate([
+        _event(
+          id: 'transaction',
+          factId: 'enriched-metadata',
+          operationMetadata: metadata,
+        ),
+        _event(id: 'expense', factId: 'enriched-metadata'),
+      ]).single;
+
+      expect(nullResult.operationMetadata, isNull);
+      expect(enriched.operationMetadata, same(metadata));
+    });
+
+    test('preserves semantically identical metadata', () {
+      final result = correlator.correlate([
+        _event(
+          id: 'transaction',
+          factId: 'same-metadata',
+          operationMetadata: _metadata(),
+        ),
+        _event(
+          id: 'expense',
+          factId: 'same-metadata',
+          operationMetadata: _metadata(),
+        ),
+      ]).single;
+
+      expect(result.operationMetadata?.operationId, 'utility-operation');
+      expect(result.operationMetadata?.role, OperationRole.main);
+      expect(result.operationMetadata?.context, OperationContext.utilityBill);
+    });
+
+    test('rejects incompatible metadata explicitly', () {
+      expect(
+        () => correlator.correlate([
+          _event(
+            id: 'main',
+            factId: 'metadata-conflict',
+            operationMetadata: _metadata(),
+          ),
+          _event(
+            id: 'accessory',
+            factId: 'metadata-conflict',
+            operationMetadata: _metadata(
+              role: OperationRole.accessory,
+              accessoryCostType: AccessoryCostType.bankCommission,
+            ),
+          ),
+        ]),
+        throwsA(
+          isA<EconomicEventMergeConflict>().having(
+            (error) => error.field,
+            'field',
+            'operationMetadata',
+          ),
+        ),
+      );
+    });
+
+    test('same operationId keeps two distinct economic facts separate', () {
+      final result = correlator.correlate([
+        _event(
+          id: 'main',
+          factId: 'fact-main',
+          operationMetadata: _metadata(),
+        ),
+        _event(
+          id: 'commission',
+          factId: 'fact-commission',
+          operationMetadata: _metadata(
+            role: OperationRole.accessory,
+            accessoryCostType: AccessoryCostType.bankCommission,
+          ),
+        ),
+      ]);
+
+      expect(result, hasLength(2));
+      expect(result.map((event) => event.economicFactId), {
+        'fact-main',
+        'fact-commission',
+      });
+    });
+
+    test('operationId never correlates distinct economic facts', () {
+      final result = correlator.correlate([
+        _event(
+          id: 'main',
+          factId: 'fact-main',
+          amount: 59.63,
+          operationMetadata: _metadata(),
+        ),
+        _event(
+          id: 'commission',
+          factId: 'fact-commission',
+          amount: 2,
+          operationMetadata: _metadata(
+            role: OperationRole.accessory,
+            accessoryCostType: AccessoryCostType.bankCommission,
+          ),
+        ),
+        _event(
+          id: 'postal',
+          factId: 'fact-postal',
+          amount: 1,
+          operationMetadata: _metadata(
+            role: OperationRole.accessory,
+            accessoryCostType: AccessoryCostType.postalAcceptanceCharge,
+          ),
+        ),
+      ]);
+
+      expect(result, hasLength(3));
+      expect(result.map((event) => event.economicFactId), {
+        'fact-main',
+        'fact-commission',
+        'fact-postal',
+      });
+      expect(
+        result.map((event) => event.operationMetadata?.operationId).toSet(),
+        {'utility-operation'},
+      );
+    });
+  });
+
   test(
     'recurring occurrences with one rule and different facts stay separate',
     () {
@@ -461,6 +593,7 @@ EconomicEvent _event({
   List<String> notes = const [],
   List<EconomicTransactionOrigin> transactionOrigins = const [],
   List<String> recurringItemIds = const [],
+  EconomicOperationMetadata? operationMetadata,
 }) => EconomicEvent(
   id: id,
   economicFactId: factId,
@@ -478,6 +611,17 @@ EconomicEvent _event({
   notes: notes,
   transactionOrigins: transactionOrigins,
   recurringItemIds: recurringItemIds,
+  operationMetadata: operationMetadata,
+);
+
+EconomicOperationMetadata _metadata({
+  OperationRole role = OperationRole.main,
+  AccessoryCostType? accessoryCostType,
+}) => EconomicOperationMetadata(
+  operationId: 'utility-operation',
+  role: role,
+  context: OperationContext.utilityBill,
+  accessoryCostType: accessoryCostType,
 );
 
 EconomicEvent _fundTransfer(String id, String factId) => _event(
