@@ -81,8 +81,13 @@ void main() {
     expect(first.compensationTransactionId, retry.compensationTransactionId);
     expect(first.compensationEconomicFactId, retry.compensationEconomicFactId);
     expect(first.replacementCommandId, retry.replacementCommandId);
+    expect(first.replacementTransactionId, retry.replacementTransactionId);
     expect(first.replacementEconomicFactId, retry.replacementEconomicFactId);
     expect(first.replacementCommandId, isNot(other.replacementCommandId));
+    expect(
+      first.replacementTransactionId,
+      isNot(other.replacementTransactionId),
+    );
     expect(
       first.replacementEconomicFactId,
       'economic_fact_spese_${first.replacementCommandId}',
@@ -108,6 +113,7 @@ void main() {
       first.compensationEconomicFactId,
     );
     expect(changed.replacementCommandId, first.replacementCommandId);
+    expect(changed.replacementTransactionId, first.replacementTransactionId);
     expect(changed.replacementEconomicFactId, first.replacementEconomicFactId);
   });
 

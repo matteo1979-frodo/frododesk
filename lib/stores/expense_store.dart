@@ -7,6 +7,13 @@ import '../models/real_expense.dart';
 
 enum VerifiedExpenseAddStatus { added, alreadyCoherent, conflict, writerFailed }
 
+enum VerifiedExpenseReplacementStatus {
+  replaced,
+  alreadyCoherent,
+  conflict,
+  writerFailed,
+}
+
 class VerifiedExpenseAddResult {
   final VerifiedExpenseAddStatus status;
   final List<String> errors;
@@ -35,6 +42,43 @@ class VerifiedExpenseAddResult {
   bool get isSuccess =>
       status == VerifiedExpenseAddStatus.added ||
       status == VerifiedExpenseAddStatus.alreadyCoherent;
+}
+
+class VerifiedExpenseReplacementResult {
+  final VerifiedExpenseReplacementStatus status;
+  final List<String> errors;
+
+  VerifiedExpenseReplacementResult._(
+    this.status, {
+    Iterable<String> errors = const [],
+  }) : errors = List.unmodifiable(errors);
+
+  factory VerifiedExpenseReplacementResult.replaced() =>
+      VerifiedExpenseReplacementResult._(
+        VerifiedExpenseReplacementStatus.replaced,
+      );
+
+  factory VerifiedExpenseReplacementResult.alreadyCoherent() =>
+      VerifiedExpenseReplacementResult._(
+        VerifiedExpenseReplacementStatus.alreadyCoherent,
+      );
+
+  factory VerifiedExpenseReplacementResult.conflict(Iterable<String> errors) =>
+      VerifiedExpenseReplacementResult._(
+        VerifiedExpenseReplacementStatus.conflict,
+        errors: errors,
+      );
+
+  factory VerifiedExpenseReplacementResult.writerFailed(
+    Iterable<String> errors,
+  ) => VerifiedExpenseReplacementResult._(
+    VerifiedExpenseReplacementStatus.writerFailed,
+    errors: errors,
+  );
+
+  bool get isSuccess =>
+      status == VerifiedExpenseReplacementStatus.replaced ||
+      status == VerifiedExpenseReplacementStatus.alreadyCoherent;
 }
 
 typedef ExpenseVerifiedSave =
@@ -141,6 +185,90 @@ class ExpenseStore extends ChangeNotifier {
     return VerifiedExpenseAddResult.added();
   }
 
+  Future<VerifiedExpenseReplacementResult> replaceExpenseVerified({
+    required RealExpense original,
+    required RealExpense replacement,
+  }) async {
+    final originalMatches = _expenses
+        .where(
+          (item) =>
+              item.id == original.id ||
+              (original.economicFactId != null &&
+                  item.economicFactId == original.economicFactId),
+        )
+        .toList();
+    final replacementMatches = _expenses
+        .where(
+          (item) =>
+              item.id == replacement.id ||
+              (replacement.economicFactId != null &&
+                  item.economicFactId == replacement.economicFactId),
+        )
+        .toList();
+
+    if (originalMatches.length > 1 || replacementMatches.length > 1) {
+      return VerifiedExpenseReplacementResult.conflict(const [
+        'Duplicate expense identity exists',
+      ]);
+    }
+    if (originalMatches.isNotEmpty &&
+        !_sameExpense(originalMatches.single, original)) {
+      return VerifiedExpenseReplacementResult.conflict(const [
+        'Original expense differs from the expected snapshot',
+      ]);
+    }
+    if (replacementMatches.isNotEmpty &&
+        !_sameExpense(replacementMatches.single, replacement)) {
+      return VerifiedExpenseReplacementResult.conflict(const [
+        'Replacement expense identity exists with incompatible content',
+      ]);
+    }
+    if (originalMatches.isEmpty && replacementMatches.isNotEmpty) {
+      return VerifiedExpenseReplacementResult.alreadyCoherent();
+    }
+    if (originalMatches.isEmpty || replacementMatches.isNotEmpty) {
+      return VerifiedExpenseReplacementResult.conflict(const [
+        'Expense replacement state is not recoverable',
+      ]);
+    }
+
+    final candidate = List<RealExpense>.of(_expenses);
+    final index = candidate.indexOf(originalMatches.single);
+    candidate[index] = replacement;
+    final serialized = jsonEncode(
+      candidate.map((item) => item.toJson()).toList(),
+    );
+    late final PersistenceWriteVerification verification;
+    try {
+      verification = await _saveVerified(_storageKey, serialized);
+    } catch (error) {
+      return VerifiedExpenseReplacementResult.writerFailed([
+        'Expense persistence failed: $error',
+      ]);
+    }
+    if (!verification.backendAccepted) {
+      return VerifiedExpenseReplacementResult.writerFailed(const [
+        'Expense persistence backend rejected the replacement',
+      ]);
+    }
+    if (verification.readBack == null) {
+      return VerifiedExpenseReplacementResult.writerFailed(const [
+        'Expense replacement read-back is missing',
+      ]);
+    }
+    if (!verification.matches(serialized)) {
+      return VerifiedExpenseReplacementResult.writerFailed(const [
+        'Expense replacement read-back differs from written payload',
+      ]);
+    }
+
+    _expenses
+      ..clear()
+      ..addAll(candidate);
+    notifyListeners();
+    return VerifiedExpenseReplacementResult.replaced();
+  }
+
   Future<void> removeExpense(String expenseId) async {
     _expenses.removeWhere((expense) => expense.id == expenseId);
     await save();
@@ -168,5 +296,7 @@ class ExpenseStore extends ChangeNotifier {
       left.isIncome == right.isIncome &&
       left.subject == right.subject &&
       left.cashWalletId == right.cashWalletId &&
-      left.economicFactId == right.economicFactId;
+      left.economicFactId == right.economicFactId &&
+      jsonEncode(left.operationMetadata?.toJson()) ==
+          jsonEncode(right.operationMetadata?.toJson());
 }

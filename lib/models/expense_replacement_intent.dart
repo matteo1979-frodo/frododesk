@@ -9,12 +9,14 @@ class ExpenseReplacementIdentities {
   final String compensationTransactionId;
   final String compensationEconomicFactId;
   final String replacementCommandId;
+  final String replacementTransactionId;
   final String replacementEconomicFactId;
 
   const ExpenseReplacementIdentities._({
     required this.compensationTransactionId,
     required this.compensationEconomicFactId,
     required this.replacementCommandId,
+    required this.replacementTransactionId,
     required this.replacementEconomicFactId,
   });
 
@@ -32,11 +34,14 @@ class ExpenseReplacementIdentities {
         .replaceAll('=', '');
     final namespace = 'expense_replacement_$encoded';
     final commandId = '${namespace}_replacement';
+    final replacementEconomicFactId = 'economic_fact_spese_$commandId';
     return ExpenseReplacementIdentities._(
       compensationTransactionId: '${namespace}_compensation_transaction',
       compensationEconomicFactId: '${namespace}_compensation_fact',
       replacementCommandId: commandId,
-      replacementEconomicFactId: 'economic_fact_spese_$commandId',
+      replacementTransactionId:
+          'real_expense_spese_${base64Url.encode(utf8.encode(replacementEconomicFactId))}',
+      replacementEconomicFactId: replacementEconomicFactId,
     );
   }
 }
