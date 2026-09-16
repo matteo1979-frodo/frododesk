@@ -11,6 +11,9 @@ import '../stores/cash_wallet_store.dart';
 import '../logic/spese/spese_coordinator.dart';
 import '../logic/spese/builders/spese_command_builder.dart';
 import '../logic/spese/spese_mutation_coordinator.dart';
+import '../logic/finance/composite_economic_operation_coordinator.dart';
+import '../models/composite_economic_operation.dart';
+import '../models/economic_operation_metadata.dart';
 import '../models/economic_event.dart';
 import '../models/spese_command.dart';
 import '../models/spese_snapshot.dart';
@@ -55,12 +58,14 @@ class SpesePage extends StatefulWidget {
   final FinanceStore financeStore;
   final ExpenseStore expenseStore;
   final CashWalletStore cashWalletStore;
+  final CompositeEconomicOperationCoordinator? compositeCoordinator;
 
   const SpesePage({
     super.key,
     required this.financeStore,
     required this.expenseStore,
     required this.cashWalletStore,
+    this.compositeCoordinator,
   });
 
   @override
@@ -71,6 +76,7 @@ class _SpesePageState extends State<SpesePage> {
   final ExpenseCategoryStore categoryStore = ExpenseCategoryStore();
   late final SpeseCoordinator coordinator;
   late final SpeseMutationCoordinator mutationCoordinator;
+  late final CompositeEconomicOperationCoordinator compositeCoordinator;
   late SpeseSnapshot snapshot;
 
   @override
@@ -87,6 +93,12 @@ class _SpesePageState extends State<SpesePage> {
       expenseStore: widget.expenseStore,
       cashWalletStore: widget.cashWalletStore,
     );
+    compositeCoordinator =
+        widget.compositeCoordinator ??
+        CompositeEconomicOperationCoordinator(
+          financeStore: widget.financeStore,
+          expenseStore: widget.expenseStore,
+        );
     snapshot = coordinator.build(observedAt: DateTime.now());
     _loadCategoryStore();
   }
@@ -332,6 +344,29 @@ class _SpesePageState extends State<SpesePage> {
                       ),
                       const SizedBox(height: 10),
                       _MovementChoiceTile(
+                        icon: Icons.receipt_long_rounded,
+                        title: "Bolletta con costi accessori",
+                        subtitle:
+                            "Importo principale, commissione e costo postale",
+                        color: const Color(0xFFAB47BC),
+                        onTap: () async {
+                          Navigator.of(context).pop();
+
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => _UtilityBillAccountPage(
+                                snapshot: snapshot,
+                                coordinator: coordinator,
+                                compositeCoordinator: compositeCoordinator,
+                              ),
+                            ),
+                          );
+
+                          await _refreshSnapshot();
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      _MovementChoiceTile(
                         icon: Icons.payments_rounded,
                         title: "Prelievo contanti",
                         subtitle: "Scala un conto e registra il prelievo",
@@ -387,6 +422,471 @@ class _SpesePageState extends State<SpesePage> {
       ),
     );
   }
+}
+
+class _UtilityBillAccountPage extends StatelessWidget {
+  final SpeseSnapshot snapshot;
+  final SpeseCoordinator coordinator;
+  final CompositeEconomicOperationCoordinator compositeCoordinator;
+
+  const _UtilityBillAccountPage({
+    required this.snapshot,
+    required this.coordinator,
+    required this.compositeCoordinator,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF101820),
+      appBar: AppBar(
+        title: const Text('Nuova bolletta'),
+        backgroundColor: Colors.black.withValues(alpha: 0.08),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
+      body: _SpeseBackground(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: ListView(
+              padding: const EdgeInsets.all(18),
+              children: [
+                const Text(
+                  'Da quale conto viene addebitata?',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                if (snapshot.activeBalances.isEmpty)
+                  const _SpeseGlassCard(
+                    child: Text(
+                      'Nessun conto attivo trovato.',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  )
+                else
+                  ...snapshot.activeBalances.map(
+                    (balance) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _MovementChoiceTile(
+                        icon: Icons.account_balance_wallet_rounded,
+                        title: balance.name,
+                        subtitle:
+                            'Saldo: ${EuroFormatter.format(balance.availableAmount)}',
+                        color: const Color(0xFFAB47BC),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => _UtilityBillFormPage(
+                                balanceId: balance.balanceId,
+                                balanceName: balance.name,
+                                balanceAmount: balance.availableAmount,
+                                balancePersonId: balance.personId,
+                                snapshot: snapshot,
+                                coordinator: coordinator,
+                                compositeCoordinator: compositeCoordinator,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _UtilityBillFormPage extends StatefulWidget {
+  final String balanceId;
+  final String balanceName;
+  final double balanceAmount;
+  final String balancePersonId;
+  final SpeseSnapshot snapshot;
+  final SpeseCoordinator coordinator;
+  final CompositeEconomicOperationCoordinator compositeCoordinator;
+
+  const _UtilityBillFormPage({
+    required this.balanceId,
+    required this.balanceName,
+    required this.balanceAmount,
+    required this.balancePersonId,
+    required this.snapshot,
+    required this.coordinator,
+    required this.compositeCoordinator,
+  });
+
+  @override
+  State<_UtilityBillFormPage> createState() => _UtilityBillFormPageState();
+}
+
+class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
+  final mainAmountController = TextEditingController();
+  final bankCommissionController = TextEditingController();
+  final postalAcceptanceController = TextEditingController();
+  final descriptionController = TextEditingController();
+  late final String operationIdentity;
+  late List<String> categories;
+  late FinanceSubject selectedSubject;
+  String? selectedCategory;
+  DateTime selectedDate = DateTime.now();
+  bool isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    operationIdentity =
+        'utility_bill_${DateTime.now().microsecondsSinceEpoch}';
+    categories = widget.snapshot.categories.toList();
+    selectedSubject = FinanceSubject.values.firstWhere(
+      (subject) => subject.name == widget.balancePersonId,
+      orElse: () => FinanceSubject.shared,
+    );
+  }
+
+  @override
+  void dispose() {
+    mainAmountController.dispose();
+    bankCommissionController.dispose();
+    postalAcceptanceController.dispose();
+    descriptionController.dispose();
+    super.dispose();
+  }
+
+  double? _parseRequiredAmount(String value) {
+    final amount = double.tryParse(value.trim().replaceAll(',', '.'));
+    return amount != null && amount.isFinite && amount > 0 ? amount : null;
+  }
+
+  double? _parseOptionalAmount(String value) {
+    final normalized = value.trim();
+    if (normalized.isEmpty) return 0;
+    final amount = double.tryParse(normalized.replaceAll(',', '.'));
+    return amount != null && amount.isFinite && amount >= 0 ? amount : null;
+  }
+
+  CompositeEconomicOperation? _buildOperation() {
+    final mainAmount = _parseRequiredAmount(mainAmountController.text);
+    final bankCommission = _parseOptionalAmount(
+      bankCommissionController.text,
+    );
+    final postalAcceptance = _parseOptionalAmount(
+      postalAcceptanceController.text,
+    );
+    if (mainAmount == null ||
+        bankCommission == null ||
+        postalAcceptance == null) {
+      return null;
+    }
+    final accessories = <CompositeEconomicAccessoryInput>[];
+    if (bankCommission > 0) {
+      accessories.add((
+        economicFactId: 'economic_fact:$operationIdentity:bank_commission',
+        amount: bankCommission,
+        accessoryCostType: AccessoryCostType.bankCommission,
+      ));
+    }
+    if (postalAcceptance > 0) {
+      accessories.add((
+        economicFactId: 'economic_fact:$operationIdentity:postal_acceptance',
+        amount: postalAcceptance,
+        accessoryCostType: AccessoryCostType.postalAcceptanceCharge,
+      ));
+    }
+    return CompositeEconomicOperation(
+      operationId: operationIdentity,
+      context: OperationContext.utilityBill,
+      mainEconomicFactId: 'economic_fact:$operationIdentity:main',
+      mainAmount: mainAmount,
+      accessories: accessories,
+    );
+  }
+
+  Future<void> _submit() async {
+    if (isSubmitting) return;
+    final operation = _buildOperation();
+    if (operation == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Inserisci importi validi.')),
+      );
+      return;
+    }
+    final description = descriptionController.text.trim();
+    if (description.isEmpty || selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Inserisci descrizione e categoria.')),
+      );
+      return;
+    }
+
+    setState(() => isSubmitting = true);
+    late final CompositeEconomicOperationResult result;
+    try {
+      result = await widget.compositeCoordinator.record(
+        CompositeEconomicOperationPosting(
+          operation: operation,
+          debitBalanceId: widget.balanceId,
+          subject: selectedSubject,
+          economicDate: selectedDate,
+          description: description,
+          category: selectedCategory!,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => isSubmitting = false);
+    }
+    if (!mounted) return;
+
+    if (result.status == CompositeEconomicOperationStatus.completed ||
+        result.status == CompositeEconomicOperationStatus.alreadyComplete) {
+      Navigator.of(context).pop();
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.status == CompositeEconomicOperationStatus.completed
+                ? 'Bolletta registrata.'
+                : 'Bolletta già registrata.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final details = result.errors.isEmpty
+        ? result.reason?.name ?? 'Errore sconosciuto'
+        : result.errors.join('; ');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Bolletta non registrata: $details')),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = _buildOperation();
+    return Scaffold(
+      backgroundColor: const Color(0xFF101820),
+      appBar: AppBar(
+        title: const Text('Importo bolletta'),
+        backgroundColor: Colors.black.withValues(alpha: 0.08),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
+      body: _SpeseBackground(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: ListView(
+              padding: const EdgeInsets.all(18),
+              children: [
+                Text(
+                  'Conto scelto: ${widget.balanceName}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Saldo attuale: ${EuroFormatter.format(widget.balanceAmount)}',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+                const SizedBox(height: 16),
+                _SpeseGlassCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        controller: mainAmountController,
+                        onChanged: (_) => setState(() {}),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: _decoration(
+                          'Importo principale',
+                          'Es. 59,63',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: bankCommissionController,
+                        onChanged: (_) => setState(() {}),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: _decoration(
+                          'Commissione bancaria (facoltativa)',
+                          'Es. 2,00',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: postalAcceptanceController,
+                        onChanged: (_) => setState(() {}),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: _decoration(
+                          'Costo accettazione postale (facoltativo)',
+                          'Es. 1,00',
+                        ),
+                      ),
+                      if (preview != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          'Totale addebitato al conto: ${EuroFormatter.format(preview.totalAmount)}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: descriptionController,
+                        decoration: _decoration(
+                          'Descrizione',
+                          'Es. Bolletta energia',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _MovementDateSelector(
+                        selectedDate: selectedDate,
+                        onChanged: (value) =>
+                            setState(() => selectedDate = value),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedCategory,
+                        decoration: _decoration(
+                          'Categoria principale',
+                          'Seleziona categoria...',
+                        ),
+                        dropdownColor: Colors.white,
+                        items: [
+                          ...categories.map(
+                            (category) => DropdownMenuItem(
+                              value: category,
+                              child: Text(category),
+                            ),
+                          ),
+                          const DropdownMenuItem(
+                            value: '__new_category__',
+                            child: Text('➕ Nuova categoria'),
+                          ),
+                        ],
+                        onChanged: (value) async {
+                          if (value != '__new_category__') {
+                            setState(() => selectedCategory = value);
+                            return;
+                          }
+                          final controller = TextEditingController();
+                          final newCategory = await showDialog<String>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Nuova categoria'),
+                              content: TextField(
+                                controller: controller,
+                                decoration: const InputDecoration(
+                                  labelText: 'Nome categoria',
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Annulla'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(
+                                    context,
+                                    controller.text.trim(),
+                                  ),
+                                  child: const Text('Crea'),
+                                ),
+                              ],
+                            ),
+                          );
+                          controller.dispose();
+                          if (newCategory == null || newCategory.isEmpty) {
+                            return;
+                          }
+                          final updated = await widget.coordinator.addCategory(
+                            category: newCategory,
+                            observedAt: DateTime.now(),
+                          );
+                          if (!mounted) return;
+                          setState(() {
+                            categories = updated.categories.toList();
+                            selectedCategory = newCategory;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<FinanceSubject>(
+                        initialValue: selectedSubject,
+                        decoration: _decoration('Di chi è', ''),
+                        items: const [
+                          DropdownMenuItem(
+                            value: FinanceSubject.matteo,
+                            child: Text('👨 Matteo'),
+                          ),
+                          DropdownMenuItem(
+                            value: FinanceSubject.chiara,
+                            child: Text('👩 Chiara'),
+                          ),
+                          DropdownMenuItem(
+                            value: FinanceSubject.alice,
+                            child: Text('👧 Alice'),
+                          ),
+                        ],
+                        onChanged: isSubmitting
+                            ? null
+                            : (value) {
+                                if (value != null) {
+                                  setState(() => selectedSubject = value);
+                                }
+                              },
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: isSubmitting ? null : _submit,
+                          icon: const Icon(Icons.check_rounded),
+                          label: Text(
+                            isSubmitting
+                                ? 'Registrazione in corso...'
+                                : 'Conferma bolletta',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _decoration(String label, String hint) => InputDecoration(
+    labelText: label,
+    hintText: hint,
+    filled: true,
+    fillColor: Colors.white.withValues(alpha: 0.86),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)),
+  );
 }
 
 class _RealExpenseAccountPage extends StatelessWidget {
@@ -1387,7 +1887,17 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                   },
                                   child: const Text("Chiudi"),
                                 ),
-                                ElevatedButton.icon(
+                                if (expense.operationMetadata != null)
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                    ),
+                                    child: Text(
+                                      "Operazione composta: modifica ed eliminazione non disponibili.",
+                                    ),
+                                  ),
+                                if (expense.operationMetadata == null)
+                                  ElevatedButton.icon(
                                   onPressed: () async {
                                     Navigator.of(dialogContext).pop();
 
@@ -1537,7 +2047,8 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                   icon: const Icon(Icons.edit_outlined),
                                   label: const Text("Modifica"),
                                 ),
-                                ElevatedButton.icon(
+                                if (expense.operationMetadata == null)
+                                  ElevatedButton.icon(
                                   onPressed: () async {
                                     Navigator.of(dialogContext).pop();
 
