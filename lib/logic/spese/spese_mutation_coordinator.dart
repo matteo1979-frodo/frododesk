@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import '../../models/real_expense.dart';
 import '../../models/finance_recurring_item.dart';
+import '../../models/finance_transaction.dart';
 import '../../models/economic_event.dart';
 import '../../models/spese_command.dart';
 import '../../models/spese_mutation_plan.dart';
@@ -55,13 +58,8 @@ class SpeseMutationCoordinator {
     final economicFactId = _economicFactId(command);
     switch (command.kind) {
       case SpeseCommandKind.expense:
-        await financeStore.registerRealExpense(
-          balanceId: command.origin.referenceId!,
-          amount: command.amount,
-          description: command.description,
-          notes: command.category,
-          economicFactId: economicFactId,
-        );
+        await _commitOrdinaryExpenseCreation(command, expense, economicFactId);
+        return;
       case SpeseCommandKind.extraIncome:
         await financeStore.registerExtraIncome(
           balanceId: command.destination.referenceId!,
@@ -86,6 +84,140 @@ class SpeseMutationCoordinator {
     }
     await expenseStore.addExpense(expense);
   }
+
+  Future<void> _commitOrdinaryExpenseCreation(
+    SpeseCommand command,
+    RealExpense expense,
+    String economicFactId,
+  ) async {
+    final expectedTransaction = _ordinaryExpenseTransaction(
+      command,
+      economicFactId,
+    );
+    var financeMatch = _classifyFinanceTransaction(expectedTransaction);
+    final expenseMatch = _classifyExpense(expense);
+
+    if (financeMatch == _RecordMatch.conflicting ||
+        expenseMatch == _RecordMatch.conflicting ||
+        (financeMatch == _RecordMatch.absent &&
+            expenseMatch == _RecordMatch.coherent)) {
+      throw StateError('Stato Spese ordinario incompatibile.');
+    }
+    if (financeMatch == _RecordMatch.coherent &&
+        expenseMatch == _RecordMatch.coherent) {
+      return;
+    }
+
+    if (financeMatch == _RecordMatch.absent) {
+      await financeStore.registerRealExpense(
+        balanceId: command.origin.referenceId!,
+        amount: command.amount,
+        description: command.description,
+        notes: command.category,
+        economicFactId: economicFactId,
+        occurredAt: command.occurredAt,
+        transactionId: expectedTransaction.id,
+      );
+      financeMatch = _classifyFinanceTransaction(expectedTransaction);
+      if (financeMatch != _RecordMatch.coherent) {
+        throw StateError('Persistenza Finance della Spesa non verificabile.');
+      }
+    }
+
+    final addition = await expenseStore.addExpenseVerified(expense);
+    if (!addition.isSuccess) {
+      throw StateError(
+        addition.errors.isEmpty
+            ? 'Persistenza Expense della Spesa fallita.'
+            : addition.errors.join('; '),
+      );
+    }
+  }
+
+  FinanceTransaction _ordinaryExpenseTransaction(
+    SpeseCommand command,
+    String economicFactId,
+  ) => FinanceTransaction(
+    id: _ordinaryExpenseTransactionId(economicFactId),
+    balanceId: command.origin.referenceId!,
+    amount: command.amount,
+    date: command.occurredAt,
+    isIncome: false,
+    subject: _subject(command.personId),
+    description: command.description,
+    type: FinanceTransactionType.expense,
+    origin: FinanceTransactionOrigin.manual,
+    notes: command.category,
+    economicFactId: economicFactId,
+  );
+
+  String _ordinaryExpenseTransactionId(String economicFactId) =>
+      'real_expense_spese_${base64Url.encode(utf8.encode(economicFactId))}';
+
+  _RecordMatch _classifyFinanceTransaction(FinanceTransaction expected) {
+    final matches = financeStore.transactions
+        .where(
+          (item) =>
+              item.id == expected.id ||
+              item.economicFactId == expected.economicFactId,
+        )
+        .toList();
+    if (matches.isEmpty) return _RecordMatch.absent;
+    if (matches.length != 1 || !_sameTransaction(matches.single, expected)) {
+      return _RecordMatch.conflicting;
+    }
+    return _RecordMatch.coherent;
+  }
+
+  _RecordMatch _classifyExpense(RealExpense expected) {
+    final matches = expenseStore.all
+        .where(
+          (item) =>
+              item.id == expected.id ||
+              item.economicFactId == expected.economicFactId,
+        )
+        .toList();
+    if (matches.isEmpty) return _RecordMatch.absent;
+    if (matches.length != 1 || !_sameExpense(matches.single, expected)) {
+      return _RecordMatch.conflicting;
+    }
+    return _RecordMatch.coherent;
+  }
+
+  bool _sameTransaction(FinanceTransaction left, FinanceTransaction right) =>
+      left.id == right.id &&
+      left.balanceId == right.balanceId &&
+      left.amount == right.amount &&
+      left.date == right.date &&
+      left.isIncome == right.isIncome &&
+      left.subject == right.subject &&
+      left.description == right.description &&
+      left.type == right.type &&
+      left.origin == right.origin &&
+      left.notes == right.notes &&
+      left.economicFactId == right.economicFactId &&
+      left.operationMetadata == null;
+
+  bool _sameExpense(RealExpense left, RealExpense right) =>
+      left.id == right.id &&
+      left.balanceId == right.balanceId &&
+      left.balanceName == right.balanceName &&
+      left.amount == right.amount &&
+      left.description == right.description &&
+      left.category == right.category &&
+      left.date == right.date &&
+      left.nonTrackedCash == right.nonTrackedCash &&
+      left.isCashWithdrawal == right.isCashWithdrawal &&
+      left.isIncome == right.isIncome &&
+      left.subject == right.subject &&
+      left.cashWalletId == right.cashWalletId &&
+      left.economicFactId == right.economicFactId &&
+      left.operationMetadata == right.operationMetadata;
+
+  FinanceSubject _subject(String? personId) => FinanceSubject.values.firstWhere(
+    (subject) => subject.name == personId,
+    orElse: () => FinanceSubject.shared,
+  );
 
   Future<void> _commitRemoval(SpeseCommand command, String expenseId) async {
     switch (command.kind) {
@@ -151,3 +283,5 @@ class SpeseMutationCoordinator {
   String _economicFactId(SpeseCommand command) =>
       'economic_fact_spese_${command.id}';
 }
+
+enum _RecordMatch { absent, coherent, conflicting }

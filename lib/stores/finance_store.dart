@@ -1195,6 +1195,8 @@ class FinanceStore extends ChangeNotifier {
     required String description,
     String? notes,
     String? economicFactId,
+    DateTime? occurredAt,
+    String? transactionId,
   }) async {
     final index = balances.indexWhere((b) => b.balanceId == balanceId);
 
@@ -1213,10 +1215,12 @@ class FinanceStore extends ChangeNotifier {
       final candidateTransactions = List<FinanceTransaction>.of(_transactions)
         ..add(
           FinanceTransaction(
-            id: 'real_expense_${DateTime.now().microsecondsSinceEpoch}',
+            id:
+                transactionId ??
+                'real_expense_${DateTime.now().microsecondsSinceEpoch}',
             balanceId: old.balanceId,
             amount: amount,
-            date: DateTime.now(),
+            date: occurredAt ?? DateTime.now(),
             isIncome: false,
             subject: _subjectForPersonId(old.personId),
             description: description,
@@ -1252,10 +1256,12 @@ class FinanceStore extends ChangeNotifier {
 
     _transactions.add(
       FinanceTransaction(
-        id: 'real_expense_${DateTime.now().microsecondsSinceEpoch}',
+        id:
+            transactionId ??
+            'real_expense_${DateTime.now().microsecondsSinceEpoch}',
         balanceId: old.balanceId,
         amount: amount,
-        date: DateTime.now(),
+        date: occurredAt ?? DateTime.now(),
         isIncome: false,
         subject: _subjectForPersonId(old.personId),
         description: description,

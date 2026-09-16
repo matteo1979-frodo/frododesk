@@ -307,6 +307,8 @@ class _FinanceSpy extends FinanceStore {
     required String description,
     String? notes,
     String? economicFactId,
+    DateTime? occurredAt,
+    String? transactionId,
   }) async {
     this.amount += amount;
     this.economicFactId = economicFactId;

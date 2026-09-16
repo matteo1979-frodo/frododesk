@@ -1,9 +1,12 @@
+import 'dart:collection';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/logic/spese/spese_mutation_coordinator.dart';
 import 'package:frododesk/models/economic_event.dart';
 import 'package:frododesk/models/real_expense.dart';
+import 'package:frododesk/models/finance_transaction.dart';
+import 'package:frododesk/models/finance_recurring_item.dart';
 import 'package:frododesk/models/spese_command.dart';
 import 'package:frododesk/stores/cash_wallet_store.dart';
 import 'package:frododesk/stores/expense_store.dart';
@@ -187,8 +190,13 @@ RealExpense _expense({bool isIncome = false, bool isCashWithdrawal = false}) {
 class _TrackingFinanceStore extends FinanceStore {
   final List<String> operations;
   String? lastEconomicFactId;
+  final List<FinanceTransaction> recordedTransactions = [];
 
   _TrackingFinanceStore(this.operations);
+
+  @override
+  UnmodifiableListView<FinanceTransaction> get transactions =>
+      UnmodifiableListView(recordedTransactions);
 
   @override
   Future<void> registerRealExpense({
@@ -197,9 +205,27 @@ class _TrackingFinanceStore extends FinanceStore {
     required String description,
     String? notes,
     String? economicFactId,
+    DateTime? occurredAt,
+    String? transactionId,
   }) async {
     lastEconomicFactId = economicFactId;
     operations.add('finance.expense');
+    if (transactionId == null || occurredAt == null) return;
+    recordedTransactions.add(
+      FinanceTransaction(
+        id: transactionId,
+        balanceId: balanceId,
+        amount: amount,
+        date: occurredAt,
+        isIncome: false,
+        subject: FinanceSubject.matteo,
+        description: description,
+        type: FinanceTransactionType.expense,
+        origin: FinanceTransactionOrigin.manual,
+        notes: notes,
+        economicFactId: economicFactId,
+      ),
+    );
   }
 
   @override
@@ -237,6 +263,9 @@ class _TrackingExpenseStore extends ExpenseStore {
   _TrackingExpenseStore(this.operations);
 
   @override
+  List<RealExpense> get all => lastAdded == null ? const [] : [lastAdded!];
+
+  @override
   RealExpense? findById(String expenseId) =>
       current?.id == expenseId ? current : null;
 
@@ -244,6 +273,15 @@ class _TrackingExpenseStore extends ExpenseStore {
   Future<void> addExpense(RealExpense expense) async {
     lastAdded = expense;
     operations.add('expenses.add');
+  }
+
+  @override
+  Future<VerifiedExpenseAddResult> addExpenseVerified(
+    RealExpense expense,
+  ) async {
+    lastAdded = expense;
+    operations.add('expenses.add');
+    return VerifiedExpenseAddResult.added();
   }
 
   @override
