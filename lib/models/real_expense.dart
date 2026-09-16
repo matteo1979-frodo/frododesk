@@ -1,3 +1,4 @@
+import 'economic_operation_metadata.dart';
 import 'finance_recurring_item.dart';
 
 class RealExpense {
@@ -25,6 +26,7 @@ class RealExpense {
   /// Esempio: wallet_matteo, wallet_chiara.
   final String? cashWalletId;
   final String? economicFactId;
+  final EconomicOperationMetadata? operationMetadata;
 
   const RealExpense({
     required this.id,
@@ -40,6 +42,7 @@ class RealExpense {
     this.subject = FinanceSubject.shared,
     this.cashWalletId,
     this.economicFactId,
+    this.operationMetadata,
   });
 
   String get displayAmount => "€${amount.toStringAsFixed(2)}";
@@ -59,6 +62,7 @@ class RealExpense {
       'isIncome': isIncome,
       'subject': subject.name,
       'economicFactId': economicFactId,
+      'operationMetadata': operationMetadata?.toJson(),
     };
   }
 
@@ -79,6 +83,11 @@ class RealExpense {
           ? FinanceSubject.shared
           : FinanceSubject.values.firstWhere((e) => e.name == json['subject']),
       economicFactId: json['economicFactId'] as String?,
+      operationMetadata: json['operationMetadata'] == null
+          ? null
+          : EconomicOperationMetadata.fromJson(
+              Map<String, dynamic>.from(json['operationMetadata'] as Map),
+            ),
     );
   }
 }

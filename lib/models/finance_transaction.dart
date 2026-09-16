@@ -1,3 +1,4 @@
+import 'economic_operation_metadata.dart';
 import 'finance_recurring_item.dart';
 
 enum FinanceTransactionType { income, expense, transfer }
@@ -27,6 +28,7 @@ class FinanceTransaction {
 
   final String? notes;
   final String? economicFactId;
+  final EconomicOperationMetadata? operationMetadata;
 
   const FinanceTransaction({
     required this.id,
@@ -41,6 +43,7 @@ class FinanceTransaction {
     this.recurringItemId,
     this.notes,
     this.economicFactId,
+    this.operationMetadata,
   });
 
   Map<String, dynamic> toJson() {
@@ -57,6 +60,7 @@ class FinanceTransaction {
       'recurringItemId': recurringItemId,
       'notes': notes,
       'economicFactId': economicFactId,
+      'operationMetadata': operationMetadata?.toJson(),
     };
   }
 
@@ -80,6 +84,11 @@ class FinanceTransaction {
       recurringItemId: json['recurringItemId'] as String?,
       notes: json['notes'] as String?,
       economicFactId: json['economicFactId'] as String?,
+      operationMetadata: json['operationMetadata'] == null
+          ? null
+          : EconomicOperationMetadata.fromJson(
+              Map<String, dynamic>.from(json['operationMetadata'] as Map),
+            ),
     );
   }
 }
