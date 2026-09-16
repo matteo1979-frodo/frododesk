@@ -72,6 +72,20 @@ void main() {
       expect(metadata.accessoryCostType, AccessoryCostType.bankCommission);
     });
 
+    test('accepts postal acceptance charge accessory for a utility bill', () {
+      final metadata = EconomicOperationMetadata(
+        operationId: 'utility_bill_1',
+        role: OperationRole.accessory,
+        context: OperationContext.utilityBill,
+        accessoryCostType: AccessoryCostType.postalAcceptanceCharge,
+      );
+
+      expect(
+        metadata.accessoryCostType,
+        AccessoryCostType.postalAcceptanceCharge,
+      );
+    });
+
     test('rejects an accessory cost type on a main fact', () {
       expect(
         () => EconomicOperationMetadata(
@@ -178,6 +192,38 @@ void main() {
       expect(restored.context, OperationContext.utilityBill);
     });
 
+    test('round-trips postal acceptance charge with a stable JSON name', () {
+      final source = EconomicOperationMetadata(
+        operationId: 'utility_bill_1',
+        role: OperationRole.accessory,
+        context: OperationContext.utilityBill,
+        accessoryCostType: AccessoryCostType.postalAcceptanceCharge,
+      );
+
+      final json = source.toJson();
+      final restored = EconomicOperationMetadata.fromJson(json);
+
+      expect(json['accessoryCostType'], 'postalAcceptanceCharge');
+      expect(
+        restored.accessoryCostType,
+        AccessoryCostType.postalAcceptanceCharge,
+      );
+    });
+
+    test('keeps bank commission and postal acceptance charge distinct', () {
+      expect(
+        AccessoryCostType.bankCommission,
+        isNot(AccessoryCostType.postalAcceptanceCharge),
+      );
+      expect(
+        AccessoryCostType.values,
+        containsAll([
+          AccessoryCostType.bankCommission,
+          AccessoryCostType.postalAcceptanceCharge,
+        ]),
+      );
+    });
+
     test('rejects unknown enum values without a fallback', () {
       final validMain = {
         'operationId': 'operation_1',
@@ -262,6 +308,28 @@ void main() {
 
       expect(main.operationId, accessory.operationId);
       expect(main.context, accessory.context);
+    });
+
+    test('allows utility bill accessories with distinct cost types', () {
+      final bankCommission = EconomicOperationMetadata(
+        operationId: 'utility_bill_1',
+        role: OperationRole.accessory,
+        context: OperationContext.utilityBill,
+        accessoryCostType: AccessoryCostType.bankCommission,
+      );
+      final postalAcceptanceCharge = EconomicOperationMetadata(
+        operationId: 'utility_bill_1',
+        role: OperationRole.accessory,
+        context: OperationContext.utilityBill,
+        accessoryCostType: AccessoryCostType.postalAcceptanceCharge,
+      );
+
+      expect(bankCommission.operationId, postalAcceptanceCharge.operationId);
+      expect(bankCommission.context, postalAcceptanceCharge.context);
+      expect(
+        bankCommission.accessoryCostType,
+        isNot(postalAcceptanceCharge.accessoryCostType),
+      );
     });
   });
 }

@@ -2,7 +2,7 @@ enum OperationRole { main, accessory }
 
 enum OperationContext { cashWithdrawal, financialPlanInstallment, utilityBill }
 
-enum AccessoryCostType { bankCommission }
+enum AccessoryCostType { bankCommission, postalAcceptanceCharge }
 
 /// Structural metadata shared by distinct economic facts that belong to the
 /// same composed operation.
