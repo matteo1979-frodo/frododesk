@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import '../../models/economic_event.dart';
 import '../../models/economic_operation_metadata.dart';
+import '../../models/expense_replacement_metadata.dart';
 
 /// Raised only after structural correlation has been established through an
 /// equal, non-null [EconomicEvent.economicFactId].
@@ -76,11 +77,18 @@ class EconomicEventCorrelator {
       ordered.map((event) => event.operationMetadata),
       _sameOperationMetadata,
     );
+    final expenseReplacementMetadata = _singleOptional(
+      factId,
+      'expenseReplacementMetadata',
+      ordered.map((event) => event.expenseReplacementMetadata),
+      _sameExpenseReplacementMetadata,
+    );
 
     return EconomicEvent(
       id: 'economic_fact:$factId',
       economicFactId: factId,
       operationMetadata: operationMetadata,
+      expenseReplacementMetadata: expenseReplacementMetadata,
       observedAt: ordered
           .map((event) => event.observedAt)
           .reduce((left, right) => left.isAfter(right) ? left : right),
@@ -304,6 +312,14 @@ class EconomicEventCorrelator {
 
   List<String> _sortedUnique(Iterable<String> values) =>
       values.toSet().toList()..sort();
+
+  bool _sameExpenseReplacementMetadata(
+    ExpenseReplacementMetadata left,
+    ExpenseReplacementMetadata right,
+  ) =>
+      left.originalEconomicFactId == right.originalEconomicFactId &&
+      left.replacementEconomicFactId == right.replacementEconomicFactId &&
+      left.role == right.role;
 
   List<EconomicTransactionOrigin> _sortedUniqueOrigins(
     Iterable<EconomicTransactionOrigin> values,

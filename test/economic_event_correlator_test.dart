@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/logic/ledger/economic_event_correlator.dart';
 import 'package:frododesk/models/economic_event.dart';
 import 'package:frododesk/models/economic_operation_metadata.dart';
+import 'package:frododesk/models/expense_replacement_metadata.dart';
 
 void main() {
   const correlator = EconomicEventCorrelator();
@@ -393,11 +394,7 @@ void main() {
 
     test('same operationId keeps two distinct economic facts separate', () {
       final result = correlator.correlate([
-        _event(
-          id: 'main',
-          factId: 'fact-main',
-          operationMetadata: _metadata(),
-        ),
+        _event(id: 'main', factId: 'fact-main', operationMetadata: _metadata()),
         _event(
           id: 'commission',
           factId: 'fact-commission',
@@ -452,6 +449,82 @@ void main() {
       expect(
         result.map((event) => event.operationMetadata?.operationId).toSet(),
         {'utility-operation'},
+      );
+    });
+
+    test(
+      'preserves replacement provenance without correlating related facts',
+      () {
+        final compensation = ExpenseReplacementMetadata(
+          originalEconomicFactId: 'fact-a',
+          replacementEconomicFactId: 'fact-b',
+          role: ExpenseReplacementRole.compensation,
+        );
+        final replacement = ExpenseReplacementMetadata(
+          originalEconomicFactId: 'fact-a',
+          replacementEconomicFactId: 'fact-b',
+          role: ExpenseReplacementRole.replacement,
+        );
+        final result = correlator.correlate([
+          _event(id: 'original', factId: 'fact-a'),
+          _event(
+            id: 'compensation',
+            factId: 'fact-compensation',
+            expenseReplacementMetadata: compensation,
+          ),
+          _event(
+            id: 'replacement-finance',
+            factId: 'fact-b',
+            sourceKind: EconomicSourceKind.financeTransaction,
+            expenseReplacementMetadata: replacement,
+          ),
+          _event(
+            id: 'replacement-expense',
+            factId: 'fact-b',
+            sourceKind: EconomicSourceKind.realExpense,
+          ),
+        ]);
+
+        expect(result, hasLength(3));
+        expect(
+          result
+              .singleWhere((event) => event.economicFactId == 'fact-b')
+              .expenseReplacementMetadata
+              ?.role,
+          ExpenseReplacementRole.replacement,
+        );
+      },
+    );
+
+    test('rejects incompatible replacement provenance for one fact', () {
+      expect(
+        () => correlator.correlate([
+          _event(
+            id: 'one',
+            factId: 'fact-b',
+            expenseReplacementMetadata: ExpenseReplacementMetadata(
+              originalEconomicFactId: 'fact-a',
+              replacementEconomicFactId: 'fact-b',
+              role: ExpenseReplacementRole.replacement,
+            ),
+          ),
+          _event(
+            id: 'two',
+            factId: 'fact-b',
+            expenseReplacementMetadata: ExpenseReplacementMetadata(
+              originalEconomicFactId: 'other',
+              replacementEconomicFactId: 'fact-b',
+              role: ExpenseReplacementRole.replacement,
+            ),
+          ),
+        ]),
+        throwsA(
+          isA<EconomicEventMergeConflict>().having(
+            (error) => error.field,
+            'field',
+            'expenseReplacementMetadata',
+          ),
+        ),
       );
     });
   });
@@ -594,6 +667,7 @@ EconomicEvent _event({
   List<EconomicTransactionOrigin> transactionOrigins = const [],
   List<String> recurringItemIds = const [],
   EconomicOperationMetadata? operationMetadata,
+  ExpenseReplacementMetadata? expenseReplacementMetadata,
 }) => EconomicEvent(
   id: id,
   economicFactId: factId,
@@ -612,6 +686,7 @@ EconomicEvent _event({
   transactionOrigins: transactionOrigins,
   recurringItemIds: recurringItemIds,
   operationMetadata: operationMetadata,
+  expenseReplacementMetadata: expenseReplacementMetadata,
 );
 
 EconomicOperationMetadata _metadata({

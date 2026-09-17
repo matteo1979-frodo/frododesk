@@ -44,6 +44,7 @@ class FinanceTransactionEventAdapter
       id: eventId ?? 'finance_transaction:${source.id}',
       economicFactId: source.economicFactId,
       operationMetadata: source.operationMetadata,
+      expenseReplacementMetadata: source.expenseReplacementMetadata,
       observedAt: observedAt,
       occurredAt: source.date,
       origins: source.isIncome ? [counterpart] : [account],

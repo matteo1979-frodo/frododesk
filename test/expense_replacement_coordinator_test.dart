@@ -9,6 +9,7 @@ import 'package:frododesk/logic/persistence_store.dart';
 import 'package:frododesk/logic/spese/expense_replacement_coordinator.dart';
 import 'package:frododesk/logic/spese/expense_replacement_persistence.dart';
 import 'package:frododesk/models/expense_replacement_intent.dart';
+import 'package:frododesk/models/expense_replacement_metadata.dart';
 import 'package:frododesk/models/finance_balance.dart';
 import 'package:frododesk/models/finance_recurring_item.dart';
 import 'package:frododesk/models/finance_transaction.dart';
@@ -34,6 +35,18 @@ void main() {
       harness.intent.identities.compensationTransactionId,
       harness.intent.identities.replacementTransactionId,
     ]);
+    final compensationMetadata =
+        harness.finance.transactions.first.expenseReplacementMetadata!;
+    final replacementMetadata =
+        harness.finance.transactions.last.expenseReplacementMetadata!;
+    expect(compensationMetadata.originalEconomicFactId, 'old-fact');
+    expect(
+      compensationMetadata.replacementEconomicFactId,
+      harness.intent.identities.replacementEconomicFactId,
+    );
+    expect(compensationMetadata.role, ExpenseReplacementRole.compensation);
+    expect(replacementMetadata.originalEconomicFactId, 'old-fact');
+    expect(replacementMetadata.role, ExpenseReplacementRole.replacement);
     expect(
       harness.expenses.all.single.id,
       harness.intent.identities.replacementCommandId,
@@ -310,8 +323,121 @@ void main() {
         harness.intent.identities.replacementEconomicFactId,
       );
       expect(harness.finance.balances.single.currentAmount, 95);
+      expect(
+        harness.finance.transactions.every(
+          (item) => item.expenseReplacementMetadata == null,
+        ),
+        isTrue,
+      );
     },
   );
+
+  test('modern partial Finance state without metadata conflicts', () async {
+    final intent = _intent();
+    final harness = await _Harness.create(
+      initialTransactions: [
+        _compensation(intent, amount: 10, includeMetadata: false),
+        _replacementTransaction(intent, amount: 15, includeMetadata: false),
+      ],
+    );
+
+    final result = await harness.coordinator.complete(harness.intent);
+
+    expect(result.reason, ExpenseReplacementReason.financeConflict);
+    expect(harness.finance.balances.single.currentAmount, 100);
+  });
+
+  test(
+    'keeps the original Finance transaction byte-for-byte unchanged',
+    () async {
+      final original = FinanceTransaction(
+        id: 'original-transaction',
+        balanceId: 'account',
+        amount: 10,
+        date: DateTime(2026, 9, 14, 10),
+        isIncome: false,
+        subject: FinanceSubject.matteo,
+        description: 'Old expense',
+        type: FinanceTransactionType.expense,
+        origin: FinanceTransactionOrigin.manual,
+        notes: 'Food',
+        economicFactId: 'old-fact',
+      );
+      final before = jsonEncode(original.toJson());
+      final harness = await _Harness.create(initialTransactions: [original]);
+
+      final result = await harness.coordinator.complete(harness.intent);
+
+      expect(result.status, ExpenseReplacementStatus.completed);
+      expect(jsonEncode(harness.finance.transactions.first.toJson()), before);
+      expect(
+        harness.finance.transactions.first.expenseReplacementMetadata,
+        isNull,
+      );
+    },
+  );
+
+  test('successive replacements form A to B to C without skipping B', () async {
+    final harness = await _Harness.create();
+    final first = await harness.coordinator.complete(harness.intent);
+    final factB = harness.intent.identities.replacementEconomicFactId;
+    final currentExpense = harness.expenses.all.single;
+    final secondIntent = ExpenseReplacementIntent(
+      replacementId: 'replacement-2',
+      originalExpense: currentExpense,
+      replacementPayload: ExpenseReplacementPayload(
+        balanceId: 'account',
+        balanceName: 'Account',
+        amount: 15,
+        description: 'Newest expense',
+        category: 'Food',
+        preparedAt: DateTime(2026, 9, 17, 12),
+        occurredAt: DateTime(2026, 9, 15, 11),
+        personId: 'matteo',
+      ),
+    );
+    await harness.persistence.add(secondIntent);
+
+    final second = await harness.coordinator.complete(secondIntent);
+
+    expect(first.status, ExpenseReplacementStatus.completed);
+    expect(second.status, ExpenseReplacementStatus.completed);
+    final factC = secondIntent.identities.replacementEconomicFactId;
+    final secondPair = harness.finance.transactions.skip(2).toList();
+    expect(secondPair, hasLength(2));
+    expect(
+      secondPair.map(
+        (item) => item.expenseReplacementMetadata?.originalEconomicFactId,
+      ),
+      everyElement(factB),
+    );
+    expect(
+      secondPair.map(
+        (item) => item.expenseReplacementMetadata?.replacementEconomicFactId,
+      ),
+      everyElement(factC),
+    );
+    expect(factB, isNot('old-fact'));
+  });
+
+  test('incompatible replacement provenance conflicts', () async {
+    final intent = _intent();
+    final harness = await _Harness.create(
+      initialTransactions: [
+        _compensation(intent, amount: 10),
+        _replacementTransaction(
+          intent,
+          amount: 15,
+          originalEconomicFactId: 'different-original',
+        ),
+      ],
+    );
+
+    final result = await harness.coordinator.complete(harness.intent);
+
+    expect(result.reason, ExpenseReplacementReason.financeConflict);
+    expect(harness.finance.balances.single.currentAmount, 100);
+  });
 }
 
 class _Harness {
@@ -445,6 +571,7 @@ FinanceBalance _balance() => FinanceBalance(
 FinanceTransaction _compensation(
   ExpenseReplacementIntent intent, {
   required double amount,
+  bool includeMetadata = true,
 }) => FinanceTransaction(
   id: intent.identities.compensationTransactionId,
   balanceId: 'account',
@@ -457,11 +584,21 @@ FinanceTransaction _compensation(
   origin: FinanceTransactionOrigin.manual,
   notes: 'Ripristino movimento sostituito',
   economicFactId: intent.identities.compensationEconomicFactId,
+  expenseReplacementMetadata: includeMetadata
+      ? ExpenseReplacementMetadata(
+          originalEconomicFactId: intent.originalExpense.economicFactId!,
+          replacementEconomicFactId:
+              intent.identities.replacementEconomicFactId,
+          role: ExpenseReplacementRole.compensation,
+        )
+      : null,
 );
 
 FinanceTransaction _replacementTransaction(
   ExpenseReplacementIntent intent, {
   required double amount,
+  bool includeMetadata = true,
+  String? originalEconomicFactId,
 }) => FinanceTransaction(
   id: intent.identities.replacementTransactionId,
   balanceId: 'account',
@@ -474,6 +611,15 @@ FinanceTransaction _replacementTransaction(
   origin: FinanceTransactionOrigin.manual,
   notes: 'Food',
   economicFactId: intent.identities.replacementEconomicFactId,
+  expenseReplacementMetadata: includeMetadata
+      ? ExpenseReplacementMetadata(
+          originalEconomicFactId:
+              originalEconomicFactId ?? intent.originalExpense.economicFactId!,
+          replacementEconomicFactId:
+              intent.identities.replacementEconomicFactId,
+          role: ExpenseReplacementRole.replacement,
+        )
+      : null,
 );
 
 RealExpense _replacementExpense(

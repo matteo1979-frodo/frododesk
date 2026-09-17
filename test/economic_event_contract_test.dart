@@ -6,6 +6,7 @@ import 'package:frododesk/logic/economics/adapters/finance_transaction_event_ada
 import 'package:frododesk/logic/economics/adapters/real_expense_event_adapter.dart';
 import 'package:frododesk/models/economic_event.dart';
 import 'package:frododesk/models/economic_operation_metadata.dart';
+import 'package:frododesk/models/expense_replacement_metadata.dart';
 import 'package:frododesk/models/finance_asset_movement.dart';
 import 'package:frododesk/models/finance_recurring_item.dart';
 import 'package:frododesk/models/finance_transaction.dart';
@@ -194,6 +195,40 @@ void main() {
     expect(expense.operationMetadata, same(metadata));
     expect(legacy.operationMetadata, isNull);
   });
+
+  test(
+    'Finance adapter propagates replacement provenance only from Finance',
+    () {
+      final metadata = ExpenseReplacementMetadata(
+        originalEconomicFactId: 'fact-a',
+        replacementEconomicFactId: 'fact-b',
+        role: ExpenseReplacementRole.replacement,
+      );
+      final transaction = const FinanceTransactionEventAdapter().adapt(
+        FinanceTransaction(
+          id: 'replacement-transaction',
+          balanceId: 'account',
+          amount: 13.30,
+          date: DateTime(2026, 9, 14),
+          isIncome: false,
+          subject: FinanceSubject.matteo,
+          description: 'Farmacia aggiornata',
+          type: FinanceTransactionType.expense,
+          origin: FinanceTransactionOrigin.manual,
+          economicFactId: 'fact-b',
+          expenseReplacementMetadata: metadata,
+        ),
+        observedAt: observedAt,
+      );
+      final expense = const RealExpenseEventAdapter().adapt(
+        _expense(id: 'replacement-expense', amount: 13.30),
+        observedAt: observedAt,
+      );
+
+      expect(transaction.expenseReplacementMetadata, same(metadata));
+      expect(expense.expenseReplacementMetadata, isNull);
+    },
+  );
 
   test(
     'asset movement adapter supports multiple origins and fund destinations',

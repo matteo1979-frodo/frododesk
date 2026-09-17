@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../../models/expense_replacement_intent.dart';
+import '../../models/expense_replacement_metadata.dart';
 import '../../models/finance_balance.dart';
 import '../../models/finance_recurring_item.dart';
 import '../../models/finance_transaction.dart';
@@ -425,8 +426,10 @@ class ExpenseReplacementCoordinator {
       left.recurringItemId == right.recurringItemId &&
       left.notes == right.notes &&
       left.economicFactId == right.economicFactId &&
-      left.operationMetadata == null &&
-      right.operationMetadata == null;
+      jsonEncode(left.operationMetadata?.toJson()) ==
+          jsonEncode(right.operationMetadata?.toJson()) &&
+      jsonEncode(left.expenseReplacementMetadata?.toJson()) ==
+          jsonEncode(right.expenseReplacementMetadata?.toJson());
 
   static bool _sameExpense(RealExpense left, RealExpense right) =>
       left.id == right.id &&
@@ -467,6 +470,16 @@ class _ExpectedReplacement {
     orElse: () => FinanceSubject.shared,
   );
 
+  ExpenseReplacementMetadata? _metadata(ExpenseReplacementRole role) {
+    final originalEconomicFactId = intent.originalExpense.economicFactId;
+    if (originalEconomicFactId == null) return null;
+    return ExpenseReplacementMetadata(
+      originalEconomicFactId: originalEconomicFactId,
+      replacementEconomicFactId: intent.identities.replacementEconomicFactId,
+      role: role,
+    );
+  }
+
   FinanceTransaction get compensationTransaction => FinanceTransaction(
     id: intent.identities.compensationTransactionId,
     balanceId: originalBalance.balanceId,
@@ -479,6 +492,7 @@ class _ExpectedReplacement {
     origin: FinanceTransactionOrigin.manual,
     notes: 'Ripristino movimento sostituito',
     economicFactId: intent.identities.compensationEconomicFactId,
+    expenseReplacementMetadata: _metadata(ExpenseReplacementRole.compensation),
   );
 
   FinanceTransaction get replacementTransaction => FinanceTransaction(
@@ -493,6 +507,7 @@ class _ExpectedReplacement {
     origin: FinanceTransactionOrigin.manual,
     notes: intent.replacementPayload.category,
     economicFactId: intent.identities.replacementEconomicFactId,
+    expenseReplacementMetadata: _metadata(ExpenseReplacementRole.replacement),
   );
 
   RealExpense get replacementExpense => RealExpense(
