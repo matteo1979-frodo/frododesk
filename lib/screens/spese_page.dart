@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -50,13 +51,40 @@ SpeseCommand? _prepareSpeseCommand(
   }
 }
 
-Future<void> _executeSpeseCreationOrEdit({
+String _generateExpenseReplacementId() {
+  final random = Random.secure();
+  final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+  return 'expense-replacement-${bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join()}';
+}
+
+bool _sameReplacementPayload(
+  ExpenseReplacementPayload left,
+  ExpenseReplacementPayload right,
+) =>
+    left.balanceId == right.balanceId &&
+    left.balanceName == right.balanceName &&
+    left.amount == right.amount &&
+    left.description == right.description &&
+    left.category == right.category &&
+    left.occurredAt == right.occurredAt &&
+    left.personId == right.personId;
+
+Future<ExpenseReplacementResult?> _executeSpeseCreationOrEdit({
   required SpeseMutationCoordinator mutationCoordinator,
   required SpeseCommand command,
   required SpeseCommandRegistry registry,
   RealExpense? editingExpense,
+  ExpenseReplacementPersistence? replacementPersistence,
+  ExpenseReplacementCoordinator? replacementCoordinator,
 }) async {
-  if (editingExpense != null) {
+  if (editingExpense == null) {
+    await mutationCoordinator.execute(command);
+    return null;
+  }
+
+  if (command.kind != SpeseCommandKind.expense ||
+      replacementPersistence == null ||
+      replacementCoordinator == null) {
     final removalCommand = _speseCommandBuilder.buildExistingMovement(
       expense: editingExpense,
       action: SpeseCommandAction.removeForEdit,
@@ -64,9 +92,42 @@ Future<void> _executeSpeseCreationOrEdit({
       registry: registry,
     );
     await mutationCoordinator.execute(removalCommand);
+    await mutationCoordinator.execute(command);
+    return null;
   }
 
-  await mutationCoordinator.execute(command);
+  final payload = ExpenseReplacementPayload(
+    balanceId: command.origin.referenceId!,
+    balanceName: command.origin.label,
+    amount: command.amount,
+    description: command.description,
+    category: command.category,
+    preparedAt: command.preparedAt,
+    occurredAt: command.occurredAt,
+    personId: command.personId,
+  );
+  final pending = await replacementPersistence.findByOriginalExpenseId(
+    editingExpense.id,
+  );
+  late final ExpenseReplacementIntent intent;
+  if (pending != null) {
+    if (!_sameReplacementPayload(pending.replacementPayload, payload)) {
+      return ExpenseReplacementResult.conflict(
+        ExpenseReplacementReason.intentConflict,
+        const ['La spesa ha già una modifica pendente con dati differenti.'],
+      );
+    }
+    intent = pending;
+  } else {
+    intent = ExpenseReplacementIntent(
+      replacementId: _generateExpenseReplacementId(),
+      originalExpense: editingExpense,
+      replacementPayload: payload,
+    );
+    await replacementPersistence.add(intent);
+  }
+
+  return replacementCoordinator.complete(intent);
 }
 
 class SpesePage extends StatefulWidget {
@@ -359,6 +420,10 @@ class _SpesePageState extends State<SpesePage> {
                                 snapshot: snapshot,
                                 coordinator: coordinator,
                                 mutationCoordinator: mutationCoordinator,
+                                replacementPersistence:
+                                    expenseReplacementPersistence,
+                                replacementCoordinator:
+                                    expenseReplacementCoordinator,
                               ),
                             ),
                           );
@@ -1046,6 +1111,8 @@ class _RealExpenseFormPage extends StatefulWidget {
   final SpeseSnapshot snapshot;
   final SpeseCoordinator coordinator;
   final SpeseMutationCoordinator mutationCoordinator;
+  final ExpenseReplacementPersistence? replacementPersistence;
+  final ExpenseReplacementCoordinator? replacementCoordinator;
   final RealExpense? editingExpense;
 
   const _RealExpenseFormPage({
@@ -1055,6 +1122,8 @@ class _RealExpenseFormPage extends StatefulWidget {
     required this.snapshot,
     required this.coordinator,
     required this.mutationCoordinator,
+    this.replacementPersistence,
+    this.replacementCoordinator,
     this.editingExpense,
   });
 
@@ -1070,6 +1139,7 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
   FinanceSubject selectedSubject = FinanceSubject.shared;
   late List<String> categories;
   late SpeseCommandRegistry commandRegistry;
+  bool isSubmitting = false;
 
   DateTime selectedDate = DateTime.now();
 
@@ -1295,56 +1365,108 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: () async {
-                            final preparedAt = DateTime.now();
-                            final command = _prepareSpeseCommand(
-                              context,
-                              () => _speseCommandBuilder.build(
-                                draft: SpeseCommandDraft(
-                                  id: preparedAt.millisecondsSinceEpoch
-                                      .toString(),
-                                  kind: SpeseCommandKind.expense,
-                                  preparedAt: preparedAt,
-                                  occurredAt: selectedDate,
-                                  origin: SpeseCommandEndpointDraft(
-                                    kind: EconomicEndpointKind.account,
-                                    referenceId: widget.balanceId,
-                                  ),
-                                  destination: const SpeseCommandEndpointDraft(
-                                    kind: EconomicEndpointKind.external,
-                                    label: 'Spesa',
-                                  ),
-                                  amountInput: amountController.text,
-                                  category: selectedCategory ?? '',
-                                  personId: selectedSubject.name,
-                                  description: descriptionController.text,
-                                ),
-                                registry: commandRegistry,
-                              ),
-                            );
-                            if (command == null) return;
+                          onPressed: isSubmitting
+                              ? null
+                              : () async {
+                                  if (isSubmitting) return;
+                                  final preparedAt = DateTime.now();
+                                  final command = _prepareSpeseCommand(
+                                    context,
+                                    () => _speseCommandBuilder.build(
+                                      draft: SpeseCommandDraft(
+                                        id: preparedAt.millisecondsSinceEpoch
+                                            .toString(),
+                                        kind: SpeseCommandKind.expense,
+                                        preparedAt: preparedAt,
+                                        occurredAt: selectedDate,
+                                        origin: SpeseCommandEndpointDraft(
+                                          kind: EconomicEndpointKind.account,
+                                          referenceId: widget.balanceId,
+                                        ),
+                                        destination:
+                                            const SpeseCommandEndpointDraft(
+                                              kind:
+                                                  EconomicEndpointKind.external,
+                                              label: 'Spesa',
+                                            ),
+                                        amountInput: amountController.text,
+                                        category: selectedCategory ?? '',
+                                        personId: selectedSubject.name,
+                                        description: descriptionController.text,
+                                      ),
+                                      registry: commandRegistry,
+                                    ),
+                                  );
+                                  if (command == null) return;
 
-                            await _executeSpeseCreationOrEdit(
-                              mutationCoordinator: widget.mutationCoordinator,
-                              command: command,
-                              registry: commandRegistry,
-                              editingExpense: widget.editingExpense,
-                            );
+                                  setState(() => isSubmitting = true);
+                                  try {
+                                    final result =
+                                        await _executeSpeseCreationOrEdit(
+                                          mutationCoordinator:
+                                              widget.mutationCoordinator,
+                                          command: command,
+                                          registry: commandRegistry,
+                                          editingExpense: widget.editingExpense,
+                                          replacementPersistence:
+                                              widget.replacementPersistence,
+                                          replacementCoordinator:
+                                              widget.replacementCoordinator,
+                                        );
 
-                            if (!context.mounted) return;
+                                    if (result != null &&
+                                        result.status !=
+                                            ExpenseReplacementStatus
+                                                .completed &&
+                                        result.status !=
+                                            ExpenseReplacementStatus
+                                                .alreadyComplete) {
+                                      if (!context.mounted) return;
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            result.errors.isEmpty
+                                                ? 'Modifica non completata.'
+                                                : result.errors.join('\n'),
+                                          ),
+                                        ),
+                                      );
+                                      return;
+                                    }
+                                  } catch (error) {
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Modifica non completata: $error',
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() => isSubmitting = false);
+                                    }
+                                  }
 
-                            Navigator.of(context).pop();
-                            Navigator.of(context).pop();
+                                  if (!context.mounted) return;
 
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Spesa registrata."),
-                              ),
-                            );
-                          },
+                                  Navigator.of(context).pop();
+                                  Navigator.of(context).pop();
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("Spesa registrata."),
+                                    ),
+                                  );
+                                },
                           icon: const Icon(Icons.check_rounded),
                           label: Text(
-                            widget.editingExpense == null
+                            isSubmitting
+                                ? 'Salvataggio in corso...'
+                                : widget.editingExpense == null
                                 ? "Conferma spesa"
                                 : "Salva modifiche",
                           ),
@@ -1860,6 +1982,8 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
   final SpeseSnapshot snapshot;
   final SpeseCoordinator coordinator;
   final SpeseMutationCoordinator mutationCoordinator;
+  final ExpenseReplacementPersistence replacementPersistence;
+  final ExpenseReplacementCoordinator replacementCoordinator;
 
   const _ExpenseMonthHistoryPage({
     required this.expenses,
@@ -1867,6 +1991,8 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
     required this.snapshot,
     required this.coordinator,
     required this.mutationCoordinator,
+    required this.replacementPersistence,
+    required this.replacementCoordinator,
   });
 
   SpeseCommand _existingMovementCommand(
@@ -2105,6 +2231,10 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                                             coordinator,
                                                         mutationCoordinator:
                                                             mutationCoordinator,
+                                                        replacementPersistence:
+                                                            replacementPersistence,
+                                                        replacementCoordinator:
+                                                            replacementCoordinator,
                                                         editingExpense: expense,
                                                       ),
                                                     ),

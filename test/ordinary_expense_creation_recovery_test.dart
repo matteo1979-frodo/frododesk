@@ -6,6 +6,7 @@ import 'package:frododesk/logic/finance/finance_portfolio_v3_writer.dart';
 import 'package:frododesk/logic/ledger/economic_event_collector.dart';
 import 'package:frododesk/logic/ledger/economic_event_correlator.dart';
 import 'package:frododesk/logic/persistence_store.dart';
+import 'package:frododesk/logic/spese/expense_replacement_persistence.dart';
 import 'package:frododesk/logic/spese/spese_mutation_coordinator.dart';
 import 'package:frododesk/models/economic_event.dart';
 import 'package:frododesk/models/finance_balance.dart';
@@ -38,6 +39,7 @@ void main() {
     expect(transaction.date, command.occurredAt);
     expect(expense.date, command.occurredAt);
     expect(transaction.operationMetadata, isNull);
+    expect(await ExpenseReplacementPersistence().load(), isEmpty);
 
     final events = const EconomicEventCorrelator().correlate(
       const EconomicEventCollector().collect(

@@ -245,15 +245,12 @@ void main() {
     expect(loads, 2);
   });
 
-  test('production edit path remains removeForEdit followed by create', () {
+  test('production ordinary edit path persists and completes replacement', () {
     final source = _readSpeseSourceForStructuralAssertion();
-    expect(source, contains('SpeseCommandAction.removeForEdit'));
-    expect(
-      source,
-      contains('await mutationCoordinator.execute(removalCommand)'),
-    );
-    expect(source, contains('await mutationCoordinator.execute(command)'));
-    expect(source, isNot(contains('ExpenseReplacementIntent(')));
+    expect(source, contains('findByOriginalExpenseId('));
+    expect(source, contains('ExpenseReplacementIntent('));
+    expect(source, contains('await replacementPersistence.add(intent)'));
+    expect(source, contains('replacementCoordinator.complete(intent)'));
   });
 }
 

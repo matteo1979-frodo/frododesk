@@ -1,8 +1,16 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:frododesk/logic/finance/finance_portfolio_v3_contract.dart';
+import 'package:frododesk/logic/finance/finance_portfolio_v3_writer.dart';
 import 'package:frododesk/logic/ledger/economic_event_collector.dart';
 import 'package:frododesk/logic/ledger/economic_event_correlator.dart';
+import 'package:frododesk/logic/persistence_store.dart';
+import 'package:frododesk/logic/spese/expense_replacement_coordinator.dart';
+import 'package:frododesk/logic/spese/expense_replacement_persistence.dart';
 import 'package:frododesk/logic/spese/spese_mutation_coordinator.dart';
+import 'package:frododesk/models/expense_replacement_intent.dart';
 import 'package:frododesk/models/economic_event.dart';
 import 'package:frododesk/models/finance_balance.dart';
 import 'package:frododesk/models/finance_recurring_item.dart';
@@ -33,6 +41,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(fixture.capture(), before);
+    expect(await fixture.replacementPersistence.load(), isEmpty);
   });
 
   testWidgets(
@@ -73,6 +82,181 @@ void main() {
       expect(replacement.date, DateTime(2026, 9, 14, 18, 30));
     },
   );
+
+  testWidgets('ordinary expense edit is single-flight', (tester) async {
+    final fixture = await _fixture(SpeseCommandKind.expense);
+    await _pumpPage(tester, fixture);
+    await _openEditForm(tester, fixture.originalDescription);
+    await tester.enterText(find.byType(TextField).first, '15');
+
+    await tester.tap(find.text('Salva modifiche'));
+    await tester.tap(find.text('Salva modifiche'));
+    await tester.pumpAndSettle();
+
+    _expectCompletedEdit(fixture, expectedBalance: 85);
+    expect(await fixture.replacementPersistence.load(), isEmpty);
+  });
+
+  testWidgets('Finance failure keeps intent and retry reuses its identity', (
+    tester,
+  ) async {
+    var rejectFinance = false;
+    final fixture = await _fixture(
+      SpeseCommandKind.expense,
+      financeSave: (key, value) {
+        if (rejectFinance) {
+          return Future.value(
+            const PersistenceWriteVerification(
+              backendAccepted: false,
+              readBack: null,
+            ),
+          );
+        }
+        return _saveVerified(key, value);
+      },
+    );
+    await _pumpPage(tester, fixture);
+    await _openEditForm(tester, fixture.originalDescription);
+    await tester.enterText(find.byType(TextField).first, '15');
+    rejectFinance = true;
+
+    await tester.tap(find.text('Salva modifiche'));
+    await tester.pumpAndSettle();
+
+    final pending = (await fixture.replacementPersistence.load()).single;
+    expect(fixture.financeStore.balances.single.currentAmount, 90);
+    expect(fixture.financeStore.transactions, hasLength(1));
+    expect(fixture.expenseStore.all.single.id, 'original');
+
+    rejectFinance = false;
+    await tester.tap(find.text('Salva modifiche'));
+    await tester.pumpAndSettle();
+
+    _expectCompletedEdit(fixture, expectedBalance: 85);
+    expect(
+      fixture.financeStore.transactions.last.id,
+      pending.identities.replacementTransactionId,
+    );
+    expect(await fixture.replacementPersistence.load(), isEmpty);
+  });
+
+  testWidgets('Expense failure retries without duplicate Finance facts', (
+    tester,
+  ) async {
+    var rejectExpense = false;
+    final fixture = await _fixture(
+      SpeseCommandKind.expense,
+      expenseSave: (key, value) {
+        if (rejectExpense) {
+          return Future.value(
+            const PersistenceWriteVerification(
+              backendAccepted: false,
+              readBack: null,
+            ),
+          );
+        }
+        return _saveVerified(key, value);
+      },
+    );
+    await _pumpPage(tester, fixture);
+    await _openEditForm(tester, fixture.originalDescription);
+    await tester.enterText(find.byType(TextField).first, '15');
+    rejectExpense = true;
+
+    await tester.tap(find.text('Salva modifiche'));
+    await tester.pumpAndSettle();
+
+    final pending = (await fixture.replacementPersistence.load()).single;
+    expect(fixture.financeStore.balances.single.currentAmount, 85);
+    expect(fixture.financeStore.transactions, hasLength(3));
+    expect(fixture.expenseStore.all.single.id, 'original');
+
+    rejectExpense = false;
+    await tester.tap(find.text('Salva modifiche'));
+    await tester.pumpAndSettle();
+
+    _expectCompletedEdit(fixture, expectedBalance: 85);
+    expect(
+      fixture.financeStore.transactions.last.id,
+      pending.identities.replacementTransactionId,
+    );
+    expect(await fixture.replacementPersistence.load(), isEmpty);
+  });
+
+  testWidgets('matching pending intent is reused and preserves occurredAt', (
+    tester,
+  ) async {
+    final occurredAt = DateTime(2026, 9, 14, 18, 30);
+    final fixture = await _fixture(
+      SpeseCommandKind.expense,
+      occurredAt: occurredAt,
+    );
+    await _pumpPage(tester, fixture);
+    await _openEditForm(tester, fixture.originalDescription);
+    await tester.enterText(find.byType(TextField).first, '15');
+    final original = fixture.expenseStore.all.single;
+    final intent = ExpenseReplacementIntent(
+      replacementId: 'existing-replacement',
+      originalExpense: original,
+      replacementPayload: ExpenseReplacementPayload(
+        balanceId: original.balanceId,
+        balanceName: original.balanceName,
+        amount: 15,
+        description: original.description,
+        category: original.category,
+        preparedAt: DateTime(2026, 9, 16, 12),
+        occurredAt: occurredAt,
+        personId: original.subject.name,
+      ),
+    );
+    await fixture.replacementPersistence.add(intent);
+
+    await tester.tap(find.text('Salva modifiche'));
+    await tester.pumpAndSettle();
+
+    expect(
+      fixture.financeStore.transactions.last.id,
+      intent.identities.replacementTransactionId,
+    );
+    expect(fixture.financeStore.transactions.last.date, occurredAt);
+    expect(fixture.expenseStore.all.single.date, occurredAt);
+    expect(await fixture.replacementPersistence.load(), isEmpty);
+  });
+
+  testWidgets('different pending payload reports conflict without mutation', (
+    tester,
+  ) async {
+    final fixture = await _fixture(SpeseCommandKind.expense);
+    await _pumpPage(tester, fixture);
+    await _openEditForm(tester, fixture.originalDescription);
+    final original = fixture.expenseStore.all.single;
+    final intent = ExpenseReplacementIntent(
+      replacementId: 'conflicting-replacement',
+      originalExpense: original,
+      replacementPayload: ExpenseReplacementPayload(
+        balanceId: original.balanceId,
+        balanceName: original.balanceName,
+        amount: 99,
+        description: original.description,
+        category: original.category,
+        preparedAt: DateTime(2026, 9, 16, 12),
+        occurredAt: original.date,
+        personId: original.subject.name,
+      ),
+    );
+    await fixture.replacementPersistence.add(intent);
+    final before = fixture.capture();
+
+    await tester.tap(find.text('Salva modifiche'));
+    await tester.pumpAndSettle();
+
+    expect(fixture.capture(), before);
+    expect(
+      (await fixture.replacementPersistence.load()).single.replacementId,
+      intent.replacementId,
+    );
+    expect(find.textContaining('modifica pendente'), findsOneWidget);
+  });
 
   for (final subject in [
     FinanceSubject.matteo,
@@ -162,18 +346,35 @@ Future<_Fixture> _fixture(
   FinanceSubject subject = FinanceSubject.matteo,
   DateTime? occurredAt,
   String? balanceName,
+  Future<PersistenceWriteVerification> Function(String, String)? financeSave,
+  Future<PersistenceWriteVerification> Function(String, String)? expenseSave,
 }) async {
-  final financeStore = FinanceStore(
-    initialBalances: [
-      _balance(
-        balanceType,
-        personId: subject.name,
-        initialAmount: initialAmount,
-        name: balanceName,
-      ),
-    ],
+  final balance = _balance(
+    balanceType,
+    personId: subject.name,
+    initialAmount: initialAmount,
+    name: balanceName,
   );
-  final expenseStore = ExpenseStore();
+  final portfolio = FinancePortfolioV3(
+    balances: [balance],
+    funds: const [],
+    assetMovements: const [],
+    transactions: const [],
+    fundTransactions: const [],
+    linkedItems: const [],
+  );
+  SharedPreferences.setMockInitialValues({
+    'frododesk_finance_portfolio_v3': jsonEncode(
+      FinancePortfolioV3Contract.build(portfolio),
+    ),
+  });
+  final financeStore = FinanceStore(
+    portfolioV3Writer: FinancePortfolioV3Writer(
+      saveVerified: financeSave ?? _saveVerified,
+    ),
+  );
+  expect(await financeStore.loadSavedPortfolioV3(), isTrue);
+  final expenseStore = ExpenseStore(saveVerified: expenseSave);
   final cashWalletStore = CashWalletStore();
   final coordinator = SpeseMutationCoordinator(
     financeStore: financeStore,
@@ -191,12 +392,32 @@ Future<_Fixture> _fixture(
     balanceName: balanceName,
   );
   await coordinator.execute(command);
+  final replacementPersistence = ExpenseReplacementPersistence();
+  final replacementCoordinator = ExpenseReplacementCoordinator(
+    financeStore: financeStore,
+    expenseStore: expenseStore,
+    persistence: replacementPersistence,
+  );
 
   return _Fixture(
     financeStore: financeStore,
     expenseStore: expenseStore,
     cashWalletStore: cashWalletStore,
+    replacementPersistence: replacementPersistence,
+    replacementCoordinator: replacementCoordinator,
     originalDescription: command.description,
+  );
+}
+
+Future<PersistenceWriteVerification> _saveVerified(
+  String key,
+  String value,
+) async {
+  final prefs = await SharedPreferences.getInstance();
+  final accepted = await prefs.setString('frododesk_$key', value);
+  return PersistenceWriteVerification(
+    backendAccepted: accepted,
+    readBack: prefs.getString('frododesk_$key'),
   );
 }
 
@@ -209,6 +430,8 @@ Future<void> _pumpPage(WidgetTester tester, _Fixture fixture) async {
         financeStore: fixture.financeStore,
         expenseStore: fixture.expenseStore,
         cashWalletStore: fixture.cashWalletStore,
+        expenseReplacementPersistence: fixture.replacementPersistence,
+        expenseReplacementCoordinator: fixture.replacementCoordinator,
       ),
     ),
   );
@@ -344,12 +567,16 @@ class _Fixture {
   final FinanceStore financeStore;
   final ExpenseStore expenseStore;
   final CashWalletStore cashWalletStore;
+  final ExpenseReplacementPersistence replacementPersistence;
+  final ExpenseReplacementCoordinator replacementCoordinator;
   final String originalDescription;
 
   const _Fixture({
     required this.financeStore,
     required this.expenseStore,
     required this.cashWalletStore,
+    required this.replacementPersistence,
+    required this.replacementCoordinator,
     required this.originalDescription,
   });
 
