@@ -15,6 +15,15 @@ enum ExpenseEstimationMethod {
 
 enum ExpenseEstimateConfidence { low, medium, high }
 
+enum ExpectedExpenseDateSource {
+  explicit,
+  calculatedFromPeriodicity,
+
+  /// Backward-compatible representation for JSON written before temporal
+  /// provenance existed. It deliberately makes no claim about date origin.
+  legacyUnspecified,
+}
+
 class ExpectedPaymentWindow {
   final DateTime start;
   final DateTime end;
@@ -47,7 +56,9 @@ class ExpectedExpenseOccurrence {
   final String relationshipId;
   final ExpectedExpenseOccurrenceStatus status;
   final DateTime? expectedIssueDate;
+  final ExpectedExpenseDateSource? expectedIssueDateSource;
   final DateTime? expectedDueDate;
+  final ExpectedExpenseDateSource? expectedDueDateSource;
   final ExpectedPaymentWindow? expectedPaymentWindow;
   final double expectedAmount;
   final ExpenseEstimationMethod estimationMethod;
@@ -63,7 +74,9 @@ class ExpectedExpenseOccurrence {
     required String relationshipId,
     required this.status,
     this.expectedIssueDate,
+    this.expectedIssueDateSource,
     this.expectedDueDate,
+    this.expectedDueDateSource,
     this.expectedPaymentWindow,
     required this.expectedAmount,
     required this.estimationMethod,
@@ -96,6 +109,18 @@ class ExpectedExpenseOccurrence {
         'At least one expected issue, due or payment-window date is required',
       );
     }
+    _validateDateSource(
+      date: expectedIssueDate,
+      source: expectedIssueDateSource,
+      dateField: 'expectedIssueDate',
+      sourceField: 'expectedIssueDateSource',
+    );
+    _validateDateSource(
+      date: expectedDueDate,
+      source: expectedDueDateSource,
+      dateField: 'expectedDueDate',
+      sourceField: 'expectedDueDateSource',
+    );
     if (expectedIssueDate != null &&
         expectedDueDate != null &&
         expectedDueDate!.isBefore(expectedIssueDate!)) {
@@ -144,7 +169,9 @@ class ExpectedExpenseOccurrence {
     'relationshipId': relationshipId,
     'status': status.name,
     'expectedIssueDate': expectedIssueDate?.toIso8601String(),
+    'expectedIssueDateSource': expectedIssueDateSource?.name,
     'expectedDueDate': expectedDueDate?.toIso8601String(),
+    'expectedDueDateSource': expectedDueDateSource?.name,
     'expectedPaymentWindow': expectedPaymentWindow?.toJson(),
     'expectedAmount': expectedAmount,
     'estimationMethod': estimationMethod.name,
@@ -159,6 +186,16 @@ class ExpectedExpenseOccurrence {
   factory ExpectedExpenseOccurrence.fromJson(Map<String, dynamic> json) {
     final issueDate = _optionalDate(json, 'expectedIssueDate');
     final dueDate = _optionalDate(json, 'expectedDueDate');
+    final issueSource = _dateSourceFromJson(
+      json,
+      'expectedIssueDateSource',
+      datePresent: issueDate != null,
+    );
+    final dueSource = _dateSourceFromJson(
+      json,
+      'expectedDueDateSource',
+      datePresent: dueDate != null,
+    );
     final rawWindow = json['expectedPaymentWindow'];
     if (rawWindow != null && rawWindow is! Map) {
       throw const FormatException('expectedPaymentWindow must be an object');
@@ -199,7 +236,9 @@ class ExpectedExpenseOccurrence {
         (value) => value.name,
       ),
       expectedIssueDate: issueDate,
+      expectedIssueDateSource: issueSource,
       expectedDueDate: dueDate,
+      expectedDueDateSource: dueSource,
       expectedPaymentWindow: rawWindow == null
           ? null
           : ExpectedPaymentWindow.fromJson(
@@ -233,6 +272,36 @@ class ExpectedExpenseOccurrence {
       resolvedEconomicFactId: resolvedFact as String?,
     );
   }
+}
+
+void _validateDateSource({
+  required DateTime? date,
+  required ExpectedExpenseDateSource? source,
+  required String dateField,
+  required String sourceField,
+}) {
+  if (date != null && source == null) {
+    throw ArgumentError('$sourceField is required when $dateField is present');
+  }
+  if (date == null && source != null) {
+    throw ArgumentError('$sourceField must be null when $dateField is absent');
+  }
+}
+
+ExpectedExpenseDateSource? _dateSourceFromJson(
+  Map<String, dynamic> json,
+  String key, {
+  required bool datePresent,
+}) {
+  final raw = json[key];
+  if (raw == null) {
+    return datePresent ? ExpectedExpenseDateSource.legacyUnspecified : null;
+  }
+  if (raw is! String) throw FormatException('$key must be a string or null');
+  for (final value in ExpectedExpenseDateSource.values) {
+    if (value.name == raw) return value;
+  }
+  throw FormatException('Unknown $key: $raw');
 }
 
 bool _requiresPersonalEconomicEvidence(ExpenseEstimationMethod method) =>

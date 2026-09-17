@@ -19,6 +19,10 @@ void main() {
       final occurrence = _occurrence(expectedIssueDate: DateTime(2026, 10, 23));
 
       expect(occurrence.expectedIssueDate, DateTime(2026, 10, 23));
+      expect(
+        occurrence.expectedIssueDateSource,
+        ExpectedExpenseDateSource.explicit,
+      );
       expect(occurrence.expectedDueDate, isNull);
       expect(occurrence.expectedPaymentWindow, isNull);
     });
@@ -27,10 +31,51 @@ void main() {
       final occurrence = _occurrence(
         expectedIssueDate: DateTime(2026, 10, 23),
         expectedDueDate: DateTime(2026, 11, 14),
+        expectedDueDateSource: ExpectedExpenseDateSource.explicit,
       );
 
       expect(occurrence.expectedIssueDate, DateTime(2026, 10, 23));
       expect(occurrence.expectedDueDate, DateTime(2026, 11, 14));
+    });
+
+    test('supports calculated issue and due dates independently', () {
+      final issue = _occurrence(
+        issueDateSource: ExpectedExpenseDateSource.calculatedFromPeriodicity,
+      );
+      final due = _occurrence(
+        expectedIssueDate: null,
+        omitDefaultIssueDate: true,
+        expectedDueDate: DateTime(2026, 11, 14),
+        expectedDueDateSource:
+            ExpectedExpenseDateSource.calculatedFromPeriodicity,
+      );
+
+      expect(
+        issue.expectedIssueDateSource,
+        ExpectedExpenseDateSource.calculatedFromPeriodicity,
+      );
+      expect(
+        due.expectedDueDateSource,
+        ExpectedExpenseDateSource.calculatedFromPeriodicity,
+      );
+    });
+
+    test('issue and due date sources remain independent', () {
+      final occurrence = _occurrence(
+        issueDateSource: ExpectedExpenseDateSource.explicit,
+        expectedDueDate: DateTime(2026, 11, 14),
+        expectedDueDateSource:
+            ExpectedExpenseDateSource.calculatedFromPeriodicity,
+      );
+
+      expect(
+        occurrence.expectedIssueDateSource,
+        ExpectedExpenseDateSource.explicit,
+      );
+      expect(
+        occurrence.expectedDueDateSource,
+        ExpectedExpenseDateSource.calculatedFromPeriodicity,
+      );
     });
 
     test('supports a valid expected payment window', () {
@@ -167,6 +212,7 @@ void main() {
       final source = _occurrence(
         expectedIssueDate: DateTime.utc(2026, 10, 23),
         expectedDueDate: DateTime.utc(2026, 11, 14),
+        expectedDueDateSource: ExpectedExpenseDateSource.explicit,
         paymentWindow: ExpectedPaymentWindow(
           start: DateTime.utc(2026, 11, 12),
           end: DateTime.utc(2026, 11, 16),
@@ -189,6 +235,48 @@ void main() {
       expect(json['relationshipId'], 'relationship_1');
       expect(json['estimationMethod'], 'personalHistory');
       expect(json['confidence'], 'medium');
+      expect(json['expectedIssueDateSource'], 'explicit');
+      expect(json['expectedDueDateSource'], 'explicit');
+    });
+
+    test('requires a source exactly when its expected date is present', () {
+      expect(
+        () => ExpectedExpenseOccurrence(
+          occurrenceId: 'occurrence_missing_source',
+          relationshipId: 'relationship_1',
+          status: ExpectedExpenseOccurrenceStatus.pending,
+          expectedIssueDate: DateTime(2026, 10, 23),
+          expectedAmount: 10,
+          estimationMethod: ExpenseEstimationMethod.manualEstimate,
+          confidence: ExpenseEstimateConfidence.low,
+          provisional: true,
+          expectedPaymentConfiguration: ExpenseRelationshipPaymentConfiguration(
+            method: FinancePaymentMethod.manual,
+          ),
+          expectedSubject: FinanceSubject.matteo,
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => _occurrence(
+          expectedIssueDate: null,
+          omitDefaultIssueDate: true,
+          issueDateSource: ExpectedExpenseDateSource.explicit,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('parses legacy dated JSON without inventing temporal provenance', () {
+      final json = _occurrence().toJson()..remove('expectedIssueDateSource');
+
+      final restored = ExpectedExpenseOccurrence.fromJson(json);
+
+      expect(
+        restored.expectedIssueDateSource,
+        ExpectedExpenseDateSource.legacyUnspecified,
+      );
+      expect(restored.toJson()['expectedIssueDateSource'], 'legacyUnspecified');
     });
 
     test('rejects invalid dates, evidence and required temporal context', () {
@@ -274,7 +362,9 @@ ExpectedExpenseOccurrence _occurrence({
   ExpectedExpenseOccurrenceStatus status =
       ExpectedExpenseOccurrenceStatus.pending,
   DateTime? expectedIssueDate,
+  ExpectedExpenseDateSource? issueDateSource,
   DateTime? expectedDueDate,
+  ExpectedExpenseDateSource? expectedDueDateSource,
   ExpectedPaymentWindow? paymentWindow,
   bool omitDefaultIssueDate = false,
   double expectedAmount = 59.63,
@@ -293,7 +383,13 @@ ExpectedExpenseOccurrence _occurrence({
   expectedIssueDate: omitDefaultIssueDate
       ? expectedIssueDate
       : expectedIssueDate ?? DateTime(2026, 10, 23),
+  expectedIssueDateSource:
+      issueDateSource ??
+      (omitDefaultIssueDate && expectedIssueDate == null
+          ? null
+          : ExpectedExpenseDateSource.explicit),
   expectedDueDate: expectedDueDate,
+  expectedDueDateSource: expectedDueDateSource,
   expectedPaymentWindow: paymentWindow,
   expectedAmount: expectedAmount,
   estimationMethod: estimationMethod,
