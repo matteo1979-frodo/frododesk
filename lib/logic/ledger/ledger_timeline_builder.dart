@@ -3,6 +3,7 @@ import 'dart:collection';
 import '../../models/economic_event.dart';
 import '../../models/economic_operation_metadata.dart';
 import '../../models/ledger_event_view_model.dart';
+import '../../models/ledger_projected_event.dart';
 import '../../models/ledger_resolved_endpoint.dart';
 import 'ledger_endpoint_resolver.dart';
 
@@ -16,14 +17,15 @@ class LedgerTimelineBuilder {
   }) : assert(currencyCode != '');
 
   UnmodifiableListView<LedgerEventViewModel> build(
-    List<EconomicEvent> canonicalEvents,
+    List<LedgerProjectedEvent> projectedEvents,
   ) {
-    final timeline = canonicalEvents.map(_buildEvent).toList()
+    final timeline = projectedEvents.map(_buildEvent).toList()
       ..sort(_compareTimelineEvents);
     return UnmodifiableListView(timeline);
   }
 
-  LedgerEventViewModel _buildEvent(EconomicEvent event) {
+  LedgerEventViewModel _buildEvent(LedgerProjectedEvent projected) {
+    final event = projected.currentEvent;
     final resolved = endpointResolver.resolveEvent(event);
     final counterparties = <LedgerEventCounterparty>[
       ...resolved.origins.map(
@@ -56,6 +58,7 @@ class LedgerTimelineBuilder {
       notes: event.notes,
       transactionOrigins: event.transactionOrigins,
       recurringItemIds: event.recurringItemIds,
+      replacementHistory: projected.replacementHistory,
       operationDescription:
           event.operationMetadata?.role == OperationRole.accessory
           ? event.description

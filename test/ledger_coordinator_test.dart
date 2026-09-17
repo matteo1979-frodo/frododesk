@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/logic/ledger/economic_event_collector.dart';
 import 'package:frododesk/logic/ledger/economic_event_correlator.dart';
+import 'package:frododesk/logic/ledger/expense_replacement_ledger_projector.dart';
 import 'package:frododesk/logic/ledger/ledger_coordinator.dart';
 import 'package:frododesk/logic/ledger/ledger_endpoint_resolver.dart';
 import 'package:frododesk/logic/ledger/ledger_snapshot_builder.dart';
@@ -13,6 +14,7 @@ import 'package:frododesk/models/finance_asset_movement.dart';
 import 'package:frododesk/models/finance_recurring_item.dart';
 import 'package:frododesk/models/finance_transaction.dart';
 import 'package:frododesk/models/ledger_event_view_model.dart';
+import 'package:frododesk/models/ledger_projected_event.dart';
 import 'package:frododesk/models/ledger_resolved_endpoint.dart';
 import 'package:frododesk/models/ledger_snapshot.dart';
 import 'package:frododesk/models/real_expense.dart';
@@ -266,6 +268,7 @@ void main() {
     final calls = <String>[];
     final raw = [_economicEvent('raw')];
     final canonical = [_economicEvent('canonical')];
+    final projected = [LedgerProjectedEvent(currentEvent: canonical.single)];
     final timeline = [_viewModel('timeline')];
     final expected = LedgerSnapshot(
       observedAt: observedAt,
@@ -279,7 +282,8 @@ void main() {
     final spyCoordinator = LedgerCoordinator(
       collector: _CollectorSpy(calls, raw),
       correlator: _CorrelatorSpy(calls, raw, canonical),
-      timelineBuilder: _TimelineSpy(calls, canonical, timeline),
+      replacementProjector: _ProjectorSpy(calls, canonical, projected),
+      timelineBuilder: _TimelineSpy(calls, projected, timeline),
       snapshotBuilder: _SnapshotSpy(calls, timeline, expected),
     );
 
@@ -293,7 +297,13 @@ void main() {
     );
 
     expect(result, same(expected));
-    expect(calls, ['collector', 'correlator', 'timeline', 'snapshot']);
+    expect(calls, [
+      'collector',
+      'correlator',
+      'projector',
+      'timeline',
+      'snapshot',
+    ]);
   });
 
   test('same inputs and observedAt produce equivalent snapshots', () {
@@ -471,7 +481,7 @@ class _CorrelatorSpy extends EconomicEventCorrelator {
 
 class _TimelineSpy extends LedgerTimelineBuilder {
   final List<String> calls;
-  final List<EconomicEvent> expectedInput;
+  final List<LedgerProjectedEvent> expectedInput;
   final List<LedgerEventViewModel> output;
 
   _TimelineSpy(this.calls, this.expectedInput, this.output)
@@ -483,11 +493,26 @@ class _TimelineSpy extends LedgerTimelineBuilder {
 
   @override
   UnmodifiableListView<LedgerEventViewModel> build(
-    List<EconomicEvent> canonicalEvents,
+    List<LedgerProjectedEvent> projectedEvents,
   ) {
-    expect(canonicalEvents, orderedEquals(expectedInput));
+    expect(projectedEvents, orderedEquals(expectedInput));
     calls.add('timeline');
     return UnmodifiableListView(output);
+  }
+}
+
+class _ProjectorSpy extends ExpenseReplacementLedgerProjector {
+  final List<String> calls;
+  final List<EconomicEvent> expectedInput;
+  final List<LedgerProjectedEvent> output;
+
+  const _ProjectorSpy(this.calls, this.expectedInput, this.output);
+
+  @override
+  List<LedgerProjectedEvent> project(Iterable<EconomicEvent> input) {
+    expect(input, orderedEquals(expectedInput));
+    calls.add('projector');
+    return output;
   }
 }
 

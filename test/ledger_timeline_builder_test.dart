@@ -7,6 +7,7 @@ import 'package:frododesk/models/economic_event.dart';
 import 'package:frododesk/models/economic_operation_metadata.dart';
 import 'package:frododesk/models/finance_balance.dart';
 import 'package:frododesk/models/ledger_event_view_model.dart';
+import 'package:frododesk/models/ledger_projected_event.dart';
 import 'package:frododesk/models/ledger_resolved_endpoint.dart';
 
 void main() {
@@ -50,14 +51,14 @@ void main() {
   });
 
   test('builds an empty immutable timeline', () {
-    final timeline = builder.build(const []);
+    final timeline = _buildTimeline(builder, const []);
 
     expect(timeline, isEmpty);
     expect(() => timeline.add(_placeholderViewModel()), throwsUnsupportedError);
   });
 
   test('maps income and outflow semantic presentation', () {
-    final timeline = builder.build([
+    final timeline = _buildTimeline(builder, [
       _event(
         id: 'income',
         nature: EconomicNature.income,
@@ -87,7 +88,7 @@ void main() {
   });
 
   test('presents composite accessory costs without merging their facts', () {
-    final timeline = builder.build([
+    final timeline = _buildTimeline(builder, [
       _event(
         id: 'main',
         factId: 'fact-main',
@@ -143,7 +144,7 @@ void main() {
   });
 
   test('legacy and main titles keep their original descriptions', () {
-    final timeline = builder.build([
+    final timeline = _buildTimeline(builder, [
       _event(id: 'legacy', description: 'Spesa legacy'),
       _event(
         id: 'main',
@@ -167,7 +168,7 @@ void main() {
   });
 
   test('maps one internal transfer preserving origin and destination', () {
-    final timeline = builder.build([
+    final timeline = _buildTimeline(builder, [
       _event(
         id: 'transfer',
         nature: EconomicNature.internalTransfer,
@@ -200,7 +201,7 @@ void main() {
       recurringItemIds: const ['rule'],
     );
 
-    final viewModel = builder.build([event]).single;
+    final viewModel = _buildTimeline(builder, [event]).single;
 
     expect(viewModel.notes, ['Nota trasferimento']);
     expect(viewModel.transactionOrigins, [
@@ -219,7 +220,7 @@ void main() {
   });
 
   test('uses cash and fund structural icons for internal transfers', () {
-    final cash = builder.build([
+    final cash = _buildTimeline(builder, [
       _event(
         id: 'cash-transfer',
         nature: EconomicNature.internalTransfer,
@@ -227,7 +228,7 @@ void main() {
         destinations: [_cash('cash')],
       ),
     ]).single;
-    final fund = builder.build([
+    final fund = _buildTimeline(builder, [
       _event(
         id: 'fund-transfer',
         nature: EconomicNature.internalTransfer,
@@ -241,7 +242,7 @@ void main() {
   });
 
   test('builds one global timeline from different original source kinds', () {
-    final timeline = builder.build([
+    final timeline = _buildTimeline(builder, [
       _event(
         id: 'transaction-event',
         sourceKind: EconomicSourceKind.financeTransaction,
@@ -262,7 +263,7 @@ void main() {
   });
 
   test('orders by occurredAt, observedAt and finally stable eventId', () {
-    final timeline = builder.build([
+    final timeline = _buildTimeline(builder, [
       _event(
         id: 'same-b',
         occurredAt: DateTime(2026, 8, 19),
@@ -299,9 +300,9 @@ void main() {
     final first = _event(id: 'a', occurredAt: DateTime(2026, 8, 19));
     final second = _event(id: 'b', occurredAt: DateTime(2026, 8, 20));
 
-    final forward = builder.build([first, second]);
-    final reverse = builder.build([second, first]);
-    final repeated = builder.build([first]).single;
+    final forward = _buildTimeline(builder, [first, second]);
+    final reverse = _buildTimeline(builder, [second, first]);
+    final repeated = _buildTimeline(builder, [first]).single;
 
     expect(
       forward.map((event) => event.eventId),
@@ -316,7 +317,7 @@ void main() {
   test(
     'keeps visually identical distinct and legacy events as separate rows',
     () {
-      final timeline = builder.build([
+      final timeline = _buildTimeline(builder, [
         _event(id: 'fact-a', factId: 'fact-a'),
         _event(id: 'fact-b', factId: 'fact-b'),
         _event(id: 'legacy-a'),
@@ -329,7 +330,7 @@ void main() {
   );
 
   test('uses resolver labels, owners and neutral historical fallbacks', () {
-    final resolved = builder.build([
+    final resolved = _buildTimeline(builder, [
       _event(
         id: 'resolved',
         origins: [_account('account-a')],
@@ -337,7 +338,7 @@ void main() {
         nature: EconomicNature.internalTransfer,
       ),
     ]).single;
-    final historical = builder.build([
+    final historical = _buildTimeline(builder, [
       _event(
         id: 'historical',
         origins: [_account('deleted')],
@@ -365,7 +366,7 @@ void main() {
       sourceKind: EconomicSourceKind.realExpense,
     );
 
-    final viewModel = builder.build([event]).single;
+    final viewModel = _buildTimeline(builder, [event]).single;
 
     expect(viewModel.personId, 'matteo');
     expect(viewModel.personLabel, 'Matteo');
@@ -378,7 +379,7 @@ void main() {
     final input = [_event(id: 'event')];
     final original = input.single;
 
-    final timeline = builder.build(input);
+    final timeline = _buildTimeline(builder, input);
 
     expect(input.single, same(original));
     expect(() => timeline.clear(), throwsUnsupportedError);
@@ -483,3 +484,10 @@ LedgerEventViewModel _placeholderViewModel() => LedgerEventViewModel(
   counterparties: const [],
   badges: const [],
 );
+
+List<LedgerEventViewModel> _buildTimeline(
+  LedgerTimelineBuilder builder,
+  List<EconomicEvent> events,
+) => builder.build([
+  for (final event in events) LedgerProjectedEvent(currentEvent: event),
+]);

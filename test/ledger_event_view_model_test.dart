@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/models/economic_event.dart';
 import 'package:frododesk/models/ledger_event_view_model.dart';
+import 'package:frododesk/models/ledger_projected_event.dart';
 
 void main() {
   test('owns immutable copies of counterparties and badges', () {
@@ -141,6 +142,42 @@ void main() {
     expect(() => viewModel.sourceLinks.clear(), throwsUnsupportedError);
   });
 
+  test('owns an immutable replacement history for future detail', () {
+    final original = _economicEvent('original');
+    final compensation = _economicEvent('compensation');
+    final replacement = _economicEvent('replacement');
+    final history = <LedgerReplacementHistoryEdge>[
+      LedgerReplacementHistoryEdge(
+        originalEvent: original,
+        compensationEvent: compensation,
+        replacementEvent: replacement,
+        originalEconomicFactId: 'original-fact',
+        replacementEconomicFactId: 'replacement-fact',
+      ),
+    ];
+    final viewModel = LedgerEventViewModel(
+      eventId: 'replacement',
+      title: 'Replacement',
+      subtitle: '',
+      amount: 10,
+      currencyCode: 'EUR',
+      economicSign: LedgerEconomicSign.negative,
+      nature: EconomicNature.outflow,
+      observedAt: DateTime(2026, 9, 17),
+      occurredAt: DateTime(2026, 9, 17),
+      logicalIcon: LedgerLogicalIcon.expense,
+      logicalColor: LedgerLogicalColor.negative,
+      counterparties: const [],
+      badges: const [],
+      replacementHistory: history,
+    );
+
+    history.clear();
+
+    expect(viewModel.replacementHistory.single.originalEvent, same(original));
+    expect(() => viewModel.replacementHistory.clear(), throwsUnsupportedError);
+  });
+
   test('contract has only shared-domain dependencies', () {
     final source = File(
       'lib/models/ledger_event_view_model.dart',
@@ -177,4 +214,15 @@ LedgerEventViewModel _viewModel({
   logicalColor: color,
   counterparties: const [],
   badges: const [],
+);
+
+EconomicEvent _economicEvent(String id) => EconomicEvent(
+  id: id,
+  observedAt: DateTime(2026, 9, 17),
+  occurredAt: DateTime(2026, 9, 17),
+  origins: const [],
+  destinations: const [],
+  description: id,
+  amount: 10,
+  nature: EconomicNature.outflow,
 );

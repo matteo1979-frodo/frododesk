@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import 'economic_event.dart';
 import 'finance_balance.dart';
+import 'ledger_projected_event.dart';
 
 enum LedgerEconomicSign { positive, negative, neutral }
 
@@ -74,6 +75,7 @@ class LedgerEventViewModel {
   final UnmodifiableListView<String> notes;
   final UnmodifiableListView<EconomicTransactionOrigin> transactionOrigins;
   final UnmodifiableListView<String> recurringItemIds;
+  final UnmodifiableListView<LedgerReplacementHistoryEdge> replacementHistory;
   final String? operationDescription;
 
   LedgerEventViewModel({
@@ -94,6 +96,7 @@ class LedgerEventViewModel {
     List<String> notes = const [],
     List<EconomicTransactionOrigin> transactionOrigins = const [],
     List<String> recurringItemIds = const [],
+    List<LedgerReplacementHistoryEdge> replacementHistory = const [],
     this.operationDescription,
     this.personId,
     this.personLabel,
@@ -115,6 +118,9 @@ class LedgerEventViewModel {
        ),
        recurringItemIds = UnmodifiableListView(
          List<String>.of(recurringItemIds),
+       ),
+       replacementHistory = UnmodifiableListView(
+         List<LedgerReplacementHistoryEdge>.of(replacementHistory),
        );
 
   bool get isInternalTransfer => nature == EconomicNature.internalTransfer;
