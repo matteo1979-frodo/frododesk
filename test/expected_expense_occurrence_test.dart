@@ -88,6 +88,103 @@ void main() {
 
       expect(occurrence.expectedPaymentWindow!.start, DateTime(2026, 11, 12));
       expect(occurrence.expectedPaymentWindow!.end, DateTime(2026, 11, 16));
+      expect(
+        occurrence.expectedPaymentWindow!.semantic,
+        ExpectedPaymentWindowSemantic.legacyUnspecified,
+      );
+    });
+
+    test('round-trips a multi-day explicit user-preferred window', () {
+      final window = ExpectedPaymentWindow(
+        start: DateTime(2026, 11, 5),
+        end: DateTime(2026, 11, 14),
+        semantic: ExpectedPaymentWindowSemantic.userPreferred,
+        source: ExpectedExpenseDateSource.explicit,
+        confidence: ExpectedTemporalConfidence.high,
+      );
+
+      final restored = ExpectedPaymentWindow.fromJson(window.toJson());
+
+      expect(restored.start, DateTime(2026, 11, 5));
+      expect(restored.end, DateTime(2026, 11, 14));
+      expect(restored.semantic, ExpectedPaymentWindowSemantic.userPreferred);
+      expect(restored.source, ExpectedExpenseDateSource.explicit);
+      expect(restored.confidence, ExpectedTemporalConfidence.high);
+    });
+
+    test('round-trips a single-day calculated expected-debit window', () {
+      final window = ExpectedPaymentWindow(
+        start: DateTime(2026, 11, 14),
+        end: DateTime(2026, 11, 14),
+        semantic: ExpectedPaymentWindowSemantic.expectedDebit,
+        source: ExpectedExpenseDateSource.calculatedFromPeriodicity,
+        confidence: ExpectedTemporalConfidence.medium,
+      );
+
+      final restored = ExpectedPaymentWindow.fromJson(window.toJson());
+
+      expect(restored.start, restored.end);
+      expect(restored.semantic, ExpectedPaymentWindowSemantic.expectedDebit);
+      expect(
+        restored.source,
+        ExpectedExpenseDateSource.calculatedFromPeriodicity,
+      );
+      expect(restored.confidence, ExpectedTemporalConfidence.medium);
+    });
+
+    test('supports every temporal confidence independently from amount', () {
+      for (final confidence in const [
+        ExpectedTemporalConfidence.low,
+        ExpectedTemporalConfidence.medium,
+        ExpectedTemporalConfidence.high,
+      ]) {
+        final occurrence = _occurrence(
+          paymentWindow: ExpectedPaymentWindow(
+            start: DateTime(2026, 11, 5),
+            end: DateTime(2026, 11, 14),
+            semantic: ExpectedPaymentWindowSemantic.userPreferred,
+            source: ExpectedExpenseDateSource.explicit,
+            confidence: confidence,
+          ),
+          confidence: ExpenseEstimateConfidence.low,
+        );
+
+        expect(occurrence.expectedPaymentWindow!.confidence, confidence);
+        expect(occurrence.confidence, ExpenseEstimateConfidence.low);
+      }
+    });
+
+    test('parses legacy payment-window JSON without inventing metadata', () {
+      final restored = ExpectedPaymentWindow.fromJson({
+        'start': DateTime(2026, 11, 5).toIso8601String(),
+        'end': DateTime(2026, 11, 14).toIso8601String(),
+      });
+
+      expect(
+        restored.semantic,
+        ExpectedPaymentWindowSemantic.legacyUnspecified,
+      );
+      expect(restored.source, ExpectedExpenseDateSource.legacyUnspecified);
+      expect(restored.confidence, ExpectedTemporalConfidence.legacyUnspecified);
+    });
+
+    test('rejects invalid payment-window metadata explicitly', () {
+      final valid = ExpectedPaymentWindow(
+        start: DateTime(2026, 11, 5),
+        end: DateTime(2026, 11, 14),
+      ).toJson();
+
+      for (final invalid in [
+        {...valid, 'semantic': 'payment'},
+        {...valid, 'source': 'forecast'},
+        {...valid, 'confidence': 'certain'},
+        {...valid, 'semantic': 1},
+      ]) {
+        expect(
+          () => ExpectedPaymentWindow.fromJson(invalid),
+          throwsFormatException,
+        );
+      }
     });
 
     test('rejects an inverted expected payment window', () {
@@ -216,6 +313,9 @@ void main() {
         paymentWindow: ExpectedPaymentWindow(
           start: DateTime.utc(2026, 11, 12),
           end: DateTime.utc(2026, 11, 16),
+          semantic: ExpectedPaymentWindowSemantic.expectedDebit,
+          source: ExpectedExpenseDateSource.calculatedFromPeriodicity,
+          confidence: ExpectedTemporalConfidence.medium,
         ),
         estimationMethod: ExpenseEstimationMethod.personalHistory,
         evidence: const ['economic_fact_1', 'economic_fact_2'],
@@ -237,6 +337,29 @@ void main() {
       expect(json['confidence'], 'medium');
       expect(json['expectedIssueDateSource'], 'explicit');
       expect(json['expectedDueDateSource'], 'explicit');
+      expect(
+        (json['expectedPaymentWindow'] as Map<String, dynamic>)['semantic'],
+        'expectedDebit',
+      );
+    });
+
+    test('supports issue, due and qualified payment window together', () {
+      final occurrence = _occurrence(
+        expectedIssueDate: DateTime(2026, 10, 23),
+        expectedDueDate: DateTime(2026, 11, 14),
+        expectedDueDateSource: ExpectedExpenseDateSource.explicit,
+        paymentWindow: ExpectedPaymentWindow(
+          start: DateTime(2026, 11, 5),
+          end: DateTime(2026, 11, 13),
+          semantic: ExpectedPaymentWindowSemantic.userPreferred,
+          source: ExpectedExpenseDateSource.explicit,
+          confidence: ExpectedTemporalConfidence.high,
+        ),
+      );
+
+      expect(occurrence.expectedIssueDate, DateTime(2026, 10, 23));
+      expect(occurrence.expectedDueDate, DateTime(2026, 11, 14));
+      expect(occurrence.expectedPaymentWindow!.end, DateTime(2026, 11, 13));
     });
 
     test('requires a source exactly when its expected date is present', () {

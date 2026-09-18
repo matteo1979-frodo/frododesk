@@ -24,11 +24,28 @@ enum ExpectedExpenseDateSource {
   legacyUnspecified,
 }
 
+enum ExpectedPaymentWindowSemantic {
+  userPreferred,
+  expectedDebit,
+  legacyUnspecified,
+}
+
+enum ExpectedTemporalConfidence { low, medium, high, legacyUnspecified }
+
 class ExpectedPaymentWindow {
   final DateTime start;
   final DateTime end;
+  final ExpectedPaymentWindowSemantic semantic;
+  final ExpectedExpenseDateSource source;
+  final ExpectedTemporalConfidence confidence;
 
-  ExpectedPaymentWindow({required this.start, required this.end}) {
+  ExpectedPaymentWindow({
+    required this.start,
+    required this.end,
+    this.semantic = ExpectedPaymentWindowSemantic.legacyUnspecified,
+    this.source = ExpectedExpenseDateSource.legacyUnspecified,
+    this.confidence = ExpectedTemporalConfidence.legacyUnspecified,
+  }) {
     if (end.isBefore(start)) {
       throw ArgumentError.value(end, 'end', 'Must not be before start');
     }
@@ -37,12 +54,36 @@ class ExpectedPaymentWindow {
   Map<String, dynamic> toJson() => {
     'start': start.toIso8601String(),
     'end': end.toIso8601String(),
+    'semantic': semantic.name,
+    'source': source.name,
+    'confidence': confidence.name,
   };
 
   factory ExpectedPaymentWindow.fromJson(Map<String, dynamic> json) =>
       ExpectedPaymentWindow(
         start: _requiredDate(json, 'start'),
         end: _requiredDate(json, 'end'),
+        semantic: _optionalEnumValue(
+          json,
+          'semantic',
+          ExpectedPaymentWindowSemantic.values,
+          (value) => value.name,
+          ExpectedPaymentWindowSemantic.legacyUnspecified,
+        ),
+        source: _optionalEnumValue(
+          json,
+          'source',
+          ExpectedExpenseDateSource.values,
+          (value) => value.name,
+          ExpectedExpenseDateSource.legacyUnspecified,
+        ),
+        confidence: _optionalEnumValue(
+          json,
+          'confidence',
+          ExpectedTemporalConfidence.values,
+          (value) => value.name,
+          ExpectedTemporalConfidence.legacyUnspecified,
+        ),
       );
 }
 
@@ -370,6 +411,22 @@ T _enumValue<T>(
 ) {
   final raw = json[key];
   if (raw is! String) throw FormatException('$key must be a string');
+  for (final value in values) {
+    if (nameOf(value) == raw) return value;
+  }
+  throw FormatException('Unknown $key: $raw');
+}
+
+T _optionalEnumValue<T>(
+  Map<String, dynamic> json,
+  String key,
+  List<T> values,
+  String Function(T value) nameOf,
+  T fallback,
+) {
+  final raw = json[key];
+  if (raw == null) return fallback;
+  if (raw is! String) throw FormatException('$key must be a string or null');
   for (final value in values) {
     if (nameOf(value) == raw) return value;
   }

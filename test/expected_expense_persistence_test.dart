@@ -166,6 +166,37 @@ void main() {
   });
 
   test(
+    'qualified payment-window metadata survives aggregate persistence',
+    () async {
+      final persistence = ExpectedExpensePersistence();
+      final aggregate = ExpectedExpenseAggregate(
+        relationships: [_relationship('relationship_1')],
+        occurrences: [
+          _occurrence(
+            'occurrence_1',
+            relationshipId: 'relationship_1',
+            paymentWindow: ExpectedPaymentWindow(
+              start: DateTime(2026, 11, 5),
+              end: DateTime(2026, 11, 14),
+              semantic: ExpectedPaymentWindowSemantic.userPreferred,
+              source: ExpectedExpenseDateSource.explicit,
+              confidence: ExpectedTemporalConfidence.high,
+            ),
+          ),
+        ],
+      );
+
+      expect((await persistence.write(aggregate)).isSuccess, isTrue);
+      final restored = await persistence.load();
+      final window = restored.occurrences.single.expectedPaymentWindow!;
+
+      expect(window.semantic, ExpectedPaymentWindowSemantic.userPreferred);
+      expect(window.source, ExpectedExpenseDateSource.explicit);
+      expect(window.confidence, ExpectedTemporalConfidence.high);
+    },
+  );
+
+  test(
     'malformed JSON, wrong root and unknown version fail explicitly',
     () async {
       for (final raw in [
@@ -371,12 +402,14 @@ ExpectedExpenseOccurrence _occurrence(
   ExpectedExpenseOccurrenceStatus status =
       ExpectedExpenseOccurrenceStatus.pending,
   String? resolvedEconomicFactId,
+  ExpectedPaymentWindow? paymentWindow,
 }) => ExpectedExpenseOccurrence(
   occurrenceId: id,
   relationshipId: relationshipId,
   status: status,
   expectedIssueDate: DateTime(2026, 10, 23),
   expectedIssueDateSource: ExpectedExpenseDateSource.explicit,
+  expectedPaymentWindow: paymentWindow,
   expectedAmount: 59.63,
   estimationMethod: ExpenseEstimationMethod.firstAvailableFact,
   evidenceEconomicFactIds: const ['economic_fact_1'],
