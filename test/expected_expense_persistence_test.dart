@@ -197,6 +197,37 @@ void main() {
   );
 
   test(
+    'known-unpaid knowledge metadata survives aggregate persistence',
+    () async {
+      final persistence = ExpectedExpensePersistence();
+      final aggregate = ExpectedExpenseAggregate(
+        relationships: [_relationship('relationship_1')],
+        occurrences: [
+          _occurrence(
+            'occurrence_1',
+            relationshipId: 'relationship_1',
+            knowledgeState: ExpectedExpenseKnowledgeState.knownUnpaid,
+            knowledgeSource: ExpectedExpenseKnowledgeSource.userConfirmed,
+          ),
+        ],
+      );
+
+      expect((await persistence.write(aggregate)).isSuccess, isTrue);
+      final restored = await persistence.load();
+
+      expect(
+        restored.occurrences.single.knowledgeState,
+        ExpectedExpenseKnowledgeState.knownUnpaid,
+      );
+      expect(
+        restored.occurrences.single.knowledgeSource,
+        ExpectedExpenseKnowledgeSource.userConfirmed,
+      );
+      expect(restored.occurrences.single.resolvedEconomicFactId, isNull);
+    },
+  );
+
+  test(
     'malformed JSON, wrong root and unknown version fail explicitly',
     () async {
       for (final raw in [
@@ -403,10 +434,16 @@ ExpectedExpenseOccurrence _occurrence(
       ExpectedExpenseOccurrenceStatus.pending,
   String? resolvedEconomicFactId,
   ExpectedPaymentWindow? paymentWindow,
+  ExpectedExpenseKnowledgeState knowledgeState =
+      ExpectedExpenseKnowledgeState.forecast,
+  ExpectedExpenseKnowledgeSource knowledgeSource =
+      ExpectedExpenseKnowledgeSource.legacyUnspecified,
 }) => ExpectedExpenseOccurrence(
   occurrenceId: id,
   relationshipId: relationshipId,
   status: status,
+  knowledgeState: knowledgeState,
+  knowledgeSource: knowledgeSource,
   expectedIssueDate: DateTime(2026, 10, 23),
   expectedIssueDateSource: ExpectedExpenseDateSource.explicit,
   expectedPaymentWindow: paymentWindow,

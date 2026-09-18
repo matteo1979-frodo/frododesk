@@ -12,7 +12,127 @@ void main() {
       expect(occurrence.occurrenceId, 'occurrence_1');
       expect(occurrence.relationshipId, 'relationship_1');
       expect(occurrence.status, ExpectedExpenseOccurrenceStatus.pending);
+      expect(occurrence.knowledgeState, ExpectedExpenseKnowledgeState.forecast);
+      expect(
+        occurrence.knowledgeSource,
+        ExpectedExpenseKnowledgeSource.legacyUnspecified,
+      );
       expect(occurrence.resolvedEconomicFactId, isNull);
+    });
+
+    test('round-trips forecast and known-unpaid knowledge metadata', () {
+      final forecast = ExpectedExpenseOccurrence.fromJson(
+        _occurrence().toJson(),
+      );
+      final known = ExpectedExpenseOccurrence.fromJson(
+        _occurrence(
+          knowledgeState: ExpectedExpenseKnowledgeState.knownUnpaid,
+          knowledgeSource: ExpectedExpenseKnowledgeSource.userConfirmed,
+          provisional: false,
+        ).toJson(),
+      );
+
+      expect(forecast.knowledgeState, ExpectedExpenseKnowledgeState.forecast);
+      expect(
+        forecast.knowledgeSource,
+        ExpectedExpenseKnowledgeSource.legacyUnspecified,
+      );
+      expect(known.knowledgeState, ExpectedExpenseKnowledgeState.knownUnpaid);
+      expect(
+        known.knowledgeSource,
+        ExpectedExpenseKnowledgeSource.userConfirmed,
+      );
+      expect(known.resolvedEconomicFactId, isNull);
+    });
+
+    test('legacy JSON remains a conservative forecast', () {
+      final json = _occurrence().toJson()
+        ..remove('knowledgeState')
+        ..remove('knowledgeSource');
+
+      final restored = ExpectedExpenseOccurrence.fromJson(json);
+
+      expect(restored.knowledgeState, ExpectedExpenseKnowledgeState.forecast);
+      expect(
+        restored.knowledgeSource,
+        ExpectedExpenseKnowledgeSource.legacyUnspecified,
+      );
+    });
+
+    test('known-unpaid requires explicit informational provenance', () {
+      expect(
+        () => _occurrence(
+          knowledgeState: ExpectedExpenseKnowledgeState.knownUnpaid,
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => _occurrence(
+          knowledgeSource: ExpectedExpenseKnowledgeSource.userConfirmed,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test(
+      'copyWith promotes forecast to known-unpaid without changing identity',
+      () {
+        final original = _occurrence(
+          expectedDueDate: DateTime(2026, 11, 14),
+          expectedDueDateSource:
+              ExpectedExpenseDateSource.calculatedFromPeriodicity,
+          paymentWindow: ExpectedPaymentWindow(
+            start: DateTime(2026, 11, 5),
+            end: DateTime(2026, 11, 14),
+            semantic: ExpectedPaymentWindowSemantic.userPreferred,
+            source: ExpectedExpenseDateSource.explicit,
+            confidence: ExpectedTemporalConfidence.high,
+          ),
+        );
+
+        final known = original.copyWith(
+          knowledgeState: ExpectedExpenseKnowledgeState.knownUnpaid,
+          knowledgeSource: ExpectedExpenseKnowledgeSource.userConfirmed,
+          expectedAmount: 64.20,
+          expectedDueDate: DateTime(2026, 11, 20),
+          expectedDueDateSource: ExpectedExpenseDateSource.explicit,
+          confidence: ExpenseEstimateConfidence.high,
+          provisional: false,
+        );
+
+        expect(known.occurrenceId, original.occurrenceId);
+        expect(known.relationshipId, original.relationshipId);
+        expect(known.expectedAmount, 64.20);
+        expect(known.expectedDueDate, DateTime(2026, 11, 20));
+        expect(known.expectedDueDateSource, ExpectedExpenseDateSource.explicit);
+        expect(known.evidenceEconomicFactIds, original.evidenceEconomicFactIds);
+        expect(
+          known.expectedPaymentWindow!.toJson(),
+          original.expectedPaymentWindow!.toJson(),
+        );
+        expect(known.resolvedEconomicFactId, isNull);
+
+        expect(original.knowledgeState, ExpectedExpenseKnowledgeState.forecast);
+        expect(original.expectedAmount, 59.63);
+        expect(original.expectedDueDate, DateTime(2026, 11, 14));
+        expect(original.provisional, isTrue);
+      },
+    );
+
+    test('copyWith can explicitly clear nullable temporal fields', () {
+      final original = _occurrence(
+        expectedDueDate: DateTime(2026, 11, 14),
+        expectedDueDateSource: ExpectedExpenseDateSource.explicit,
+      );
+
+      final copied = original.copyWith(
+        expectedDueDate: null,
+        expectedDueDateSource: null,
+      );
+
+      expect(copied.expectedDueDate, isNull);
+      expect(copied.expectedDueDateSource, isNull);
+      expect(copied.expectedIssueDate, original.expectedIssueDate);
     });
 
     test('can know only the expected issue date', () {
@@ -443,6 +563,8 @@ void main() {
         {...valid, 'status': 'forecast'},
         {...valid, 'estimationMethod': 'guess'},
         {...valid, 'confidence': 'certain'},
+        {...valid, 'knowledgeState': 'received'},
+        {...valid, 'knowledgeSource': 'invoice'},
         {...valid, 'evidenceEconomicFactIds': 'economic_fact_1'},
         {...valid, 'expectedPaymentConfiguration': 'rid'},
       ]) {
@@ -484,6 +606,10 @@ ExpectedExpenseOccurrence _occurrence({
   String relationshipId = 'relationship_1',
   ExpectedExpenseOccurrenceStatus status =
       ExpectedExpenseOccurrenceStatus.pending,
+  ExpectedExpenseKnowledgeState knowledgeState =
+      ExpectedExpenseKnowledgeState.forecast,
+  ExpectedExpenseKnowledgeSource knowledgeSource =
+      ExpectedExpenseKnowledgeSource.legacyUnspecified,
   DateTime? expectedIssueDate,
   ExpectedExpenseDateSource? issueDateSource,
   DateTime? expectedDueDate,
@@ -503,6 +629,8 @@ ExpectedExpenseOccurrence _occurrence({
   occurrenceId: occurrenceId,
   relationshipId: relationshipId,
   status: status,
+  knowledgeState: knowledgeState,
+  knowledgeSource: knowledgeSource,
   expectedIssueDate: omitDefaultIssueDate
       ? expectedIssueDate
       : expectedIssueDate ?? DateTime(2026, 10, 23),

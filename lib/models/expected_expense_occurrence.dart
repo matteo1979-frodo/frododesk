@@ -5,6 +5,10 @@ import 'finance_recurring_item.dart';
 
 enum ExpectedExpenseOccurrenceStatus { pending, resolved, cancelled }
 
+enum ExpectedExpenseKnowledgeState { forecast, knownUnpaid }
+
+enum ExpectedExpenseKnowledgeSource { userConfirmed, legacyUnspecified }
+
 enum ExpenseEstimationMethod {
   firstAvailableFact,
   previousComparablePeriod,
@@ -96,6 +100,8 @@ class ExpectedExpenseOccurrence {
   final String occurrenceId;
   final String relationshipId;
   final ExpectedExpenseOccurrenceStatus status;
+  final ExpectedExpenseKnowledgeState knowledgeState;
+  final ExpectedExpenseKnowledgeSource knowledgeSource;
   final DateTime? expectedIssueDate;
   final ExpectedExpenseDateSource? expectedIssueDateSource;
   final DateTime? expectedDueDate;
@@ -114,6 +120,8 @@ class ExpectedExpenseOccurrence {
     required String occurrenceId,
     required String relationshipId,
     required this.status,
+    this.knowledgeState = ExpectedExpenseKnowledgeState.forecast,
+    this.knowledgeSource = ExpectedExpenseKnowledgeSource.legacyUnspecified,
     this.expectedIssueDate,
     this.expectedIssueDateSource,
     this.expectedDueDate,
@@ -136,6 +144,22 @@ class ExpectedExpenseOccurrence {
          resolvedEconomicFactId,
          'resolvedEconomicFactId',
        ) {
+    if (knowledgeState == ExpectedExpenseKnowledgeState.knownUnpaid &&
+        knowledgeSource == ExpectedExpenseKnowledgeSource.legacyUnspecified) {
+      throw ArgumentError.value(
+        knowledgeSource,
+        'knowledgeSource',
+        'Known unpaid occurrences require explicit informational provenance',
+      );
+    }
+    if (knowledgeState == ExpectedExpenseKnowledgeState.forecast &&
+        knowledgeSource != ExpectedExpenseKnowledgeSource.legacyUnspecified) {
+      throw ArgumentError.value(
+        knowledgeSource,
+        'knowledgeSource',
+        'Forecast occurrences cannot claim known informational provenance',
+      );
+    }
     if (!expectedAmount.isFinite || expectedAmount <= 0) {
       throw ArgumentError.value(
         expectedAmount,
@@ -205,10 +229,64 @@ class ExpectedExpenseOccurrence {
     }
   }
 
+  ExpectedExpenseOccurrence copyWith({
+    ExpectedExpenseOccurrenceStatus? status,
+    ExpectedExpenseKnowledgeState? knowledgeState,
+    ExpectedExpenseKnowledgeSource? knowledgeSource,
+    Object? expectedIssueDate = _preserveValue,
+    Object? expectedIssueDateSource = _preserveValue,
+    Object? expectedDueDate = _preserveValue,
+    Object? expectedDueDateSource = _preserveValue,
+    Object? expectedPaymentWindow = _preserveValue,
+    double? expectedAmount,
+    ExpenseEstimationMethod? estimationMethod,
+    List<String>? evidenceEconomicFactIds,
+    ExpenseEstimateConfidence? confidence,
+    bool? provisional,
+    ExpenseRelationshipPaymentConfiguration? expectedPaymentConfiguration,
+    FinanceSubject? expectedSubject,
+    Object? resolvedEconomicFactId = _preserveValue,
+  }) => ExpectedExpenseOccurrence(
+    occurrenceId: occurrenceId,
+    relationshipId: relationshipId,
+    status: status ?? this.status,
+    knowledgeState: knowledgeState ?? this.knowledgeState,
+    knowledgeSource: knowledgeSource ?? this.knowledgeSource,
+    expectedIssueDate: identical(expectedIssueDate, _preserveValue)
+        ? this.expectedIssueDate
+        : expectedIssueDate as DateTime?,
+    expectedIssueDateSource: identical(expectedIssueDateSource, _preserveValue)
+        ? this.expectedIssueDateSource
+        : expectedIssueDateSource as ExpectedExpenseDateSource?,
+    expectedDueDate: identical(expectedDueDate, _preserveValue)
+        ? this.expectedDueDate
+        : expectedDueDate as DateTime?,
+    expectedDueDateSource: identical(expectedDueDateSource, _preserveValue)
+        ? this.expectedDueDateSource
+        : expectedDueDateSource as ExpectedExpenseDateSource?,
+    expectedPaymentWindow: identical(expectedPaymentWindow, _preserveValue)
+        ? this.expectedPaymentWindow
+        : expectedPaymentWindow as ExpectedPaymentWindow?,
+    expectedAmount: expectedAmount ?? this.expectedAmount,
+    estimationMethod: estimationMethod ?? this.estimationMethod,
+    evidenceEconomicFactIds:
+        evidenceEconomicFactIds ?? this.evidenceEconomicFactIds,
+    confidence: confidence ?? this.confidence,
+    provisional: provisional ?? this.provisional,
+    expectedPaymentConfiguration:
+        expectedPaymentConfiguration ?? this.expectedPaymentConfiguration,
+    expectedSubject: expectedSubject ?? this.expectedSubject,
+    resolvedEconomicFactId: identical(resolvedEconomicFactId, _preserveValue)
+        ? this.resolvedEconomicFactId
+        : resolvedEconomicFactId as String?,
+  );
+
   Map<String, dynamic> toJson() => {
     'occurrenceId': occurrenceId,
     'relationshipId': relationshipId,
     'status': status.name,
+    'knowledgeState': knowledgeState.name,
+    'knowledgeSource': knowledgeSource.name,
     'expectedIssueDate': expectedIssueDate?.toIso8601String(),
     'expectedIssueDateSource': expectedIssueDateSource?.name,
     'expectedDueDate': expectedDueDate?.toIso8601String(),
@@ -276,6 +354,20 @@ class ExpectedExpenseOccurrence {
         ExpectedExpenseOccurrenceStatus.values,
         (value) => value.name,
       ),
+      knowledgeState: _optionalEnumValue(
+        json,
+        'knowledgeState',
+        ExpectedExpenseKnowledgeState.values,
+        (value) => value.name,
+        ExpectedExpenseKnowledgeState.forecast,
+      ),
+      knowledgeSource: _optionalEnumValue(
+        json,
+        'knowledgeSource',
+        ExpectedExpenseKnowledgeSource.values,
+        (value) => value.name,
+        ExpectedExpenseKnowledgeSource.legacyUnspecified,
+      ),
       expectedIssueDate: issueDate,
       expectedIssueDateSource: issueSource,
       expectedDueDate: dueDate,
@@ -314,6 +406,8 @@ class ExpectedExpenseOccurrence {
     );
   }
 }
+
+const Object _preserveValue = Object();
 
 void _validateDateSource({
   required DateTime? date,
