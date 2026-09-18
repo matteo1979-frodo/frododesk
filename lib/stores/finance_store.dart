@@ -21,6 +21,7 @@ import '../logic/finance/finance_portfolio_v3_contract.dart';
 import '../logic/finance/finance_portfolio_v3_commit.dart';
 import '../logic/finance/finance_portfolio_v3_writer.dart';
 import '../logic/finance/finance_prepaid_creation.dart';
+import '../logic/finance/expected_expense_persistence.dart';
 import '../logic/finance/finite_financial_plan_persistence.dart';
 import '../models/finite_financial_plan.dart';
 
@@ -78,12 +79,14 @@ class FinanceStore extends ChangeNotifier {
   final FinancePortfolioV3Writer portfolioV3Writer;
   final FinancePrepaidCreationBuilder prepaidCreationBuilder;
   final FiniteFinancialPlanPersistence finiteFinancialPlanPersistence;
+  final ExpectedExpensePersistence expectedExpensePersistence;
 
   FinanceStore({
     EconomicFactIdGenerator? economicFactIdGenerator,
     FinancePortfolioV3Writer? portfolioV3Writer,
     FinancePrepaidCreationBuilder? prepaidCreationBuilder,
     FiniteFinancialPlanPersistence? finiteFinancialPlanPersistence,
+    ExpectedExpensePersistence? expectedExpensePersistence,
     Iterable<FinanceBalance> initialBalances = const [],
     Iterable<FinanceAccountLinkedItem> initialLinkedItems = const [],
     Iterable<FinanceTransaction> initialTransactions = const [],
@@ -93,6 +96,7 @@ class FinanceStore extends ChangeNotifier {
     Iterable<FundTransaction> initialFundTransactions = const [],
     Iterable<FinanceAssetMovement> initialAssetMovements = const [],
     Iterable<FiniteFinancialPlan> initialFiniteFinancialPlans = const [],
+    ExpectedExpenseAggregate? initialExpectedExpenseAggregate,
   }) : economicFactIdGenerator =
            economicFactIdGenerator ?? EconomicFactIdGenerator.timestamped(),
        portfolioV3Writer = portfolioV3Writer ?? FinancePortfolioV3Writer(),
@@ -100,6 +104,8 @@ class FinanceStore extends ChangeNotifier {
            prepaidCreationBuilder ?? FinancePrepaidCreationBuilder(),
        finiteFinancialPlanPersistence =
            finiteFinancialPlanPersistence ?? FiniteFinancialPlanPersistence(),
+       expectedExpensePersistence =
+           expectedExpensePersistence ?? ExpectedExpensePersistence(),
        _balances = List<FinanceBalance>.of(initialBalances),
        _linkedItems = List<FinanceAccountLinkedItem>.of(initialLinkedItems),
        _transactions = List<FinanceTransaction>.of(initialTransactions),
@@ -110,7 +116,9 @@ class FinanceStore extends ChangeNotifier {
        _assetMovements = List<FinanceAssetMovement>.of(initialAssetMovements),
        _finiteFinancialPlans = List<FiniteFinancialPlan>.of(
          initialFiniteFinancialPlans,
-       );
+       ),
+       _expectedExpenseAggregate =
+           initialExpectedExpenseAggregate ?? ExpectedExpenseAggregate.empty();
 
   final List<FinancePerson> people = const [
     FinancePerson(id: 'matteo', name: 'Matteo'),
@@ -127,6 +135,7 @@ class FinanceStore extends ChangeNotifier {
   final List<FinanceAccountLinkedItem> _linkedItems;
   final List<FinanceAssetMovement> _assetMovements;
   final List<FiniteFinancialPlan> _finiteFinancialPlans;
+  ExpectedExpenseAggregate _expectedExpenseAggregate;
   bool _portfolioReady = false;
   bool _portfolioV3Authoritative = false;
   bool _legacyLinkedItemsHydrated = false;
@@ -159,6 +168,9 @@ class FinanceStore extends ChangeNotifier {
 
   UnmodifiableListView<FiniteFinancialPlan> get finiteFinancialPlans =>
       UnmodifiableListView(_finiteFinancialPlans);
+
+  ExpectedExpenseAggregate get expectedExpenseAggregate =>
+      _expectedExpenseAggregate;
 
   bool get isPortfolioV3Authoritative => _portfolioV3Authoritative;
 
@@ -210,6 +222,48 @@ class FinanceStore extends ChangeNotifier {
     'finiteFinancialPlans': _finiteFinancialPlans
         .map((item) => item.toJson())
         .toList(),
+    'expectedExpenseRelationships': _expectedExpenseAggregate.relationships
+        .map((item) => item.toJson())
+        .toList(),
+    'expectedExpenseOccurrences': _expectedExpenseAggregate.occurrences
+        .map((item) => item.toJson())
+        .toList(),
+  });
+
+  Future<void> loadSavedExpectedExpenses() =>
+      _runObservableLoad(_loadSavedExpectedExpenses);
+
+  Future<void> _loadSavedExpectedExpenses() async {
+    final loaded = await expectedExpensePersistence.load();
+    _expectedExpenseAggregate = loaded;
+  }
+
+  Future<bool> saveExpectedExpenseAggregate(
+    ExpectedExpenseAggregate candidate,
+  ) async {
+    final before = _expectedExpenseAggregateFingerprint(
+      _expectedExpenseAggregate,
+    );
+    final result = await expectedExpensePersistence.write(candidate);
+    if (!result.isSuccess) {
+      throw StateError(
+        'Expected expenses write failed: ${result.errors.join('; ')}',
+      );
+    }
+
+    final changed = before != _expectedExpenseAggregateFingerprint(candidate);
+    _expectedExpenseAggregate = candidate;
+    if (changed) _markChanged();
+    return changed;
+  }
+
+  String _expectedExpenseAggregateFingerprint(
+    ExpectedExpenseAggregate aggregate,
+  ) => jsonEncode({
+    'relationships': aggregate.relationships
+        .map((item) => item.toJson())
+        .toList(),
+    'occurrences': aggregate.occurrences.map((item) => item.toJson()).toList(),
   });
 
   Future<bool> addFiniteFinancialPlan(FiniteFinancialPlan plan) async {
