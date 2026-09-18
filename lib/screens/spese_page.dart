@@ -16,12 +16,15 @@ import '../logic/spese/spese_mutation_coordinator.dart';
 import '../logic/spese/expense_replacement_coordinator.dart';
 import '../logic/spese/expense_replacement_persistence.dart';
 import '../logic/finance/composite_economic_operation_coordinator.dart';
+import '../models/expected_expense_occurrence.dart';
+import '../models/expense_relationship.dart';
 import '../models/composite_economic_operation.dart';
 import '../models/economic_operation_metadata.dart';
 import '../models/economic_event.dart';
 import '../models/spese_command.dart';
 import '../models/spese_snapshot.dart';
 import '../utils/euro_formatter.dart';
+import 'expected_expense_from_real_expense_page.dart';
 
 const _speseCommandBuilder = SpeseCommandBuilder();
 
@@ -415,6 +418,7 @@ class _SpesePageState extends State<SpesePage> {
                           await Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) => _ExpenseMonthHistoryPage(
+                                financeStore: widget.financeStore,
                                 expenses: currentMonthExpenses,
                                 monthTitle: snapshot.monthTitle,
                                 snapshot: snapshot,
@@ -1977,6 +1981,7 @@ String _formatMovementDate(DateTime date) {
 }
 
 class _ExpenseMonthHistoryPage extends StatelessWidget {
+  final FinanceStore financeStore;
   final List<RealExpense> expenses;
   final String monthTitle;
   final SpeseSnapshot snapshot;
@@ -1986,6 +1991,7 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
   final ExpenseReplacementCoordinator replacementCoordinator;
 
   const _ExpenseMonthHistoryPage({
+    required this.financeStore,
     required this.expenses,
     required this.monthTitle,
     required this.snapshot,
@@ -1994,6 +2000,35 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
     required this.replacementPersistence,
     required this.replacementCoordinator,
   });
+
+  bool _canCreatePrediction(RealExpense expense) =>
+      canCreateExpectedExpensePrediction(expense);
+
+  ({
+    ExpenseRelationship relationship,
+    ExpectedExpenseOccurrence occurrence,
+  })? _prediction(RealExpense expense) {
+    final factId = expense.economicFactId;
+    if (factId == null) return null;
+    final occurrence = financeStore.expectedExpenseAggregate.occurrences
+        .where((item) => item.evidenceEconomicFactIds.contains(factId))
+        .firstOrNull;
+    if (occurrence == null) return null;
+    final relationship = financeStore
+        .expectedExpenseAggregate
+        .relationships
+        .where((item) => item.relationshipId == occurrence.relationshipId)
+        .firstOrNull;
+    if (relationship == null) return null;
+    return (relationship: relationship, occurrence: occurrence);
+  }
+
+  String _formatExpectedDate(ExpectedExpenseOccurrence occurrence) {
+    final date = occurrence.expectedIssueDate ??
+        occurrence.expectedDueDate ??
+        occurrence.expectedPaymentWindow?.start;
+    return date == null ? 'non disponibile' : _formatMovementDate(date);
+  }
 
   SpeseCommand _existingMovementCommand(
     RealExpense expense,
@@ -2074,6 +2109,20 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                   ),
                                   Text("Categoria: ${expense.category}"),
                                   Text("Conto: ${expense.balanceName}"),
+                                  if (_prediction(expense) case final value?) ...[
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      'Previsione salvata: ${value.relationship.service} · '
+                                      '${value.relationship.provider}',
+                                    ),
+                                    Text(
+                                      'Prossima data: ${_formatExpectedDate(value.occurrence)}',
+                                    ),
+                                    Text(
+                                      'Importo previsto: ${EuroFormatter.format(value.occurrence.expectedAmount)} '
+                                      '· stima provvisoria',
+                                    ),
+                                  ],
                                 ],
                               ),
                               actions: [
@@ -2083,6 +2132,39 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                   },
                                   child: const Text("Chiudi"),
                                 ),
+                                if (_canCreatePrediction(expense) &&
+                                    _prediction(expense) == null)
+                                  ElevatedButton.icon(
+                                    onPressed: () async {
+                                      Navigator.of(dialogContext).pop();
+                                      final now = DateTime.now();
+                                      final token = now.microsecondsSinceEpoch;
+                                      final saved = await Navigator.of(context)
+                                          .push<bool>(
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  ExpectedExpenseFromRealExpensePage(
+                                                    expense: expense,
+                                                    financeStore: financeStore,
+                                                    relationshipId:
+                                                        'expense_relationship_$token',
+                                                    occurrenceId:
+                                                        'expected_occurrence_$token',
+                                                  ),
+                                            ),
+                                          );
+                                      if (!context.mounted || saved != true) {
+                                        return;
+                                      }
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Previsione salvata.'),
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.event_repeat),
+                                    label: const Text('Prevedi le prossime'),
+                                  ),
                                 if (expense.operationMetadata != null)
                                   const Padding(
                                     padding: EdgeInsets.symmetric(
