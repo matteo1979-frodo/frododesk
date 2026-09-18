@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/models/expense_relationship.dart';
 import 'package:frododesk/models/finance_category_template.dart';
 import 'package:frododesk/models/finance_recurring_item.dart';
+import 'package:frododesk/models/manual_payment_preference.dart';
 
 void main() {
   group('ExpenseRelationship', () {
@@ -123,6 +126,62 @@ void main() {
       });
     });
 
+    test('round-trips an optional manual payment preference', () {
+      final source = _relationship(
+        manualPaymentPreference: ManualPaymentPreference(
+          preferredStartDayOfMonth: 5,
+        ),
+      );
+
+      final restored = ExpenseRelationship.fromJson(source.toJson());
+
+      expect(restored.toJson(), source.toJson());
+      expect(restored.manualPaymentPreference?.preferredStartDayOfMonth, 5);
+    });
+
+    test('round-trips without a manual payment preference', () {
+      final source = _relationship();
+
+      final restored = ExpenseRelationship.fromJson(source.toJson());
+
+      expect(restored.manualPaymentPreference, isNull);
+      expect(restored.toJson(), source.toJson());
+    });
+
+    test('loads legacy JSON without the preference field', () {
+      final json = _relationship().toJson()..remove('manualPaymentPreference');
+
+      final restored = ExpenseRelationship.fromJson(json);
+
+      expect(restored.manualPaymentPreference, isNull);
+    });
+
+    test('rejects malformed manual payment preference JSON', () {
+      final json = {
+        ..._relationship().toJson(),
+        'manualPaymentPreference': 'day 5',
+      };
+
+      expect(() => ExpenseRelationship.fromJson(json), throwsFormatException);
+    });
+
+    test('JSON equivalence includes the manual payment preference', () {
+      final first = _relationship(
+        manualPaymentPreference: ManualPaymentPreference(
+          preferredStartDayOfMonth: 5,
+        ),
+      );
+      final same = ExpenseRelationship.fromJson(first.toJson());
+      final different = first.copyWith(
+        manualPaymentPreference: ManualPaymentPreference(
+          preferredStartDayOfMonth: 10,
+        ),
+      );
+
+      expect(jsonEncode(same.toJson()), jsonEncode(first.toJson()));
+      expect(jsonEncode(different.toJson()), isNot(jsonEncode(first.toJson())));
+    });
+
     test('keeps backward-compatible defaults for additive fields', () {
       final json = _relationship().toJson()
         ..remove('status');
@@ -223,6 +282,7 @@ ExpenseRelationship _relationship({
   ExpenseRelationshipStatus status = ExpenseRelationshipStatus.active,
   ExpenseRelationshipPeriodicity? periodicity,
   ExpenseRelationshipPaymentConfiguration? payment,
+  ManualPaymentPreference? manualPaymentPreference,
 }) => ExpenseRelationship(
   relationshipId: relationshipId,
   service: service,
@@ -237,4 +297,5 @@ ExpenseRelationship _relationship({
       ExpenseRelationshipPaymentConfiguration(
         method: FinancePaymentMethod.manual,
       ),
+  manualPaymentPreference: manualPaymentPreference,
 );

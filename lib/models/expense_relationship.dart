@@ -1,5 +1,8 @@
 import 'finance_category_template.dart';
 import 'finance_recurring_item.dart';
+import 'manual_payment_preference.dart';
+
+const _preserveManualPaymentPreference = Object();
 
 enum ExpenseRelationshipStatus { active, terminated }
 
@@ -144,6 +147,7 @@ class ExpenseRelationship {
   final ExpenseRelationshipStatus status;
   final ExpenseRelationshipPeriodicity periodicity;
   final ExpenseRelationshipPaymentConfiguration paymentConfiguration;
+  final ManualPaymentPreference? manualPaymentPreference;
 
   ExpenseRelationship({
     required String relationshipId,
@@ -153,6 +157,7 @@ class ExpenseRelationship {
     required this.status,
     required this.periodicity,
     required this.paymentConfiguration,
+    this.manualPaymentPreference,
   }) : relationshipId = _requiredText(relationshipId, 'relationshipId'),
        service = _requiredText(service, 'service'),
        provider = _requiredText(provider, 'provider');
@@ -163,6 +168,7 @@ class ExpenseRelationship {
     ExpenseRelationshipStatus? status,
     ExpenseRelationshipPeriodicity? periodicity,
     ExpenseRelationshipPaymentConfiguration? paymentConfiguration,
+    Object? manualPaymentPreference = _preserveManualPaymentPreference,
   }) => ExpenseRelationship(
     relationshipId: relationshipId,
     service: service,
@@ -171,6 +177,10 @@ class ExpenseRelationship {
     status: status ?? this.status,
     periodicity: periodicity ?? this.periodicity,
     paymentConfiguration: paymentConfiguration ?? this.paymentConfiguration,
+    manualPaymentPreference:
+        identical(manualPaymentPreference, _preserveManualPaymentPreference)
+        ? this.manualPaymentPreference
+        : manualPaymentPreference as ManualPaymentPreference?,
   );
 
   Map<String, dynamic> toJson() => {
@@ -181,6 +191,7 @@ class ExpenseRelationship {
     'status': status.name,
     'periodicity': periodicity.toJson(),
     'paymentConfiguration': paymentConfiguration.toJson(),
+    'manualPaymentPreference': manualPaymentPreference?.toJson(),
   };
 
   factory ExpenseRelationship.fromJson(Map<String, dynamic> json) {
@@ -202,11 +213,17 @@ class ExpenseRelationship {
     }
     final periodicity = json['periodicity'];
     final payment = json['paymentConfiguration'];
+    final manualPaymentPreference = json['manualPaymentPreference'];
     if (periodicity is! Map) {
       throw const FormatException('periodicity must be an object');
     }
     if (payment is! Map) {
       throw const FormatException('paymentConfiguration must be an object');
+    }
+    if (manualPaymentPreference != null && manualPaymentPreference is! Map) {
+      throw const FormatException(
+        'manualPaymentPreference must be an object or null',
+      );
     }
     return ExpenseRelationship(
       relationshipId: _jsonString(json, 'relationshipId'),
@@ -221,6 +238,11 @@ class ExpenseRelationship {
           ExpenseRelationshipPaymentConfiguration.fromJson(
             Map<String, dynamic>.from(payment),
           ),
+      manualPaymentPreference: manualPaymentPreference == null
+          ? null
+          : ManualPaymentPreference.fromJson(
+              Map<String, dynamic>.from(manualPaymentPreference),
+            ),
     );
   }
 }

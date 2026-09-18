@@ -7,6 +7,7 @@ import 'package:frododesk/models/expense_relationship.dart';
 import 'package:frododesk/models/expected_expense_occurrence.dart';
 import 'package:frododesk/models/finance_category_template.dart';
 import 'package:frododesk/models/finance_recurring_item.dart';
+import 'package:frododesk/models/manual_payment_preference.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -88,6 +89,38 @@ void main() {
 
     expect(restored.relationships, hasLength(2));
     expect(restored.occurrences, hasLength(2));
+  });
+
+  test('manual payment preference survives aggregate persistence', () async {
+    final relationship = _relationship(
+      'relationship_1',
+      manualPaymentPreference: ManualPaymentPreference(
+        preferredStartDayOfMonth: 5,
+      ),
+    );
+    final persistence = ExpectedExpensePersistence();
+
+    expect(
+      (await persistence.write(
+        ExpectedExpenseAggregate(relationships: [relationship]),
+      )).isSuccess,
+      isTrue,
+    );
+    final restored = await persistence.load();
+
+    expect(restored.relationships.single.toJson(), relationship.toJson());
+  });
+
+  test('legacy aggregate without preference remains loadable', () async {
+    final relationship = _relationship('relationship_1').toJson()
+      ..remove('manualPaymentPreference');
+    final persistence = ExpectedExpensePersistence(
+      load: (_) async => _envelope(relationships: [relationship]),
+    );
+
+    final restored = await persistence.load();
+
+    expect(restored.relationships.single.manualPaymentPreference, isNull);
   });
 
   test('allows multiple pending occurrences for one relationship', () async {
@@ -410,7 +443,10 @@ ExpectedExpenseAggregate _aggregate() => ExpectedExpenseAggregate(
   occurrences: [_occurrence('occurrence_1', relationshipId: 'relationship_1')],
 );
 
-ExpenseRelationship _relationship(String id) => ExpenseRelationship(
+ExpenseRelationship _relationship(
+  String id, {
+  ManualPaymentPreference? manualPaymentPreference,
+}) => ExpenseRelationship(
   relationshipId: id,
   service: 'Acqua',
   provider: 'Hera',
@@ -425,6 +461,7 @@ ExpenseRelationship _relationship(String id) => ExpenseRelationship(
     method: FinancePaymentMethod.rid,
     expectedBalanceId: 'balance_matteo',
   ),
+  manualPaymentPreference: manualPaymentPreference,
 );
 
 ExpectedExpenseOccurrence _occurrence(
