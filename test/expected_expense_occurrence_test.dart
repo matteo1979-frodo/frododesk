@@ -221,6 +221,7 @@ void main() {
         semantic: ExpectedPaymentWindowSemantic.userPreferred,
         source: ExpectedExpenseDateSource.explicit,
         confidence: ExpectedTemporalConfidence.high,
+        origin: ExpectedPaymentWindowOrigin.relationshipDefault,
       );
 
       final restored = ExpectedPaymentWindow.fromJson(window.toJson());
@@ -230,6 +231,34 @@ void main() {
       expect(restored.semantic, ExpectedPaymentWindowSemantic.userPreferred);
       expect(restored.source, ExpectedExpenseDateSource.explicit);
       expect(restored.confidence, ExpectedTemporalConfidence.high);
+      expect(restored.origin, ExpectedPaymentWindowOrigin.relationshipDefault);
+    });
+
+    test('round-trips an occurrence-specific payment-window override', () {
+      final window = ExpectedPaymentWindow(
+        start: DateTime(2026, 11, 10),
+        end: DateTime(2026, 11, 14),
+        semantic: ExpectedPaymentWindowSemantic.userPreferred,
+        source: ExpectedExpenseDateSource.explicit,
+        confidence: ExpectedTemporalConfidence.high,
+        origin: ExpectedPaymentWindowOrigin.occurrenceOverride,
+      );
+
+      final restored = ExpectedPaymentWindow.fromJson(window.toJson());
+
+      expect(restored.origin, ExpectedPaymentWindowOrigin.occurrenceOverride);
+    });
+
+    test('round-trips an explicitly unspecified payment-window origin', () {
+      final window = ExpectedPaymentWindow(
+        start: DateTime(2026, 11, 5),
+        end: DateTime(2026, 11, 14),
+        origin: ExpectedPaymentWindowOrigin.legacyUnspecified,
+      );
+
+      final restored = ExpectedPaymentWindow.fromJson(window.toJson());
+
+      expect(restored.origin, ExpectedPaymentWindowOrigin.legacyUnspecified);
     });
 
     test('round-trips a single-day calculated expected-debit window', () {
@@ -286,6 +315,7 @@ void main() {
       );
       expect(restored.source, ExpectedExpenseDateSource.legacyUnspecified);
       expect(restored.confidence, ExpectedTemporalConfidence.legacyUnspecified);
+      expect(restored.origin, ExpectedPaymentWindowOrigin.legacyUnspecified);
     });
 
     test('rejects invalid payment-window metadata explicitly', () {
@@ -298,6 +328,7 @@ void main() {
         {...valid, 'semantic': 'payment'},
         {...valid, 'source': 'forecast'},
         {...valid, 'confidence': 'certain'},
+        {...valid, 'origin': 'inferredDefault'},
         {...valid, 'semantic': 1},
       ]) {
         expect(

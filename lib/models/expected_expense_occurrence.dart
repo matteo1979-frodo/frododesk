@@ -34,6 +34,12 @@ enum ExpectedPaymentWindowSemantic {
   legacyUnspecified,
 }
 
+enum ExpectedPaymentWindowOrigin {
+  relationshipDefault,
+  occurrenceOverride,
+  legacyUnspecified,
+}
+
 enum ExpectedTemporalConfidence { low, medium, high, legacyUnspecified }
 
 class ExpectedPaymentWindow {
@@ -42,6 +48,7 @@ class ExpectedPaymentWindow {
   final ExpectedPaymentWindowSemantic semantic;
   final ExpectedExpenseDateSource source;
   final ExpectedTemporalConfidence confidence;
+  final ExpectedPaymentWindowOrigin origin;
 
   ExpectedPaymentWindow({
     required this.start,
@@ -49,6 +56,7 @@ class ExpectedPaymentWindow {
     this.semantic = ExpectedPaymentWindowSemantic.legacyUnspecified,
     this.source = ExpectedExpenseDateSource.legacyUnspecified,
     this.confidence = ExpectedTemporalConfidence.legacyUnspecified,
+    this.origin = ExpectedPaymentWindowOrigin.legacyUnspecified,
   }) {
     if (end.isBefore(start)) {
       throw ArgumentError.value(end, 'end', 'Must not be before start');
@@ -61,6 +69,7 @@ class ExpectedPaymentWindow {
     'semantic': semantic.name,
     'source': source.name,
     'confidence': confidence.name,
+    'origin': origin.name,
   };
 
   factory ExpectedPaymentWindow.fromJson(Map<String, dynamic> json) =>
@@ -87,6 +96,13 @@ class ExpectedPaymentWindow {
           ExpectedTemporalConfidence.values,
           (value) => value.name,
           ExpectedTemporalConfidence.legacyUnspecified,
+        ),
+        origin: _optionalEnumValue(
+          json,
+          'origin',
+          ExpectedPaymentWindowOrigin.values,
+          (value) => value.name,
+          ExpectedPaymentWindowOrigin.legacyUnspecified,
         ),
       );
 }

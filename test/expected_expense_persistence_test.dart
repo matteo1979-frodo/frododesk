@@ -214,6 +214,7 @@ void main() {
               semantic: ExpectedPaymentWindowSemantic.userPreferred,
               source: ExpectedExpenseDateSource.explicit,
               confidence: ExpectedTemporalConfidence.high,
+              origin: ExpectedPaymentWindowOrigin.relationshipDefault,
             ),
           ),
         ],
@@ -226,8 +227,38 @@ void main() {
       expect(window.semantic, ExpectedPaymentWindowSemantic.userPreferred);
       expect(window.source, ExpectedExpenseDateSource.explicit);
       expect(window.confidence, ExpectedTemporalConfidence.high);
+      expect(window.origin, ExpectedPaymentWindowOrigin.relationshipDefault);
     },
   );
+
+  test('legacy persisted payment window has unspecified origin', () async {
+    final relationship = _relationship('relationship_1');
+    final occurrence = _occurrence(
+      'occurrence_1',
+      relationshipId: relationship.relationshipId,
+      paymentWindow: ExpectedPaymentWindow(
+        start: DateTime(2026, 11, 5),
+        end: DateTime(2026, 11, 14),
+      ),
+    ).toJson();
+    final window = Map<String, dynamic>.from(
+      occurrence['expectedPaymentWindow'] as Map,
+    )..remove('origin');
+    occurrence['expectedPaymentWindow'] = window;
+    final persistence = ExpectedExpensePersistence(
+      load: (_) async => _envelope(
+        relationships: [relationship.toJson()],
+        occurrences: [occurrence],
+      ),
+    );
+
+    final restored = await persistence.load();
+
+    expect(
+      restored.occurrences.single.expectedPaymentWindow?.origin,
+      ExpectedPaymentWindowOrigin.legacyUnspecified,
+    );
+  });
 
   test(
     'known-unpaid knowledge metadata survives aggregate persistence',
