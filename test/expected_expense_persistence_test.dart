@@ -231,6 +231,84 @@ void main() {
     },
   );
 
+  for (final certainty in [
+    ExpectedExpenseDateCertainty.estimated,
+    ExpectedExpenseDateCertainty.known,
+  ]) {
+    test(
+      'due-date certainty $certainty survives aggregate persistence',
+      () async {
+        final persistence = ExpectedExpensePersistence();
+        final occurrence = ExpectedExpenseOccurrence(
+          occurrenceId: 'occurrence_1',
+          relationshipId: 'relationship_1',
+          status: ExpectedExpenseOccurrenceStatus.pending,
+          expectedDueDate: DateTime(2026, 11, 14),
+          expectedDueDateSource: ExpectedExpenseDateSource.explicit,
+          expectedDueDateCertainty: certainty,
+          expectedAmount: 50,
+          estimationMethod: ExpenseEstimationMethod.firstAvailableFact,
+          evidenceEconomicFactIds: const ['economic_fact_1'],
+          confidence: ExpenseEstimateConfidence.low,
+          provisional: true,
+          expectedPaymentConfiguration: ExpenseRelationshipPaymentConfiguration(
+            method: FinancePaymentMethod.manual,
+          ),
+          expectedSubject: FinanceSubject.matteo,
+        );
+
+        expect(
+          (await persistence.write(
+            ExpectedExpenseAggregate(
+              relationships: [_relationship('relationship_1')],
+              occurrences: [occurrence],
+            ),
+          )).isSuccess,
+          isTrue,
+        );
+
+        expect(
+          (await persistence.load())
+              .occurrences
+              .single
+              .expectedDueDateCertainty,
+          certainty,
+        );
+      },
+    );
+  }
+
+  test('legacy due-date certainty survives aggregate persistence', () async {
+    final relationship = _relationship('relationship_1');
+    final occurrence = ExpectedExpenseOccurrence(
+      occurrenceId: 'occurrence_1',
+      relationshipId: relationship.relationshipId,
+      status: ExpectedExpenseOccurrenceStatus.pending,
+      expectedDueDate: DateTime(2026, 11, 14),
+      expectedDueDateSource: ExpectedExpenseDateSource.explicit,
+      expectedAmount: 50,
+      estimationMethod: ExpenseEstimationMethod.firstAvailableFact,
+      evidenceEconomicFactIds: const ['economic_fact_1'],
+      confidence: ExpenseEstimateConfidence.low,
+      provisional: true,
+      expectedPaymentConfiguration: ExpenseRelationshipPaymentConfiguration(
+        method: FinancePaymentMethod.manual,
+      ),
+      expectedSubject: FinanceSubject.matteo,
+    ).toJson()..remove('expectedDueDateCertainty');
+    final persistence = ExpectedExpensePersistence(
+      load: (_) async => _envelope(
+        relationships: [relationship.toJson()],
+        occurrences: [occurrence],
+      ),
+    );
+
+    expect(
+      (await persistence.load()).occurrences.single.expectedDueDateCertainty,
+      ExpectedExpenseDateCertainty.legacyUnspecified,
+    );
+  });
+
   test('legacy persisted payment window has unspecified origin', () async {
     final relationship = _relationship('relationship_1');
     final occurrence = _occurrence(

@@ -28,6 +28,8 @@ enum ExpectedExpenseDateSource {
   legacyUnspecified,
 }
 
+enum ExpectedExpenseDateCertainty { estimated, known, legacyUnspecified }
+
 enum ExpectedPaymentWindowSemantic {
   userPreferred,
   expectedDebit,
@@ -122,6 +124,7 @@ class ExpectedExpenseOccurrence {
   final ExpectedExpenseDateSource? expectedIssueDateSource;
   final DateTime? expectedDueDate;
   final ExpectedExpenseDateSource? expectedDueDateSource;
+  final ExpectedExpenseDateCertainty? expectedDueDateCertainty;
   final ExpectedPaymentWindow? expectedPaymentWindow;
   final double expectedAmount;
   final ExpenseEstimationMethod estimationMethod;
@@ -142,6 +145,7 @@ class ExpectedExpenseOccurrence {
     this.expectedIssueDateSource,
     this.expectedDueDate,
     this.expectedDueDateSource,
+    ExpectedExpenseDateCertainty? expectedDueDateCertainty,
     this.expectedPaymentWindow,
     required this.expectedAmount,
     required this.estimationMethod,
@@ -153,6 +157,10 @@ class ExpectedExpenseOccurrence {
     String? resolvedEconomicFactId,
   }) : occurrenceId = _requiredText(occurrenceId, 'occurrenceId'),
        relationshipId = _requiredText(relationshipId, 'relationshipId'),
+       expectedDueDateCertainty = expectedDueDate == null
+           ? null
+           : expectedDueDateCertainty ??
+                 ExpectedExpenseDateCertainty.legacyUnspecified,
        evidenceEconomicFactIds = UnmodifiableListView(
          _validatedEvidence(evidenceEconomicFactIds),
        ),
@@ -160,6 +168,11 @@ class ExpectedExpenseOccurrence {
          resolvedEconomicFactId,
          'resolvedEconomicFactId',
        ) {
+    if (expectedDueDate == null && expectedDueDateCertainty != null) {
+      throw ArgumentError(
+        'expectedDueDateCertainty must be null when expectedDueDate is absent',
+      );
+    }
     if (knowledgeState == ExpectedExpenseKnowledgeState.knownUnpaid &&
         knowledgeSource == ExpectedExpenseKnowledgeSource.legacyUnspecified) {
       throw ArgumentError.value(
@@ -201,6 +214,10 @@ class ExpectedExpenseOccurrence {
       source: expectedDueDateSource,
       dateField: 'expectedDueDate',
       sourceField: 'expectedDueDateSource',
+    );
+    _validateDueDateCertainty(
+      date: expectedDueDate,
+      certainty: this.expectedDueDateCertainty,
     );
     if (expectedIssueDate != null &&
         expectedDueDate != null &&
@@ -253,6 +270,7 @@ class ExpectedExpenseOccurrence {
     Object? expectedIssueDateSource = _preserveValue,
     Object? expectedDueDate = _preserveValue,
     Object? expectedDueDateSource = _preserveValue,
+    Object? expectedDueDateCertainty = _preserveValue,
     Object? expectedPaymentWindow = _preserveValue,
     double? expectedAmount,
     ExpenseEstimationMethod? estimationMethod,
@@ -280,6 +298,12 @@ class ExpectedExpenseOccurrence {
     expectedDueDateSource: identical(expectedDueDateSource, _preserveValue)
         ? this.expectedDueDateSource
         : expectedDueDateSource as ExpectedExpenseDateSource?,
+    expectedDueDateCertainty:
+        !identical(expectedDueDate, _preserveValue) && expectedDueDate == null
+        ? null
+        : identical(expectedDueDateCertainty, _preserveValue)
+        ? this.expectedDueDateCertainty
+        : expectedDueDateCertainty as ExpectedExpenseDateCertainty?,
     expectedPaymentWindow: identical(expectedPaymentWindow, _preserveValue)
         ? this.expectedPaymentWindow
         : expectedPaymentWindow as ExpectedPaymentWindow?,
@@ -307,6 +331,7 @@ class ExpectedExpenseOccurrence {
     'expectedIssueDateSource': expectedIssueDateSource?.name,
     'expectedDueDate': expectedDueDate?.toIso8601String(),
     'expectedDueDateSource': expectedDueDateSource?.name,
+    'expectedDueDateCertainty': expectedDueDateCertainty?.name,
     'expectedPaymentWindow': expectedPaymentWindow?.toJson(),
     'expectedAmount': expectedAmount,
     'estimationMethod': estimationMethod.name,
@@ -329,6 +354,10 @@ class ExpectedExpenseOccurrence {
     final dueSource = _dateSourceFromJson(
       json,
       'expectedDueDateSource',
+      datePresent: dueDate != null,
+    );
+    final dueCertainty = _dueDateCertaintyFromJson(
+      json,
       datePresent: dueDate != null,
     );
     final rawWindow = json['expectedPaymentWindow'];
@@ -388,6 +417,7 @@ class ExpectedExpenseOccurrence {
       expectedIssueDateSource: issueSource,
       expectedDueDate: dueDate,
       expectedDueDateSource: dueSource,
+      expectedDueDateCertainty: dueCertainty,
       expectedPaymentWindow: rawWindow == null
           ? null
           : ExpectedPaymentWindow.fromJson(
@@ -421,6 +451,41 @@ class ExpectedExpenseOccurrence {
       resolvedEconomicFactId: resolvedFact as String?,
     );
   }
+}
+
+void _validateDueDateCertainty({
+  required DateTime? date,
+  required ExpectedExpenseDateCertainty? certainty,
+}) {
+  if (date != null && certainty == null) {
+    throw ArgumentError(
+      'expectedDueDateCertainty is required when expectedDueDate is present',
+    );
+  }
+  if (date == null && certainty != null) {
+    throw ArgumentError(
+      'expectedDueDateCertainty must be null when expectedDueDate is absent',
+    );
+  }
+}
+
+ExpectedExpenseDateCertainty? _dueDateCertaintyFromJson(
+  Map<String, dynamic> json, {
+  required bool datePresent,
+}) {
+  final raw = json['expectedDueDateCertainty'];
+  if (raw == null) {
+    return datePresent ? ExpectedExpenseDateCertainty.legacyUnspecified : null;
+  }
+  if (raw is! String) {
+    throw const FormatException(
+      'expectedDueDateCertainty must be a string or null',
+    );
+  }
+  for (final value in ExpectedExpenseDateCertainty.values) {
+    if (value.name == raw) return value;
+  }
+  throw FormatException('Unknown expectedDueDateCertainty: $raw');
 }
 
 const Object _preserveValue = Object();

@@ -74,6 +74,125 @@ void main() {
       );
     });
 
+    test('round-trips estimated and known due-date certainty', () {
+      for (final certainty in [
+        ExpectedExpenseDateCertainty.estimated,
+        ExpectedExpenseDateCertainty.known,
+      ]) {
+        final restored = ExpectedExpenseOccurrence.fromJson(
+          _occurrence(
+            expectedDueDate: DateTime(2026, 11, 14),
+            expectedDueDateSource: ExpectedExpenseDateSource.explicit,
+            expectedDueDateCertainty: certainty,
+          ).toJson(),
+        );
+
+        expect(restored.expectedDueDateCertainty, certainty);
+        expect(
+          restored.expectedDueDateSource,
+          ExpectedExpenseDateSource.explicit,
+        );
+      }
+    });
+
+    test('legacy due date without certainty remains unspecified', () {
+      final json = _occurrence(
+        expectedDueDate: DateTime(2026, 11, 14),
+        expectedDueDateSource: ExpectedExpenseDateSource.explicit,
+      ).toJson()..remove('expectedDueDateCertainty');
+
+      final restored = ExpectedExpenseOccurrence.fromJson(json);
+
+      expect(
+        restored.expectedDueDateCertainty,
+        ExpectedExpenseDateCertainty.legacyUnspecified,
+      );
+    });
+
+    test('invalid due-date certainty fails explicitly', () {
+      final json = _occurrence(
+        expectedDueDate: DateTime(2026, 11, 14),
+        expectedDueDateSource: ExpectedExpenseDateSource.explicit,
+      ).toJson()..['expectedDueDateCertainty'] = 'probably';
+
+      expect(
+        () => ExpectedExpenseOccurrence.fromJson(json),
+        throwsFormatException,
+      );
+    });
+
+    test('absent due date has no certainty', () {
+      final occurrence = _occurrence();
+
+      expect(occurrence.expectedDueDate, isNull);
+      expect(occurrence.expectedDueDateCertainty, isNull);
+      expect(occurrence.toJson()['expectedDueDateCertainty'], isNull);
+      expect(
+        () => _occurrence(
+          expectedDueDateCertainty: ExpectedExpenseDateCertainty.known,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('due-date certainty is independent from knowledge state', () {
+      final forecastEstimated = _occurrence(
+        expectedDueDate: DateTime(2026, 11, 14),
+        expectedDueDateSource: ExpectedExpenseDateSource.explicit,
+        expectedDueDateCertainty: ExpectedExpenseDateCertainty.estimated,
+      );
+      final forecastKnown = _occurrence(
+        expectedDueDate: DateTime(2026, 11, 14),
+        expectedDueDateSource: ExpectedExpenseDateSource.explicit,
+        expectedDueDateCertainty: ExpectedExpenseDateCertainty.known,
+      );
+      final knownUnpaid = _occurrence(
+        knowledgeState: ExpectedExpenseKnowledgeState.knownUnpaid,
+        knowledgeSource: ExpectedExpenseKnowledgeSource.userConfirmed,
+        expectedDueDate: DateTime(2026, 11, 14),
+        expectedDueDateSource: ExpectedExpenseDateSource.explicit,
+        expectedDueDateCertainty: ExpectedExpenseDateCertainty.known,
+      );
+
+      expect(
+        forecastEstimated.knowledgeState,
+        ExpectedExpenseKnowledgeState.forecast,
+      );
+      expect(
+        forecastKnown.knowledgeState,
+        ExpectedExpenseKnowledgeState.forecast,
+      );
+      expect(
+        knownUnpaid.knowledgeState,
+        ExpectedExpenseKnowledgeState.knownUnpaid,
+      );
+    });
+
+    test('copyWith updates and preserves due-date certainty', () {
+      final estimated = _occurrence(
+        expectedDueDate: DateTime(2026, 11, 14),
+        expectedDueDateSource: ExpectedExpenseDateSource.explicit,
+        expectedDueDateCertainty: ExpectedExpenseDateCertainty.estimated,
+      );
+
+      final known = estimated.copyWith(
+        expectedDueDate: DateTime(2026, 11, 20),
+        expectedDueDateCertainty: ExpectedExpenseDateCertainty.known,
+      );
+      final preserved = known.copyWith(expectedAmount: 60);
+
+      expect(known.occurrenceId, estimated.occurrenceId);
+      expect(known.expectedDueDate, DateTime(2026, 11, 20));
+      expect(
+        known.expectedDueDateCertainty,
+        ExpectedExpenseDateCertainty.known,
+      );
+      expect(
+        preserved.expectedDueDateCertainty,
+        ExpectedExpenseDateCertainty.known,
+      );
+    });
+
     test(
       'copyWith promotes forecast to known-unpaid without changing identity',
       () {
@@ -132,6 +251,7 @@ void main() {
 
       expect(copied.expectedDueDate, isNull);
       expect(copied.expectedDueDateSource, isNull);
+      expect(copied.expectedDueDateCertainty, isNull);
       expect(copied.expectedIssueDate, original.expectedIssueDate);
     });
 
@@ -645,6 +765,7 @@ ExpectedExpenseOccurrence _occurrence({
   ExpectedExpenseDateSource? issueDateSource,
   DateTime? expectedDueDate,
   ExpectedExpenseDateSource? expectedDueDateSource,
+  ExpectedExpenseDateCertainty? expectedDueDateCertainty,
   ExpectedPaymentWindow? paymentWindow,
   bool omitDefaultIssueDate = false,
   double expectedAmount = 59.63,
@@ -672,6 +793,7 @@ ExpectedExpenseOccurrence _occurrence({
           : ExpectedExpenseDateSource.explicit),
   expectedDueDate: expectedDueDate,
   expectedDueDateSource: expectedDueDateSource,
+  expectedDueDateCertainty: expectedDueDateCertainty,
   expectedPaymentWindow: paymentWindow,
   expectedAmount: expectedAmount,
   estimationMethod: estimationMethod,
