@@ -16,6 +16,7 @@ import '../logic/spese/spese_mutation_coordinator.dart';
 import '../logic/spese/expense_replacement_coordinator.dart';
 import '../logic/spese/expense_replacement_persistence.dart';
 import '../logic/finance/composite_economic_operation_coordinator.dart';
+import '../logic/finance/expected_expense_update_coordinator.dart';
 import '../models/expected_expense_occurrence.dart';
 import '../models/expense_relationship.dart';
 import '../models/composite_economic_operation.dart';
@@ -25,6 +26,7 @@ import '../models/spese_command.dart';
 import '../models/spese_snapshot.dart';
 import '../utils/euro_formatter.dart';
 import 'expected_expense_from_real_expense_page.dart';
+import 'expected_expense_completion_page.dart';
 
 const _speseCommandBuilder = SpeseCommandBuilder();
 
@@ -2030,6 +2032,13 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
     return date == null ? 'non disponibile' : _formatMovementDate(date);
   }
 
+  String _certaintyLabel(ExpectedExpenseDateCertainty? certainty) =>
+      switch (certainty) {
+        ExpectedExpenseDateCertainty.estimated => 'stimata',
+        ExpectedExpenseDateCertainty.known => 'conosciuta',
+        _ => 'non qualificata',
+      };
+
   SpeseCommand _existingMovementCommand(
     RealExpense expense,
     SpeseCommandAction action,
@@ -2122,6 +2131,27 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                       'Importo previsto: ${EuroFormatter.format(value.occurrence.expectedAmount)} '
                                       '· stima provvisoria',
                                     ),
+                                    if (value.occurrence.expectedDueDate
+                                        case final dueDate?)
+                                      Text(
+                                        'Scadenza ${_certaintyLabel(value.occurrence.expectedDueDateCertainty)}: '
+                                        '${_formatMovementDate(dueDate)}',
+                                      ),
+                                    if (value
+                                            .relationship
+                                            .manualPaymentPreference
+                                        case final preference?)
+                                      Text(
+                                        'Preferenza abituale: dal giorno '
+                                        '${preference.preferredStartDayOfMonth}',
+                                      ),
+                                    if (value.occurrence.expectedPaymentWindow
+                                        case final window?)
+                                      Text(
+                                        'Finestra prevista: '
+                                        '${_formatMovementDate(window.start)} – '
+                                        '${_formatMovementDate(window.end)}',
+                                      ),
                                   ],
                                 ],
                               ),
@@ -2164,6 +2194,47 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                     },
                                     icon: const Icon(Icons.event_repeat),
                                     label: const Text('Prevedi le prossime'),
+                                  ),
+                                if (_prediction(expense) case final value?)
+                                  ElevatedButton.icon(
+                                    onPressed: () async {
+                                      Navigator.of(dialogContext).pop();
+                                      final result = await Navigator.of(context)
+                                          .push<
+                                            ExpectedExpenseCompletionResult
+                                          >(
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  ExpectedExpenseCompletionPage(
+                                                    financeStore: financeStore,
+                                                    relationshipId: value
+                                                        .relationship
+                                                        .relationshipId,
+                                                    occurrenceId: value
+                                                        .occurrence
+                                                        .occurrenceId,
+                                                  ),
+                                            ),
+                                          );
+                                      if (!context.mounted || result == null) {
+                                        return;
+                                      }
+                                      final message =
+                                          result.requiresExplicitChoice
+                                          ? 'Previsione salvata. La preferenza abituale cade dopo questa scadenza: per questa volta serve una scelta specifica.'
+                                          : result.outcome ==
+                                                ExpectedExpenseUpdateOutcome
+                                                    .unchanged
+                                          ? 'Previsione già aggiornata.'
+                                          : 'Previsione aggiornata.';
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(content: Text(message)),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.edit_calendar),
+                                    label: const Text('Completa previsione'),
                                   ),
                                 if (expense.operationMetadata != null)
                                   const Padding(

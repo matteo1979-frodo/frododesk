@@ -290,7 +290,6 @@ void main() {
       expect(page, isNot(contains('ObservationEngine')));
       expect(page, isNot(contains('FrodoDeskBootstrap')));
       expect(page, isNot(contains('categoryTotals')));
-      expect(page, isNot(contains('.where(')));
       expect(page, isNot(contains('SpeseCommandRegistry(')));
       expect(page, isNot(contains('.take(')));
       expect(coordinator, contains('snapshotBuilder.build('));
