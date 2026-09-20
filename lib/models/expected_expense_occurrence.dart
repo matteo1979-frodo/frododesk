@@ -134,6 +134,7 @@ class ExpectedExpenseOccurrence {
   final ExpenseEstimateConfidence confidence;
   final bool provisional;
   final ExpenseRelationshipPaymentConfiguration expectedPaymentConfiguration;
+  final PaymentExecutionMode paymentExecutionMode;
   final FinanceSubject expectedSubject;
   final String? resolvedEconomicFactId;
 
@@ -156,6 +157,7 @@ class ExpectedExpenseOccurrence {
     required this.confidence,
     required this.provisional,
     required this.expectedPaymentConfiguration,
+    this.paymentExecutionMode = PaymentExecutionMode.unknown,
     required this.expectedSubject,
     String? resolvedEconomicFactId,
   }) : occurrenceId = _requiredText(occurrenceId, 'occurrenceId'),
@@ -282,6 +284,7 @@ class ExpectedExpenseOccurrence {
     ExpenseEstimateConfidence? confidence,
     bool? provisional,
     ExpenseRelationshipPaymentConfiguration? expectedPaymentConfiguration,
+    PaymentExecutionMode? paymentExecutionMode,
     FinanceSubject? expectedSubject,
     Object? resolvedEconomicFactId = _preserveValue,
   }) => ExpectedExpenseOccurrence(
@@ -322,6 +325,7 @@ class ExpectedExpenseOccurrence {
     provisional: provisional ?? this.provisional,
     expectedPaymentConfiguration:
         expectedPaymentConfiguration ?? this.expectedPaymentConfiguration,
+    paymentExecutionMode: paymentExecutionMode ?? this.paymentExecutionMode,
     expectedSubject: expectedSubject ?? this.expectedSubject,
     resolvedEconomicFactId: identical(resolvedEconomicFactId, _preserveValue)
         ? this.resolvedEconomicFactId
@@ -347,6 +351,7 @@ class ExpectedExpenseOccurrence {
     'confidence': confidence.name,
     'provisional': provisional,
     'expectedPaymentConfiguration': expectedPaymentConfiguration.toJson(),
+    'paymentExecutionMode': paymentExecutionMode.name,
     'expectedSubject': expectedSubject.name,
     'resolvedEconomicFactId': resolvedEconomicFactId,
   };
@@ -459,6 +464,13 @@ class ExpectedExpenseOccurrence {
           ExpenseRelationshipPaymentConfiguration.fromJson(
             Map<String, dynamic>.from(rawPayment),
           ),
+      paymentExecutionMode: _optionalEnumValue(
+        json,
+        'paymentExecutionMode',
+        PaymentExecutionMode.values,
+        (value) => value.name,
+        PaymentExecutionMode.unknown,
+      ),
       expectedSubject: _enumValue(
         json,
         'expectedSubject',

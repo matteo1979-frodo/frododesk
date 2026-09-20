@@ -21,10 +21,12 @@ class ExpectedExpenseProjection {
   final FinanceSubject relationshipSubject;
   final ExpenseRelationshipPaymentConfiguration
   relationshipPaymentConfiguration;
+  final PaymentExecutionMode relationshipPaymentExecutionMode;
   final ManualPaymentPreference? manualPaymentPreference;
 
   final FinanceSubject expectedSubject;
   final ExpenseRelationshipPaymentConfiguration expectedPaymentConfiguration;
+  final PaymentExecutionMode occurrencePaymentExecutionMode;
 
   final double expectedAmount;
   final bool provisional;
@@ -54,9 +56,11 @@ class ExpectedExpenseProjection {
     required this.periodicity,
     required this.relationshipSubject,
     required this.relationshipPaymentConfiguration,
+    required this.relationshipPaymentExecutionMode,
     required this.manualPaymentPreference,
     required this.expectedSubject,
     required this.expectedPaymentConfiguration,
+    required this.occurrencePaymentExecutionMode,
     required this.expectedAmount,
     required this.provisional,
     required this.confidence,

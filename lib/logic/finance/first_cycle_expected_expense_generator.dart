@@ -49,6 +49,7 @@ class FirstCycleExpectedExpenseGenerator {
         method: payment.method,
         expectedBalanceId: payment.expectedBalanceId,
       ),
+      paymentExecutionMode: relationship.paymentExecutionMode,
       expectedSubject: relationship.subject,
     );
   }

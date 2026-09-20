@@ -33,9 +33,12 @@ class ExpectedExpenseReader {
           periodicity: relationship.periodicity,
           relationshipSubject: relationship.subject,
           relationshipPaymentConfiguration: relationship.paymentConfiguration,
+          relationshipPaymentExecutionMode:
+              relationship.paymentExecutionMode,
           manualPaymentPreference: relationship.manualPaymentPreference,
           expectedSubject: occurrence.expectedSubject,
           expectedPaymentConfiguration: occurrence.expectedPaymentConfiguration,
+          occurrencePaymentExecutionMode: occurrence.paymentExecutionMode,
           expectedAmount: occurrence.expectedAmount,
           provisional: occurrence.provisional,
           confidence: occurrence.confidence,

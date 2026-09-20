@@ -6,6 +6,13 @@ const _preserveManualPaymentPreference = Object();
 
 enum ExpenseRelationshipStatus { active, terminated }
 
+enum PaymentExecutionMode {
+  unknown,
+  requiresUserAction,
+  automatic,
+  scheduled,
+}
+
 /// The current payment configuration of a continuing expense relationship.
 ///
 /// This is neither a payment nor a bank mandate. It only identifies the
@@ -147,6 +154,7 @@ class ExpenseRelationship {
   final ExpenseRelationshipStatus status;
   final ExpenseRelationshipPeriodicity periodicity;
   final ExpenseRelationshipPaymentConfiguration paymentConfiguration;
+  final PaymentExecutionMode paymentExecutionMode;
   final ManualPaymentPreference? manualPaymentPreference;
 
   ExpenseRelationship({
@@ -157,6 +165,7 @@ class ExpenseRelationship {
     required this.status,
     required this.periodicity,
     required this.paymentConfiguration,
+    this.paymentExecutionMode = PaymentExecutionMode.unknown,
     this.manualPaymentPreference,
   }) : relationshipId = _requiredText(relationshipId, 'relationshipId'),
        service = _requiredText(service, 'service'),
@@ -168,6 +177,7 @@ class ExpenseRelationship {
     ExpenseRelationshipStatus? status,
     ExpenseRelationshipPeriodicity? periodicity,
     ExpenseRelationshipPaymentConfiguration? paymentConfiguration,
+    PaymentExecutionMode? paymentExecutionMode,
     Object? manualPaymentPreference = _preserveManualPaymentPreference,
   }) => ExpenseRelationship(
     relationshipId: relationshipId,
@@ -177,6 +187,7 @@ class ExpenseRelationship {
     status: status ?? this.status,
     periodicity: periodicity ?? this.periodicity,
     paymentConfiguration: paymentConfiguration ?? this.paymentConfiguration,
+    paymentExecutionMode: paymentExecutionMode ?? this.paymentExecutionMode,
     manualPaymentPreference:
         identical(manualPaymentPreference, _preserveManualPaymentPreference)
         ? this.manualPaymentPreference
@@ -191,6 +202,7 @@ class ExpenseRelationship {
     'status': status.name,
     'periodicity': periodicity.toJson(),
     'paymentConfiguration': paymentConfiguration.toJson(),
+    'paymentExecutionMode': paymentExecutionMode.name,
     'manualPaymentPreference': manualPaymentPreference?.toJson(),
   };
 
@@ -238,6 +250,13 @@ class ExpenseRelationship {
           ExpenseRelationshipPaymentConfiguration.fromJson(
             Map<String, dynamic>.from(payment),
           ),
+      paymentExecutionMode: _optionalEnumValue(
+        json,
+        'paymentExecutionMode',
+        PaymentExecutionMode.values,
+        (value) => value.name,
+        PaymentExecutionMode.unknown,
+      ),
       manualPaymentPreference: manualPaymentPreference == null
           ? null
           : ManualPaymentPreference.fromJson(
@@ -245,6 +264,22 @@ class ExpenseRelationship {
             ),
     );
   }
+}
+
+T _optionalEnumValue<T>(
+  Map<String, dynamic> json,
+  String key,
+  List<T> values,
+  String Function(T value) nameOf,
+  T legacyValue,
+) {
+  final raw = json[key];
+  if (raw == null) return legacyValue;
+  if (raw is! String) throw FormatException('$key must be a string');
+  for (final value in values) {
+    if (nameOf(value) == raw) return value;
+  }
+  throw FormatException('Unknown $key: $raw');
 }
 
 String _requiredText(String value, String field) {
