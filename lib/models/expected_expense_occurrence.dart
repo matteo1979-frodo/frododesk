@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import 'expense_relationship.dart';
 import 'finance_recurring_item.dart';
+import 'planned_economic_impact.dart';
 
 enum ExpectedExpenseOccurrenceStatus { pending, resolved, cancelled }
 
@@ -126,6 +127,7 @@ class ExpectedExpenseOccurrence {
   final ExpectedExpenseDateSource? expectedDueDateSource;
   final ExpectedExpenseDateCertainty? expectedDueDateCertainty;
   final ExpectedPaymentWindow? expectedPaymentWindow;
+  final PlannedEconomicImpact? plannedEconomicImpact;
   final double expectedAmount;
   final ExpenseEstimationMethod estimationMethod;
   final UnmodifiableListView<String> evidenceEconomicFactIds;
@@ -147,6 +149,7 @@ class ExpectedExpenseOccurrence {
     this.expectedDueDateSource,
     ExpectedExpenseDateCertainty? expectedDueDateCertainty,
     this.expectedPaymentWindow,
+    this.plannedEconomicImpact,
     required this.expectedAmount,
     required this.estimationMethod,
     List<String> evidenceEconomicFactIds = const [],
@@ -272,6 +275,7 @@ class ExpectedExpenseOccurrence {
     Object? expectedDueDateSource = _preserveValue,
     Object? expectedDueDateCertainty = _preserveValue,
     Object? expectedPaymentWindow = _preserveValue,
+    Object? plannedEconomicImpact = _preserveValue,
     double? expectedAmount,
     ExpenseEstimationMethod? estimationMethod,
     List<String>? evidenceEconomicFactIds,
@@ -307,6 +311,9 @@ class ExpectedExpenseOccurrence {
     expectedPaymentWindow: identical(expectedPaymentWindow, _preserveValue)
         ? this.expectedPaymentWindow
         : expectedPaymentWindow as ExpectedPaymentWindow?,
+    plannedEconomicImpact: identical(plannedEconomicImpact, _preserveValue)
+        ? this.plannedEconomicImpact
+        : plannedEconomicImpact as PlannedEconomicImpact?,
     expectedAmount: expectedAmount ?? this.expectedAmount,
     estimationMethod: estimationMethod ?? this.estimationMethod,
     evidenceEconomicFactIds:
@@ -333,6 +340,7 @@ class ExpectedExpenseOccurrence {
     'expectedDueDateSource': expectedDueDateSource?.name,
     'expectedDueDateCertainty': expectedDueDateCertainty?.name,
     'expectedPaymentWindow': expectedPaymentWindow?.toJson(),
+    'plannedEconomicImpact': plannedEconomicImpact?.toJson(),
     'expectedAmount': expectedAmount,
     'estimationMethod': estimationMethod.name,
     'evidenceEconomicFactIds': evidenceEconomicFactIds.toList(),
@@ -363,6 +371,10 @@ class ExpectedExpenseOccurrence {
     final rawWindow = json['expectedPaymentWindow'];
     if (rawWindow != null && rawWindow is! Map) {
       throw const FormatException('expectedPaymentWindow must be an object');
+    }
+    final rawPlannedImpact = json['plannedEconomicImpact'];
+    if (rawPlannedImpact != null && rawPlannedImpact is! Map) {
+      throw const FormatException('plannedEconomicImpact must be an object');
     }
     final rawEvidence = json['evidenceEconomicFactIds'];
     if (rawEvidence is! List || rawEvidence.any((item) => item is! String)) {
@@ -422,6 +434,11 @@ class ExpectedExpenseOccurrence {
           ? null
           : ExpectedPaymentWindow.fromJson(
               Map<String, dynamic>.from(rawWindow),
+            ),
+      plannedEconomicImpact: rawPlannedImpact == null
+          ? null
+          : PlannedEconomicImpact.fromJson(
+              Map<String, dynamic>.from(rawPlannedImpact),
             ),
       expectedAmount: expectedAmount.toDouble(),
       estimationMethod: _enumValue(

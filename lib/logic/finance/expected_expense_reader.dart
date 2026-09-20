@@ -47,6 +47,7 @@ class ExpectedExpenseReader {
           expectedDueDateSource: occurrence.expectedDueDateSource,
           expectedDueDateCertainty: occurrence.expectedDueDateCertainty,
           expectedPaymentWindow: occurrence.expectedPaymentWindow,
+          plannedEconomicImpact: occurrence.plannedEconomicImpact,
           status: occurrence.status,
           knowledgeState: occurrence.knowledgeState,
           knowledgeSource: occurrence.knowledgeSource,

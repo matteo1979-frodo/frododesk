@@ -6,6 +6,7 @@ import 'package:frododesk/models/expected_expense_occurrence.dart';
 import 'package:frododesk/models/finance_category_template.dart';
 import 'package:frododesk/models/finance_recurring_item.dart';
 import 'package:frododesk/models/manual_payment_preference.dart';
+import 'package:frododesk/models/planned_economic_impact.dart';
 
 void main() {
   const reader = ExpectedExpenseReader();
@@ -34,6 +35,11 @@ void main() {
         resolvedEconomicFactId: 'economic_fact_resolved',
         issueDate: DateTime(2026, 10, 4),
         dueDate: DateTime(2026, 10, 18),
+        plannedEconomicImpact: PlannedEconomicImpact(
+          start: DateTime(2026, 12, 5),
+          end: DateTime(2026, 12, 5),
+          origin: PlannedEconomicImpactOrigin.userDecision,
+        ),
         paymentWindow: ExpectedPaymentWindow(
           start: DateTime(2026, 10, 12),
           end: DateTime(2026, 10, 18),
@@ -109,6 +115,11 @@ void main() {
         ExpectedExpenseDateCertainty.known,
       );
       expect(projection.expectedPaymentWindow?.start, DateTime(2026, 10, 12));
+      expect(projection.plannedEconomicImpact?.start, DateTime(2026, 12, 5));
+      expect(
+        projection.plannedEconomicImpact?.origin,
+        PlannedEconomicImpactOrigin.userDecision,
+      );
       expect(projection.status, ExpectedExpenseOccurrenceStatus.resolved);
       expect(
         projection.knowledgeState,
@@ -308,6 +319,7 @@ ExpectedExpenseOccurrence _occurrence({
   DateTime? issueDate,
   DateTime? dueDate,
   ExpectedPaymentWindow? paymentWindow,
+  PlannedEconomicImpact? plannedEconomicImpact,
 }) => ExpectedExpenseOccurrence(
   occurrenceId: id,
   relationshipId: relationshipId,
@@ -329,6 +341,7 @@ ExpectedExpenseOccurrence _occurrence({
       ? null
       : ExpectedExpenseDateCertainty.known,
   expectedPaymentWindow: paymentWindow,
+  plannedEconomicImpact: plannedEconomicImpact,
   expectedAmount: 123.45,
   estimationMethod: ExpenseEstimationMethod.personalHistory,
   evidenceEconomicFactIds: const ['fact_a', 'fact_b'],

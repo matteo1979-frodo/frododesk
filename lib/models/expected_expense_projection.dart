@@ -4,6 +4,7 @@ import 'expense_relationship.dart';
 import 'expected_expense_occurrence.dart';
 import 'finance_recurring_item.dart';
 import 'manual_payment_preference.dart';
+import 'planned_economic_impact.dart';
 
 /// Immutable read model joining one expected occurrence to its relationship.
 ///
@@ -37,6 +38,7 @@ class ExpectedExpenseProjection {
   final ExpectedExpenseDateSource? expectedDueDateSource;
   final ExpectedExpenseDateCertainty? expectedDueDateCertainty;
   final ExpectedPaymentWindow? expectedPaymentWindow;
+  final PlannedEconomicImpact? plannedEconomicImpact;
 
   final ExpectedExpenseOccurrenceStatus status;
   final ExpectedExpenseKnowledgeState knowledgeState;
@@ -66,6 +68,7 @@ class ExpectedExpenseProjection {
     required this.expectedDueDateSource,
     required this.expectedDueDateCertainty,
     required this.expectedPaymentWindow,
+    required this.plannedEconomicImpact,
     required this.status,
     required this.knowledgeState,
     required this.knowledgeSource,
