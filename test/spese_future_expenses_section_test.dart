@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/logic/finance/expected_expense_persistence.dart';
+import 'package:frododesk/logic/persistence_store.dart';
 import 'package:frododesk/models/expense_relationship.dart';
 import 'package:frododesk/models/expected_expense_occurrence.dart';
 import 'package:frododesk/models/finance_category_template.dart';
@@ -188,41 +189,125 @@ void main() {
     expect(find.text('Scadenza certa: 01/01/2099'), findsOneWidget);
   });
 
-  testWidgets('future cards are read-only and do not expose recurring data', (
-    tester,
-  ) async {
-    await _pump(tester, _aggregate([_fixture('Read only')]));
+  testWidgets(
+    'future cards open completion using the selected projection IDs',
+    (tester) async {
+      await _pump(
+        tester,
+        _aggregate([
+          _fixture('Prima', mode: PaymentExecutionMode.automatic),
+          _fixture('Seconda', mode: PaymentExecutionMode.scheduled),
+        ]),
+      );
 
-    final title = find.textContaining('Read only · Provider Read only');
-    expect(title, findsOneWidget);
-    expect(
-      find.ancestor(of: title, matching: find.byType(InkWell)),
-      findsNothing,
-    );
-    expect(find.byIcon(Icons.edit), findsNothing);
-    expect(find.byIcon(Icons.delete), findsNothing);
+      await tester.tap(find.text('Seconda · Provider Seconda'));
+      await tester.pumpAndSettle();
 
-    final page = File('lib/screens/spese_page.dart').readAsStringSync();
-    expect(page, isNot(contains('recurringItems')));
-  });
+      expect(find.text('Completa previsione'), findsOneWidget);
+      final dropdown = tester
+          .widget<DropdownButtonFormField<PaymentExecutionMode>>(
+            find.byKey(const Key('completion-payment-execution-mode')),
+          );
+      expect(dropdown.initialValue, PaymentExecutionMode.scheduled);
+      expect(find.byIcon(Icons.edit), findsNothing);
+      expect(find.byIcon(Icons.delete), findsNothing);
+
+      final page = File('lib/screens/spese_page.dart').readAsStringSync();
+      expect(page, isNot(contains('recurringItems')));
+      expect(page, contains('expense.source.relationshipId'));
+      expect(page, contains('expense.source.occurrenceId'));
+    },
+  );
+
+  testWidgets(
+    'Hera-like completion rebuilds the card from FutureExpenseReader',
+    (tester) async {
+      final aggregate = _aggregate([
+        _fixture(
+          'Acqua',
+          provider: 'Hera',
+          expectedAmount: 59.63,
+          dueDate: DateTime(2026, 11, 14),
+          dueCertainty: ExpectedExpenseDateCertainty.estimated,
+          paymentWindow: _window(
+            ExpectedPaymentWindowSemantic.userPreferred,
+            DateTime(2026, 11, 5),
+            DateTime(2026, 11, 14),
+          ),
+        ),
+      ]);
+      final store = await _pump(tester, aggregate);
+
+      expect(
+        find.text('Impatto economico non ancora collocabile'),
+        findsOneWidget,
+      );
+      expect(find.text('Modalità da definire'), findsOneWidget);
+
+      await tester.tap(find.text('Acqua · Hera'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('completion-preferred-day')),
+        '5',
+      );
+      final mode = find.byKey(const Key('completion-payment-execution-mode'));
+      await tester.ensureVisible(mode);
+      await tester.tap(mode);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Richiede una mia azione').last);
+      await tester.pumpAndSettle();
+      final planned = find.byKey(const Key('completion-planned-impact-date'));
+      await tester.ensureVisible(planned);
+      await tester.tap(planned);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.chevron_right));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('5').last);
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      final save = find.byKey(const Key('save-completed-expected-expense'));
+      await tester.ensureVisible(save);
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Acqua · Hera'), findsOneWidget);
+      expect(find.text('Scadenza stimata: 14/11/2026'), findsOneWidget);
+      expect(find.text('Impatto pianificato: 05/12/2026'), findsOneWidget);
+      expect(find.text('Richiede pagamento'), findsOneWidget);
+      final occurrence = store.expectedExpenseAggregate.occurrences.single;
+      expect(occurrence.expectedDueDate, DateTime(2026, 11, 14));
+      expect(
+        occurrence.expectedPaymentWindow?.semantic,
+        ExpectedPaymentWindowSemantic.userPreferred,
+      );
+    },
+  );
 }
 
-Future<void> _pump(
+Future<FinanceStore> _pump(
   WidgetTester tester,
   ExpectedExpenseAggregate aggregate,
 ) async {
+  final store = FinanceStore(
+    initialExpectedExpenseAggregate: aggregate,
+    expectedExpensePersistence: ExpectedExpensePersistence(
+      saveVerified: (_, value) async =>
+          PersistenceWriteVerification(backendAccepted: true, readBack: value),
+    ),
+  );
   await tester.binding.setSurfaceSize(const Size(1400, 5000));
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(
     MaterialApp(
       home: SpesePage(
-        financeStore: FinanceStore(initialExpectedExpenseAggregate: aggregate),
+        financeStore: store,
         expenseStore: ExpenseStore(),
         cashWalletStore: CashWalletStore(),
       ),
     ),
   );
   await tester.pumpAndSettle();
+  return store;
 }
 
 ExpectedExpenseAggregate _aggregate(List<_Fixture> fixtures) =>
@@ -248,6 +333,7 @@ _Fixture _fixture(
       ExpectedExpenseDateCertainty.known,
   ExpectedPaymentWindow? paymentWindow,
   PlannedEconomicImpact? plannedImpact,
+  double expectedAmount = 123.45,
 }) {
   final token = service.toLowerCase().replaceAll(' ', '_');
   final relationship = ExpenseRelationship(
@@ -284,7 +370,7 @@ _Fixture _fixture(
     expectedDueDateCertainty: actualDueDate == null ? null : dueCertainty,
     expectedPaymentWindow: paymentWindow,
     plannedEconomicImpact: plannedImpact,
-    expectedAmount: 123.45,
+    expectedAmount: expectedAmount,
     estimationMethod: ExpenseEstimationMethod.manualEstimate,
     confidence: ExpenseEstimateConfidence.low,
     provisional: true,

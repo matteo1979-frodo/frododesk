@@ -6,6 +6,7 @@ import '../logic/finance/manual_payment_window_materializer.dart';
 import '../models/expense_relationship.dart';
 import '../models/expected_expense_occurrence.dart';
 import '../models/manual_payment_preference.dart';
+import '../models/planned_economic_impact.dart';
 import '../stores/finance_store.dart';
 
 class ExpectedExpenseCompletionResult {
@@ -41,6 +42,8 @@ class _ExpectedExpenseCompletionPageState
   DateTime? _dueDate;
   ExpectedExpenseDateCertainty? _certainty;
   ExpectedPaymentWindow? _existingWindow;
+  PaymentExecutionMode _paymentExecutionMode = PaymentExecutionMode.unknown;
+  PlannedEconomicImpact? _plannedEconomicImpact;
   bool _submitting = false;
   String? _loadError;
 
@@ -69,6 +72,8 @@ class _ExpectedExpenseCompletionPageState
       _ => null,
     };
     _existingWindow = occurrence.expectedPaymentWindow;
+    _paymentExecutionMode = occurrence.paymentExecutionMode;
+    _plannedEconomicImpact = occurrence.plannedEconomicImpact;
     final preferredDay =
         relationship.manualPaymentPreference?.preferredStartDayOfMonth;
     if (preferredDay != null) {
@@ -104,6 +109,24 @@ class _ExpectedExpenseCompletionPageState
       lastDate: DateTime(2100),
     );
     if (value != null && mounted) setState(() => _dueDate = value);
+  }
+
+  Future<void> _pickPlannedEconomicImpact() async {
+    final value = await showDatePicker(
+      context: context,
+      initialDate: _plannedEconomicImpact?.start ?? _dueDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (value != null && mounted) {
+      setState(() {
+        _plannedEconomicImpact = PlannedEconomicImpact(
+          start: value,
+          end: value,
+          origin: PlannedEconomicImpactOrigin.userDecision,
+        );
+      });
+    }
   }
 
   void _error(String message) {
@@ -187,6 +210,8 @@ class _ExpectedExpenseCompletionPageState
               expectedDueDateSource: ExpectedExpenseDateSource.explicit,
               expectedDueDateCertainty: certainty,
               expectedPaymentWindow: paymentWindow,
+              paymentExecutionMode: _paymentExecutionMode,
+              plannedEconomicImpact: _plannedEconomicImpact,
             ),
           );
       if (!mounted) return;
@@ -260,6 +285,68 @@ class _ExpectedExpenseCompletionPageState
                 key: const Key('completion-existing-window'),
               ),
             ],
+            const SizedBox(height: 20),
+            const Text(
+              'Come verrà pagata?',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<PaymentExecutionMode>(
+              key: const Key('completion-payment-execution-mode'),
+              initialValue: _paymentExecutionMode,
+              items: const [
+                DropdownMenuItem(
+                  value: PaymentExecutionMode.unknown,
+                  child: Text('Da definire'),
+                ),
+                DropdownMenuItem(
+                  value: PaymentExecutionMode.requiresUserAction,
+                  child: Text('Richiede una mia azione'),
+                ),
+                DropdownMenuItem(
+                  value: PaymentExecutionMode.automatic,
+                  child: Text('Automatico'),
+                ),
+                DropdownMenuItem(
+                  value: PaymentExecutionMode.scheduled,
+                  child: Text('Già programmato'),
+                ),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _paymentExecutionMode = value);
+                }
+              },
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Quando prevedi che usciranno i soldi?',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            ListTile(
+              key: const Key('completion-planned-impact-date'),
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Data pianificata'),
+              subtitle: Text(
+                _plannedEconomicImpact == null
+                    ? 'Nessuna pianificazione esplicita'
+                    : _plannedEconomicImpact!.start ==
+                          _plannedEconomicImpact!.end
+                    ? _date(_plannedEconomicImpact!.start)
+                    : '${_date(_plannedEconomicImpact!.start)} – '
+                          '${_date(_plannedEconomicImpact!.end)}',
+              ),
+              trailing: _plannedEconomicImpact == null
+                  ? null
+                  : IconButton(
+                      key: const Key('completion-clear-planned-impact'),
+                      tooltip: 'Rimuovi pianificazione',
+                      onPressed: () =>
+                          setState(() => _plannedEconomicImpact = null),
+                      icon: const Icon(Icons.clear),
+                    ),
+              onTap: _pickPlannedEconomicImpact,
+            ),
             const SizedBox(height: 20),
             ElevatedButton(
               key: const Key('save-completed-expected-expense'),

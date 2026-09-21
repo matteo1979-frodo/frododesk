@@ -304,7 +304,10 @@ class _SpesePageState extends State<SpesePage> {
                       visibleObservations: snapshot.visibleMonthObservations,
                     ),
                     const SizedBox(height: 18),
-                    _FutureExpensesSection(expenses: futureExpenses),
+                    _FutureExpensesSection(
+                      expenses: futureExpenses,
+                      onOpen: _openExpectedExpenseCompletion,
+                    ),
                     const SizedBox(height: 18),
                     const Text(
                       "Movimenti del mese corrente",
@@ -574,12 +577,30 @@ class _SpesePageState extends State<SpesePage> {
       ),
     );
   }
+
+  Future<void> _openExpectedExpenseCompletion(
+    FutureExpenseProjection expense,
+  ) async {
+    final result = await Navigator.of(context)
+        .push<ExpectedExpenseCompletionResult>(
+          MaterialPageRoute(
+            builder: (_) => ExpectedExpenseCompletionPage(
+              financeStore: widget.financeStore,
+              relationshipId: expense.source.relationshipId,
+              occurrenceId: expense.source.occurrenceId,
+            ),
+          ),
+        );
+    if (!mounted || result == null) return;
+    setState(() {});
+  }
 }
 
 class _FutureExpensesSection extends StatelessWidget {
   final List<FutureExpenseProjection> expenses;
+  final ValueChanged<FutureExpenseProjection> onOpen;
 
-  const _FutureExpensesSection({required this.expenses});
+  const _FutureExpensesSection({required this.expenses, required this.onOpen});
 
   @override
   Widget build(BuildContext context) {
@@ -606,7 +627,10 @@ class _FutureExpensesSection extends StatelessWidget {
           ...expenses.map(
             (expense) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: _FutureExpenseCard(expense: expense),
+              child: _FutureExpenseCard(
+                expense: expense,
+                onTap: () => onOpen(expense),
+              ),
             ),
           ),
       ],
@@ -616,66 +640,71 @@ class _FutureExpensesSection extends StatelessWidget {
 
 class _FutureExpenseCard extends StatelessWidget {
   final FutureExpenseProjection expense;
+  final VoidCallback onTap;
 
-  const _FutureExpenseCard({required this.expense});
+  const _FutureExpenseCard({required this.expense, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final source = expense.source;
-    return _SpeseGlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '${source.service} · ${source.provider}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${EuroFormatter.format(source.expectedAmount)} · '
-            '${_amountQuality(source)}',
-            style: const TextStyle(
-              color: Colors.white70,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _dueDateLabel(source),
-            style: const TextStyle(color: Colors.white70),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _economicImpactLabel(expense),
-            style: const TextStyle(color: Colors.white70),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _executionModeLabel(source.occurrencePaymentExecutionMode),
-            style: const TextStyle(color: Colors.white70),
-          ),
-          if (_overdueLabel(expense.overdueQualification) case final label?) ...[
-            const SizedBox(height: 4),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(22),
+      child: _SpeseGlassCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Text(
-              label,
+              '${source.service} · ${source.provider}',
               style: const TextStyle(
-                color: Color(0xFFFFB74D),
-                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
               ),
             ),
+            const SizedBox(height: 6),
+            Text(
+              '${EuroFormatter.format(source.expectedAmount)} · '
+              '${_amountQuality(source)}',
+              style: const TextStyle(
+                color: Colors.white70,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _dueDateLabel(source),
+              style: const TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _economicImpactLabel(expense),
+              style: const TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _executionModeLabel(source.occurrencePaymentExecutionMode),
+              style: const TextStyle(color: Colors.white70),
+            ),
+            if (_overdueLabel(expense.overdueQualification)
+                case final label?) ...[
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Color(0xFFFFB74D),
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
 
-  static String _amountQuality(ExpectedExpenseProjection source) => source.provisional
-      ? 'Importo stimato/provvisorio'
-      : 'Importo previsto';
+  static String _amountQuality(ExpectedExpenseProjection source) =>
+      source.provisional ? 'Importo stimato/provvisorio' : 'Importo previsto';
 
   static String _dueDateLabel(ExpectedExpenseProjection source) {
     final dueDate = source.expectedDueDate;
@@ -683,43 +712,45 @@ class _FutureExpenseCard extends StatelessWidget {
     final qualification = switch (source.expectedDueDateCertainty) {
       ExpectedExpenseDateCertainty.known => 'Scadenza certa',
       ExpectedExpenseDateCertainty.estimated => 'Scadenza stimata',
-      ExpectedExpenseDateCertainty.legacyUnspecified || null =>
-        'Scadenza non qualificata',
+      ExpectedExpenseDateCertainty.legacyUnspecified ||
+      null => 'Scadenza non qualificata',
     };
     return '$qualification: ${_formatDate(dueDate)}';
   }
 
-  static String _economicImpactLabel(FutureExpenseProjection expense) =>
-      switch (expense.economicImpactPlacement) {
-        FutureExpenseEconomicImpactPlacement.plannedEconomicImpact =>
-          'Impatto pianificato: ${_formatInterval(expense.economicImpactStart!, expense.economicImpactEnd!)}',
-        FutureExpenseEconomicImpactPlacement.expectedDebitWindow =>
-          'Addebito atteso: ${_formatInterval(expense.economicImpactStart!, expense.economicImpactEnd!)}',
-        FutureExpenseEconomicImpactPlacement.insufficient =>
-          'Impatto economico non ancora collocabile',
-      };
-
-  static String _executionModeLabel(PaymentExecutionMode mode) => switch (mode) {
-    PaymentExecutionMode.unknown => 'Modalità da definire',
-    PaymentExecutionMode.requiresUserAction => 'Richiede pagamento',
-    PaymentExecutionMode.automatic => 'Pagamento automatico',
-    PaymentExecutionMode.scheduled => 'Pagamento programmato',
+  static String _economicImpactLabel(
+    FutureExpenseProjection expense,
+  ) => switch (expense.economicImpactPlacement) {
+    FutureExpenseEconomicImpactPlacement.plannedEconomicImpact =>
+      'Impatto pianificato: ${_formatInterval(expense.economicImpactStart!, expense.economicImpactEnd!)}',
+    FutureExpenseEconomicImpactPlacement.expectedDebitWindow =>
+      'Addebito atteso: ${_formatInterval(expense.economicImpactStart!, expense.economicImpactEnd!)}',
+    FutureExpenseEconomicImpactPlacement.insufficient =>
+      'Impatto economico non ancora collocabile',
   };
+
+  static String _executionModeLabel(PaymentExecutionMode mode) =>
+      switch (mode) {
+        PaymentExecutionMode.unknown => 'Modalità da definire',
+        PaymentExecutionMode.requiresUserAction => 'Richiede pagamento',
+        PaymentExecutionMode.automatic => 'Pagamento automatico',
+        PaymentExecutionMode.scheduled => 'Pagamento programmato',
+      };
 
   static String? _overdueLabel(
     FutureExpenseOverdueQualification qualification,
   ) => switch (qualification) {
     FutureExpenseOverdueQualification.notOverdue => null,
-    FutureExpenseOverdueQualification.overdueKnown =>
-      'Scadenza certa superata',
+    FutureExpenseOverdueQualification.overdueKnown => 'Scadenza certa superata',
     FutureExpenseOverdueQualification.overdueEstimated =>
       'Data di scadenza stimata superata',
     FutureExpenseOverdueQualification.overdueUnspecifiedCertainty =>
       'Data di scadenza superata (certezza non specificata)',
   };
 
-  static String _formatInterval(DateTime start, DateTime end) =>
-      start == end ? _formatDate(start) : '${_formatDate(start)} – ${_formatDate(end)}';
+  static String _formatInterval(DateTime start, DateTime end) => start == end
+      ? _formatDate(start)
+      : '${_formatDate(start)} – ${_formatDate(end)}';
 
   static String _formatDate(DateTime value) =>
       '${value.day.toString().padLeft(2, '0')}/'

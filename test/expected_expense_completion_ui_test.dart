@@ -10,6 +10,7 @@ import 'package:frododesk/models/expected_expense_occurrence.dart';
 import 'package:frododesk/models/finance_category_template.dart';
 import 'package:frododesk/models/finance_recurring_item.dart';
 import 'package:frododesk/models/manual_payment_preference.dart';
+import 'package:frododesk/models/planned_economic_impact.dart';
 import 'package:frododesk/screens/expected_expense_completion_page.dart';
 import 'package:frododesk/stores/finance_store.dart';
 
@@ -62,6 +63,162 @@ void main() {
     expect(dropdown.initialValue, isNull);
   });
 
+  for (final mode in PaymentExecutionMode.values) {
+    testWidgets('initializes occurrence execution mode ${mode.name}', (
+      tester,
+    ) async {
+      final harness = _Harness(occurrenceMode: mode);
+
+      await tester.pumpWidget(_app(harness.store));
+
+      final dropdown = tester
+          .widget<DropdownButtonFormField<PaymentExecutionMode>>(
+            find.byKey(const Key('completion-payment-execution-mode')),
+          );
+      expect(dropdown.initialValue, mode);
+    });
+
+    testWidgets('persists occurrence execution mode ${mode.name}', (
+      tester,
+    ) async {
+      final harness = _Harness(
+        certainty: ExpectedExpenseDateCertainty.estimated,
+        preferenceDay: 5,
+        relationshipMode: PaymentExecutionMode.automatic,
+      );
+      await tester.pumpWidget(_app(harness.store));
+
+      await _chooseExecutionMode(tester, _executionModeLabel(mode));
+      await _tapSave(tester);
+
+      final aggregate = harness.store.expectedExpenseAggregate;
+      expect(aggregate.occurrences.single.paymentExecutionMode, mode);
+      expect(aggregate.occurrences.single.plannedEconomicImpact, isNull);
+      expect(
+        aggregate.relationships.single.paymentExecutionMode,
+        PaymentExecutionMode.automatic,
+      );
+    });
+  }
+
+  testWidgets('does not infer execution mode from payment method', (
+    tester,
+  ) async {
+    final harness = _Harness(paymentMethod: FinancePaymentMethod.rid);
+
+    await tester.pumpWidget(_app(harness.store));
+
+    final dropdown = tester
+        .widget<DropdownButtonFormField<PaymentExecutionMode>>(
+          find.byKey(const Key('completion-payment-execution-mode')),
+        );
+    expect(dropdown.initialValue, PaymentExecutionMode.unknown);
+  });
+
+  testWidgets(
+    'preserves an existing impact interval when only execution mode changes',
+    (tester) async {
+      final impact = PlannedEconomicImpact(
+        start: DateTime(2026, 12, 5),
+        end: DateTime(2026, 12, 7),
+        origin: PlannedEconomicImpactOrigin.userDecision,
+      );
+      final harness = _Harness(
+        certainty: ExpectedExpenseDateCertainty.estimated,
+        preferenceDay: 5,
+        occurrenceMode: PaymentExecutionMode.unknown,
+        plannedImpact: impact,
+      );
+      await tester.pumpWidget(_app(harness.store));
+
+      expect(find.text('05/12/2026 – 07/12/2026'), findsOneWidget);
+      await _chooseExecutionMode(tester, 'Richiede una mia azione');
+      await _tapSave(tester);
+
+      final occurrence =
+          harness.store.expectedExpenseAggregate.occurrences.single;
+      expect(
+        occurrence.paymentExecutionMode,
+        PaymentExecutionMode.requiresUserAction,
+      );
+      expect(occurrence.plannedEconomicImpact?.toJson(), impact.toJson());
+    },
+  );
+
+  testWidgets(
+    'selects one planned date after due date without changing due or window',
+    (tester) async {
+      final window = _window(
+        startDay: 5,
+        endDay: 14,
+        origin: ExpectedPaymentWindowOrigin.occurrenceOverride,
+      );
+      final harness = _Harness(
+        certainty: ExpectedExpenseDateCertainty.estimated,
+        preferenceDay: 5,
+        window: window,
+        occurrenceMode: PaymentExecutionMode.automatic,
+      );
+      await tester.pumpWidget(_app(harness.store));
+
+      await tester.ensureVisible(
+        find.byKey(const Key('completion-planned-impact-date')),
+      );
+      await tester.tap(find.byKey(const Key('completion-planned-impact-date')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.chevron_right));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('5').last);
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      await _tapSave(tester);
+
+      final occurrence =
+          harness.store.expectedExpenseAggregate.occurrences.single;
+      expect(occurrence.occurrenceId, 'occurrence_1');
+      expect(occurrence.relationshipId, 'relationship_1');
+      expect(occurrence.expectedDueDate, DateTime(2026, 11, 14));
+      expect(occurrence.expectedPaymentWindow?.toJson(), window.toJson());
+      expect(occurrence.paymentExecutionMode, PaymentExecutionMode.automatic);
+      expect(occurrence.evidenceEconomicFactIds, ['fact_1']);
+      expect(occurrence.plannedEconomicImpact?.start, DateTime(2026, 12, 5));
+      expect(occurrence.plannedEconomicImpact?.end, DateTime(2026, 12, 5));
+      expect(
+        occurrence.plannedEconomicImpact?.origin,
+        PlannedEconomicImpactOrigin.userDecision,
+      );
+    },
+  );
+
+  testWidgets('explicitly removes an existing planned impact', (tester) async {
+    final harness = _Harness(
+      certainty: ExpectedExpenseDateCertainty.estimated,
+      preferenceDay: 5,
+      plannedImpact: PlannedEconomicImpact(
+        start: DateTime(2026, 12, 5),
+        end: DateTime(2026, 12, 5),
+        origin: PlannedEconomicImpactOrigin.userDecision,
+      ),
+    );
+    await tester.pumpWidget(_app(harness.store));
+
+    await tester.ensureVisible(
+      find.byKey(const Key('completion-clear-planned-impact')),
+    );
+    await tester.tap(find.byKey(const Key('completion-clear-planned-impact')));
+    await _tapSave(tester);
+
+    expect(
+      harness
+          .store
+          .expectedExpenseAggregate
+          .occurrences
+          .single
+          .plannedEconomicImpact,
+      isNull,
+    );
+  });
+
   testWidgets('estimated due date and preference save one combined update', (
     tester,
   ) async {
@@ -73,8 +230,7 @@ void main() {
       find.byKey(const Key('completion-preferred-day')),
       '5',
     );
-    await tester.tap(find.byKey(const Key('save-completed-expected-expense')));
-    await tester.pumpAndSettle();
+    await _tapSave(tester);
 
     final aggregate = harness.store.expectedExpenseAggregate;
     final relationship = aggregate.relationships.single;
@@ -116,10 +272,7 @@ void main() {
         find.byKey(const Key('completion-preferred-day')),
         '5',
       );
-      await tester.tap(
-        find.byKey(const Key('save-completed-expected-expense')),
-      );
-      await tester.pumpAndSettle();
+      await _tapSave(tester);
 
       final occurrence =
           harness.store.expectedExpenseAggregate.occurrences.single;
@@ -155,8 +308,7 @@ void main() {
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
     await _chooseCertainty(tester, 'Conosciuta');
-    await tester.tap(find.byKey(const Key('save-completed-expected-expense')));
-    await tester.pumpAndSettle();
+    await _tapSave(tester);
 
     final occurrence =
         harness.store.expectedExpenseAggregate.occurrences.single;
@@ -183,8 +335,7 @@ void main() {
       find.byKey(const Key('completion-preferred-day')),
       '5',
     );
-    await tester.tap(find.byKey(const Key('save-completed-expected-expense')));
-    await tester.pumpAndSettle();
+    await _tapSave(tester);
 
     expect(
       harness
@@ -209,10 +360,7 @@ void main() {
         find.byKey(const Key('completion-preferred-day')),
         '10',
       );
-      await tester.tap(
-        find.byKey(const Key('save-completed-expected-expense')),
-      );
-      await tester.pumpAndSettle();
+      await _tapSave(tester);
 
       final aggregate = harness.store.expectedExpenseAggregate;
       expect(
@@ -239,10 +387,8 @@ void main() {
         find.byKey(const Key('completion-preferred-day')),
         '5',
       );
-      await tester.tap(
-        find.byKey(const Key('save-completed-expected-expense')),
-      );
-      await tester.pumpAndSettle();
+      await _chooseExecutionMode(tester, 'Già programmato');
+      await _tapSave(tester);
 
       expect(harness.store.expectedExpenseAggregate, same(initial));
       expect(find.textContaining('Previsione non aggiornata'), findsOneWidget);
@@ -261,8 +407,7 @@ void main() {
       '32',
     );
 
-    await tester.tap(find.byKey(const Key('save-completed-expected-expense')));
-    await tester.pump();
+    await _tapSave(tester, settle: false);
 
     expect(harness.writes, 0);
     expect(find.textContaining('compreso tra 1 e 31'), findsOneWidget);
@@ -280,8 +425,7 @@ void main() {
     );
     await tester.pumpWidget(_app(harness.store));
 
-    await tester.tap(find.byKey(const Key('save-completed-expected-expense')));
-    await tester.pumpAndSettle();
+    await _tapSave(tester);
 
     expect(harness.writes, 0);
   });
@@ -297,6 +441,7 @@ void main() {
     );
 
     final save = find.byKey(const Key('save-completed-expected-expense'));
+    await tester.ensureVisible(save);
     await tester.tap(save);
     await tester.pump();
     await tester.tap(save);
@@ -317,6 +462,33 @@ Future<void> _chooseCertainty(WidgetTester tester, String label) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> _chooseExecutionMode(WidgetTester tester, String label) async {
+  final field = find.byKey(const Key('completion-payment-execution-mode'));
+  await tester.ensureVisible(field);
+  await tester.tap(field);
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(label).last);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _tapSave(WidgetTester tester, {bool settle = true}) async {
+  final save = find.byKey(const Key('save-completed-expected-expense'));
+  await tester.ensureVisible(save);
+  await tester.tap(save);
+  if (settle) {
+    await tester.pumpAndSettle();
+  } else {
+    await tester.pump();
+  }
+}
+
+String _executionModeLabel(PaymentExecutionMode mode) => switch (mode) {
+  PaymentExecutionMode.unknown => 'Da definire',
+  PaymentExecutionMode.requiresUserAction => 'Richiede una mia azione',
+  PaymentExecutionMode.automatic => 'Automatico',
+  PaymentExecutionMode.scheduled => 'Già programmato',
+};
+
 Widget _app(FinanceStore store) => MaterialApp(
   home: ExpectedExpenseCompletionPage(
     financeStore: store,
@@ -334,6 +506,10 @@ class _Harness {
     ExpectedExpenseDateCertainty? certainty,
     int? preferenceDay,
     ExpectedPaymentWindow? window,
+    PaymentExecutionMode relationshipMode = PaymentExecutionMode.unknown,
+    PaymentExecutionMode occurrenceMode = PaymentExecutionMode.unknown,
+    PlannedEconomicImpact? plannedImpact,
+    FinancePaymentMethod paymentMethod = FinancePaymentMethod.manual,
     bool failWrites = false,
     Completer<PersistenceWriteVerification>? writeCompleter,
   }) {
@@ -350,8 +526,9 @@ class _Harness {
               type: FinanceRecurringType.monthly,
             ),
             paymentConfiguration: ExpenseRelationshipPaymentConfiguration(
-              method: FinancePaymentMethod.manual,
+              method: paymentMethod,
             ),
+            paymentExecutionMode: relationshipMode,
             manualPaymentPreference: preferenceDay == null
                 ? null
                 : ManualPaymentPreference(
@@ -368,15 +545,15 @@ class _Harness {
             expectedDueDateSource: ExpectedExpenseDateSource.explicit,
             expectedDueDateCertainty: certainty,
             expectedPaymentWindow: window,
+            plannedEconomicImpact: plannedImpact,
             expectedAmount: 42,
             estimationMethod: ExpenseEstimationMethod.firstAvailableFact,
             evidenceEconomicFactIds: const ['fact_1'],
             confidence: ExpenseEstimateConfidence.low,
             provisional: true,
             expectedPaymentConfiguration:
-                ExpenseRelationshipPaymentConfiguration(
-                  method: FinancePaymentMethod.manual,
-                ),
+                ExpenseRelationshipPaymentConfiguration(method: paymentMethod),
+            paymentExecutionMode: occurrenceMode,
             expectedSubject: FinanceSubject.matteo,
           ),
         ],
