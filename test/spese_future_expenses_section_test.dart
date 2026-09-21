@@ -196,7 +196,9 @@ void main() {
       await tester.tap(find.text('Seconda · Provider Seconda'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Completa previsione'), findsOneWidget);
+      expect(find.text('Spesa futura'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('edit-future-expense')));
+      await tester.pumpAndSettle();
       final dropdown = tester
           .widget<DropdownButtonFormField<PaymentExecutionMode>>(
             find.byKey(const Key('completion-payment-execution-mode')),
@@ -265,7 +267,7 @@ void main() {
     expect(find.textContaining('Febbraio ·'), findsNothing);
     await tester.tap(find.textContaining('Dicembre due ·'));
     await tester.pumpAndSettle();
-    expect(find.text('Completa previsione'), findsOneWidget);
+    expect(find.text('Spesa futura'), findsOneWidget);
   });
 
   testWidgets(
@@ -285,7 +287,7 @@ void main() {
       expect(find.textContaining('Con scadenza ·'), findsNothing);
       await tester.tap(find.textContaining('Senza data ·'));
       await tester.pumpAndSettle();
-      expect(find.text('Completa previsione'), findsOneWidget);
+      expect(find.text('Spesa futura'), findsOneWidget);
     },
   );
 
@@ -315,6 +317,8 @@ void main() {
       expect(find.text('Da pianificare'), findsOneWidget);
 
       await tester.tap(find.text('Acqua · Hera'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('edit-future-expense')));
       await tester.pumpAndSettle();
       await tester.enterText(
         find.byKey(const Key('completion-preferred-day')),
@@ -366,6 +370,38 @@ void main() {
       );
     },
   );
+
+  testWidgets('cancelling a future occurrence refreshes month counters', (
+    tester,
+  ) async {
+    final store = await _pump(
+      tester,
+      _aggregate([_fixture('Da annullare', dueDate: DateTime(2099, 12, 10))]),
+    );
+
+    expect(find.text('Mesi futuri'), findsOneWidget);
+    expect(find.text('1'), findsOneWidget);
+    await tester.tap(find.text('Mesi futuri'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Dicembre 2099'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Da annullare ·'));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).last, const Offset(0, -900));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('remove-future-expense')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('remove-current-forecast')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Annulla previsione'));
+    await tester.pumpAndSettle();
+
+    expect(
+      store.expectedExpenseAggregate.occurrences.single.status,
+      ExpectedExpenseOccurrenceStatus.cancelled,
+    );
+    expect(find.textContaining('Da annullare ·'), findsNothing);
+  });
 }
 
 Future<FinanceStore> _pump(

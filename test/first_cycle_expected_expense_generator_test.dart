@@ -211,18 +211,32 @@ void main() {
         );
       },
     );
+
+    test('terminated relationships cannot generate a new occurrence', () {
+      expect(
+        () => generator.generate(
+          relationship: _relationship(
+            status: ExpenseRelationshipStatus.terminated,
+          ),
+          evidence: _evidence(),
+          occurrenceId: 'occurrence_after_termination',
+        ),
+        throwsStateError,
+      );
+    });
   });
 }
 
 ExpenseRelationship _relationship({
   ExpenseRelationshipPeriodicity? periodicity,
   ExpenseRelationshipPaymentConfiguration? paymentConfiguration,
+  ExpenseRelationshipStatus status = ExpenseRelationshipStatus.active,
 }) => ExpenseRelationship(
   relationshipId: 'relationship_hera_acqua',
   service: 'Acqua',
   provider: 'Hera',
   subject: FinanceSubject.matteo,
-  status: ExpenseRelationshipStatus.active,
+  status: status,
   periodicity:
       periodicity ??
       ExpenseRelationshipPeriodicity(type: FinanceRecurringType.monthly),

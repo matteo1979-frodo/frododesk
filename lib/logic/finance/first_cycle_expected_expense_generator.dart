@@ -13,6 +13,11 @@ class FirstCycleExpectedExpenseGenerator {
     required String occurrenceId,
     DateTime? explicitNextDate,
   }) {
+    if (relationship.status != ExpenseRelationshipStatus.active) {
+      throw StateError(
+        'A terminated expense relationship cannot generate occurrences',
+      );
+    }
     if (explicitNextDate != null &&
         !explicitNextDate.isAfter(evidence.referenceDate)) {
       throw ArgumentError.value(

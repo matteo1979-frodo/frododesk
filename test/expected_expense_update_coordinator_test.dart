@@ -347,6 +347,153 @@ void main() {
     );
     expect(restored.relationships.single.toJson(), _relationship().toJson());
   });
+
+  group('expected expense lifecycle', () {
+    test('cancels only a pending occurrence and preserves its data', () async {
+      final harness = _Harness();
+      final before = harness.aggregate.occurrences.single;
+
+      final outcome = await harness.coordinator.cancelPendingOccurrence(
+        occurrenceId: before.occurrenceId,
+      );
+
+      expect(outcome, ExpectedExpenseLifecycleOutcome.applied);
+      expect(
+        harness.aggregate.relationships.single.status,
+        ExpenseRelationshipStatus.active,
+      );
+      expect(harness.aggregate.occurrences, hasLength(1));
+      final cancelled = harness.aggregate.occurrences.single;
+      expect(cancelled.status, ExpectedExpenseOccurrenceStatus.cancelled);
+      expect(cancelled.occurrenceId, before.occurrenceId);
+      expect(cancelled.relationshipId, before.relationshipId);
+      expect(cancelled.expectedAmount, before.expectedAmount);
+      expect(cancelled.evidenceEconomicFactIds, before.evidenceEconomicFactIds);
+      expect(cancelled.resolvedEconomicFactId, isNull);
+      expect(harness.writes, 1);
+      expect(harness.notifications, 1);
+    });
+
+    test('cancel retry and resolved guard are deterministic', () async {
+      final cancelledHarness = _Harness(
+        initial: _aggregate(
+          occurrenceStatus: ExpectedExpenseOccurrenceStatus.cancelled,
+        ),
+      );
+      expect(
+        await cancelledHarness.coordinator.cancelPendingOccurrence(
+          occurrenceId: 'occurrence_1',
+        ),
+        ExpectedExpenseLifecycleOutcome.alreadyCancelled,
+      );
+      expect(cancelledHarness.writes, 0);
+
+      final resolvedHarness = _Harness(
+        initial: _aggregate(
+          occurrenceStatus: ExpectedExpenseOccurrenceStatus.resolved,
+        ),
+      );
+      expect(
+        await resolvedHarness.coordinator.cancelPendingOccurrence(
+          occurrenceId: 'occurrence_1',
+        ),
+        ExpectedExpenseLifecycleOutcome.occurrenceNotPending,
+      );
+      expect(resolvedHarness.writes, 0);
+    });
+
+    test(
+      'terminates relationship while preserving current pending item',
+      () async {
+        final harness = _Harness();
+
+        final outcome = await harness.coordinator.terminateActiveRelationship(
+          relationshipId: 'relationship_1',
+          occurrenceId: 'occurrence_1',
+          cancelCurrentOccurrence: false,
+        );
+
+        expect(outcome, ExpectedExpenseLifecycleOutcome.applied);
+        expect(
+          harness.aggregate.relationships.single.status,
+          ExpenseRelationshipStatus.terminated,
+        );
+        expect(
+          harness.aggregate.occurrences.single.status,
+          ExpectedExpenseOccurrenceStatus.pending,
+        );
+        expect(harness.writes, 1);
+      },
+    );
+
+    test(
+      'terminates relationship and cancels current item in one write',
+      () async {
+        final harness = _Harness();
+
+        final outcome = await harness.coordinator.terminateActiveRelationship(
+          relationshipId: 'relationship_1',
+          occurrenceId: 'occurrence_1',
+          cancelCurrentOccurrence: true,
+        );
+
+        expect(outcome, ExpectedExpenseLifecycleOutcome.applied);
+        expect(
+          harness.aggregate.relationships.single.status,
+          ExpenseRelationshipStatus.terminated,
+        );
+        expect(
+          harness.aggregate.occurrences.single.status,
+          ExpectedExpenseOccurrenceStatus.cancelled,
+        );
+        expect(harness.writes, 1);
+        expect(harness.notifications, 1);
+      },
+    );
+
+    test('already terminated relationship is deterministic', () async {
+      final harness = _Harness(
+        initial: _aggregate(
+          relationshipStatus: ExpenseRelationshipStatus.terminated,
+        ),
+      );
+
+      expect(
+        await harness.coordinator.terminateActiveRelationship(
+          relationshipId: 'relationship_1',
+          occurrenceId: 'occurrence_1',
+          cancelCurrentOccurrence: false,
+        ),
+        ExpectedExpenseLifecycleOutcome.alreadyTerminated,
+      );
+      expect(harness.writes, 0);
+    });
+
+    test(
+      'already terminated relationship can still cancel its pending item',
+      () async {
+        final harness = _Harness(
+          initial: _aggregate(
+            relationshipStatus: ExpenseRelationshipStatus.terminated,
+          ),
+        );
+
+        expect(
+          await harness.coordinator.terminateActiveRelationship(
+            relationshipId: 'relationship_1',
+            occurrenceId: 'occurrence_1',
+            cancelCurrentOccurrence: true,
+          ),
+          ExpectedExpenseLifecycleOutcome.applied,
+        );
+        expect(
+          harness.aggregate.occurrences.single.status,
+          ExpectedExpenseOccurrenceStatus.cancelled,
+        );
+        expect(harness.writes, 1);
+      },
+    );
+  });
 }
 
 class _Harness {
@@ -356,14 +503,17 @@ class _Harness {
   int notifications = 0;
   bool writeSawOldState = false;
 
-  _Harness({bool failWrites = false}) {
-    final initial = _aggregate();
+  _Harness({bool failWrites = false, ExpectedExpenseAggregate? initial}) {
+    final initialAggregate = initial ?? _aggregate();
     store = FinanceStore(
-      initialExpectedExpenseAggregate: initial,
+      initialExpectedExpenseAggregate: initialAggregate,
       expectedExpensePersistence: ExpectedExpensePersistence(
         saveVerified: (_, value) async {
           writes++;
-          writeSawOldState = identical(store.expectedExpenseAggregate, initial);
+          writeSawOldState = identical(
+            store.expectedExpenseAggregate,
+            initialAggregate,
+          );
           if (failWrites) {
             return const PersistenceWriteVerification(
               backendAccepted: false,
@@ -384,21 +534,27 @@ class _Harness {
   ExpectedExpenseAggregate get aggregate => store.expectedExpenseAggregate;
 }
 
-ExpectedExpenseAggregate _aggregate() => ExpectedExpenseAggregate(
-  relationships: [_relationship()],
-  occurrences: [_occurrence()],
+ExpectedExpenseAggregate _aggregate({
+  ExpenseRelationshipStatus relationshipStatus =
+      ExpenseRelationshipStatus.active,
+  ExpectedExpenseOccurrenceStatus occurrenceStatus =
+      ExpectedExpenseOccurrenceStatus.pending,
+}) => ExpectedExpenseAggregate(
+  relationships: [_relationship(status: relationshipStatus)],
+  occurrences: [_occurrence(status: occurrenceStatus)],
 );
 
 ExpenseRelationship _relationship({
   String id = 'relationship_1',
   String provider = 'Provider',
   ManualPaymentPreference? preference,
+  ExpenseRelationshipStatus status = ExpenseRelationshipStatus.active,
 }) => ExpenseRelationship(
   relationshipId: id,
   service: 'Service',
   provider: provider,
   subject: FinanceSubject.matteo,
-  status: ExpenseRelationshipStatus.active,
+  status: status,
   periodicity: ExpenseRelationshipPeriodicity(
     type: FinanceRecurringType.monthly,
   ),
@@ -418,10 +574,12 @@ ExpectedExpenseOccurrence _occurrence({
   ExpectedExpenseKnowledgeSource knowledgeSource =
       ExpectedExpenseKnowledgeSource.legacyUnspecified,
   ExpectedPaymentWindow? paymentWindow,
+  ExpectedExpenseOccurrenceStatus status =
+      ExpectedExpenseOccurrenceStatus.pending,
 }) => ExpectedExpenseOccurrence(
   occurrenceId: id,
   relationshipId: relationshipId,
-  status: ExpectedExpenseOccurrenceStatus.pending,
+  status: status,
   knowledgeState: knowledgeState,
   knowledgeSource: knowledgeSource,
   expectedDueDate: dueDate ?? DateTime(2026, 11, 14),
@@ -436,6 +594,9 @@ ExpectedExpenseOccurrence _occurrence({
     method: FinancePaymentMethod.manual,
   ),
   expectedSubject: FinanceSubject.matteo,
+  resolvedEconomicFactId: status == ExpectedExpenseOccurrenceStatus.resolved
+      ? 'economic_fact_resolved'
+      : null,
 );
 
 ExpectedPaymentWindow _window(ExpectedPaymentWindowOrigin origin) =>

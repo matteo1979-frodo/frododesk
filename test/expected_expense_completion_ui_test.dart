@@ -39,7 +39,7 @@ void main() {
 
     await tester.pumpWidget(_app(harness.store));
 
-    expect(find.text('Completa previsione'), findsOneWidget);
+    expect(find.text('Spesa futura'), findsOneWidget);
     expect(
       find.text('Servizio sintetico · Fornitore sintetico'),
       findsOneWidget,
@@ -463,6 +463,131 @@ void main() {
     );
     await tester.pumpAndSettle();
   });
+
+  testWidgets('opens as a consultative card and editing is explicit', (
+    tester,
+  ) async {
+    final harness = _Harness(
+      certainty: ExpectedExpenseDateCertainty.estimated,
+      preferenceDay: 5,
+      window: _window(
+        startDay: 5,
+        endDay: 14,
+        origin: ExpectedPaymentWindowOrigin.relationshipDefault,
+      ),
+      occurrenceMode: PaymentExecutionMode.requiresUserAction,
+      plannedImpact: PlannedEconomicImpact(
+        start: DateTime(2026, 11, 10),
+        end: DateTime(2026, 11, 10),
+        origin: PlannedEconomicImpactOrigin.userDecision,
+      ),
+    );
+
+    await tester.pumpWidget(_app(harness.store, editing: false));
+
+    expect(find.text('Spesa futura'), findsOneWidget);
+    expect(
+      find.text('Servizio sintetico · Fornitore sintetico'),
+      findsOneWidget,
+    );
+    expect(find.text('Importo stimato'), findsOneWidget);
+    expect(find.text('Scadenza prevista'), findsOneWidget);
+    expect(find.text('14/11/2026'), findsOneWidget);
+    expect(find.text('5 del mese'), findsOneWidget);
+    expect(find.text('05/11/2026 – 14/11/2026'), findsOneWidget);
+    expect(find.text('10/11/2026'), findsOneWidget);
+    expect(find.text('Richiede una mia azione'), findsWidgets);
+    expect(find.byKey(const Key('completion-certainty')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('edit-future-expense')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('completion-certainty')), findsOneWidget);
+    await tester.drag(find.byType(ListView).last, const Offset(0, -900));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const Key('save-completed-expected-expense')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('removal cancels only the current pending forecast', (
+    tester,
+  ) async {
+    final harness = _Harness();
+    await tester.pumpWidget(_app(harness.store, editing: false));
+
+    await _openRemoval(tester);
+    await tester.tap(find.byKey(const Key('remove-current-forecast')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Annulla previsione'));
+    await tester.pumpAndSettle();
+
+    final aggregate = harness.store.expectedExpenseAggregate;
+    expect(
+      aggregate.relationships.single.status,
+      ExpenseRelationshipStatus.active,
+    );
+    expect(
+      aggregate.occurrences.single.status,
+      ExpectedExpenseOccurrenceStatus.cancelled,
+    );
+    expect(aggregate.occurrences.single.evidenceEconomicFactIds, ['fact_1']);
+    expect(aggregate.occurrences.single.resolvedEconomicFactId, isNull);
+  });
+
+  testWidgets('termination can preserve the current pending forecast', (
+    tester,
+  ) async {
+    final harness = _Harness();
+    await tester.pumpWidget(_app(harness.store, editing: false));
+
+    await _openRemoval(tester);
+    await tester.tap(find.byKey(const Key('stop-future-forecasts')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('keep-current-forecast')));
+    await tester.pumpAndSettle();
+
+    final aggregate = harness.store.expectedExpenseAggregate;
+    expect(
+      aggregate.relationships.single.status,
+      ExpenseRelationshipStatus.terminated,
+    );
+    expect(
+      aggregate.occurrences.single.status,
+      ExpectedExpenseOccurrenceStatus.pending,
+    );
+  });
+
+  testWidgets('termination can atomically cancel the current forecast', (
+    tester,
+  ) async {
+    final harness = _Harness();
+    await tester.pumpWidget(_app(harness.store, editing: false));
+
+    await _openRemoval(tester);
+    await tester.tap(find.byKey(const Key('stop-future-forecasts')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('cancel-current-with-relationship')));
+    await tester.pumpAndSettle();
+
+    final aggregate = harness.store.expectedExpenseAggregate;
+    expect(
+      aggregate.relationships.single.status,
+      ExpenseRelationshipStatus.terminated,
+    );
+    expect(
+      aggregate.occurrences.single.status,
+      ExpectedExpenseOccurrenceStatus.cancelled,
+    );
+    expect(harness.writes, 1);
+  });
+}
+
+Future<void> _openRemoval(WidgetTester tester) async {
+  await tester.drag(find.byType(ListView).last, const Offset(0, -900));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('remove-future-expense')));
+  await tester.pumpAndSettle();
 }
 
 Future<void> _chooseCertainty(WidgetTester tester, String label) async {
@@ -501,11 +626,12 @@ String _executionModeLabel(PaymentExecutionMode mode) => switch (mode) {
   PaymentExecutionMode.scheduled => 'Già programmato',
 };
 
-Widget _app(FinanceStore store) => MaterialApp(
+Widget _app(FinanceStore store, {bool editing = true}) => MaterialApp(
   home: ExpectedExpenseCompletionPage(
     financeStore: store,
     relationshipId: 'relationship_1',
     occurrenceId: 'occurrence_1',
+    initiallyEditing: editing,
   ),
 );
 

@@ -25,12 +25,14 @@ class ExpectedExpenseCompletionPage extends StatefulWidget {
   final FinanceStore financeStore;
   final String relationshipId;
   final String occurrenceId;
+  final bool initiallyEditing;
 
   const ExpectedExpenseCompletionPage({
     super.key,
     required this.financeStore,
     required this.relationshipId,
     required this.occurrenceId,
+    this.initiallyEditing = false,
   });
 
   @override
@@ -46,12 +48,14 @@ class _ExpectedExpenseCompletionPageState
   ExpectedPaymentWindow? _existingWindow;
   PaymentExecutionMode _paymentExecutionMode = PaymentExecutionMode.unknown;
   PlannedEconomicImpact? _plannedEconomicImpact;
+  bool _editing = false;
   bool _submitting = false;
   String? _loadError;
 
   @override
   void initState() {
     super.initState();
+    _editing = widget.initiallyEditing;
     final relationship = _relationship();
     final occurrence = _occurrence();
     if (relationship == null) {
@@ -235,6 +239,180 @@ class _ExpectedExpenseCompletionPageState
     }
   }
 
+  Future<void> _removeForecast() async {
+    final action = await showModalBottomSheet<_RemovalAction>(
+      context: context,
+      backgroundColor: const Color(0xFF23302B),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Rimuovi previsione',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                key: const Key('remove-current-forecast'),
+                title: const Text(
+                  'Annulla solo questa previsione',
+                  style: TextStyle(color: Colors.white),
+                ),
+                subtitle: const Text(
+                  'Non comparirà più tra le spese future.',
+                  style: TextStyle(color: Colors.white70),
+                ),
+                onTap: () => Navigator.pop(
+                  sheetContext,
+                  _RemovalAction.cancelOccurrence,
+                ),
+              ),
+              ListTile(
+                key: const Key('stop-future-forecasts'),
+                title: const Text(
+                  'Non prevedere più questa spesa',
+                  style: TextStyle(color: Colors.white),
+                ),
+                subtitle: const Text(
+                  'FrodoDesk non creerà nuove previsioni per questa spesa.',
+                  style: TextStyle(color: Colors.white70),
+                ),
+                onTap: () => Navigator.pop(
+                  sheetContext,
+                  _RemovalAction.terminateRelationship,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+    if (action == _RemovalAction.cancelOccurrence) {
+      final confirmed = await _confirm(
+        title: 'Annullare questa previsione?',
+        message:
+            'Non comparirà più tra le spese future. I dati resteranno conservati.',
+        confirmLabel: 'Annulla previsione',
+      );
+      if (confirmed == true) await _cancelOccurrence();
+      return;
+    }
+    final currentAction = await showDialog<_CurrentForecastAction>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Cosa vuoi fare con la previsione già aperta?'),
+        content: const Text(
+          'La spesa non verrà più prevista in futuro. Scegli se conservare questa previsione oppure annullarla.',
+        ),
+        actions: [
+          TextButton(
+            key: const Key('keep-current-forecast'),
+            onPressed: () =>
+                Navigator.pop(dialogContext, _CurrentForecastAction.keep),
+            child: const Text('Mantieni questa previsione'),
+          ),
+          TextButton(
+            key: const Key('cancel-current-with-relationship'),
+            onPressed: () =>
+                Navigator.pop(dialogContext, _CurrentForecastAction.cancel),
+            child: const Text('Annulla anche questa'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || currentAction == null) return;
+    await _terminateRelationship(
+      cancelCurrent: currentAction == _CurrentForecastAction.cancel,
+    );
+  }
+
+  Future<bool?> _confirm({
+    required String title,
+    required String message,
+    required String confirmLabel,
+  }) => showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text(title),
+      content: Text(message),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext, false),
+          child: const Text('Indietro'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext, true),
+          child: Text(confirmLabel),
+        ),
+      ],
+    ),
+  );
+
+  Future<void> _cancelOccurrence() async {
+    if (_submitting) return;
+    setState(() => _submitting = true);
+    try {
+      final outcome = await ExpectedExpenseUpdateCoordinator(
+        financeStore: widget.financeStore,
+      ).cancelPendingOccurrence(occurrenceId: widget.occurrenceId);
+      if (!mounted) return;
+      if (outcome == ExpectedExpenseLifecycleOutcome.applied ||
+          outcome == ExpectedExpenseLifecycleOutcome.alreadyCancelled) {
+        Navigator.of(context).pop(
+          const ExpectedExpenseCompletionResult(
+            outcome: ExpectedExpenseUpdateOutcome.applied,
+            requiresExplicitChoice: false,
+          ),
+        );
+      } else {
+        _error(_lifecycleOutcomeMessage(outcome));
+      }
+    } catch (error) {
+      if (mounted) _error('Previsione non annullata: $error');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<void> _terminateRelationship({required bool cancelCurrent}) async {
+    if (_submitting) return;
+    setState(() => _submitting = true);
+    try {
+      final outcome =
+          await ExpectedExpenseUpdateCoordinator(
+            financeStore: widget.financeStore,
+          ).terminateActiveRelationship(
+            relationshipId: widget.relationshipId,
+            occurrenceId: widget.occurrenceId,
+            cancelCurrentOccurrence: cancelCurrent,
+          );
+      if (!mounted) return;
+      if (outcome == ExpectedExpenseLifecycleOutcome.applied ||
+          outcome == ExpectedExpenseLifecycleOutcome.alreadyTerminated) {
+        Navigator.of(context).pop(
+          const ExpectedExpenseCompletionResult(
+            outcome: ExpectedExpenseUpdateOutcome.applied,
+            requiresExplicitChoice: false,
+          ),
+        );
+      } else {
+        _error(_lifecycleOutcomeMessage(outcome));
+      }
+    } catch (error) {
+      if (mounted) _error('Impostazione non aggiornata: $error');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final relationship = _relationship();
@@ -242,10 +420,19 @@ class _ExpectedExpenseCompletionPageState
     return Scaffold(
       backgroundColor: const Color(0xFF101820),
       appBar: AppBar(
-        title: const Text('Completa previsione'),
+        title: const Text('Spesa futura'),
         foregroundColor: Colors.white,
         backgroundColor: Colors.black.withValues(alpha: 0.08),
         elevation: 0,
+        actions: [
+          if (_loadError == null && !_editing)
+            IconButton(
+              key: const Key('edit-future-expense'),
+              tooltip: 'Modifica pianificazione',
+              onPressed: () => setState(() => _editing = true),
+              icon: const Icon(Icons.edit_rounded),
+            ),
+        ],
       ),
       body: Stack(
         children: [
@@ -290,9 +477,28 @@ class _ExpectedExpenseCompletionPageState
                       ),
                       Text(
                         occurrence.provisional
-                            ? 'Importo stimato/provvisorio'
+                            ? 'Importo stimato'
                             : 'Importo previsto',
                         style: const TextStyle(color: Colors.white70),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _CompletionBadge(
+                            label: _paymentModeLabel(
+                              occurrence.paymentExecutionMode,
+                            ),
+                          ),
+                          _CompletionBadge(
+                            label:
+                                occurrence.knowledgeState ==
+                                    ExpectedExpenseKnowledgeState.knownUnpaid
+                                ? 'Importo noto, non pagato'
+                                : 'Previsione',
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -306,45 +512,60 @@ class _ExpectedExpenseCompletionPageState
                         icon: Icons.event_rounded,
                         title: 'Scadenza',
                       ),
-                      ListTile(
-                        key: const Key('completion-due-date'),
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text(
-                          'Data prevista',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        subtitle: Text(
-                          _dueDate == null ? 'Non indicata' : _date(_dueDate!),
-                          style: const TextStyle(color: Colors.white70),
-                        ),
-                        trailing: const Icon(
-                          Icons.edit_calendar_rounded,
-                          color: Colors.white70,
-                        ),
-                        onTap: _pickDueDate,
-                      ),
-                      DropdownButtonFormField<ExpectedExpenseDateCertainty>(
-                        key: const Key('completion-certainty'),
-                        initialValue: _certainty,
-                        dropdownColor: const Color(0xFF23302B),
-                        style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          labelText: 'La scadenza è',
-                          labelStyle: TextStyle(color: Colors.white70),
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: ExpectedExpenseDateCertainty.estimated,
-                            child: Text('Stimata'),
+                      if (_editing) ...[
+                        ListTile(
+                          key: const Key('completion-due-date'),
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text(
+                            'Data prevista',
+                            style: TextStyle(color: Colors.white),
                           ),
-                          DropdownMenuItem(
-                            value: ExpectedExpenseDateCertainty.known,
-                            child: Text('Conosciuta'),
+                          subtitle: Text(
+                            _dueDate == null
+                                ? 'Non indicata'
+                                : _date(_dueDate!),
+                            style: const TextStyle(color: Colors.white70),
                           ),
-                        ],
-                        onChanged: (value) =>
-                            setState(() => _certainty = value),
-                      ),
+                          trailing: const Icon(
+                            Icons.edit_calendar_rounded,
+                            color: Colors.white70,
+                          ),
+                          onTap: _pickDueDate,
+                        ),
+                        DropdownButtonFormField<ExpectedExpenseDateCertainty>(
+                          key: const Key('completion-certainty'),
+                          initialValue: _certainty,
+                          dropdownColor: const Color(0xFF23302B),
+                          style: const TextStyle(color: Colors.white),
+                          decoration: const InputDecoration(
+                            labelText: 'La scadenza è',
+                            labelStyle: TextStyle(color: Colors.white70),
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: ExpectedExpenseDateCertainty.estimated,
+                              child: Text('Stimata'),
+                            ),
+                            DropdownMenuItem(
+                              value: ExpectedExpenseDateCertainty.known,
+                              child: Text('Conosciuta'),
+                            ),
+                          ],
+                          onChanged: (value) =>
+                              setState(() => _certainty = value),
+                        ),
+                      ] else ...[
+                        _CompletionValue(
+                          label: 'Scadenza prevista',
+                          value: _dueDate == null
+                              ? 'Non indicata'
+                              : _date(_dueDate!),
+                        ),
+                        _CompletionValue(
+                          label: 'Stato',
+                          value: _certaintyLabel(_certainty),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -357,114 +578,156 @@ class _ExpectedExpenseCompletionPageState
                         icon: Icons.payments_rounded,
                         title: 'Pagamento e pianificazione',
                       ),
-                      TextField(
-                        key: const Key('completion-preferred-day'),
-                        controller: _preferredDayController,
-                        keyboardType: TextInputType.number,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          labelText: 'Giorno abituale di inizio (1–31)',
-                          labelStyle: TextStyle(color: Colors.white70),
-                          helperStyle: TextStyle(color: Colors.white60),
-                          helperText:
-                              'Da quale giorno iniziare a occuparsi del pagamento.',
-                        ),
-                      ),
-                      if (_existingWindow case final window?) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                          'Finestra attuale: ${_date(window.start)} – ${_date(window.end)}',
-                          key: const Key('completion-existing-window'),
-                          style: const TextStyle(color: Colors.white70),
-                        ),
-                      ],
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<PaymentExecutionMode>(
-                        key: const Key('completion-payment-execution-mode'),
-                        initialValue: _paymentExecutionMode,
-                        dropdownColor: const Color(0xFF23302B),
-                        style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          labelText: 'Come verrà pagata?',
-                          labelStyle: TextStyle(color: Colors.white70),
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: PaymentExecutionMode.unknown,
-                            child: Text('Da definire'),
+                      if (_editing) ...[
+                        TextField(
+                          key: const Key('completion-preferred-day'),
+                          controller: _preferredDayController,
+                          keyboardType: TextInputType.number,
+                          style: const TextStyle(color: Colors.white),
+                          decoration: const InputDecoration(
+                            labelText: 'Giorno abituale di inizio (1–31)',
+                            labelStyle: TextStyle(color: Colors.white70),
+                            helperStyle: TextStyle(color: Colors.white60),
+                            helperText:
+                                'Da quale giorno iniziare a occuparsi del pagamento.',
                           ),
-                          DropdownMenuItem(
-                            value: PaymentExecutionMode.requiresUserAction,
-                            child: Text('Richiede una mia azione'),
-                          ),
-                          DropdownMenuItem(
-                            value: PaymentExecutionMode.automatic,
-                            child: Text('Automatico'),
-                          ),
-                          DropdownMenuItem(
-                            value: PaymentExecutionMode.scheduled,
-                            child: Text('Già programmato'),
+                        ),
+                        if (_existingWindow case final window?) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            'Finestra attuale: ${_date(window.start)} – ${_date(window.end)}',
+                            key: const Key('completion-existing-window'),
+                            style: const TextStyle(color: Colors.white70),
                           ),
                         ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => _paymentExecutionMode = value);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      ListTile(
-                        key: const Key('completion-planned-impact-date'),
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text(
-                          'Quando prevedi che usciranno i soldi?',
-                          style: TextStyle(color: Colors.white),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<PaymentExecutionMode>(
+                          key: const Key('completion-payment-execution-mode'),
+                          initialValue: _paymentExecutionMode,
+                          dropdownColor: const Color(0xFF23302B),
+                          style: const TextStyle(color: Colors.white),
+                          decoration: const InputDecoration(
+                            labelText: 'Come verrà pagata?',
+                            labelStyle: TextStyle(color: Colors.white70),
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: PaymentExecutionMode.unknown,
+                              child: Text('Da definire'),
+                            ),
+                            DropdownMenuItem(
+                              value: PaymentExecutionMode.requiresUserAction,
+                              child: Text('Richiede una mia azione'),
+                            ),
+                            DropdownMenuItem(
+                              value: PaymentExecutionMode.automatic,
+                              child: Text('Automatico'),
+                            ),
+                            DropdownMenuItem(
+                              value: PaymentExecutionMode.scheduled,
+                              child: Text('Già programmato'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() => _paymentExecutionMode = value);
+                            }
+                          },
                         ),
-                        subtitle: Text(
-                          _plannedEconomicImpact == null
-                              ? 'Nessuna pianificazione esplicita'
-                              : _plannedEconomicImpact!.start ==
-                                    _plannedEconomicImpact!.end
-                              ? _date(_plannedEconomicImpact!.start)
-                              : '${_date(_plannedEconomicImpact!.start)} – '
-                                    '${_date(_plannedEconomicImpact!.end)}',
-                          style: const TextStyle(color: Colors.white70),
-                        ),
-                        trailing: _plannedEconomicImpact == null
-                            ? const Icon(
-                                Icons.edit_calendar_rounded,
-                                color: Colors.white70,
-                              )
-                            : IconButton(
-                                key: const Key(
-                                  'completion-clear-planned-impact',
-                                ),
-                                tooltip: 'Rimuovi pianificazione',
-                                onPressed: () => setState(
-                                  () => _plannedEconomicImpact = null,
-                                ),
-                                icon: const Icon(
-                                  Icons.clear,
+                        const SizedBox(height: 12),
+                        ListTile(
+                          key: const Key('completion-planned-impact-date'),
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text(
+                            'Quando prevedi che usciranno i soldi?',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          subtitle: Text(
+                            _plannedEconomicImpact == null
+                                ? 'Nessuna pianificazione esplicita'
+                                : _plannedEconomicImpact!.start ==
+                                      _plannedEconomicImpact!.end
+                                ? _date(_plannedEconomicImpact!.start)
+                                : '${_date(_plannedEconomicImpact!.start)} – '
+                                      '${_date(_plannedEconomicImpact!.end)}',
+                            style: const TextStyle(color: Colors.white70),
+                          ),
+                          trailing: _plannedEconomicImpact == null
+                              ? const Icon(
+                                  Icons.edit_calendar_rounded,
                                   color: Colors.white70,
+                                )
+                              : IconButton(
+                                  key: const Key(
+                                    'completion-clear-planned-impact',
+                                  ),
+                                  tooltip: 'Rimuovi pianificazione',
+                                  onPressed: () => setState(
+                                    () => _plannedEconomicImpact = null,
+                                  ),
+                                  icon: const Icon(
+                                    Icons.clear,
+                                    color: Colors.white70,
+                                  ),
                                 ),
-                              ),
-                        onTap: _pickPlannedEconomicImpact,
-                      ),
+                          onTap: _pickPlannedEconomicImpact,
+                        ),
+                      ] else ...[
+                        _CompletionValue(
+                          label: 'Giorno abituale',
+                          value: _preferredDayController.text.trim().isEmpty
+                              ? 'Non indicato'
+                              : '${_preferredDayController.text.trim()} del mese',
+                        ),
+                        _CompletionValue(
+                          label: 'Finestra abituale',
+                          value: _existingWindow == null
+                              ? 'Non indicata'
+                              : '${_date(_existingWindow!.start)} – ${_date(_existingWindow!.end)}',
+                        ),
+                        _CompletionValue(
+                          label: 'Impatto pianificato',
+                          value: _plannedImpactLabel(_plannedEconomicImpact),
+                        ),
+                        _CompletionValue(
+                          label: 'Modalità',
+                          value: _paymentModeLabel(_paymentExecutionMode),
+                        ),
+                      ],
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  key: const Key('save-completed-expected-expense'),
-                  onPressed: _submitting ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFB74D),
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                if (_editing) ...[
+                  ElevatedButton.icon(
+                    key: const Key('save-completed-expected-expense'),
+                    onPressed: _submitting ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFB74D),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    icon: const Icon(Icons.save_rounded),
+                    label: Text(_submitting ? 'Salvataggio...' : 'Salva'),
                   ),
-                  icon: const Icon(Icons.save_rounded),
-                  label: Text(_submitting ? 'Salvataggio...' : 'Salva'),
-                ),
+                  TextButton(
+                    onPressed: _submitting
+                        ? null
+                        : () => setState(() => _editing = false),
+                    child: const Text('Annulla modifica'),
+                  ),
+                ] else
+                  OutlinedButton.icon(
+                    key: const Key('remove-future-expense'),
+                    onPressed: _submitting ? null : _removeForecast,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFFF8A80),
+                      side: const BorderSide(color: Color(0xFFFF8A80)),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    icon: const Icon(Icons.remove_circle_outline_rounded),
+                    label: const Text('Rimuovi previsione'),
+                  ),
               ],
             ],
           ),
@@ -520,6 +783,60 @@ class _CompletionSectionTitle extends StatelessWidget {
   );
 }
 
+class _CompletionValue extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _CompletionValue({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 12),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.white60)),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _CompletionBadge extends StatelessWidget {
+  final String label;
+
+  const _CompletionBadge({required this.label});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFFB74D).withValues(alpha: 0.18),
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: const Color(0xFFFFB74D)),
+    ),
+    child: Text(
+      label,
+      style: const TextStyle(
+        color: Color(0xFFFFD180),
+        fontWeight: FontWeight.w700,
+      ),
+    ),
+  );
+}
+
+enum _RemovalAction { cancelOccurrence, terminateRelationship }
+
+enum _CurrentForecastAction { keep, cancel }
+
 String _outcomeMessage(ExpectedExpenseUpdateOutcome outcome) =>
     switch (outcome) {
       ExpectedExpenseUpdateOutcome.missingRelationship =>
@@ -531,6 +848,46 @@ String _outcomeMessage(ExpectedExpenseUpdateOutcome outcome) =>
       ExpectedExpenseUpdateOutcome.applied ||
       ExpectedExpenseUpdateOutcome.unchanged => 'Previsione aggiornata.',
     };
+
+String _lifecycleOutcomeMessage(ExpectedExpenseLifecycleOutcome outcome) =>
+    switch (outcome) {
+      ExpectedExpenseLifecycleOutcome.applied => 'Impostazione aggiornata.',
+      ExpectedExpenseLifecycleOutcome.alreadyCancelled =>
+        'Questa previsione è già stata annullata.',
+      ExpectedExpenseLifecycleOutcome.alreadyTerminated =>
+        'Le previsioni future erano già state interrotte.',
+      ExpectedExpenseLifecycleOutcome.missingRelationship =>
+        'Rapporto della previsione non trovato.',
+      ExpectedExpenseLifecycleOutcome.missingOccurrence =>
+        'Previsione non trovata.',
+      ExpectedExpenseLifecycleOutcome.identityMismatch =>
+        'Identità della previsione non coerente.',
+      ExpectedExpenseLifecycleOutcome.occurrenceNotPending =>
+        'Questa previsione non può essere annullata nel suo stato attuale.',
+      ExpectedExpenseLifecycleOutcome.relationshipNotActive =>
+        'Questa spesa non può essere interrotta nel suo stato attuale.',
+    };
+
+String _certaintyLabel(ExpectedExpenseDateCertainty? certainty) =>
+    switch (certainty) {
+      ExpectedExpenseDateCertainty.estimated => 'Stimata',
+      ExpectedExpenseDateCertainty.known => 'Conosciuta',
+      ExpectedExpenseDateCertainty.legacyUnspecified || null => 'Non indicato',
+    };
+
+String _paymentModeLabel(PaymentExecutionMode mode) => switch (mode) {
+  PaymentExecutionMode.unknown => 'Da definire',
+  PaymentExecutionMode.requiresUserAction => 'Richiede una mia azione',
+  PaymentExecutionMode.automatic => 'Automatico',
+  PaymentExecutionMode.scheduled => 'Già programmato',
+};
+
+String _plannedImpactLabel(PlannedEconomicImpact? impact) {
+  if (impact == null) return 'Non indicato';
+  return impact.start == impact.end
+      ? _date(impact.start)
+      : '${_date(impact.start)} – ${_date(impact.end)}';
+}
 
 String _date(DateTime value) =>
     '${value.day.toString().padLeft(2, '0')}/'
