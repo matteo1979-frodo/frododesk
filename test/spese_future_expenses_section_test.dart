@@ -8,6 +8,7 @@ import 'package:frododesk/models/expense_relationship.dart';
 import 'package:frododesk/models/expected_expense_occurrence.dart';
 import 'package:frododesk/models/finance_category_template.dart';
 import 'package:frododesk/models/finance_recurring_item.dart';
+import 'package:frododesk/models/finite_financial_plan.dart';
 import 'package:frododesk/models/planned_economic_impact.dart';
 import 'package:frododesk/screens/spese_page.dart';
 import 'package:frododesk/stores/cash_wallet_store.dart';
@@ -29,6 +30,37 @@ void main() {
 
     expect(find.text('Spese future'), findsOneWidget);
     expect(find.text('Nessuna spesa futura aperta.'), findsOneWidget);
+  });
+
+  testWidgets('shows Expected Expense and finite-plan installment together', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _aggregate([
+        _fixture(
+          'Acqua',
+          provider: 'Hera',
+          plannedImpact: _impact(DateTime(2026, 11, 10)),
+          expectedAmount: 59.63,
+        ),
+      ]),
+      referenceTime: DateTime(2026, 9, 20),
+      finitePlans: [_inpsPlan()],
+    );
+
+    await tester.tap(find.text('Mesi futuri'));
+    await tester.pumpAndSettle();
+    expect(find.text('Novembre 2026'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+    await tester.tap(find.text('Novembre 2026'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Acqua · Hera'), findsOneWidget);
+    expect(find.text('INPS'), findsOneWidget);
+    expect(find.text('Rata 5 di 12'), findsOneWidget);
+    expect(find.text('Data prevista 15/11/2026'), findsOneWidget);
+    expect(find.textContaining('Impatto pianificato'), findsNothing);
   });
 
   testWidgets(
@@ -408,9 +440,11 @@ Future<FinanceStore> _pump(
   WidgetTester tester,
   ExpectedExpenseAggregate aggregate, {
   DateTime? referenceTime,
+  Iterable<FiniteFinancialPlan> finitePlans = const [],
 }) async {
   final store = FinanceStore(
     initialExpectedExpenseAggregate: aggregate,
+    initialFiniteFinancialPlans: finitePlans,
     expectedExpensePersistence: ExpectedExpensePersistence(
       saveVerified: (_, value) async =>
           PersistenceWriteVerification(backendAccepted: true, readBack: value),
@@ -431,6 +465,18 @@ Future<FinanceStore> _pump(
   await tester.pumpAndSettle();
   return store;
 }
+
+FiniteFinancialPlan _inpsPlan() => FiniteFinancialPlan(
+  id: 'plan_inps',
+  name: 'INPS',
+  subject: FinanceSubject.matteo,
+  debitBalanceId: 'balance_banca',
+  totalInstallments: 12,
+  expectedInstallmentAmount: 386,
+  firstInstallmentDate: DateTime(2026, 7, 15),
+  scheduledDayOfMonth: 15,
+  completedInstallments: 3,
+);
 
 ExpectedExpenseAggregate _aggregate(List<_Fixture> fixtures) =>
     ExpectedExpenseAggregate(

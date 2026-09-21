@@ -20,10 +20,11 @@ import '../logic/finance/expected_expense_update_coordinator.dart';
 import '../logic/finance/expected_expense_reader.dart';
 import '../logic/finance/future_expense_reader.dart';
 import '../logic/finance/future_expense_overview_reader.dart';
+import '../logic/finance/future_outflow_presentation_composer.dart';
 import '../models/expected_expense_occurrence.dart';
 import '../models/expense_relationship.dart';
 import '../models/future_expense_projection.dart';
-import '../models/future_expense_overview.dart';
+import '../models/future_outflow_presentation.dart';
 import '../models/composite_economic_operation.dart';
 import '../models/economic_operation_metadata.dart';
 import '../models/economic_event.dart';
@@ -267,10 +268,22 @@ class _SpesePageState extends State<SpesePage> {
       projections: expectedExpenseProjections,
       referenceTime: referenceTime,
     );
-    final futureExpenseOverview = const FutureExpenseOverviewReader().read(
+    final expectedExpenseOverview = const FutureExpenseOverviewReader().read(
       expenses: futureExpenses,
       referenceTime: referenceTime,
     );
+    final futureOutflowOverview = const FutureOutflowPresentationComposer()
+        .compose(
+          expectedExpenses: [
+            ...expectedExpenseOverview.overdueFromPastMonths,
+            ...expectedExpenseOverview.currentMonth,
+            for (final month in expectedExpenseOverview.futureMonths)
+              ...month.expenses,
+            ...expectedExpenseOverview.unplaced,
+          ],
+          finitePlans: widget.financeStore.finiteFinancialPlans,
+          referenceTime: referenceTime,
+        );
 
     return Scaffold(
       backgroundColor: const Color(0xFF101820),
@@ -313,7 +326,7 @@ class _SpesePageState extends State<SpesePage> {
                     ),
                     const SizedBox(height: 18),
                     _FutureExpensesSection(
-                      overview: futureExpenseOverview,
+                      overview: futureOutflowOverview,
                       onOpen: _openExpectedExpenseCompletion,
                     ),
                     const SizedBox(height: 18),
@@ -606,17 +619,14 @@ class _SpesePageState extends State<SpesePage> {
 }
 
 class _FutureExpensesSection extends StatelessWidget {
-  final FutureExpenseOverview overview;
+  final FutureOutflowOverview overview;
   final Future<bool> Function(FutureExpenseProjection) onOpen;
 
   const _FutureExpensesSection({required this.overview, required this.onOpen});
 
   @override
   Widget build(BuildContext context) {
-    final direct = [
-      ...overview.overdueFromPastMonths,
-      ...overview.currentMonth,
-    ];
+    final direct = [...overview.pastMonths, ...overview.currentMonth];
     final empty =
         direct.isEmpty &&
         overview.futureMonths.isEmpty &&
@@ -646,7 +656,9 @@ class _FutureExpensesSection extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 10),
               child: _CompactFutureExpenseTile(
                 expense: expense,
-                onTap: () => onOpen(expense),
+                onTap: expense.expectedExpense == null
+                    ? null
+                    : () => onOpen(expense.expectedExpense!),
               ),
             ),
           ),
@@ -691,14 +703,13 @@ class _FutureExpensesSection extends StatelessWidget {
 }
 
 class _CompactFutureExpenseTile extends StatelessWidget {
-  final FutureExpenseProjection expense;
-  final VoidCallback onTap;
+  final FutureOutflowPresentation expense;
+  final VoidCallback? onTap;
 
   const _CompactFutureExpenseTile({required this.expense, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final source = expense.source;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(22),
@@ -719,7 +730,7 @@ class _CompactFutureExpenseTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '${source.service} · ${source.provider}',
+                    expense.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -729,6 +740,15 @@ class _CompactFutureExpenseTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
+                  if (expense.details.isNotEmpty)
+                    Text(
+                      expense.details,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   Text(
                     _compactDateLabel(expense),
                     style: TextStyle(
@@ -756,20 +776,21 @@ class _CompactFutureExpenseTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  EuroFormatter.format(source.expectedAmount),
+                  EuroFormatter.format(expense.amount),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                if (source.provisional)
+                if (expense.provisional)
                   const Text(
                     'stimato',
                     style: TextStyle(color: Colors.white60, fontSize: 11),
                   ),
               ],
             ),
-            const Icon(Icons.chevron_right_rounded, color: Colors.white70),
+            if (expense.isInteractive)
+              const Icon(Icons.chevron_right_rounded, color: Colors.white70),
           ],
         ),
       ),
@@ -777,27 +798,23 @@ class _CompactFutureExpenseTile extends StatelessWidget {
   }
 
   static String _compactDateLabel(
-    FutureExpenseProjection expense,
-  ) => switch (expense.displayPlacement) {
-    FutureExpenseDisplayPlacement.plannedEconomicImpact =>
-      'Impatto ${_formatInterval(expense.displayStart!, expense.displayEnd!)}',
-    FutureExpenseDisplayPlacement.expectedDebitWindow =>
-      'Addebito ${_formatInterval(expense.displayStart!, expense.displayEnd!)}',
-    FutureExpenseDisplayPlacement.dueDateFallback =>
-      'Scadenza ${_formatDate(expense.displayStart!)}',
-    FutureExpenseDisplayPlacement.unplaced => 'Data non disponibile',
+    FutureOutflowPresentation expense,
+  ) => switch (expense.datePresentation) {
+    FutureOutflowDatePresentation.plannedEconomicImpact =>
+      'Impatto ${_formatInterval(expense.placementStart!, expense.placementEnd!)}',
+    FutureOutflowDatePresentation.expectedDebitWindow =>
+      'Addebito ${_formatInterval(expense.placementStart!, expense.placementEnd!)}',
+    FutureOutflowDatePresentation.dueDateFallback =>
+      'Scadenza ${_formatDate(expense.placementStart!)}',
+    FutureOutflowDatePresentation.unplaced => 'Data non disponibile',
+    FutureOutflowDatePresentation.finitePlanForecast =>
+      'Data prevista ${_formatDate(expense.placementStart!)}',
   };
 
-  static String? _attentionLabel(FutureExpenseProjection expense) {
+  static String? _attentionLabel(FutureOutflowPresentation expense) {
     if (expense.requiresPlanning) return 'Da pianificare';
-    if (expense.overdueQualification !=
-        FutureExpenseOverdueQualification.notOverdue) {
-      return 'Scadenza superata';
-    }
-    if (expense.source.occurrencePaymentExecutionMode ==
-        PaymentExecutionMode.requiresUserAction) {
-      return 'Richiede azione';
-    }
+    if (expense.overdue) return 'Scadenza superata';
+    if (expense.requiresUserAction) return 'Richiede azione';
     return null;
   }
 
@@ -864,7 +881,7 @@ class _FutureExpenseNavigationTile extends StatelessWidget {
 }
 
 class _FutureExpenseMonthsPage extends StatelessWidget {
-  final List<FutureExpenseMonthGroup> months;
+  final List<FutureOutflowMonthGroup> months;
   final Future<bool> Function(FutureExpenseProjection) onOpen;
 
   const _FutureExpenseMonthsPage({required this.months, required this.onOpen});
@@ -890,13 +907,13 @@ class _FutureExpenseMonthsPage extends StatelessWidget {
             ),
             icon: Icons.calendar_today_rounded,
             title: _monthLabel(group.month),
-            count: group.expenses.length,
+            count: group.items.length,
             onTap: () async {
               final changed = await Navigator.of(context).push<bool>(
                 MaterialPageRoute(
                   builder: (_) => _FutureExpenseListPage(
                     title: _monthLabel(group.month),
-                    expenses: group.expenses,
+                    expenses: group.items,
                     onOpen: onOpen,
                   ),
                 ),
@@ -914,7 +931,7 @@ class _FutureExpenseMonthsPage extends StatelessWidget {
 
 class _FutureExpenseListPage extends StatelessWidget {
   final String title;
-  final List<FutureExpenseProjection> expenses;
+  final List<FutureOutflowPresentation> expenses;
   final Future<bool> Function(FutureExpenseProjection) onOpen;
 
   const _FutureExpenseListPage({
@@ -938,10 +955,16 @@ class _FutureExpenseListPage extends StatelessWidget {
         separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (context, index) => _CompactFutureExpenseTile(
           expense: expenses[index],
-          onTap: () async {
-            final changed = await onOpen(expenses[index]);
-            if (changed && context.mounted) Navigator.of(context).pop(true);
-          },
+          onTap: expenses[index].expectedExpense == null
+              ? null
+              : () async {
+                  final changed = await onOpen(
+                    expenses[index].expectedExpense!,
+                  );
+                  if (changed && context.mounted) {
+                    Navigator.of(context).pop(true);
+                  }
+                },
         ),
       ),
     ),
