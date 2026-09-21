@@ -40,6 +40,13 @@ void main() {
     await tester.pumpWidget(_app(harness.store));
 
     expect(find.text('Completa previsione'), findsOneWidget);
+    expect(
+      find.text('Servizio sintetico · Fornitore sintetico'),
+      findsOneWidget,
+    );
+    expect(find.text('€42,00'), findsOneWidget);
+    expect(find.text('Scadenza'), findsOneWidget);
+    expect(find.text('Pagamento e pianificazione'), findsOneWidget);
     expect(find.text('14/11/2026'), findsOneWidget);
     expect(find.text('Stimata'), findsOneWidget);
     expect(find.widgetWithText(TextField, '5'), findsOneWidget);
@@ -161,10 +168,11 @@ void main() {
       );
       await tester.pumpWidget(_app(harness.store));
 
-      await tester.ensureVisible(
-        find.byKey(const Key('completion-planned-impact-date')),
+      await tester.drag(find.byType(ListView).last, const Offset(0, -500));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('completion-planned-impact-date')).last,
       );
-      await tester.tap(find.byKey(const Key('completion-planned-impact-date')));
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.chevron_right));
       await tester.pumpAndSettle();
@@ -202,10 +210,11 @@ void main() {
     );
     await tester.pumpWidget(_app(harness.store));
 
-    await tester.ensureVisible(
-      find.byKey(const Key('completion-clear-planned-impact')),
+    await tester.drag(find.byType(ListView).last, const Offset(0, -500));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const Key('completion-clear-planned-impact')).last,
     );
-    await tester.tap(find.byKey(const Key('completion-clear-planned-impact')));
     await _tapSave(tester);
 
     expect(
@@ -440,8 +449,9 @@ void main() {
       '5',
     );
 
-    final save = find.byKey(const Key('save-completed-expected-expense'));
-    await tester.ensureVisible(save);
+    await tester.drag(find.byType(ListView).last, const Offset(0, -800));
+    await tester.pumpAndSettle();
+    final save = find.byKey(const Key('save-completed-expected-expense')).last;
     await tester.tap(save);
     await tester.pump();
     await tester.tap(save);
@@ -463,8 +473,9 @@ Future<void> _chooseCertainty(WidgetTester tester, String label) async {
 }
 
 Future<void> _chooseExecutionMode(WidgetTester tester, String label) async {
-  final field = find.byKey(const Key('completion-payment-execution-mode'));
-  await tester.ensureVisible(field);
+  await tester.drag(find.byType(ListView).last, const Offset(0, -350));
+  await tester.pumpAndSettle();
+  final field = find.byKey(const Key('completion-payment-execution-mode')).last;
   await tester.tap(field);
   await tester.pumpAndSettle();
   await tester.tap(find.text(label).last);
@@ -472,8 +483,9 @@ Future<void> _chooseExecutionMode(WidgetTester tester, String label) async {
 }
 
 Future<void> _tapSave(WidgetTester tester, {bool settle = true}) async {
-  final save = find.byKey(const Key('save-completed-expected-expense'));
-  await tester.ensureVisible(save);
+  await tester.drag(find.byType(ListView).last, const Offset(0, -800));
+  await tester.pumpAndSettle();
+  final save = find.byKey(const Key('save-completed-expected-expense')).last;
   await tester.tap(save);
   if (settle) {
     await tester.pumpAndSettle();

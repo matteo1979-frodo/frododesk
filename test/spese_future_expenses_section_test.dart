@@ -89,13 +89,10 @@ void main() {
     );
 
     expect(find.text('Energia · Hera'), findsOneWidget);
-    expect(find.text('€123,45 · Importo stimato/provvisorio'), findsOneWidget);
-    expect(find.text('Scadenza certa: 14/11/2099'), findsOneWidget);
-    expect(find.text('Modalità da definire'), findsOneWidget);
-    expect(
-      find.text('Impatto economico non ancora collocabile'),
-      findsOneWidget,
-    );
+    expect(find.text('€123,45'), findsOneWidget);
+    expect(find.text('stimato'), findsOneWidget);
+    expect(find.text('Scadenza 14/11/2099'), findsOneWidget);
+    expect(find.text('Da pianificare'), findsOneWidget);
     expect(find.textContaining('05/11/2099'), findsNothing);
   });
 
@@ -129,16 +126,18 @@ void main() {
         ]),
       );
 
-      expect(find.text('Impatto pianificato: 05/12/2099'), findsOneWidget);
-      expect(
-        find.text('Addebito atteso: 10/12/2099 – 12/12/2099'),
-        findsOneWidget,
-      );
+      await tester.tap(find.text('Mesi futuri'));
+      await tester.pumpAndSettle();
+      expect(find.text('Dicembre 2099'), findsOneWidget);
+      await tester.tap(find.text('Dicembre 2099'));
+      await tester.pumpAndSettle();
+      expect(find.text('Impatto 05/12/2099'), findsOneWidget);
+      expect(find.text('Addebito 10/12/2099 – 12/12/2099'), findsOneWidget);
       expect(find.textContaining('10/11/2099'), findsNothing);
     },
   );
 
-  testWidgets('renders execution modes, due certainty and qualified overdue', (
+  testWidgets('renders compact attention without hiding open occurrences', (
     tester,
   ) async {
     await _pump(
@@ -175,18 +174,12 @@ void main() {
       ]),
     );
 
-    expect(find.text('Richiede pagamento'), findsOneWidget);
-    expect(find.text('Pagamento automatico'), findsOneWidget);
-    expect(find.text('Pagamento programmato'), findsOneWidget);
-    expect(find.text('Modalità da definire'), findsNWidgets(2));
-    expect(find.text('Scadenza certa superata'), findsOneWidget);
-    expect(find.text('Data di scadenza stimata superata'), findsOneWidget);
-    expect(
-      find.text('Data di scadenza superata (certezza non specificata)'),
-      findsOneWidget,
-    );
-    expect(find.text('Scadenza non indicata'), findsOneWidget);
-    expect(find.text('Scadenza certa: 01/01/2099'), findsOneWidget);
+    expect(find.textContaining('Manuale ·'), findsOneWidget);
+    expect(find.textContaining('Automatica ·'), findsOneWidget);
+    expect(find.textContaining('Programmata ·'), findsOneWidget);
+    expect(find.text('Da pianificare'), findsNWidgets(5));
+    expect(find.text('Scadenza superata'), findsNothing);
+    expect(find.byKey(const Key('future-expenses-unplaced')), findsOneWidget);
   });
 
   testWidgets(
@@ -219,6 +212,83 @@ void main() {
     },
   );
 
+  testWidgets('groups future months and exposes only non-empty month badges', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _aggregate([
+        _fixture('Corrente', plannedImpact: _impact(DateTime(2099, 11, 20))),
+        _fixture('Dicembre uno', plannedImpact: _impact(DateTime(2099, 12, 2))),
+        _fixture('Dicembre due', plannedImpact: _impact(DateTime(2099, 12, 9))),
+        _fixture('Febbraio', plannedImpact: _impact(DateTime(2100, 2, 3))),
+        _fixture('Senza data', dueDate: null),
+      ]),
+    );
+
+    expect(find.textContaining('Corrente ·'), findsOneWidget);
+    expect(find.text('Mesi futuri'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('future-expenses-months')),
+        matching: find.text('3'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('future-expenses-unplaced')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('future-expenses-unplaced')),
+        matching: find.text('1'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Dicembre uno ·'), findsNothing);
+
+    await tester.tap(find.text('Mesi futuri'));
+    await tester.pumpAndSettle();
+    expect(find.text('Dicembre 2099'), findsOneWidget);
+    expect(find.text('Febbraio 2100'), findsOneWidget);
+    expect(find.text('Gennaio 2100'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('future-expense-month-2099-12')),
+        matching: find.text('2'),
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Dicembre 2099'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Dicembre uno ·'), findsOneWidget);
+    expect(find.textContaining('Dicembre due ·'), findsOneWidget);
+    expect(find.textContaining('Febbraio ·'), findsNothing);
+    await tester.tap(find.textContaining('Dicembre due ·'));
+    await tester.pumpAndSettle();
+    expect(find.text('Completa previsione'), findsOneWidget);
+  });
+
+  testWidgets(
+    'global unplaced list contains only occurrences without a month',
+    (tester) async {
+      await _pump(
+        tester,
+        _aggregate([
+          _fixture('Senza data', dueDate: null),
+          _fixture('Con scadenza', dueDate: DateTime(2099, 11, 18)),
+        ]),
+      );
+
+      await tester.tap(find.byKey(const Key('future-expenses-unplaced')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Senza data ·'), findsOneWidget);
+      expect(find.textContaining('Con scadenza ·'), findsNothing);
+      await tester.tap(find.textContaining('Senza data ·'));
+      await tester.pumpAndSettle();
+      expect(find.text('Completa previsione'), findsOneWidget);
+    },
+  );
+
   testWidgets(
     'Hera-like completion rebuilds the card from FutureExpenseReader',
     (tester) async {
@@ -236,13 +306,13 @@ void main() {
           ),
         ),
       ]);
-      final store = await _pump(tester, aggregate);
-
-      expect(
-        find.text('Impatto economico non ancora collocabile'),
-        findsOneWidget,
+      final store = await _pump(
+        tester,
+        aggregate,
+        referenceTime: DateTime(2026, 11, 1),
       );
-      expect(find.text('Modalità da definire'), findsOneWidget);
+
+      expect(find.text('Da pianificare'), findsOneWidget);
 
       await tester.tap(find.text('Acqua · Hera'));
       await tester.pumpAndSettle();
@@ -250,14 +320,20 @@ void main() {
         find.byKey(const Key('completion-preferred-day')),
         '5',
       );
-      final mode = find.byKey(const Key('completion-payment-execution-mode'));
-      await tester.ensureVisible(mode);
+      final mode = find
+          .byKey(const Key('completion-payment-execution-mode'))
+          .last;
+      await tester.drag(find.byType(ListView).last, const Offset(0, -350));
+      await tester.pumpAndSettle();
       await tester.tap(mode);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Richiede una mia azione').last);
       await tester.pumpAndSettle();
-      final planned = find.byKey(const Key('completion-planned-impact-date'));
-      await tester.ensureVisible(planned);
+      final planned = find
+          .byKey(const Key('completion-planned-impact-date'))
+          .last;
+      await tester.drag(find.byType(ListView).last, const Offset(0, -350));
+      await tester.pumpAndSettle();
       await tester.tap(planned);
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.chevron_right));
@@ -265,15 +341,23 @@ void main() {
       await tester.tap(find.text('5').last);
       await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
-      final save = find.byKey(const Key('save-completed-expected-expense'));
-      await tester.ensureVisible(save);
+      final save = find
+          .byKey(const Key('save-completed-expected-expense'))
+          .last;
+      await tester.drag(find.byType(ListView).last, const Offset(0, -600));
+      await tester.pumpAndSettle();
       await tester.tap(save);
       await tester.pumpAndSettle();
 
+      expect(find.text('Acqua · Hera'), findsNothing);
+      expect(find.text('Mesi futuri'), findsOneWidget);
+      await tester.tap(find.text('Mesi futuri'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Dicembre 2026'));
+      await tester.pumpAndSettle();
       expect(find.text('Acqua · Hera'), findsOneWidget);
-      expect(find.text('Scadenza stimata: 14/11/2026'), findsOneWidget);
-      expect(find.text('Impatto pianificato: 05/12/2026'), findsOneWidget);
-      expect(find.text('Richiede pagamento'), findsOneWidget);
+      expect(find.text('Impatto 05/12/2026'), findsOneWidget);
+      expect(find.text('Richiede azione'), findsOneWidget);
       final occurrence = store.expectedExpenseAggregate.occurrences.single;
       expect(occurrence.expectedDueDate, DateTime(2026, 11, 14));
       expect(
@@ -286,8 +370,9 @@ void main() {
 
 Future<FinanceStore> _pump(
   WidgetTester tester,
-  ExpectedExpenseAggregate aggregate,
-) async {
+  ExpectedExpenseAggregate aggregate, {
+  DateTime? referenceTime,
+}) async {
   final store = FinanceStore(
     initialExpectedExpenseAggregate: aggregate,
     expectedExpensePersistence: ExpectedExpensePersistence(
@@ -303,6 +388,7 @@ Future<FinanceStore> _pump(
         financeStore: store,
         expenseStore: ExpenseStore(),
         cashWalletStore: CashWalletStore(),
+        futureExpenseReferenceTime: referenceTime ?? DateTime(2099, 11, 1),
       ),
     ),
   );
@@ -395,6 +481,12 @@ ExpectedPaymentWindow _window(
   source: ExpectedExpenseDateSource.explicit,
   confidence: ExpectedTemporalConfidence.high,
   origin: ExpectedPaymentWindowOrigin.occurrenceOverride,
+);
+
+PlannedEconomicImpact _impact(DateTime date) => PlannedEconomicImpact(
+  start: date,
+  end: date,
+  origin: PlannedEconomicImpactOrigin.userDecision,
 );
 
 class _Fixture {

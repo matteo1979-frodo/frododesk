@@ -18,16 +18,60 @@ class FutureExpenseReader {
           (projection) =>
               projection.status == ExpectedExpenseOccurrenceStatus.pending,
         )
-        .map(
-          (projection) => FutureExpenseProjection(
+        .map((projection) {
+          final displayPlacement = _displayPlacement(projection);
+          return FutureExpenseProjection(
             source: projection,
             economicImpactPlacement: _placement(projection),
             economicImpactStart: _impactStart(projection),
             economicImpactEnd: _impactEnd(projection),
+            displayPlacement: displayPlacement,
+            displayStart: _displayStart(projection, displayPlacement),
+            displayEnd: _displayEnd(projection, displayPlacement),
             overdueQualification: _overdue(projection, referenceTime),
-          ),
-        ),
+          );
+        }),
   );
+
+  FutureExpenseDisplayPlacement _displayPlacement(
+    ExpectedExpenseProjection projection,
+  ) {
+    if (projection.plannedEconomicImpact != null) {
+      return FutureExpenseDisplayPlacement.plannedEconomicImpact;
+    }
+    if (projection.expectedPaymentWindow?.semantic ==
+        ExpectedPaymentWindowSemantic.expectedDebit) {
+      return FutureExpenseDisplayPlacement.expectedDebitWindow;
+    }
+    if (projection.expectedDueDate != null) {
+      return FutureExpenseDisplayPlacement.dueDateFallback;
+    }
+    return FutureExpenseDisplayPlacement.unplaced;
+  }
+
+  DateTime? _displayStart(
+    ExpectedExpenseProjection projection,
+    FutureExpenseDisplayPlacement placement,
+  ) => switch (placement) {
+    FutureExpenseDisplayPlacement.plannedEconomicImpact =>
+      projection.plannedEconomicImpact!.start,
+    FutureExpenseDisplayPlacement.expectedDebitWindow =>
+      projection.expectedPaymentWindow!.start,
+    FutureExpenseDisplayPlacement.dueDateFallback => projection.expectedDueDate,
+    FutureExpenseDisplayPlacement.unplaced => null,
+  };
+
+  DateTime? _displayEnd(
+    ExpectedExpenseProjection projection,
+    FutureExpenseDisplayPlacement placement,
+  ) => switch (placement) {
+    FutureExpenseDisplayPlacement.plannedEconomicImpact =>
+      projection.plannedEconomicImpact!.end,
+    FutureExpenseDisplayPlacement.expectedDebitWindow =>
+      projection.expectedPaymentWindow!.end,
+    FutureExpenseDisplayPlacement.dueDateFallback => projection.expectedDueDate,
+    FutureExpenseDisplayPlacement.unplaced => null,
+  };
 
   FutureExpenseEconomicImpactPlacement _placement(
     ExpectedExpenseProjection projection,

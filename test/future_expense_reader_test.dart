@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/logic/finance/expected_expense_persistence.dart';
 import 'package:frododesk/logic/finance/expected_expense_reader.dart';
 import 'package:frododesk/logic/finance/future_expense_reader.dart';
+import 'package:frododesk/logic/finance/future_expense_overview_reader.dart';
 import 'package:frododesk/models/expense_relationship.dart';
 import 'package:frododesk/models/expected_expense_occurrence.dart';
 import 'package:frododesk/models/expected_expense_projection.dart';
@@ -191,6 +192,107 @@ void main() {
         FutureExpenseEconomicImpactPlacement.insufficient,
       );
       expect(result.economicImpactStart, isNull);
+      expect(
+        result.displayPlacement,
+        FutureExpenseDisplayPlacement.dueDateFallback,
+      );
+      expect(result.displayStart, DateTime(2026, 11, 14));
+      expect(result.requiresPlanning, isTrue);
+    });
+
+    test('missing every usable date remains globally unplaced', () {
+      final result = reader
+          .read(
+            projections: _source([_occurrence('unplaced', withDueDate: false)]),
+            referenceTime: referenceTime,
+          )
+          .single;
+
+      expect(result.displayPlacement, FutureExpenseDisplayPlacement.unplaced);
+      expect(result.displayStart, isNull);
+      expect(result.requiresPlanning, isTrue);
+    });
+  });
+
+  group('overview grouping', () {
+    test('groups current, non-empty future months and global unplaced', () {
+      final futureExpenses = reader.read(
+        projections: _source([
+          _occurrence(
+            'current',
+            plannedImpact: _impact(DateTime(2026, 11, 22)),
+          ),
+          _occurrence(
+            'december_1',
+            plannedImpact: _impact(DateTime(2026, 12, 5)),
+          ),
+          _occurrence(
+            'december_2',
+            paymentWindow: _windowFor(
+              ExpectedPaymentWindowSemantic.expectedDebit,
+              DateTime(2026, 12, 10),
+              DateTime(2026, 12, 12),
+            ),
+          ),
+          _occurrence('february', plannedImpact: _impact(DateTime(2027, 2, 1))),
+          _occurrence('unplaced', withDueDate: false),
+        ]),
+        referenceTime: referenceTime,
+      );
+
+      final overview = const FutureExpenseOverviewReader().read(
+        expenses: futureExpenses,
+        referenceTime: referenceTime,
+      );
+
+      expect(overview.currentMonth.map((item) => item.occurrenceId), [
+        'current',
+      ]);
+      expect(overview.futureMonths.map((item) => item.month), [
+        DateTime(2026, 12),
+        DateTime(2027, 2),
+      ]);
+      expect(overview.futureMonths[0].expenses.length, 2);
+      expect(overview.futureMonths[1].expenses.length, 1);
+      expect(overview.futureCount, 3);
+      expect(overview.unplaced.single.occurrenceId, 'unplaced');
+    });
+
+    test('planned impact relocates the same occurrence and keeps due date', () {
+      final before = reader
+          .read(
+            projections: _source([
+              _occurrence('moving', explicitDueDate: DateTime(2026, 11, 30)),
+            ]),
+            referenceTime: referenceTime,
+          )
+          .single;
+      final after = reader
+          .read(
+            projections: _source([
+              _occurrence(
+                'moving',
+                explicitDueDate: DateTime(2026, 11, 30),
+                plannedImpact: _impact(DateTime(2026, 12, 5)),
+              ),
+            ]),
+            referenceTime: referenceTime,
+          )
+          .single;
+
+      final beforeOverview = const FutureExpenseOverviewReader().read(
+        expenses: [before],
+        referenceTime: referenceTime,
+      );
+      final afterOverview = const FutureExpenseOverviewReader().read(
+        expenses: [after],
+        referenceTime: referenceTime,
+      );
+
+      expect(beforeOverview.currentMonth.single.requiresPlanning, isTrue);
+      expect(afterOverview.currentMonth, isEmpty);
+      expect(afterOverview.futureMonths.single.month, DateTime(2026, 12));
+      expect(after.source.expectedDueDate, DateTime(2026, 11, 30));
     });
   });
 
@@ -364,6 +466,7 @@ ExpectedExpenseOccurrence _occurrence(
   PlannedEconomicImpact? plannedImpact,
   PaymentExecutionMode executionMode = PaymentExecutionMode.unknown,
   bool withDueDate = true,
+  DateTime? explicitDueDate,
   String? expectedBalanceId,
   String? resolvedEconomicFactId,
 }) => ExpectedExpenseOccurrence(
@@ -374,7 +477,9 @@ ExpectedExpenseOccurrence _occurrence(
   knowledgeSource: knowledgeSource,
   expectedIssueDate: DateTime(2026, 11, 1),
   expectedIssueDateSource: ExpectedExpenseDateSource.explicit,
-  expectedDueDate: withDueDate ? DateTime(2026, 11, 14) : null,
+  expectedDueDate: withDueDate
+      ? (explicitDueDate ?? DateTime(2026, 11, 14))
+      : null,
   expectedDueDateSource: withDueDate
       ? ExpectedExpenseDateSource.explicit
       : null,
@@ -403,3 +508,22 @@ ExpectedPaymentWindow _window(ExpectedPaymentWindowSemantic semantic) =>
       confidence: ExpectedTemporalConfidence.high,
       origin: ExpectedPaymentWindowOrigin.occurrenceOverride,
     );
+
+ExpectedPaymentWindow _windowFor(
+  ExpectedPaymentWindowSemantic semantic,
+  DateTime start,
+  DateTime end,
+) => ExpectedPaymentWindow(
+  start: start,
+  end: end,
+  semantic: semantic,
+  source: ExpectedExpenseDateSource.explicit,
+  confidence: ExpectedTemporalConfidence.high,
+  origin: ExpectedPaymentWindowOrigin.occurrenceOverride,
+);
+
+PlannedEconomicImpact _impact(DateTime date) => PlannedEconomicImpact(
+  start: date,
+  end: date,
+  origin: PlannedEconomicImpactOrigin.userDecision,
+);

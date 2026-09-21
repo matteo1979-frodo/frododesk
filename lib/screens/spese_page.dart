@@ -19,10 +19,11 @@ import '../logic/finance/composite_economic_operation_coordinator.dart';
 import '../logic/finance/expected_expense_update_coordinator.dart';
 import '../logic/finance/expected_expense_reader.dart';
 import '../logic/finance/future_expense_reader.dart';
+import '../logic/finance/future_expense_overview_reader.dart';
 import '../models/expected_expense_occurrence.dart';
-import '../models/expected_expense_projection.dart';
 import '../models/expense_relationship.dart';
 import '../models/future_expense_projection.dart';
+import '../models/future_expense_overview.dart';
 import '../models/composite_economic_operation.dart';
 import '../models/economic_operation_metadata.dart';
 import '../models/economic_event.dart';
@@ -146,6 +147,7 @@ class SpesePage extends StatefulWidget {
   final CompositeEconomicOperationCoordinator? compositeCoordinator;
   final ExpenseReplacementPersistence? expenseReplacementPersistence;
   final ExpenseReplacementCoordinator? expenseReplacementCoordinator;
+  final DateTime? futureExpenseReferenceTime;
 
   const SpesePage({
     super.key,
@@ -155,6 +157,7 @@ class SpesePage extends StatefulWidget {
     this.compositeCoordinator,
     this.expenseReplacementPersistence,
     this.expenseReplacementCoordinator,
+    this.futureExpenseReferenceTime,
   });
 
   @override
@@ -256,12 +259,17 @@ class _SpesePageState extends State<SpesePage> {
   @override
   Widget build(BuildContext context) {
     final currentMonthExpenses = snapshot.currentMonthExpenses;
+    final referenceTime = widget.futureExpenseReferenceTime ?? DateTime.now();
     final expectedExpenseProjections = const ExpectedExpenseReader().read(
       widget.financeStore.expectedExpenseAggregate,
     );
     final futureExpenses = const FutureExpenseReader().read(
       projections: expectedExpenseProjections,
-      referenceTime: DateTime.now(),
+      referenceTime: referenceTime,
+    );
+    final futureExpenseOverview = const FutureExpenseOverviewReader().read(
+      expenses: futureExpenses,
+      referenceTime: referenceTime,
     );
 
     return Scaffold(
@@ -305,7 +313,7 @@ class _SpesePageState extends State<SpesePage> {
                     ),
                     const SizedBox(height: 18),
                     _FutureExpensesSection(
-                      expenses: futureExpenses,
+                      overview: futureExpenseOverview,
                       onOpen: _openExpectedExpenseCompletion,
                     ),
                     const SizedBox(height: 18),
@@ -578,7 +586,7 @@ class _SpesePageState extends State<SpesePage> {
     );
   }
 
-  Future<void> _openExpectedExpenseCompletion(
+  Future<bool> _openExpectedExpenseCompletion(
     FutureExpenseProjection expense,
   ) async {
     final result = await Navigator.of(context)
@@ -591,19 +599,28 @@ class _SpesePageState extends State<SpesePage> {
             ),
           ),
         );
-    if (!mounted || result == null) return;
+    if (!mounted || result == null) return false;
     setState(() {});
+    return true;
   }
 }
 
 class _FutureExpensesSection extends StatelessWidget {
-  final List<FutureExpenseProjection> expenses;
-  final ValueChanged<FutureExpenseProjection> onOpen;
+  final FutureExpenseOverview overview;
+  final Future<bool> Function(FutureExpenseProjection) onOpen;
 
-  const _FutureExpensesSection({required this.expenses, required this.onOpen});
+  const _FutureExpensesSection({required this.overview, required this.onOpen});
 
   @override
   Widget build(BuildContext context) {
+    final direct = [
+      ...overview.overdueFromPastMonths,
+      ...overview.currentMonth,
+    ];
+    final empty =
+        direct.isEmpty &&
+        overview.futureMonths.isEmpty &&
+        overview.unplaced.isEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -616,33 +633,68 @@ class _FutureExpensesSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        if (expenses.isEmpty)
+        if (empty)
           const _SpeseGlassCard(
             child: Text(
               'Nessuna spesa futura aperta.',
               style: TextStyle(color: Colors.white70),
             ),
           )
-        else
-          ...expenses.map(
+        else ...[
+          ...direct.map(
             (expense) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: _FutureExpenseCard(
+              child: _CompactFutureExpenseTile(
                 expense: expense,
                 onTap: () => onOpen(expense),
               ),
             ),
           ),
+          if (overview.futureMonths.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _FutureExpenseNavigationTile(
+                key: const Key('future-expenses-months'),
+                icon: Icons.calendar_month_rounded,
+                title: 'Mesi futuri',
+                count: overview.futureCount,
+                onTap: () => Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (_) => _FutureExpenseMonthsPage(
+                      months: overview.futureMonths,
+                      onOpen: onOpen,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          if (overview.unplaced.isNotEmpty)
+            _FutureExpenseNavigationTile(
+              key: const Key('future-expenses-unplaced'),
+              icon: Icons.warning_amber_rounded,
+              title: 'Da pianificare',
+              count: overview.unplaced.length,
+              onTap: () => Navigator.of(context).push<bool>(
+                MaterialPageRoute(
+                  builder: (_) => _FutureExpenseListPage(
+                    title: 'Da pianificare',
+                    expenses: overview.unplaced,
+                    onOpen: onOpen,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ],
     );
   }
 }
 
-class _FutureExpenseCard extends StatelessWidget {
+class _CompactFutureExpenseTile extends StatelessWidget {
   final FutureExpenseProjection expense;
   final VoidCallback onTap;
 
-  const _FutureExpenseCard({required this.expense, required this.onTap});
+  const _CompactFutureExpenseTile({required this.expense, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -651,102 +703,103 @@ class _FutureExpenseCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(22),
       child: _SpeseGlassCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Text(
-              '${source.service} · ${source.provider}',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
+            _SpeseIconBox(
+              icon: expense.requiresPlanning
+                  ? Icons.warning_amber_rounded
+                  : Icons.event_available_rounded,
+              color: expense.requiresPlanning
+                  ? const Color(0xFFFFB74D)
+                  : const Color(0xFF66BB6A),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${source.service} · ${source.provider}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _compactDateLabel(expense),
+                    style: TextStyle(
+                      color: expense.requiresPlanning
+                          ? const Color(0xFFFFD180)
+                          : Colors.white70,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (_attentionLabel(expense) case final label?)
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        color: Color(0xFFFFD180),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                ],
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              '${EuroFormatter.format(source.expectedAmount)} · '
-              '${_amountQuality(source)}',
-              style: const TextStyle(
-                color: Colors.white70,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _dueDateLabel(source),
-              style: const TextStyle(color: Colors.white70),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _economicImpactLabel(expense),
-              style: const TextStyle(color: Colors.white70),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _executionModeLabel(source.occurrencePaymentExecutionMode),
-              style: const TextStyle(color: Colors.white70),
-            ),
-            if (_overdueLabel(expense.overdueQualification)
-                case final label?) ...[
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Color(0xFFFFB74D),
-                  fontWeight: FontWeight.w800,
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  EuroFormatter.format(source.expectedAmount),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-            ],
+                if (source.provisional)
+                  const Text(
+                    'stimato',
+                    style: TextStyle(color: Colors.white60, fontSize: 11),
+                  ),
+              ],
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Colors.white70),
           ],
         ),
       ),
     );
   }
 
-  static String _amountQuality(ExpectedExpenseProjection source) =>
-      source.provisional ? 'Importo stimato/provvisorio' : 'Importo previsto';
-
-  static String _dueDateLabel(ExpectedExpenseProjection source) {
-    final dueDate = source.expectedDueDate;
-    if (dueDate == null) return 'Scadenza non indicata';
-    final qualification = switch (source.expectedDueDateCertainty) {
-      ExpectedExpenseDateCertainty.known => 'Scadenza certa',
-      ExpectedExpenseDateCertainty.estimated => 'Scadenza stimata',
-      ExpectedExpenseDateCertainty.legacyUnspecified ||
-      null => 'Scadenza non qualificata',
-    };
-    return '$qualification: ${_formatDate(dueDate)}';
-  }
-
-  static String _economicImpactLabel(
+  static String _compactDateLabel(
     FutureExpenseProjection expense,
-  ) => switch (expense.economicImpactPlacement) {
-    FutureExpenseEconomicImpactPlacement.plannedEconomicImpact =>
-      'Impatto pianificato: ${_formatInterval(expense.economicImpactStart!, expense.economicImpactEnd!)}',
-    FutureExpenseEconomicImpactPlacement.expectedDebitWindow =>
-      'Addebito atteso: ${_formatInterval(expense.economicImpactStart!, expense.economicImpactEnd!)}',
-    FutureExpenseEconomicImpactPlacement.insufficient =>
-      'Impatto economico non ancora collocabile',
+  ) => switch (expense.displayPlacement) {
+    FutureExpenseDisplayPlacement.plannedEconomicImpact =>
+      'Impatto ${_formatInterval(expense.displayStart!, expense.displayEnd!)}',
+    FutureExpenseDisplayPlacement.expectedDebitWindow =>
+      'Addebito ${_formatInterval(expense.displayStart!, expense.displayEnd!)}',
+    FutureExpenseDisplayPlacement.dueDateFallback =>
+      'Scadenza ${_formatDate(expense.displayStart!)}',
+    FutureExpenseDisplayPlacement.unplaced => 'Data non disponibile',
   };
 
-  static String _executionModeLabel(PaymentExecutionMode mode) =>
-      switch (mode) {
-        PaymentExecutionMode.unknown => 'Modalità da definire',
-        PaymentExecutionMode.requiresUserAction => 'Richiede pagamento',
-        PaymentExecutionMode.automatic => 'Pagamento automatico',
-        PaymentExecutionMode.scheduled => 'Pagamento programmato',
-      };
-
-  static String? _overdueLabel(
-    FutureExpenseOverdueQualification qualification,
-  ) => switch (qualification) {
-    FutureExpenseOverdueQualification.notOverdue => null,
-    FutureExpenseOverdueQualification.overdueKnown => 'Scadenza certa superata',
-    FutureExpenseOverdueQualification.overdueEstimated =>
-      'Data di scadenza stimata superata',
-    FutureExpenseOverdueQualification.overdueUnspecifiedCertainty =>
-      'Data di scadenza superata (certezza non specificata)',
-  };
+  static String? _attentionLabel(FutureExpenseProjection expense) {
+    if (expense.requiresPlanning) return 'Da pianificare';
+    if (expense.overdueQualification !=
+        FutureExpenseOverdueQualification.notOverdue) {
+      return 'Scadenza superata';
+    }
+    if (expense.source.occurrencePaymentExecutionMode ==
+        PaymentExecutionMode.requiresUserAction) {
+      return 'Richiede azione';
+    }
+    return null;
+  }
 
   static String _formatInterval(DateTime start, DateTime end) => start == end
       ? _formatDate(start)
@@ -755,6 +808,162 @@ class _FutureExpenseCard extends StatelessWidget {
   static String _formatDate(DateTime value) =>
       '${value.day.toString().padLeft(2, '0')}/'
       '${value.month.toString().padLeft(2, '0')}/${value.year}';
+}
+
+class _FutureExpenseNavigationTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final int count;
+  final VoidCallback onTap;
+
+  const _FutureExpenseNavigationTile({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.count,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(22),
+    child: _SpeseGlassCard(
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFFFFB74D)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFB74D),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '$count',
+              style: const TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          const Icon(Icons.chevron_right_rounded, color: Colors.white70),
+        ],
+      ),
+    ),
+  );
+}
+
+class _FutureExpenseMonthsPage extends StatelessWidget {
+  final List<FutureExpenseMonthGroup> months;
+  final Future<bool> Function(FutureExpenseProjection) onOpen;
+
+  const _FutureExpenseMonthsPage({required this.months, required this.onOpen});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: const Color(0xFF101820),
+    appBar: AppBar(
+      title: const Text('Mesi futuri'),
+      foregroundColor: Colors.white,
+      backgroundColor: Colors.black.withValues(alpha: 0.08),
+    ),
+    body: _SpeseBackground(
+      child: ListView.separated(
+        padding: const EdgeInsets.all(18),
+        itemCount: months.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
+        itemBuilder: (context, index) {
+          final group = months[index];
+          return _FutureExpenseNavigationTile(
+            key: Key(
+              'future-expense-month-${group.month.year}-${group.month.month}',
+            ),
+            icon: Icons.calendar_today_rounded,
+            title: _monthLabel(group.month),
+            count: group.expenses.length,
+            onTap: () async {
+              final changed = await Navigator.of(context).push<bool>(
+                MaterialPageRoute(
+                  builder: (_) => _FutureExpenseListPage(
+                    title: _monthLabel(group.month),
+                    expenses: group.expenses,
+                    onOpen: onOpen,
+                  ),
+                ),
+              );
+              if (changed == true && context.mounted) {
+                Navigator.of(context).pop(true);
+              }
+            },
+          );
+        },
+      ),
+    ),
+  );
+}
+
+class _FutureExpenseListPage extends StatelessWidget {
+  final String title;
+  final List<FutureExpenseProjection> expenses;
+  final Future<bool> Function(FutureExpenseProjection) onOpen;
+
+  const _FutureExpenseListPage({
+    required this.title,
+    required this.expenses,
+    required this.onOpen,
+  });
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: const Color(0xFF101820),
+    appBar: AppBar(
+      title: Text(title),
+      foregroundColor: Colors.white,
+      backgroundColor: Colors.black.withValues(alpha: 0.08),
+    ),
+    body: _SpeseBackground(
+      child: ListView.separated(
+        padding: const EdgeInsets.all(18),
+        itemCount: expenses.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
+        itemBuilder: (context, index) => _CompactFutureExpenseTile(
+          expense: expenses[index],
+          onTap: () async {
+            final changed = await onOpen(expenses[index]);
+            if (changed && context.mounted) Navigator.of(context).pop(true);
+          },
+        ),
+      ),
+    ),
+  );
+}
+
+String _monthLabel(DateTime month) {
+  const names = [
+    'Gennaio',
+    'Febbraio',
+    'Marzo',
+    'Aprile',
+    'Maggio',
+    'Giugno',
+    'Luglio',
+    'Agosto',
+    'Settembre',
+    'Ottobre',
+    'Novembre',
+    'Dicembre',
+  ];
+  return '${names[month.month - 1]} ${month.year}';
 }
 
 class _UtilityBillAccountPage extends StatelessWidget {
@@ -2200,19 +2409,15 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
   bool _canCreatePrediction(RealExpense expense) =>
       canCreateExpectedExpensePrediction(expense);
 
-  ({
-    ExpenseRelationship relationship,
-    ExpectedExpenseOccurrence occurrence,
-  })? _prediction(RealExpense expense) {
+  ({ExpenseRelationship relationship, ExpectedExpenseOccurrence occurrence})?
+  _prediction(RealExpense expense) {
     final factId = expense.economicFactId;
     if (factId == null) return null;
     final occurrence = financeStore.expectedExpenseAggregate.occurrences
         .where((item) => item.evidenceEconomicFactIds.contains(factId))
         .firstOrNull;
     if (occurrence == null) return null;
-    final relationship = financeStore
-        .expectedExpenseAggregate
-        .relationships
+    final relationship = financeStore.expectedExpenseAggregate.relationships
         .where((item) => item.relationshipId == occurrence.relationshipId)
         .firstOrNull;
     if (relationship == null) return null;
@@ -2220,7 +2425,8 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
   }
 
   String _formatExpectedDate(ExpectedExpenseOccurrence occurrence) {
-    final date = occurrence.expectedIssueDate ??
+    final date =
+        occurrence.expectedIssueDate ??
         occurrence.expectedDueDate ??
         occurrence.expectedPaymentWindow?.start;
     return date == null ? 'non disponibile' : _formatMovementDate(date);
@@ -2312,7 +2518,8 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                   ),
                                   Text("Categoria: ${expense.category}"),
                                   Text("Conto: ${expense.balanceName}"),
-                                  if (_prediction(expense) case final value?) ...[
+                                  if (_prediction(expense)
+                                      case final value?) ...[
                                     const SizedBox(height: 10),
                                     Text(
                                       'Previsione salvata: ${value.relationship.service} · '
@@ -2363,24 +2570,25 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                       Navigator.of(dialogContext).pop();
                                       final now = DateTime.now();
                                       final token = now.microsecondsSinceEpoch;
-                                      final saved = await Navigator.of(context)
-                                          .push<bool>(
-                                            MaterialPageRoute(
-                                              builder: (_) =>
-                                                  ExpectedExpenseFromRealExpensePage(
-                                                    expense: expense,
-                                                    financeStore: financeStore,
-                                                    relationshipId:
-                                                        'expense_relationship_$token',
-                                                    occurrenceId:
-                                                        'expected_occurrence_$token',
-                                                  ),
-                                            ),
-                                          );
+                                      final saved = await Navigator.of(context).push<bool>(
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              ExpectedExpenseFromRealExpensePage(
+                                                expense: expense,
+                                                financeStore: financeStore,
+                                                relationshipId:
+                                                    'expense_relationship_$token',
+                                                occurrenceId:
+                                                    'expected_occurrence_$token',
+                                              ),
+                                        ),
+                                      );
                                       if (!context.mounted || saved != true) {
                                         return;
                                       }
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         const SnackBar(
                                           content: Text('Previsione salvata.'),
                                         ),

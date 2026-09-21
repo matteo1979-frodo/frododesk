@@ -6,6 +6,13 @@ enum FutureExpenseEconomicImpactPlacement {
   insufficient,
 }
 
+enum FutureExpenseDisplayPlacement {
+  plannedEconomicImpact,
+  expectedDebitWindow,
+  dueDateFallback,
+  unplaced,
+}
+
 enum FutureExpenseOverdueQualification {
   notOverdue,
   overdueKnown,
@@ -23,6 +30,9 @@ class FutureExpenseProjection {
   final FutureExpenseEconomicImpactPlacement economicImpactPlacement;
   final DateTime? economicImpactStart;
   final DateTime? economicImpactEnd;
+  final FutureExpenseDisplayPlacement displayPlacement;
+  final DateTime? displayStart;
+  final DateTime? displayEnd;
   final FutureExpenseOverdueQualification overdueQualification;
 
   const FutureExpenseProjection({
@@ -30,9 +40,16 @@ class FutureExpenseProjection {
     required this.economicImpactPlacement,
     required this.economicImpactStart,
     required this.economicImpactEnd,
+    required this.displayPlacement,
+    required this.displayStart,
+    required this.displayEnd,
     required this.overdueQualification,
   });
 
   String get occurrenceId => source.occurrenceId;
   String get relationshipId => source.relationshipId;
+
+  bool get requiresPlanning =>
+      displayPlacement == FutureExpenseDisplayPlacement.dueDateFallback ||
+      displayPlacement == FutureExpenseDisplayPlacement.unplaced;
 }
