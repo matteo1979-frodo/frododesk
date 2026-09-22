@@ -8,6 +8,7 @@ import 'package:frododesk/logic/ledger/economic_event_collector.dart';
 import 'package:frododesk/logic/ledger/economic_event_correlator.dart';
 import 'package:frododesk/logic/persistence_store.dart';
 import 'package:frododesk/models/composite_economic_operation.dart';
+import 'package:frododesk/models/balance_posting_mode.dart';
 import 'package:frododesk/models/economic_operation_metadata.dart';
 import 'package:frododesk/models/finance_balance.dart';
 import 'package:frododesk/models/finance_recurring_item.dart';
@@ -120,6 +121,87 @@ void main() {
     expect(harness.finance.transactions, hasLength(3));
     expect(harness.expenses.all, hasLength(3));
   });
+
+  test('historical composite preserves balance and all facts', () async {
+    final harness = await _Harness.create();
+    final posting = _posting(
+      balancePostingMode: BalancePostingMode.alreadyIncludedInCurrentBalance,
+    );
+
+    final result = await harness.coordinator.record(posting);
+
+    expect(result.status, CompositeEconomicOperationStatus.completed);
+    expect(harness.finance.balances.single.currentAmount, 1000);
+    expect(harness.finance.transactions, hasLength(3));
+    expect(harness.expenses.all, hasLength(3));
+    expect(
+      harness.finance.transactions
+          .map((item) => item.balancePostingMode)
+          .toSet(),
+      {BalancePostingMode.alreadyIncludedInCurrentBalance},
+    );
+    expect(
+      harness.expenses.all.map((item) => item.balancePostingMode).toSet(),
+      {BalancePostingMode.alreadyIncludedInCurrentBalance},
+    );
+  });
+
+  test('historical composite retry is inert', () async {
+    final harness = await _Harness.create();
+    final posting = _posting(
+      balancePostingMode: BalancePostingMode.alreadyIncludedInCurrentBalance,
+    );
+    expect(
+      (await harness.coordinator.record(posting)).status,
+      CompositeEconomicOperationStatus.completed,
+    );
+    expect(
+      (await harness.coordinator.record(posting)).status,
+      CompositeEconomicOperationStatus.alreadyComplete,
+    );
+    expect(harness.finance.balances.single.currentAmount, 1000);
+    expect(harness.finance.transactions, hasLength(3));
+    expect(harness.expenses.all, hasLength(3));
+  });
+
+  test(
+    'historical composite recovers after partial Expense persistence',
+    () async {
+      var expenseWrites = 0;
+      final expenses = ExpenseStore(
+        saveVerified: (key, value) async {
+          expenseWrites++;
+          if (expenseWrites == 2) {
+            return const PersistenceWriteVerification(
+              backendAccepted: false,
+              readBack: null,
+            );
+          }
+          return PersistenceStore.saveStringVerified(key, value);
+        },
+      );
+      final harness = await _Harness.create(expenses: expenses);
+      final posting = _posting(
+        balancePostingMode: BalancePostingMode.alreadyIncludedInCurrentBalance,
+      );
+
+      expect(
+        (await harness.coordinator.record(posting)).status,
+        CompositeEconomicOperationStatus.failed,
+      );
+      expect(harness.finance.balances.single.currentAmount, 1000);
+      expect(harness.finance.transactions, hasLength(3));
+      expect(harness.expenses.all, hasLength(1));
+
+      expect(
+        (await harness.coordinator.record(posting)).status,
+        CompositeEconomicOperationStatus.completed,
+      );
+      expect(harness.finance.balances.single.currentAmount, 1000);
+      expect(harness.finance.transactions, hasLength(3));
+      expect(harness.expenses.all, hasLength(3));
+    },
+  );
 
   test('Finance writer failure leaves every store unchanged', () async {
     final harness = await _Harness.create(
@@ -299,32 +381,35 @@ class _Harness {
   }
 }
 
-CompositeEconomicOperationPosting _posting() =>
-    CompositeEconomicOperationPosting(
-      operation: CompositeEconomicOperation(
-        operationId: 'operation-utility',
-        context: OperationContext.utilityBill,
-        mainEconomicFactId: 'fact-main',
-        mainAmount: 59.63,
-        accessories: const [
-          (
-            economicFactId: 'fact-bank-fee',
-            amount: 2,
-            accessoryCostType: AccessoryCostType.bankCommission,
-          ),
-          (
-            economicFactId: 'fact-postal-fee',
-            amount: 1,
-            accessoryCostType: AccessoryCostType.postalAcceptanceCharge,
-          ),
-        ],
+CompositeEconomicOperationPosting _posting({
+  BalancePostingMode balancePostingMode =
+      BalancePostingMode.affectsCurrentBalance,
+}) => CompositeEconomicOperationPosting(
+  operation: CompositeEconomicOperation(
+    operationId: 'operation-utility',
+    context: OperationContext.utilityBill,
+    mainEconomicFactId: 'fact-main',
+    mainAmount: 59.63,
+    accessories: const [
+      (
+        economicFactId: 'fact-bank-fee',
+        amount: 2,
+        accessoryCostType: AccessoryCostType.bankCommission,
       ),
-      debitBalanceId: 'balance-bank',
-      subject: FinanceSubject.matteo,
-      economicDate: DateTime(2026, 9, 16),
-      description: 'Operazione sintetica utenza',
-      category: 'Utenze',
-    );
+      (
+        economicFactId: 'fact-postal-fee',
+        amount: 1,
+        accessoryCostType: AccessoryCostType.postalAcceptanceCharge,
+      ),
+    ],
+  ),
+  debitBalanceId: 'balance-bank',
+  subject: FinanceSubject.matteo,
+  economicDate: DateTime(2026, 9, 16),
+  description: 'Operazione sintetica utenza',
+  category: 'Utenze',
+  balancePostingMode: balancePostingMode,
+);
 
 FinanceBalance _balance() => FinanceBalance(
   balanceId: 'balance-bank',
@@ -358,4 +443,5 @@ FinanceTransaction _expectedTransaction(
   notes: posting.category,
   economicFactId: fact.economicFactId,
   operationMetadata: fact.operationMetadata,
+  balancePostingMode: posting.balancePostingMode,
 );

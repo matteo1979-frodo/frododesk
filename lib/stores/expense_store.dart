@@ -297,6 +297,7 @@ class ExpenseStore extends ChangeNotifier {
       left.subject == right.subject &&
       left.cashWalletId == right.cashWalletId &&
       left.economicFactId == right.economicFactId &&
+      left.balancePostingMode == right.balancePostingMode &&
       jsonEncode(left.operationMetadata?.toJson()) ==
           jsonEncode(right.operationMetadata?.toJson());
 }

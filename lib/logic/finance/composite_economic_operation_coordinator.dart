@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../../models/composite_economic_operation.dart';
+import '../../models/balance_posting_mode.dart';
 import '../../models/economic_operation_metadata.dart';
 import '../../models/finance_balance.dart';
 import '../../models/finance_recurring_item.dart';
@@ -79,6 +80,7 @@ class CompositeEconomicOperationPosting {
   final DateTime economicDate;
   final String description;
   final String category;
+  final BalancePostingMode balancePostingMode;
 
   CompositeEconomicOperationPosting({
     required this.operation,
@@ -87,6 +89,7 @@ class CompositeEconomicOperationPosting {
     required this.economicDate,
     required String description,
     required String category,
+    this.balancePostingMode = BalancePostingMode.affectsCurrentBalance,
   }) : debitBalanceId = _requiredText(debitBalanceId, 'debitBalanceId'),
        description = _requiredText(description, 'description'),
        category = _requiredText(category, 'category');
@@ -135,11 +138,14 @@ class CompositeEconomicOperationCoordinator {
       final balanceIndex = candidateBalances.indexWhere(
         (item) => item.balanceId == context.balance!.balanceId,
       );
-      candidateBalances[balanceIndex] = _balanceAfterOutflow(
-        context.balance!,
-        posting.operation.totalAmount,
-        posting.economicDate,
-      );
+      if (posting.balancePostingMode ==
+          BalancePostingMode.affectsCurrentBalance) {
+        candidateBalances[balanceIndex] = _balanceAfterOutflow(
+          context.balance!,
+          posting.operation.totalAmount,
+          posting.economicDate,
+        );
+      }
       final candidateTransactions = List<FinanceTransaction>.of(
         financeStore.transactions,
       )..addAll(expected.transactions);
@@ -335,6 +341,7 @@ class CompositeEconomicOperationCoordinator {
       left.recurringItemId == right.recurringItemId &&
       left.notes == right.notes &&
       left.economicFactId == right.economicFactId &&
+      left.balancePostingMode == right.balancePostingMode &&
       _sameMetadata(left.operationMetadata, right.operationMetadata);
 
   static bool _sameExpense(RealExpense left, RealExpense right) =>
@@ -351,6 +358,7 @@ class CompositeEconomicOperationCoordinator {
       left.subject == right.subject &&
       left.cashWalletId == right.cashWalletId &&
       left.economicFactId == right.economicFactId &&
+      left.balancePostingMode == right.balancePostingMode &&
       _sameMetadata(left.operationMetadata, right.operationMetadata);
 
   static bool _sameMetadata(
@@ -399,6 +407,7 @@ class _ExpectedRecords {
         notes: posting.category,
         economicFactId: fact.economicFactId,
         operationMetadata: fact.operationMetadata,
+        balancePostingMode: posting.balancePostingMode,
       );
 
   RealExpense _expense(CompositeEconomicFact fact) => RealExpense(
@@ -412,6 +421,7 @@ class _ExpectedRecords {
     subject: posting.subject,
     economicFactId: fact.economicFactId,
     operationMetadata: fact.operationMetadata,
+    balancePostingMode: posting.balancePostingMode,
   );
 }
 

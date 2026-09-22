@@ -1,4 +1,5 @@
 import 'economic_event.dart';
+import 'balance_posting_mode.dart';
 
 enum SpeseCommandKind { expense, extraIncome, cashWithdrawal }
 
@@ -29,6 +30,7 @@ class SpeseCommand {
   final String category;
   final String? personId;
   final String description;
+  final BalancePostingMode balancePostingMode;
 
   const SpeseCommand({
     required this.id,
@@ -43,6 +45,7 @@ class SpeseCommand {
     required this.description,
     this.targetRecordId,
     this.personId,
+    this.balancePostingMode = BalancePostingMode.affectsCurrentBalance,
   });
 }
 
@@ -71,6 +74,7 @@ class SpeseCommandDraft {
   final String category;
   final String? personId;
   final String description;
+  final BalancePostingMode balancePostingMode;
 
   const SpeseCommandDraft({
     required this.id,
@@ -85,6 +89,7 @@ class SpeseCommandDraft {
     required this.description,
     this.targetRecordId,
     this.personId,
+    this.balancePostingMode = BalancePostingMode.affectsCurrentBalance,
   });
 }
 

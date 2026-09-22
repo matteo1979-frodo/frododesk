@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../../models/real_expense.dart';
+import '../../models/balance_posting_mode.dart';
 import '../../models/finance_recurring_item.dart';
 import '../../models/finance_transaction.dart';
 import '../../models/economic_event.dart';
@@ -117,6 +118,7 @@ class SpeseMutationCoordinator {
         economicFactId: economicFactId,
         occurredAt: command.occurredAt,
         transactionId: expectedTransaction.id,
+        balancePostingMode: command.balancePostingMode,
       );
       financeMatch = _classifyFinanceTransaction(expectedTransaction);
       if (financeMatch != _RecordMatch.coherent) {
@@ -149,6 +151,7 @@ class SpeseMutationCoordinator {
     origin: FinanceTransactionOrigin.manual,
     notes: command.category,
     economicFactId: economicFactId,
+    balancePostingMode: command.balancePostingMode,
   );
 
   String _ordinaryExpenseTransactionId(String economicFactId) =>
@@ -196,6 +199,7 @@ class SpeseMutationCoordinator {
       left.origin == right.origin &&
       left.notes == right.notes &&
       left.economicFactId == right.economicFactId &&
+      left.balancePostingMode == right.balancePostingMode &&
       left.operationMetadata == null;
 
   bool _sameExpense(RealExpense left, RealExpense right) =>
@@ -212,6 +216,7 @@ class SpeseMutationCoordinator {
       left.subject == right.subject &&
       left.cashWalletId == right.cashWalletId &&
       left.economicFactId == right.economicFactId &&
+      left.balancePostingMode == right.balancePostingMode &&
       left.operationMetadata == right.operationMetadata;
 
   FinanceSubject _subject(String? personId) => FinanceSubject.values.firstWhere(
@@ -228,11 +233,14 @@ class SpeseMutationCoordinator {
           description: command.description,
         );
       case SpeseCommandKind.expense:
-        await financeStore.restoreRealExpense(
-          balanceId: command.origin.referenceId!,
-          amount: command.amount,
-          description: command.description,
-        );
+        if (command.balancePostingMode ==
+            BalancePostingMode.affectsCurrentBalance) {
+          await financeStore.restoreRealExpense(
+            balanceId: command.origin.referenceId!,
+            amount: command.amount,
+            description: command.description,
+          );
+        }
       case SpeseCommandKind.cashWithdrawal:
         await financeStore.restoreRealExpense(
           balanceId: command.origin.referenceId!,
@@ -277,6 +285,7 @@ class SpeseMutationCoordinator {
         (subject) => subject.name == command.personId,
         orElse: () => FinanceSubject.shared,
       ),
+      balancePostingMode: command.balancePostingMode,
     );
   }
 

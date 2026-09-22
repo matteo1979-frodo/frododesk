@@ -6,6 +6,7 @@ import 'package:frododesk/logic/spese/spese_mutation_coordinator.dart';
 import 'package:frododesk/models/economic_event.dart';
 import 'package:frododesk/models/real_expense.dart';
 import 'package:frododesk/models/finance_transaction.dart';
+import 'package:frododesk/models/balance_posting_mode.dart';
 import 'package:frododesk/models/finance_recurring_item.dart';
 import 'package:frododesk/models/spese_command.dart';
 import 'package:frododesk/stores/cash_wallet_store.dart';
@@ -207,6 +208,8 @@ class _TrackingFinanceStore extends FinanceStore {
     String? economicFactId,
     DateTime? occurredAt,
     String? transactionId,
+    BalancePostingMode balancePostingMode =
+        BalancePostingMode.affectsCurrentBalance,
   }) async {
     lastEconomicFactId = economicFactId;
     operations.add('finance.expense');
@@ -224,6 +227,7 @@ class _TrackingFinanceStore extends FinanceStore {
         origin: FinanceTransactionOrigin.manual,
         notes: notes,
         economicFactId: economicFactId,
+        balancePostingMode: balancePostingMode,
       ),
     );
   }

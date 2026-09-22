@@ -87,6 +87,7 @@ class SpeseCommandBuilder {
       category: category,
       personId: personId,
       description: description,
+      balancePostingMode: draft.balancePostingMode,
     );
   }
 
@@ -145,6 +146,7 @@ class SpeseCommandBuilder {
         category: expense.category,
         personId: expense.subject.name,
         description: expense.description,
+        balancePostingMode: expense.balancePostingMode,
       ),
       registry: registry,
     );

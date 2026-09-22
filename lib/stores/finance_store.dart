@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import '../models/finance_balance.dart';
+import '../models/balance_posting_mode.dart';
 import '../models/finance_fund.dart';
 import '../models/finance_person.dart';
 import '../models/finance_recurring_item.dart';
@@ -1251,6 +1252,8 @@ class FinanceStore extends ChangeNotifier {
     String? economicFactId,
     DateTime? occurredAt,
     String? transactionId,
+    BalancePostingMode balancePostingMode =
+        BalancePostingMode.affectsCurrentBalance,
   }) async {
     final index = balances.indexWhere((b) => b.balanceId == balanceId);
 
@@ -1262,10 +1265,12 @@ class FinanceStore extends ChangeNotifier {
 
     if (_portfolioV3Authoritative) {
       final candidateBalances = List<FinanceBalance>.of(_balances);
-      candidateBalances[index] = _balanceWithAmount(
-        old,
-        old.currentAmount - amount,
-      );
+      if (balancePostingMode == BalancePostingMode.affectsCurrentBalance) {
+        candidateBalances[index] = _balanceWithAmount(
+          old,
+          old.currentAmount - amount,
+        );
+      }
       final candidateTransactions = List<FinanceTransaction>.of(_transactions)
         ..add(
           FinanceTransaction(
@@ -1283,6 +1288,7 @@ class FinanceStore extends ChangeNotifier {
             notes: notes,
             economicFactId:
                 economicFactId ?? economicFactIdGenerator.next(),
+            balancePostingMode: balancePostingMode,
           ),
         );
       await _commitBalanceAndTransactionsCandidate(
@@ -1292,21 +1298,23 @@ class FinanceStore extends ChangeNotifier {
       return;
     }
 
-    _balances[index] = FinanceBalance(
-      balanceId: old.balanceId,
-      personId: old.personId,
-      name: old.name,
-      active: old.active,
-      initialAmount: old.initialAmount,
-      currentAmount: old.currentAmount - amount,
-      updatedAt: DateTime.now(),
-      balanceType: old.balanceType,
-      operational: old.operational,
-      reservedAmount: old.reservedAmount,
-      warningThreshold: old.warningThreshold,
-      persistentStressDays: old.persistentStressDays,
-      recoveryDays: old.recoveryDays,
-    );
+    if (balancePostingMode == BalancePostingMode.affectsCurrentBalance) {
+      _balances[index] = FinanceBalance(
+        balanceId: old.balanceId,
+        personId: old.personId,
+        name: old.name,
+        active: old.active,
+        initialAmount: old.initialAmount,
+        currentAmount: old.currentAmount - amount,
+        updatedAt: DateTime.now(),
+        balanceType: old.balanceType,
+        operational: old.operational,
+        reservedAmount: old.reservedAmount,
+        warningThreshold: old.warningThreshold,
+        persistentStressDays: old.persistentStressDays,
+        recoveryDays: old.recoveryDays,
+      );
+    }
 
     _transactions.add(
       FinanceTransaction(
@@ -1323,6 +1331,7 @@ class FinanceStore extends ChangeNotifier {
         origin: FinanceTransactionOrigin.manual,
         notes: notes,
         economicFactId: economicFactId ?? economicFactIdGenerator.next(),
+        balancePostingMode: balancePostingMode,
       ),
     );
 
@@ -1370,8 +1379,7 @@ class FinanceStore extends ChangeNotifier {
             type: FinanceTransactionType.income,
             origin: FinanceTransactionOrigin.manual,
             notes: notes,
-            economicFactId:
-                economicFactId ?? economicFactIdGenerator.next(),
+            economicFactId: economicFactId ?? economicFactIdGenerator.next(),
           ),
         );
       await _commitBalanceAndTransactionsCandidate(

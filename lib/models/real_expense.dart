@@ -1,5 +1,6 @@
 import 'economic_operation_metadata.dart';
 import 'finance_recurring_item.dart';
+import 'balance_posting_mode.dart';
 
 class RealExpense {
   final String id;
@@ -27,6 +28,7 @@ class RealExpense {
   final String? cashWalletId;
   final String? economicFactId;
   final EconomicOperationMetadata? operationMetadata;
+  final BalancePostingMode balancePostingMode;
 
   const RealExpense({
     required this.id,
@@ -43,6 +45,7 @@ class RealExpense {
     this.cashWalletId,
     this.economicFactId,
     this.operationMetadata,
+    this.balancePostingMode = BalancePostingMode.affectsCurrentBalance,
   });
 
   String get displayAmount => "€${amount.toStringAsFixed(2)}";
@@ -63,6 +66,7 @@ class RealExpense {
       'subject': subject.name,
       'economicFactId': economicFactId,
       'operationMetadata': operationMetadata?.toJson(),
+      'balancePostingMode': balancePostingMode.name,
     };
   }
 
@@ -88,6 +92,9 @@ class RealExpense {
           : EconomicOperationMetadata.fromJson(
               Map<String, dynamic>.from(json['operationMetadata'] as Map),
             ),
+      balancePostingMode: balancePostingModeFromJson(
+        json['balancePostingMode'],
+      ),
     );
   }
 }

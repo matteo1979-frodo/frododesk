@@ -1,6 +1,7 @@
 import 'economic_operation_metadata.dart';
 import 'expense_replacement_metadata.dart';
 import 'finance_recurring_item.dart';
+import 'balance_posting_mode.dart';
 
 enum FinanceTransactionType { income, expense, transfer }
 
@@ -31,6 +32,7 @@ class FinanceTransaction {
   final String? economicFactId;
   final EconomicOperationMetadata? operationMetadata;
   final ExpenseReplacementMetadata? expenseReplacementMetadata;
+  final BalancePostingMode balancePostingMode;
 
   const FinanceTransaction({
     required this.id,
@@ -47,6 +49,7 @@ class FinanceTransaction {
     this.economicFactId,
     this.operationMetadata,
     this.expenseReplacementMetadata,
+    this.balancePostingMode = BalancePostingMode.affectsCurrentBalance,
   });
 
   Map<String, dynamic> toJson() {
@@ -66,6 +69,7 @@ class FinanceTransaction {
       'operationMetadata': operationMetadata?.toJson(),
       if (expenseReplacementMetadata != null)
         'expenseReplacementMetadata': expenseReplacementMetadata!.toJson(),
+      'balancePostingMode': balancePostingMode.name,
     };
   }
 
@@ -106,6 +110,9 @@ class FinanceTransaction {
                 json['expenseReplacementMetadata'] as Map,
               ),
             ),
+      balancePostingMode: balancePostingModeFromJson(
+        json['balancePostingMode'],
+      ),
     );
   }
 }
