@@ -3,13 +3,16 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../logic/finance/due_date_certainty_confidence_mapper.dart';
+import '../logic/finance/expected_expense_lifecycle_coordinator.dart';
 import '../logic/finance/expected_expense_update_coordinator.dart';
 import '../logic/finance/manual_payment_window_materializer.dart';
 import '../models/expense_relationship.dart';
 import '../models/expected_expense_occurrence.dart';
+import '../models/economic_operation_metadata.dart';
 import '../models/manual_payment_preference.dart';
 import '../models/planned_economic_impact.dart';
 import '../stores/finance_store.dart';
+import '../stores/expense_store.dart';
 
 class ExpectedExpenseCompletionResult {
   final ExpectedExpenseUpdateOutcome outcome;
@@ -23,6 +26,7 @@ class ExpectedExpenseCompletionResult {
 
 class ExpectedExpenseCompletionPage extends StatefulWidget {
   final FinanceStore financeStore;
+  final ExpenseStore? expenseStore;
   final String relationshipId;
   final String occurrenceId;
   final bool initiallyEditing;
@@ -30,6 +34,7 @@ class ExpectedExpenseCompletionPage extends StatefulWidget {
   const ExpectedExpenseCompletionPage({
     super.key,
     required this.financeStore,
+    this.expenseStore,
     required this.relationshipId,
     required this.occurrenceId,
     this.initiallyEditing = false,
@@ -139,6 +144,311 @@ class _ExpectedExpenseCompletionPageState
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _recordKnownData() async {
+    final occurrence = _occurrence();
+    if (occurrence == null || _submitting) return;
+    final amount = TextEditingController(
+      text: occurrence.expectedAmount.toStringAsFixed(2),
+    );
+    var issueDate = occurrence.expectedIssueDate;
+    var dueDate = occurrence.expectedDueDate;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('La bolletta è arrivata'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                key: const Key('known-expense-amount'),
+                controller: amount,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(labelText: 'Importo reale'),
+              ),
+              ListTile(
+                key: const Key('known-expense-issue-date'),
+                title: const Text('Data emissione'),
+                subtitle: Text(
+                  issueDate == null ? 'Non indicata' : _date(issueDate!),
+                ),
+                onTap: () async {
+                  final value = await showDatePicker(
+                    context: context,
+                    initialDate: issueDate ?? DateTime.now(),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                  );
+                  if (value != null) setDialogState(() => issueDate = value);
+                },
+              ),
+              ListTile(
+                key: const Key('known-expense-due-date'),
+                title: const Text('Scadenza reale'),
+                subtitle: Text(
+                  dueDate == null ? 'Non indicata' : _date(dueDate!),
+                ),
+                onTap: () async {
+                  final value = await showDatePicker(
+                    context: context,
+                    initialDate: dueDate ?? DateTime.now(),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                  );
+                  if (value != null) setDialogState(() => dueDate = value);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Annulla'),
+            ),
+            FilledButton(
+              key: const Key('confirm-known-expense-data'),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Salva dati reali'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final parsed = double.tryParse(amount.text.trim().replaceAll(',', '.'));
+    if (parsed == null || parsed <= 0) {
+      _error('Inserisci un importo reale valido.');
+      return;
+    }
+    setState(() => _submitting = true);
+    try {
+      final result =
+          await ExpectedExpenseLifecycleCoordinator(
+            financeStore: widget.financeStore,
+            expenseStore: widget.expenseStore ?? ExpenseStore(),
+          ).recordKnownExpenseData(
+            relationshipId: widget.relationshipId,
+            occurrenceId: widget.occurrenceId,
+            data: KnownExpectedExpenseData(
+              amount: parsed,
+              issueDate: issueDate,
+              dueDate: dueDate,
+            ),
+          );
+      if (!mounted) return;
+      if (!result.isSuccess) {
+        _error(
+          result.errors.isEmpty
+              ? 'Aggiornamento non riuscito.'
+              : result.errors.join('; '),
+        );
+      } else {
+        setState(() {
+          _dueDate = dueDate;
+          _certainty = dueDate == null
+              ? null
+              : ExpectedExpenseDateCertainty.known;
+        });
+      }
+    } catch (error) {
+      if (mounted) _error('$error');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<void> _recordPayment() async {
+    final occurrence = _occurrence();
+    final expenseStore = widget.expenseStore;
+    if (occurrence == null || expenseStore == null || _submitting) return;
+    final balances = widget.financeStore.balances
+        .where(
+          (item) =>
+              item.active && item.personId == occurrence.expectedSubject.name,
+        )
+        .toList();
+    if (balances.isEmpty) {
+      _error('Nessun conto attivo disponibile per il pagamento.');
+      return;
+    }
+    var balanceId = occurrence.expectedPaymentConfiguration.expectedBalanceId;
+    if (!balances.any((item) => item.balanceId == balanceId)) {
+      balanceId = balances.first.balanceId;
+    }
+    final amount = TextEditingController(
+      text: occurrence.expectedAmount.toStringAsFixed(2),
+    );
+    final description = TextEditingController(
+      text: _relationship()?.provider ?? 'Spesa',
+    );
+    final category = TextEditingController(
+      text: _relationship()?.service ?? 'Spese',
+    );
+    final bankFee = TextEditingController();
+    final postalFee = TextEditingController();
+    var paidAt = DateTime.now();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Registra pagamento'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  key: const Key('expected-payment-balance'),
+                  initialValue: balanceId,
+                  decoration: const InputDecoration(labelText: 'Conto reale'),
+                  items: [
+                    for (final balance in balances)
+                      DropdownMenuItem(
+                        value: balance.balanceId,
+                        child: Text(balance.name),
+                      ),
+                  ],
+                  onChanged: (value) => balanceId = value,
+                ),
+                TextField(
+                  key: const Key('expected-payment-amount'),
+                  controller: amount,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Importo pagato',
+                  ),
+                ),
+                TextField(
+                  key: const Key('expected-payment-description'),
+                  controller: description,
+                  decoration: const InputDecoration(labelText: 'Descrizione'),
+                ),
+                TextField(
+                  key: const Key('expected-payment-category'),
+                  controller: category,
+                  decoration: const InputDecoration(labelText: 'Categoria'),
+                ),
+                ListTile(
+                  key: const Key('expected-payment-date'),
+                  title: const Text('Data reale pagamento'),
+                  subtitle: Text(_date(paidAt)),
+                  onTap: () async {
+                    final value = await showDatePicker(
+                      context: context,
+                      initialDate: paidAt,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (value != null) setDialogState(() => paidAt = value);
+                  },
+                ),
+                TextField(
+                  key: const Key('expected-payment-bank-fee'),
+                  controller: bankFee,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Commissione bancaria (opzionale)',
+                  ),
+                ),
+                TextField(
+                  key: const Key('expected-payment-postal-fee'),
+                  controller: postalFee,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Costo accettazione (opzionale)',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Annulla'),
+            ),
+            FilledButton(
+              key: const Key('confirm-expected-payment'),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Conferma pagamento'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    double? parseRequired(TextEditingController controller) =>
+        double.tryParse(controller.text.trim().replaceAll(',', '.'));
+    double? parseOptional(TextEditingController controller) =>
+        controller.text.trim().isEmpty ? null : parseRequired(controller);
+    final parsedAmount = parseRequired(amount);
+    final parsedBankFee = parseOptional(bankFee);
+    final parsedPostalFee = parseOptional(postalFee);
+    if (parsedAmount == null ||
+        parsedAmount <= 0 ||
+        (parsedBankFee != null && parsedBankFee <= 0) ||
+        (parsedPostalFee != null && parsedPostalFee <= 0)) {
+      _error('Controlla gli importi inseriti.');
+      return;
+    }
+    setState(() => _submitting = true);
+    try {
+      final result =
+          await ExpectedExpenseLifecycleCoordinator(
+            financeStore: widget.financeStore,
+            expenseStore: expenseStore,
+          ).recordExpectedExpensePayment(
+            relationshipId: widget.relationshipId,
+            occurrenceId: widget.occurrenceId,
+            payment: ExpectedExpensePayment(
+              paidAt: paidAt,
+              balanceId: balanceId!,
+              subject: occurrence.expectedSubject,
+              category: category.text,
+              description: description.text,
+              amount: parsedAmount,
+              accessories: [
+                if (parsedBankFee != null)
+                  (
+                    amount: parsedBankFee,
+                    type: AccessoryCostType.bankCommission,
+                  ),
+                if (parsedPostalFee != null)
+                  (
+                    amount: parsedPostalFee,
+                    type: AccessoryCostType.postalAcceptanceCharge,
+                  ),
+              ],
+            ),
+          );
+      if (!mounted) return;
+      if (!result.isSuccess) {
+        _error(
+          result.errors.isEmpty
+              ? 'Pagamento non registrato.'
+              : result.errors.join('; '),
+        );
+        return;
+      }
+      Navigator.of(context).pop(
+        const ExpectedExpenseCompletionResult(
+          outcome: ExpectedExpenseUpdateOutcome.applied,
+          requiresExplicitChoice: false,
+        ),
+      );
+    } catch (error) {
+      if (mounted) _error('$error');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 
   Future<void> _submit() async {
@@ -717,16 +1027,43 @@ class _ExpectedExpenseCompletionPageState
                     child: const Text('Annulla modifica'),
                   ),
                 ] else
-                  OutlinedButton.icon(
-                    key: const Key('remove-future-expense'),
-                    onPressed: _submitting ? null : _removeForecast,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFFFF8A80),
-                      side: const BorderSide(color: Color(0xFFFF8A80)),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    icon: const Icon(Icons.remove_circle_outline_rounded),
-                    label: const Text('Rimuovi previsione'),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (occurrence.status ==
+                              ExpectedExpenseOccurrenceStatus.pending &&
+                          occurrence.knowledgeState ==
+                              ExpectedExpenseKnowledgeState.forecast)
+                        FilledButton.icon(
+                          key: const Key('record-known-expense-data'),
+                          onPressed: _submitting ? null : _recordKnownData,
+                          icon: const Icon(Icons.mark_email_read_rounded),
+                          label: const Text('La bolletta è arrivata'),
+                        ),
+                      if (occurrence.status ==
+                              ExpectedExpenseOccurrenceStatus.pending &&
+                          widget.expenseStore != null) ...[
+                        const SizedBox(height: 10),
+                        ElevatedButton.icon(
+                          key: const Key('record-expected-expense-payment'),
+                          onPressed: _submitting ? null : _recordPayment,
+                          icon: const Icon(Icons.payments_rounded),
+                          label: const Text('Registra pagamento'),
+                        ),
+                      ],
+                      const SizedBox(height: 10),
+                      OutlinedButton.icon(
+                        key: const Key('remove-future-expense'),
+                        onPressed: _submitting ? null : _removeForecast,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFFF8A80),
+                          side: const BorderSide(color: Color(0xFFFF8A80)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        icon: const Icon(Icons.remove_circle_outline_rounded),
+                        label: const Text('Rimuovi previsione'),
+                      ),
+                    ],
                   ),
               ],
             ],

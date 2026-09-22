@@ -458,6 +458,7 @@ class _SpesePageState extends State<SpesePage> {
                             MaterialPageRoute(
                               builder: (_) => _ExpenseMonthHistoryPage(
                                 financeStore: widget.financeStore,
+                                expenseStore: widget.expenseStore,
                                 expenses: currentMonthExpenses,
                                 monthTitle: snapshot.monthTitle,
                                 snapshot: snapshot,
@@ -607,6 +608,7 @@ class _SpesePageState extends State<SpesePage> {
           MaterialPageRoute(
             builder: (_) => ExpectedExpenseCompletionPage(
               financeStore: widget.financeStore,
+              expenseStore: widget.expenseStore,
               relationshipId: expense.source.relationshipId,
               occurrenceId: expense.source.occurrenceId,
             ),
@@ -2410,6 +2412,7 @@ String _formatMovementDate(DateTime date) {
 
 class _ExpenseMonthHistoryPage extends StatelessWidget {
   final FinanceStore financeStore;
+  final ExpenseStore expenseStore;
   final List<RealExpense> expenses;
   final String monthTitle;
   final SpeseSnapshot snapshot;
@@ -2420,6 +2423,7 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
 
   const _ExpenseMonthHistoryPage({
     required this.financeStore,
+    required this.expenseStore,
     required this.expenses,
     required this.monthTitle,
     required this.snapshot,
@@ -2632,6 +2636,7 @@ class _ExpenseMonthHistoryPage extends StatelessWidget {
                                               builder: (_) =>
                                                   ExpectedExpenseCompletionPage(
                                                     financeStore: financeStore,
+                                                    expenseStore: expenseStore,
                                                     relationshipId: value
                                                         .relationship
                                                         .relationshipId,
