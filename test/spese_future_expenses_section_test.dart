@@ -64,6 +64,35 @@ void main() {
   });
 
   testWidgets(
+    'shows non-interactive projected cycles in the existing future UI',
+    (tester) async {
+      await _pump(
+        tester,
+        _aggregate([
+          _fixture(
+            'Energia',
+            provider: 'Hera',
+            cycleSequence: 1,
+            cycleAnchor: DateTime(2026, 11, 15),
+            dueDate: DateTime(2026, 11, 20),
+          ),
+        ]),
+        referenceTime: DateTime(2026, 11, 1),
+      );
+
+      await tester.tap(find.text('Mesi futuri'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Dicembre 2026'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Energia · Hera'), findsOneWidget);
+      expect(find.text('Ciclo previsto'), findsOneWidget);
+      expect(find.text('Ciclo previsto 15/12/2026'), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
+    },
+  );
+
+  testWidgets(
     'shows pending forecast and known-unpaid, excludes closed items, preserves order',
     (tester) async {
       await _pump(
@@ -502,6 +531,8 @@ _Fixture _fixture(
   ExpectedPaymentWindow? paymentWindow,
   PlannedEconomicImpact? plannedImpact,
   double expectedAmount = 123.45,
+  int? cycleSequence,
+  DateTime? cycleAnchor,
 }) {
   final token = service.toLowerCase().replaceAll(' ', '_');
   final relationship = ExpenseRelationship(
@@ -526,6 +557,8 @@ _Fixture _fixture(
   final occurrence = ExpectedExpenseOccurrence(
     occurrenceId: 'occurrence_$token',
     relationshipId: relationship.relationshipId,
+    cycleSequence: cycleSequence,
+    cycleAnchor: cycleAnchor,
     status: status,
     knowledgeState: knowledgeState,
     knowledgeSource: knowledgeSource,

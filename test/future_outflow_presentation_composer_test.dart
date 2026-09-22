@@ -11,6 +11,7 @@ import 'package:frododesk/models/finite_financial_plan.dart';
 import 'package:frododesk/models/future_expense_projection.dart';
 import 'package:frododesk/models/future_outflow_presentation.dart';
 import 'package:frododesk/models/planned_economic_impact.dart';
+import 'package:frododesk/models/projected_expense_cycle.dart';
 
 void main() {
   const composer = FutureOutflowPresentationComposer();
@@ -120,6 +121,56 @@ void main() {
 
     expect(overview.futureMonths.first.items, hasLength(2));
   });
+
+  test('adds projected relationship cycles as non-interactive forecasts', () {
+    final overview = composer.compose(
+      expectedExpenses: const [],
+      projectedCycles: [_projected(sequence: 2)],
+      finitePlans: const [],
+      referenceTime: reference,
+    );
+    final item = overview.futureMonths.single.items.single;
+
+    expect(item.authority, FutureOutflowAuthority.projectedExpenseRelationship);
+    expect(item.identity, 'relationship_hera#2');
+    expect(item.datePresentation, FutureOutflowDatePresentation.projectedCycle);
+    expect(item.expectedExpense, isNull);
+    expect(item.projectedExpenseCycle, isNotNull);
+    expect(item.isInteractive, isFalse);
+    expect(item.provisional, isTrue);
+  });
+
+  test(
+    'materialized occurrence wins over projected cycle with same identity',
+    () {
+      final expected = _expected(
+        reference: DateTime(2026, 11, 10),
+        cycleSequence: 2,
+      );
+      final overview = composer.compose(
+        expectedExpenses: expected,
+        projectedCycles: [_projected(sequence: 2), _projected(sequence: 3)],
+        finitePlans: const [],
+        referenceTime: reference,
+      );
+      final items = overview.futureMonths
+          .expand((group) => group.items)
+          .toList();
+
+      expect(
+        items.where((item) => item.identity == 'relationship_hera#2'),
+        isEmpty,
+      );
+      expect(
+        items.where((item) => item.identity == 'occurrence_hera'),
+        hasLength(1),
+      );
+      expect(
+        items.where((item) => item.identity == 'relationship_hera#3'),
+        hasLength(1),
+      );
+    },
+  );
 }
 
 FiniteFinancialPlan _plan({int completed = 3}) => FiniteFinancialPlan(
@@ -138,6 +189,7 @@ List<FutureExpenseProjection> _expected({
   required DateTime reference,
   double amount = 59.63,
   String service = 'Acqua',
+  int? cycleSequence,
 }) {
   final relationship = ExpenseRelationship(
     relationshipId: 'relationship_hera',
@@ -157,6 +209,8 @@ List<FutureExpenseProjection> _expected({
   final occurrence = ExpectedExpenseOccurrence(
     occurrenceId: 'occurrence_hera',
     relationshipId: relationship.relationshipId,
+    cycleSequence: cycleSequence,
+    cycleAnchor: cycleSequence == null ? null : reference,
     status: ExpectedExpenseOccurrenceStatus.pending,
     expectedAmount: amount,
     estimationMethod: ExpenseEstimationMethod.manualEstimate,
@@ -186,3 +240,22 @@ List<FutureExpenseProjection> _expected({
     referenceTime: DateTime(2026, 9, 20),
   );
 }
+
+ProjectedExpenseCycle _projected({required int sequence}) =>
+    ProjectedExpenseCycle(
+      identity: ExpenseCycleIdentity(
+        relationshipId: 'relationship_hera',
+        cycleSequence: sequence,
+      ),
+      cycleAnchor: DateTime(2026, 10 + sequence),
+      sourceOccurrenceId: 'occurrence_hera',
+      service: 'Acqua',
+      provider: 'Hera',
+      expectedAmount: 59.63,
+      expectedSubject: FinanceSubject.matteo,
+      expectedPaymentConfiguration: ExpenseRelationshipPaymentConfiguration(
+        method: FinancePaymentMethod.manual,
+      ),
+      paymentExecutionMode: PaymentExecutionMode.requiresUserAction,
+      provisional: true,
+    );

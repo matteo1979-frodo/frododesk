@@ -13,6 +13,8 @@ import 'planned_economic_impact.dart';
 class ExpectedExpenseProjection {
   final String occurrenceId;
   final String relationshipId;
+  final int? cycleSequence;
+  final DateTime? cycleAnchor;
 
   final String service;
   final String provider;
@@ -50,6 +52,8 @@ class ExpectedExpenseProjection {
   ExpectedExpenseProjection({
     required this.occurrenceId,
     required this.relationshipId,
+    required this.cycleSequence,
+    required this.cycleAnchor,
     required this.service,
     required this.provider,
     required this.relationshipStatus,

@@ -261,7 +261,9 @@ class ExpectedExpenseLifecycleCoordinator {
       resolvedEconomicFactId: identities.mainFactId,
     );
     String? nextOccurrenceId;
-    if (_isRecurringActive(relationship)) {
+    if (_isRecurringActive(relationship) &&
+        occurrence.cycleSequence != null &&
+        occurrence.cycleAnchor != null) {
       nextOccurrenceId = identities.nextOccurrenceId;
       final existing = occurrences.where(
         (item) => item.occurrenceId == nextOccurrenceId,
@@ -345,19 +347,14 @@ class ExpectedExpenseLifecycleCoordinator {
     required String evidenceEconomicFactId,
     required double actualAmount,
   }) {
-    final anchor =
-        current.expectedDueDate ??
-        current.expectedIssueDate ??
-        current.expectedPaymentWindow?.start;
-    if (anchor == null) {
-      throw StateError('Current occurrence has no temporal anchor');
-    }
-    final nextDate = _advance(anchor, relationship.periodicity);
+    final nextDate = _advance(current.cycleAnchor!, relationship.periodicity);
     final usesIssueDate =
         current.expectedIssueDate != null && current.expectedDueDate == null;
     return ExpectedExpenseOccurrence(
       occurrenceId: occurrenceId,
       relationshipId: relationship.relationshipId,
+      cycleSequence: current.cycleSequence! + 1,
+      cycleAnchor: nextDate,
       status: ExpectedExpenseOccurrenceStatus.pending,
       expectedIssueDate: usesIssueDate ? nextDate : null,
       expectedIssueDateSource: usesIssueDate
@@ -391,6 +388,12 @@ class ExpectedExpenseLifecycleCoordinator {
       FinanceRecurringType.custom
           when periodicity.customIntervalUnit == 'months' =>
         periodicity.customInterval!,
+      FinanceRecurringType.custom
+          when periodicity.customIntervalUnit == 'years' =>
+        periodicity.customInterval! * 12,
+      FinanceRecurringType.custom
+          when periodicity.customIntervalUnit == 'days' =>
+        null,
       FinanceRecurringType.custom => throw UnsupportedError(
         'Unsupported custom periodicity unit',
       ),
@@ -398,6 +401,9 @@ class ExpectedExpenseLifecycleCoordinator {
         'One-shot relationships have no next cycle',
       ),
     };
+    if (months == null) {
+      return source.add(Duration(days: periodicity.customInterval!));
+    }
     final monthStart = source.isUtc
         ? DateTime.utc(source.year, source.month + months)
         : DateTime(source.year, source.month + months);

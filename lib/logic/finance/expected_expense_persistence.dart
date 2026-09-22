@@ -204,6 +204,8 @@ class ExpectedExpensePersistence {
 
     final occurrenceIds = <String>{};
     final duplicateOccurrenceIds = <String>{};
+    final cycleSequences = <String>{};
+    final cycleAnchors = <String>{};
     for (final occurrence in aggregate.occurrences) {
       if (!occurrenceIds.add(occurrence.occurrenceId)) {
         duplicateOccurrenceIds.add(occurrence.occurrenceId);
@@ -213,6 +215,19 @@ class ExpectedExpensePersistence {
           'Occurrence ${occurrence.occurrenceId} references missing '
           'relationship: ${occurrence.relationshipId}',
         );
+      }
+      final sequence = occurrence.cycleSequence;
+      final anchor = occurrence.cycleAnchor;
+      if (sequence != null && anchor != null) {
+        final sequenceKey = '${occurrence.relationshipId}#$sequence';
+        if (!cycleSequences.add(sequenceKey)) {
+          errors.add('Duplicate cycle identity: $sequenceKey');
+        }
+        final anchorKey =
+            '${occurrence.relationshipId}#${anchor.toIso8601String()}';
+        if (!cycleAnchors.add(anchorKey)) {
+          errors.add('Duplicate cycle anchor: $anchorKey');
+        }
       }
     }
     for (final id in duplicateOccurrenceIds.toList()..sort()) {

@@ -36,6 +36,8 @@ void main() {
 
       expect(occurrence.occurrenceId, 'occurrence_hera_2');
       expect(occurrence.relationshipId, 'relationship_hera_acqua');
+      expect(occurrence.cycleSequence, 1);
+      expect(occurrence.cycleAnchor, DateTime(2026, 10, 23));
       expect(occurrence.status, ExpectedExpenseOccurrenceStatus.pending);
       expect(occurrence.expectedAmount, 59.63);
       expect(
@@ -157,23 +159,32 @@ void main() {
       }
     });
 
-    test('fails explicitly for unsupported custom units', () {
-      for (final unit in ['days', 'years']) {
-        expect(
-          () => generator.generate(
-            relationship: _relationship(
-              periodicity: ExpenseRelationshipPeriodicity(
-                type: FinanceRecurringType.custom,
-                customInterval: 2,
-                customIntervalUnit: unit,
-              ),
-            ),
-            evidence: _evidence(),
-            occurrenceId: 'occurrence_unsupported_$unit',
+    test('supports custom day and year units from the canonical cadence', () {
+      final days = generator.generate(
+        relationship: _relationship(
+          periodicity: ExpenseRelationshipPeriodicity(
+            type: FinanceRecurringType.custom,
+            customInterval: 2,
+            customIntervalUnit: 'days',
           ),
-          throwsUnsupportedError,
-        );
-      }
+        ),
+        evidence: _evidence(),
+        occurrenceId: 'occurrence_days',
+      );
+      final years = generator.generate(
+        relationship: _relationship(
+          periodicity: ExpenseRelationshipPeriodicity(
+            type: FinanceRecurringType.custom,
+            customInterval: 2,
+            customIntervalUnit: 'years',
+          ),
+        ),
+        evidence: _evidence(),
+        occurrenceId: 'occurrence_years',
+      );
+
+      expect(days.cycleAnchor, DateTime(2026, 8, 26));
+      expect(years.cycleAnchor, DateTime(2028, 8, 24));
     });
 
     test('snapshots the current payment configuration', () {

@@ -115,6 +115,8 @@ void main() {
       expect(next.status, ExpectedExpenseOccurrenceStatus.pending);
       expect(next.knowledgeState, ExpectedExpenseKnowledgeState.forecast);
       expect(next.relationshipId, resolved.relationshipId);
+      expect(next.cycleSequence, 2);
+      expect(next.cycleAnchor, DateTime(2026, 10, 20));
       expect(next.expectedDueDate, DateTime(2026, 10, 20));
       expect(next.plannedEconomicImpact, isNull);
       expect(next.expectedAmount, 80);
@@ -519,6 +521,8 @@ ExpectedExpenseOccurrence _occurrence({
 }) => ExpectedExpenseOccurrence(
   occurrenceId: 'occurrence-september',
   relationshipId: 'relationship-utility',
+  cycleSequence: 1,
+  cycleAnchor: dueDate ?? DateTime(2026, 9, 20),
   status: status,
   knowledgeState: known
       ? ExpectedExpenseKnowledgeState.knownUnpaid

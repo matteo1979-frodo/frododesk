@@ -40,6 +40,8 @@ class FirstCycleExpectedExpenseGenerator {
     return ExpectedExpenseOccurrence(
       occurrenceId: occurrenceId,
       relationshipId: relationship.relationshipId,
+      cycleSequence: 1,
+      cycleAnchor: nextDate,
       status: ExpectedExpenseOccurrenceStatus.pending,
       expectedIssueDate: isIssue ? nextDate : null,
       expectedIssueDateSource: isIssue ? dateSource : null,
@@ -69,6 +71,12 @@ class FirstCycleExpectedExpenseGenerator {
       FinanceRecurringType.custom
           when periodicity.customIntervalUnit == 'months' =>
         periodicity.customInterval!,
+      FinanceRecurringType.custom
+          when periodicity.customIntervalUnit == 'years' =>
+        periodicity.customInterval! * 12,
+      FinanceRecurringType.custom
+          when periodicity.customIntervalUnit == 'days' =>
+        null,
       FinanceRecurringType.custom => throw UnsupportedError(
         'Custom periodicity unit is not supported: '
         '${periodicity.customIntervalUnit}',
@@ -77,6 +85,9 @@ class FirstCycleExpectedExpenseGenerator {
         'One-shot periodicity cannot generate a future occurrence',
       ),
     };
+    if (months == null) {
+      return referenceDate.add(Duration(days: periodicity.customInterval!));
+    }
     return _addMonthsClamped(referenceDate, months);
   }
 

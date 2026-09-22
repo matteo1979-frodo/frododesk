@@ -296,6 +296,60 @@ void main() {
     expect(updated.expectedDueDateSource, ExpectedExpenseDateSource.explicit);
   });
 
+  test('rejects changing an assigned cycle identity', () async {
+    final harness = _Harness(
+      initial: ExpectedExpenseAggregate(
+        relationships: [_relationship()],
+        occurrences: [
+          _occurrence(cycleSequence: 1, cycleAnchor: DateTime(2026, 11, 14)),
+        ],
+      ),
+    );
+
+    final outcome = await harness.coordinator.updateOccurrence(
+      occurrenceId: 'occurrence_1',
+      candidate: _occurrence(
+        cycleSequence: 2,
+        cycleAnchor: DateTime(2026, 12, 14),
+      ),
+    );
+
+    expect(outcome, ExpectedExpenseUpdateOutcome.identityMismatch);
+    expect(harness.writes, 0);
+    expect(harness.notifications, 0);
+    expect(harness.aggregate.occurrences.single.cycleSequence, 1);
+    expect(
+      harness.aggregate.occurrences.single.cycleAnchor,
+      DateTime(2026, 11, 14),
+    );
+  });
+
+  test('combined update also preserves assigned cycle identity', () async {
+    final harness = _Harness(
+      initial: ExpectedExpenseAggregate(
+        relationships: [_relationship()],
+        occurrences: [
+          _occurrence(cycleSequence: 1, cycleAnchor: DateTime(2026, 11, 14)),
+        ],
+      ),
+    );
+
+    final outcome = await harness.coordinator.updateRelationshipAndOccurrence(
+      relationshipId: 'relationship_1',
+      relationshipCandidate: _relationship(provider: 'Updated provider'),
+      occurrenceId: 'occurrence_1',
+      occurrenceCandidate: _occurrence(
+        cycleSequence: 2,
+        cycleAnchor: DateTime(2026, 12, 14),
+      ),
+    );
+
+    expect(outcome, ExpectedExpenseUpdateOutcome.identityMismatch);
+    expect(harness.writes, 0);
+    expect(harness.notifications, 0);
+    expect(harness.aggregate.relationships.single.provider, 'Provider');
+  });
+
   for (final origin in [
     ExpectedPaymentWindowOrigin.relationshipDefault,
     ExpectedPaymentWindowOrigin.occurrenceOverride,
@@ -576,9 +630,13 @@ ExpectedExpenseOccurrence _occurrence({
   ExpectedPaymentWindow? paymentWindow,
   ExpectedExpenseOccurrenceStatus status =
       ExpectedExpenseOccurrenceStatus.pending,
+  int? cycleSequence,
+  DateTime? cycleAnchor,
 }) => ExpectedExpenseOccurrence(
   occurrenceId: id,
   relationshipId: relationshipId,
+  cycleSequence: cycleSequence,
+  cycleAnchor: cycleAnchor,
   status: status,
   knowledgeState: knowledgeState,
   knowledgeSource: knowledgeSource,

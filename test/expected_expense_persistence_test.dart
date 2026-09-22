@@ -138,6 +138,63 @@ void main() {
     );
   });
 
+  test('legacy occurrences without cycle identity remain readable', () async {
+    final relationship = _relationship('relationship_1');
+    final occurrence =
+        _occurrence(
+            'occurrence_1',
+            relationshipId: relationship.relationshipId,
+          ).toJson()
+          ..remove('cycleSequence')
+          ..remove('cycleAnchor');
+    final persistence = ExpectedExpensePersistence(
+      load: (_) async => _envelope(
+        relationships: [relationship.toJson()],
+        occurrences: [occurrence],
+      ),
+    );
+
+    final restored = await persistence.load();
+
+    expect(restored.occurrences.single.cycleSequence, isNull);
+    expect(restored.occurrences.single.cycleAnchor, isNull);
+  });
+
+  test(
+    'rejects duplicate cycle sequence or anchor in one relationship',
+    () async {
+      final relationship = _relationship('relationship_1');
+      final first = _occurrence(
+        'occurrence_1',
+        relationshipId: relationship.relationshipId,
+        cycleSequence: 1,
+        cycleAnchor: DateTime(2026, 11, 15),
+      );
+      final duplicateSequence = _occurrence(
+        'occurrence_2',
+        relationshipId: relationship.relationshipId,
+        cycleSequence: 1,
+        cycleAnchor: DateTime(2027, 1, 15),
+      );
+      final duplicateAnchor = _occurrence(
+        'occurrence_3',
+        relationshipId: relationship.relationshipId,
+        cycleSequence: 2,
+        cycleAnchor: DateTime(2026, 11, 15),
+      );
+
+      for (final duplicate in [duplicateSequence, duplicateAnchor]) {
+        final result = await ExpectedExpensePersistence().write(
+          ExpectedExpenseAggregate(
+            relationships: [relationship],
+            occurrences: [first, duplicate],
+          ),
+        );
+        expect(result.failure, ExpectedExpenseWriteFailure.invalidPayload);
+      }
+    },
+  );
+
   test('rejects duplicate relationship and occurrence identities', () async {
     final duplicateRelationships = ExpectedExpenseAggregate(
       relationships: [
@@ -576,6 +633,8 @@ ExpenseRelationship _relationship(
 ExpectedExpenseOccurrence _occurrence(
   String id, {
   required String relationshipId,
+  int? cycleSequence,
+  DateTime? cycleAnchor,
   ExpectedExpenseOccurrenceStatus status =
       ExpectedExpenseOccurrenceStatus.pending,
   String? resolvedEconomicFactId,
@@ -587,6 +646,8 @@ ExpectedExpenseOccurrence _occurrence(
 }) => ExpectedExpenseOccurrence(
   occurrenceId: id,
   relationshipId: relationshipId,
+  cycleSequence: cycleSequence,
+  cycleAnchor: cycleAnchor,
   status: status,
   knowledgeState: knowledgeState,
   knowledgeSource: knowledgeSource,

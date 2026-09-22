@@ -2,6 +2,7 @@ import '../../models/expense_relationship.dart';
 import '../../models/finite_financial_plan.dart';
 import '../../models/future_expense_projection.dart';
 import '../../models/future_outflow_presentation.dart';
+import '../../models/projected_expense_cycle.dart';
 import 'finite_financial_plan_forecast_adapter.dart';
 
 class FutureOutflowPresentationComposer {
@@ -13,11 +14,19 @@ class FutureOutflowPresentationComposer {
 
   FutureOutflowOverview compose({
     required Iterable<FutureExpenseProjection> expectedExpenses,
+    Iterable<ProjectedExpenseCycle> projectedCycles = const [],
     required Iterable<FiniteFinancialPlan> finitePlans,
     required DateTime referenceTime,
   }) {
+    final materializedCycleIds = expectedExpenses
+        .where((item) => item.source.cycleSequence != null)
+        .map((item) => '${item.relationshipId}#${item.source.cycleSequence}')
+        .toSet();
     final items = <FutureOutflowPresentation>[
       ...expectedExpenses.map(_fromExpectedExpense),
+      ...projectedCycles
+          .where((item) => !materializedCycleIds.contains(item.identity.value))
+          .map(_fromProjectedCycle),
       for (final plan in finitePlans)
         ...finitePlanAdapter
             .remainingItems(plan)
@@ -108,6 +117,25 @@ class FutureOutflowPresentationComposer {
         FutureExpenseOverdueQualification.notOverdue,
     expectedExpense: expense,
   );
+
+  FutureOutflowPresentation _fromProjectedCycle(ProjectedExpenseCycle cycle) =>
+      FutureOutflowPresentation(
+        identity: cycle.identity.value,
+        authority: FutureOutflowAuthority.projectedExpenseRelationship,
+        title: '${cycle.service} · ${cycle.provider}',
+        details: 'Ciclo previsto',
+        amount: cycle.expectedAmount,
+        placementStart: cycle.cycleAnchor,
+        placementEnd: cycle.cycleAnchor,
+        datePresentation: FutureOutflowDatePresentation.projectedCycle,
+        requiresPlanning: false,
+        provisional: cycle.provisional,
+        requiresUserAction:
+            cycle.paymentExecutionMode ==
+            PaymentExecutionMode.requiresUserAction,
+        overdue: false,
+        projectedExpenseCycle: cycle,
+      );
 
   int _compare(
     FutureOutflowPresentation left,

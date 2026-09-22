@@ -151,6 +151,7 @@ class ExpectedExpenseUpdateCoordinator {
     final existing = current.occurrences[index];
     if (candidate.occurrenceId != occurrenceId ||
         candidate.relationshipId != existing.relationshipId ||
+        !_sameCycleIdentity(existing, candidate) ||
         !current.relationships.any(
           (item) => item.relationshipId == candidate.relationshipId,
         )) {
@@ -194,7 +195,8 @@ class ExpectedExpenseUpdateCoordinator {
     if (relationshipCandidate.relationshipId != relationshipId ||
         occurrenceCandidate.occurrenceId != occurrenceId ||
         existingOccurrence.relationshipId != relationshipId ||
-        occurrenceCandidate.relationshipId != relationshipId) {
+        occurrenceCandidate.relationshipId != relationshipId ||
+        !_sameCycleIdentity(existingOccurrence, occurrenceCandidate)) {
       return ExpectedExpenseUpdateOutcome.identityMismatch;
     }
 
@@ -236,6 +238,13 @@ class ExpectedExpenseUpdateCoordinator {
     };
     return jsonEncode(leftJson) == jsonEncode(rightJson);
   }
+
+  bool _sameCycleIdentity(
+    ExpectedExpenseOccurrence existing,
+    ExpectedExpenseOccurrence candidate,
+  ) =>
+      existing.cycleSequence == candidate.cycleSequence &&
+      existing.cycleAnchor == candidate.cycleAnchor;
 
   ExpectedExpenseLifecycleOutcome _lifecycleOutcome(
     ExpectedExpenseUpdateOutcome outcome,

@@ -10,74 +10,104 @@ import 'package:frododesk/models/finance_recurring_item.dart';
 import 'package:frododesk/stores/finance_store.dart';
 
 void main() {
-  test('empty aggregate saves relationship and generated occurrence once', () async {
-    final harness = _Harness();
+  test(
+    'empty aggregate saves relationship and generated occurrence once',
+    () async {
+      final harness = _Harness();
 
-    final outcome = await harness.coordinator.register(
-      relationship: _relationship(),
-      evidence: _evidence(),
-      occurrenceId: 'occurrence_hera_1',
-      explicitNextDate: DateTime(2026, 10, 23),
-    );
+      final outcome = await harness.coordinator.register(
+        relationship: _relationship(),
+        evidence: _evidence(),
+        occurrenceId: 'occurrence_hera_1',
+        explicitNextDate: DateTime(2026, 10, 23),
+      );
 
-    expect(outcome, ExpectedExpenseRegistrationOutcome.created);
-    expect(harness.writes, 1);
-    expect(harness.writeSawOldState, isTrue);
-    final aggregate = harness.store.expectedExpenseAggregate;
-    expect(aggregate.relationships, hasLength(1));
-    expect(aggregate.occurrences, hasLength(1));
-    final occurrence = aggregate.occurrences.single;
-    expect(occurrence.expectedAmount, 59.63);
-    expect(occurrence.expectedIssueDate, DateTime(2026, 10, 23));
-    expect(occurrence.expectedIssueDateSource, ExpectedExpenseDateSource.explicit);
-    expect(occurrence.expectedDueDate, isNull);
-    expect(occurrence.expectedPaymentWindow, isNull);
-    expect(occurrence.estimationMethod, ExpenseEstimationMethod.firstAvailableFact);
-    expect(occurrence.evidenceEconomicFactIds, ['economic_fact_hera']);
-    expect(occurrence.confidence, ExpenseEstimateConfidence.low);
-    expect(occurrence.provisional, isTrue);
-    expect(occurrence.status, ExpectedExpenseOccurrenceStatus.pending);
-  });
+      expect(outcome, ExpectedExpenseRegistrationOutcome.created);
+      expect(harness.writes, 1);
+      expect(harness.writeSawOldState, isTrue);
+      final aggregate = harness.store.expectedExpenseAggregate;
+      expect(aggregate.relationships, hasLength(1));
+      expect(aggregate.occurrences, hasLength(1));
+      final occurrence = aggregate.occurrences.single;
+      expect(occurrence.expectedAmount, 59.63);
+      expect(occurrence.expectedIssueDate, DateTime(2026, 10, 23));
+      expect(
+        occurrence.expectedIssueDateSource,
+        ExpectedExpenseDateSource.explicit,
+      );
+      expect(occurrence.expectedDueDate, isNull);
+      expect(occurrence.expectedPaymentWindow, isNull);
+      expect(
+        occurrence.estimationMethod,
+        ExpenseEstimationMethod.firstAvailableFact,
+      );
+      expect(occurrence.evidenceEconomicFactIds, ['economic_fact_hera']);
+      expect(occurrence.confidence, ExpenseEstimateConfidence.low);
+      expect(occurrence.provisional, isTrue);
+      expect(occurrence.status, ExpectedExpenseOccurrenceStatus.pending);
+      expect(occurrence.cycleSequence, 1);
+      expect(occurrence.cycleAnchor, DateTime(2026, 10, 23));
+    },
+  );
 
-  test('identical complete retry is idempotent without another write', () async {
-    final existing = _aggregate();
-    final harness = _Harness(initial: existing);
+  test(
+    'identical complete retry is idempotent without another write',
+    () async {
+      final existing = _aggregate();
+      final harness = _Harness(initial: existing);
 
-    final outcome = await harness.coordinator.register(
-      relationship: _relationship(),
-      evidence: _evidence(),
-      occurrenceId: 'occurrence_hera_1',
-      explicitNextDate: DateTime(2026, 10, 23),
-    );
+      final outcome = await harness.coordinator.register(
+        relationship: _relationship(),
+        evidence: _evidence(),
+        occurrenceId: 'occurrence_hera_1',
+        explicitNextDate: DateTime(2026, 10, 23),
+      );
 
-    expect(outcome, ExpectedExpenseRegistrationOutcome.unchanged);
-    expect(harness.writes, 0);
-    expect(harness.store.expectedExpenseAggregate, same(existing));
-  });
+      expect(outcome, ExpectedExpenseRegistrationOutcome.unchanged);
+      expect(harness.writes, 0);
+      expect(harness.store.expectedExpenseAggregate, same(existing));
+    },
+  );
 
-  test('existing equivalent relationship recovers missing occurrence', () async {
-    final preserved = _relationship(id: 'relationship_other', provider: 'Other');
-    final harness = _Harness(
-      initial: ExpectedExpenseAggregate(relationships: [preserved, _relationship()]),
-    );
+  test(
+    'existing equivalent relationship recovers missing occurrence',
+    () async {
+      final preserved = _relationship(
+        id: 'relationship_other',
+        provider: 'Other',
+      );
+      final harness = _Harness(
+        initial: ExpectedExpenseAggregate(
+          relationships: [preserved, _relationship()],
+        ),
+      );
 
-    final outcome = await harness.coordinator.register(
-      relationship: _relationship(),
-      evidence: _evidence(),
-      occurrenceId: 'occurrence_hera_1',
-      explicitNextDate: DateTime(2026, 10, 23),
-    );
+      final outcome = await harness.coordinator.register(
+        relationship: _relationship(),
+        evidence: _evidence(),
+        occurrenceId: 'occurrence_hera_1',
+        explicitNextDate: DateTime(2026, 10, 23),
+      );
 
-    expect(outcome, ExpectedExpenseRegistrationOutcome.recovered);
-    expect(harness.writes, 1);
-    expect(harness.store.expectedExpenseAggregate.relationships, hasLength(2));
-    expect(harness.store.expectedExpenseAggregate.relationships.first, same(preserved));
-    expect(harness.store.expectedExpenseAggregate.occurrences, hasLength(1));
-  });
+      expect(outcome, ExpectedExpenseRegistrationOutcome.recovered);
+      expect(harness.writes, 1);
+      expect(
+        harness.store.expectedExpenseAggregate.relationships,
+        hasLength(2),
+      );
+      expect(
+        harness.store.expectedExpenseAggregate.relationships.first,
+        same(preserved),
+      );
+      expect(harness.store.expectedExpenseAggregate.occurrences, hasLength(1));
+    },
+  );
 
   test('incompatible relationship is an explicit conflict', () async {
     final harness = _Harness(
-      initial: ExpectedExpenseAggregate(relationships: [_relationship(provider: 'Different')]),
+      initial: ExpectedExpenseAggregate(
+        relationships: [_relationship(provider: 'Different')],
+      ),
     );
 
     await expectLater(
@@ -162,7 +192,10 @@ void main() {
   });
 
   test('preserves all pre-existing occurrences', () async {
-    final otherRelationship = _relationship(id: 'relationship_other', provider: 'Other');
+    final otherRelationship = _relationship(
+      id: 'relationship_other',
+      provider: 'Other',
+    );
     final otherOccurrence = _generated(
       occurrenceId: 'occurrence_other',
       relationshipId: 'relationship_other',
@@ -182,7 +215,10 @@ void main() {
     );
 
     expect(harness.store.expectedExpenseAggregate.occurrences, hasLength(2));
-    expect(harness.store.expectedExpenseAggregate.occurrences.first, same(otherOccurrence));
+    expect(
+      harness.store.expectedExpenseAggregate.occurrences.first,
+      same(otherOccurrence),
+    );
   });
 }
 
@@ -199,8 +235,14 @@ class _Harness {
       expectedExpensePersistence: ExpectedExpensePersistence(
         saveVerified: (_, value) async {
           writes++;
-          writeSawOldState = identical(store.expectedExpenseAggregate, initialAggregate);
-          return PersistenceWriteVerification(backendAccepted: true, readBack: value);
+          writeSawOldState = identical(
+            store.expectedExpenseAggregate,
+            initialAggregate,
+          );
+          return PersistenceWriteVerification(
+            backendAccepted: true,
+            readBack: value,
+          );
         },
       ),
     );
@@ -248,6 +290,8 @@ ExpectedExpenseOccurrence _generated({
 }) => ExpectedExpenseOccurrence(
   occurrenceId: occurrenceId,
   relationshipId: relationshipId,
+  cycleSequence: 1,
+  cycleAnchor: DateTime(2026, 10, 23),
   status: ExpectedExpenseOccurrenceStatus.pending,
   expectedIssueDate: DateTime(2026, 10, 23),
   expectedIssueDateSource: ExpectedExpenseDateSource.explicit,

@@ -118,6 +118,8 @@ class ExpectedPaymentWindow {
 class ExpectedExpenseOccurrence {
   final String occurrenceId;
   final String relationshipId;
+  final int? cycleSequence;
+  final DateTime? cycleAnchor;
   final ExpectedExpenseOccurrenceStatus status;
   final ExpectedExpenseKnowledgeState knowledgeState;
   final ExpectedExpenseKnowledgeSource knowledgeSource;
@@ -141,6 +143,8 @@ class ExpectedExpenseOccurrence {
   ExpectedExpenseOccurrence({
     required String occurrenceId,
     required String relationshipId,
+    this.cycleSequence,
+    this.cycleAnchor,
     required this.status,
     this.knowledgeState = ExpectedExpenseKnowledgeState.forecast,
     this.knowledgeSource = ExpectedExpenseKnowledgeSource.legacyUnspecified,
@@ -173,6 +177,18 @@ class ExpectedExpenseOccurrence {
          resolvedEconomicFactId,
          'resolvedEconomicFactId',
        ) {
+    if ((cycleSequence == null) != (cycleAnchor == null)) {
+      throw ArgumentError(
+        'cycleSequence and cycleAnchor must either both be present or both be absent',
+      );
+    }
+    if (cycleSequence != null && cycleSequence! <= 0) {
+      throw ArgumentError.value(
+        cycleSequence,
+        'cycleSequence',
+        'Must be greater than zero',
+      );
+    }
     if (expectedDueDate == null && expectedDueDateCertainty != null) {
       throw ArgumentError(
         'expectedDueDateCertainty must be null when expectedDueDate is absent',
@@ -268,6 +284,8 @@ class ExpectedExpenseOccurrence {
   }
 
   ExpectedExpenseOccurrence copyWith({
+    Object? cycleSequence = _preserveValue,
+    Object? cycleAnchor = _preserveValue,
     ExpectedExpenseOccurrenceStatus? status,
     ExpectedExpenseKnowledgeState? knowledgeState,
     ExpectedExpenseKnowledgeSource? knowledgeSource,
@@ -290,6 +308,12 @@ class ExpectedExpenseOccurrence {
   }) => ExpectedExpenseOccurrence(
     occurrenceId: occurrenceId,
     relationshipId: relationshipId,
+    cycleSequence: identical(cycleSequence, _preserveValue)
+        ? this.cycleSequence
+        : cycleSequence as int?,
+    cycleAnchor: identical(cycleAnchor, _preserveValue)
+        ? this.cycleAnchor
+        : cycleAnchor as DateTime?,
     status: status ?? this.status,
     knowledgeState: knowledgeState ?? this.knowledgeState,
     knowledgeSource: knowledgeSource ?? this.knowledgeSource,
@@ -335,6 +359,8 @@ class ExpectedExpenseOccurrence {
   Map<String, dynamic> toJson() => {
     'occurrenceId': occurrenceId,
     'relationshipId': relationshipId,
+    'cycleSequence': cycleSequence,
+    'cycleAnchor': cycleAnchor?.toIso8601String(),
     'status': status.name,
     'knowledgeState': knowledgeState.name,
     'knowledgeSource': knowledgeSource.name,
@@ -410,6 +436,8 @@ class ExpectedExpenseOccurrence {
     return ExpectedExpenseOccurrence(
       occurrenceId: _jsonString(json, 'occurrenceId'),
       relationshipId: _jsonString(json, 'relationshipId'),
+      cycleSequence: _optionalPositiveInt(json, 'cycleSequence'),
+      cycleAnchor: _optionalDate(json, 'cycleAnchor'),
       status: _enumValue(
         json,
         'status',
@@ -605,6 +633,15 @@ DateTime? _optionalDate(Map<String, dynamic> json, String key) {
   final parsed = DateTime.tryParse(value);
   if (parsed == null) throw FormatException('$key must be an ISO date');
   return parsed;
+}
+
+int? _optionalPositiveInt(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value == null) return null;
+  if (value is! int || value <= 0) {
+    throw FormatException('$key must be a positive integer or null');
+  }
+  return value;
 }
 
 T _enumValue<T>(

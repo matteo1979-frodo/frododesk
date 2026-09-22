@@ -1,8 +1,13 @@
 import 'dart:collection';
 
 import 'future_expense_projection.dart';
+import 'projected_expense_cycle.dart';
 
-enum FutureOutflowAuthority { expectedExpense, finiteFinancialPlan }
+enum FutureOutflowAuthority {
+  expectedExpense,
+  projectedExpenseRelationship,
+  finiteFinancialPlan,
+}
 
 enum FutureOutflowDatePresentation {
   plannedEconomicImpact,
@@ -10,6 +15,7 @@ enum FutureOutflowDatePresentation {
   dueDateFallback,
   unplaced,
   finitePlanForecast,
+  projectedCycle,
 }
 
 class FutureOutflowPresentation {
@@ -26,6 +32,7 @@ class FutureOutflowPresentation {
   final bool requiresUserAction;
   final bool overdue;
   final FutureExpenseProjection? expectedExpense;
+  final ProjectedExpenseCycle? projectedExpenseCycle;
   final String? planId;
   final int? installmentNumber;
   final int? totalInstallments;
@@ -44,6 +51,7 @@ class FutureOutflowPresentation {
     required this.requiresUserAction,
     required this.overdue,
     this.expectedExpense,
+    this.projectedExpenseCycle,
     this.planId,
     this.installmentNumber,
     this.totalInstallments,

@@ -48,7 +48,9 @@ void main() {
     test('legacy JSON remains a conservative forecast', () {
       final json = _occurrence().toJson()
         ..remove('knowledgeState')
-        ..remove('knowledgeSource');
+        ..remove('knowledgeSource')
+        ..remove('cycleSequence')
+        ..remove('cycleAnchor');
 
       final restored = ExpectedExpenseOccurrence.fromJson(json);
 
@@ -56,6 +58,36 @@ void main() {
       expect(
         restored.knowledgeSource,
         ExpectedExpenseKnowledgeSource.legacyUnspecified,
+      );
+      expect(restored.cycleSequence, isNull);
+      expect(restored.cycleAnchor, isNull);
+    });
+
+    test('cycle identity round-trips and survives unrelated updates', () {
+      final source = _occurrence(
+        cycleSequence: 3,
+        cycleAnchor: DateTime.utc(2027, 3, 15),
+      );
+
+      final restored = ExpectedExpenseOccurrence.fromJson(source.toJson());
+      final updated = restored.copyWith(expectedAmount: 70);
+
+      expect(restored.cycleSequence, 3);
+      expect(restored.cycleAnchor, DateTime.utc(2027, 3, 15));
+      expect(updated.cycleSequence, 3);
+      expect(updated.cycleAnchor, DateTime.utc(2027, 3, 15));
+    });
+
+    test('cycle identity must be complete and use a positive sequence', () {
+      expect(() => _occurrence(cycleSequence: 1), throwsArgumentError);
+      expect(
+        () => _occurrence(cycleAnchor: DateTime(2026, 11, 15)),
+        throwsArgumentError,
+      );
+      expect(
+        () =>
+            _occurrence(cycleSequence: 0, cycleAnchor: DateTime(2026, 11, 15)),
+        throwsArgumentError,
       );
     });
 
@@ -755,6 +787,8 @@ void main() {
 ExpectedExpenseOccurrence _occurrence({
   String occurrenceId = 'occurrence_1',
   String relationshipId = 'relationship_1',
+  int? cycleSequence,
+  DateTime? cycleAnchor,
   ExpectedExpenseOccurrenceStatus status =
       ExpectedExpenseOccurrenceStatus.pending,
   ExpectedExpenseKnowledgeState knowledgeState =
@@ -780,6 +814,8 @@ ExpectedExpenseOccurrence _occurrence({
 }) => ExpectedExpenseOccurrence(
   occurrenceId: occurrenceId,
   relationshipId: relationshipId,
+  cycleSequence: cycleSequence,
+  cycleAnchor: cycleAnchor,
   status: status,
   knowledgeState: knowledgeState,
   knowledgeSource: knowledgeSource,

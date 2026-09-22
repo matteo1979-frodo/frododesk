@@ -21,9 +21,11 @@ import '../logic/finance/expected_expense_reader.dart';
 import '../logic/finance/future_expense_reader.dart';
 import '../logic/finance/future_expense_overview_reader.dart';
 import '../logic/finance/future_outflow_presentation_composer.dart';
+import '../logic/finance/expense_relationship_projection_adapter.dart';
 import '../models/expected_expense_occurrence.dart';
 import '../models/expense_relationship.dart';
 import '../models/future_expense_projection.dart';
+import '../models/projected_expense_cycle.dart';
 import '../models/future_outflow_presentation.dart';
 import '../models/composite_economic_operation.dart';
 import '../models/economic_operation_metadata.dart';
@@ -34,6 +36,7 @@ import '../utils/euro_formatter.dart';
 import 'expected_expense_from_real_expense_page.dart';
 import 'expected_expense_completion_page.dart';
 
+const int _futureExpenseProjectionHorizonMonths = 12;
 const _speseCommandBuilder = SpeseCommandBuilder();
 
 String _expensePresentationTitle(RealExpense expense) {
@@ -272,6 +275,19 @@ class _SpesePageState extends State<SpesePage> {
       expenses: futureExpenses,
       referenceTime: referenceTime,
     );
+    final projectionStart = DateTime(referenceTime.year, referenceTime.month);
+    final projectionEnd = DateTime(
+      projectionStart.year,
+      projectionStart.month + _futureExpenseProjectionHorizonMonths + 1,
+    ).subtract(const Duration(microseconds: 1));
+    final projectedCycles = const ExpenseRelationshipProjectionAdapter()
+        .project(
+          aggregate: widget.financeStore.expectedExpenseAggregate,
+          horizon: ExpenseProjectionHorizon(
+            start: projectionStart,
+            end: projectionEnd,
+          ),
+        );
     final futureOutflowOverview = const FutureOutflowPresentationComposer()
         .compose(
           expectedExpenses: [
@@ -281,6 +297,7 @@ class _SpesePageState extends State<SpesePage> {
               ...month.expenses,
             ...expectedExpenseOverview.unplaced,
           ],
+          projectedCycles: projectedCycles,
           finitePlans: widget.financeStore.finiteFinancialPlans,
           referenceTime: referenceTime,
         );
@@ -811,6 +828,8 @@ class _CompactFutureExpenseTile extends StatelessWidget {
     FutureOutflowDatePresentation.unplaced => 'Data non disponibile',
     FutureOutflowDatePresentation.finitePlanForecast =>
       'Data prevista ${_formatDate(expense.placementStart!)}',
+    FutureOutflowDatePresentation.projectedCycle =>
+      'Ciclo previsto ${_formatDate(expense.placementStart!)}',
   };
 
   static String? _attentionLabel(FutureOutflowPresentation expense) {

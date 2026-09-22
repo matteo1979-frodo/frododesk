@@ -27,14 +27,15 @@ class ExpectedExpenseReader {
         return ExpectedExpenseProjection(
           occurrenceId: occurrence.occurrenceId,
           relationshipId: occurrence.relationshipId,
+          cycleSequence: occurrence.cycleSequence,
+          cycleAnchor: occurrence.cycleAnchor,
           service: relationship.service,
           provider: relationship.provider,
           relationshipStatus: relationship.status,
           periodicity: relationship.periodicity,
           relationshipSubject: relationship.subject,
           relationshipPaymentConfiguration: relationship.paymentConfiguration,
-          relationshipPaymentExecutionMode:
-              relationship.paymentExecutionMode,
+          relationshipPaymentExecutionMode: relationship.paymentExecutionMode,
           manualPaymentPreference: relationship.manualPaymentPreference,
           expectedSubject: occurrence.expectedSubject,
           expectedPaymentConfiguration: occurrence.expectedPaymentConfiguration,
