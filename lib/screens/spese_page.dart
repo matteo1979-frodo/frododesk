@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../stores/finance_store.dart';
 import '../stores/expense_store.dart';
 import '../models/real_expense.dart';
+import '../models/balance_posting_mode.dart';
 import '../models/expense_replacement_intent.dart';
 import '../models/finance_recurring_item.dart';
 import '../models/frodo_observation.dart';
@@ -1125,6 +1126,7 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
   String? selectedCategory;
   DateTime selectedDate = DateTime.now();
   bool isSubmitting = false;
+  bool alreadyIncludedInCurrentBalance = false;
 
   @override
   void initState() {
@@ -1221,6 +1223,9 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
           economicDate: selectedDate,
           description: description,
           category: selectedCategory!,
+          balancePostingMode: alreadyIncludedInCurrentBalance
+              ? BalancePostingMode.alreadyIncludedInCurrentBalance
+              : BalancePostingMode.affectsCurrentBalance,
         ),
       );
     } finally {
@@ -1439,6 +1444,14 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
                                 }
                               },
                       ),
+                      const SizedBox(height: 12),
+                      _HistoricalPostingChoice(
+                        value: alreadyIncludedInCurrentBalance,
+                        enabled: !isSubmitting,
+                        onChanged: (value) => setState(
+                          () => alreadyIncludedInCurrentBalance = value,
+                        ),
+                      ),
                       const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
@@ -1593,6 +1606,7 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
   late List<String> categories;
   late SpeseCommandRegistry commandRegistry;
   bool isSubmitting = false;
+  bool alreadyIncludedInCurrentBalance = false;
 
   DateTime selectedDate = DateTime.now();
 
@@ -1610,6 +1624,9 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
       descriptionController.text = editingExpense.description;
       selectedCategory = editingExpense.category;
       selectedSubject = editingExpense.subject;
+      alreadyIncludedInCurrentBalance =
+          editingExpense.balancePostingMode ==
+          BalancePostingMode.alreadyIncludedInCurrentBalance;
     }
   }
 
@@ -1814,6 +1831,15 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
                         },
                       ),
 
+                      const SizedBox(height: 12),
+                      _HistoricalPostingChoice(
+                        value: alreadyIncludedInCurrentBalance,
+                        enabled: !isSubmitting,
+                        onChanged: (value) => setState(
+                          () => alreadyIncludedInCurrentBalance = value,
+                        ),
+                      ),
+
                       const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
@@ -1846,6 +1872,12 @@ class _RealExpenseFormPageState extends State<_RealExpenseFormPage> {
                                         category: selectedCategory ?? '',
                                         personId: selectedSubject.name,
                                         description: descriptionController.text,
+                                        balancePostingMode:
+                                            alreadyIncludedInCurrentBalance
+                                            ? BalancePostingMode
+                                                  .alreadyIncludedInCurrentBalance
+                                            : BalancePostingMode
+                                                  .affectsCurrentBalance,
                                       ),
                                       registry: commandRegistry,
                                     ),
@@ -2303,6 +2335,36 @@ class _SpeseHintBox extends StatelessWidget {
           fontWeight: FontWeight.w700,
           height: 1.28,
         ),
+      ),
+    );
+  }
+}
+
+class _HistoricalPostingChoice extends StatelessWidget {
+  final bool value;
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
+
+  const _HistoricalPostingChoice({
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile.adaptive(
+      key: const ValueKey('historical-posting-choice'),
+      contentPadding: EdgeInsets.zero,
+      value: value,
+      onChanged: enabled ? onChanged : null,
+      title: const Text(
+        'Questa spesa è già compresa nel saldo attuale',
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+      ),
+      subtitle: const Text(
+        'Registrala nello storico senza modificare il saldo del conto.',
+        style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
       ),
     );
   }

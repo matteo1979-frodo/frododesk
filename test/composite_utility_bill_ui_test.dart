@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/logic/finance/composite_economic_operation_coordinator.dart';
 import 'package:frododesk/models/economic_operation_metadata.dart';
+import 'package:frododesk/models/balance_posting_mode.dart';
 import 'package:frododesk/models/finance_balance.dart';
 import 'package:frododesk/models/finance_recurring_item.dart';
 import 'package:frododesk/models/real_expense.dart';
@@ -49,6 +50,10 @@ void main() {
 
         expect(fixture.coordinator.calls, 1);
         final operation = fixture.coordinator.postings.single.operation;
+        expect(
+          fixture.coordinator.postings.single.balancePostingMode,
+          BalancePostingMode.affectsCurrentBalance,
+        );
         expect(operation.main.amount, 59.63);
         expect(operation.accessories, hasLength(testCase.accessories));
         expect({
@@ -76,6 +81,29 @@ void main() {
       },
     );
   }
+
+  testWidgets('historical utility bill passes non-posting mode', (
+    tester,
+  ) async {
+    final fixture = _Fixture.create();
+    await _pumpPage(tester, fixture);
+    await _openUtilityForm(tester);
+    await _fillUtilityForm(tester, bank: '2', postal: '1');
+
+    final choice = find.byKey(const ValueKey('historical-posting-choice'));
+    expect(tester.widget<SwitchListTile>(choice).value, isFalse);
+    await tester.tap(choice);
+    await tester.pump();
+    expect(tester.widget<SwitchListTile>(choice).value, isTrue);
+
+    await tester.tap(find.text('Conferma bolletta'));
+    await tester.pumpAndSettle();
+
+    expect(
+      fixture.coordinator.postings.single.balancePostingMode,
+      BalancePostingMode.alreadyIncludedInCurrentBalance,
+    );
+  });
 
   testWidgets('double submit is single-flight and keeps one stable identity', (
     tester,
