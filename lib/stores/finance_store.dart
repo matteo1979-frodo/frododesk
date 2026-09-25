@@ -3359,7 +3359,12 @@ Pressione: ${isUnderPressure() ? 'SI' : 'NO'}
     return financeSummaryText();
   }
 
-  FinanceSubject _subjectForPersonId(String personId) {
+  /// Returns the canonical Finance subject for a supported person identity.
+  ///
+  /// Unlike the legacy internal mapping, this method deliberately has no
+  /// `shared` fallback and is therefore suitable for flows that require an
+  /// explicitly attributable person.
+  FinanceSubject? subjectForPersonIdIfSupported(String personId) {
     switch (personId) {
       case 'matteo':
         return FinanceSubject.matteo;
@@ -3368,7 +3373,10 @@ Pressione: ${isUnderPressure() ? 'SI' : 'NO'}
       case 'alice':
         return FinanceSubject.alice;
       default:
-        return FinanceSubject.shared;
+        return null;
     }
   }
+
+  FinanceSubject _subjectForPersonId(String personId) =>
+      subjectForPersonIdIfSupported(personId) ?? FinanceSubject.shared;
 }

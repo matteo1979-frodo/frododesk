@@ -28,8 +28,15 @@ import 'ips/ips_module_status.dart';
 import 'ips/ips_types.dart' as types;
 import '../models/ips_snapshot.dart' as snap;
 import 'promemoria_store.dart';
+import '../stores/continuing_service_relationship_store.dart';
+import '../stores/sim_service_details_store.dart';
+import 'composite_creation_intent_store.dart';
 
 class CoreStore {
+  late final ContinuingServiceRelationshipStore
+  continuingServiceRelationshipStore;
+  late final SimServiceDetailsStore simServiceDetailsStore;
+  late final CompositeCreationIntentStore compositeCreationIntentStore;
   late final SettingsStore settingsStore;
   late final OverrideStore overrideStore;
 
@@ -97,6 +104,9 @@ class CoreStore {
   };
 
   CoreStore({DateTime? initialDate}) {
+    continuingServiceRelationshipStore = ContinuingServiceRelationshipStore();
+    simServiceDetailsStore = SimServiceDetailsStore();
+    compositeCreationIntentStore = CompositeCreationIntentStore();
     final now = (initialDate ?? DateTime.now());
     final DateTime init = DateTime(now.year, now.month, now.day);
 
@@ -188,6 +198,7 @@ class CoreStore {
 
   /// ✅ Bootstrap asincrono degli store persistenti
   Future<void> init() async {
+    await continuingServiceRelationshipStore.load();
     await overrideStore.load();
     await daySettingsStore.load();
     await feriePeriodStore.load();

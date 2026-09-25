@@ -12,6 +12,7 @@ import '../models/finance_fund.dart';
 import '../models/finance_recurring_item.dart';
 import 'calendario_screen_stepa.dart';
 import 'copertura_screen.dart';
+import 'telefonia_screen.dart';
 import 'spese_page.dart';
 
 import 'salute_screen.dart';
@@ -77,11 +78,12 @@ class _HomeScreenState extends State<HomeScreen> {
   final FinanceStore financeStore = FinanceStore();
   final ExpenseStore expenseStore = ExpenseStore();
   final CashWalletStore cashWalletStore = CashWalletStore();
+  late final Future<void> _financeReady;
 
   @override
   void initState() {
     super.initState();
-    _loadFinanceData();
+    _financeReady = _loadFinanceData();
   }
 
   Future<void> _loadFinanceData() async {
@@ -4090,9 +4092,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
                 _DashboardModuleCard(
-                  icon: Icons.shield_rounded,
-                  title: "Copertura",
-                  subtitle: "Analizza la copertura",
+                  icon: Icons.phone_android_rounded,
+                  title: "Telefonia",
+                  subtitle: "Gestisci i tuoi rapporti",
                   badge: "Disponibile",
                   badgeColor: const Color(0xFF3E2723),
                   startColor: const Color(0xFF243B87),
@@ -4100,7 +4102,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => CoperturaScreen(coreStore: coreStore),
+                        builder: (_) => TelefoniaScreen(
+                          relationshipStore:
+                              coreStore.continuingServiceRelationshipStore,
+                          simDetailsStore: coreStore.simServiceDetailsStore,
+                          intentStore: coreStore.compositeCreationIntentStore,
+                          financeStore: financeStore,
+                          financeReady: _financeReady,
+                        ),
                       ),
                     );
                   },
