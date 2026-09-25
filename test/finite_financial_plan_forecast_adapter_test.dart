@@ -91,6 +91,212 @@ void main() {
       expect(firstRun[0].identity, isNot(firstRun[1].identity));
     });
 
+    test('returns only installments in an inclusive nearby range', () {
+      final items = adapter.itemsInRange(
+        plan: _plan(),
+        start: DateTime(2027, 3, 15),
+        end: DateTime(2027, 4, 15),
+      );
+
+      expect(items.map((item) => item.installmentNumber), [3, 4]);
+      expect(items.map((item) => item.date), [
+        DateTime(2027, 3, 15),
+        DateTime(2027, 4, 15),
+      ]);
+      expect(() => items.add(items.first), throwsUnsupportedError);
+    });
+
+    test('seeks directly into 2056 in a forty-year monthly plan', () {
+      final items = adapter.itemsInRange(
+        plan: _plan(
+          totalInstallments: 480,
+          firstInstallmentDate: DateTime(2026, 1, 15),
+        ),
+        start: DateTime(2056),
+        end: DateTime(2056, 12, 31, 23, 59, 59),
+      );
+
+      expect(items, hasLength(12));
+      expect(items.first.installmentNumber, 361);
+      expect(items.first.date, DateTime(2056, 1, 15));
+      expect(items.last.installmentNumber, 372);
+      expect(items.last.date, DateTime(2056, 12, 15));
+    });
+
+    test('start just after an installment skips it', () {
+      final items = adapter.itemsInRange(
+        plan: _plan(),
+        start: DateTime(2027, 3, 15, 0, 0, 0, 1),
+        end: DateTime(2027, 4, 15),
+      );
+
+      expect(items.map((item) => item.installmentNumber), [4]);
+    });
+
+    test('returns empty outside plan bounds and for a completed plan', () {
+      final plan = _plan();
+
+      expect(
+        adapter.itemsInRange(
+          plan: plan,
+          start: DateTime(2026),
+          end: DateTime(2026, 12, 31),
+        ),
+        isEmpty,
+      );
+      expect(
+        adapter.itemsInRange(
+          plan: plan,
+          start: DateTime(2028),
+          end: DateTime(2028, 12, 31),
+        ),
+        isEmpty,
+      );
+      expect(
+        adapter.itemsInRange(
+          plan: _plan(completedInstallments: 12),
+          start: DateTime(2027),
+          end: DateTime(2027, 12, 31),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('completed progress wins over the temporal candidate', () {
+      final items = adapter.itemsInRange(
+        plan: _plan(
+          totalInstallments: 480,
+          completedInstallments: 300,
+          firstInstallmentDate: DateTime(2026, 1, 15),
+        ),
+        start: DateTime(2026),
+        end: DateTime(2051, 2, 15),
+      );
+
+      expect(items.map((item) => item.installmentNumber), [301, 302]);
+      expect(items.map((item) => item.date), [
+        DateTime(2051, 1, 15),
+        DateTime(2051, 2, 15),
+      ]);
+    });
+
+    test('single-day, single-month, and annual ranges are inclusive', () {
+      final plan = _plan();
+
+      expect(
+        adapter
+            .itemsInRange(
+              plan: plan,
+              start: DateTime(2027, 5, 15),
+              end: DateTime(2027, 5, 15),
+            )
+            .single
+            .installmentNumber,
+        5,
+      );
+      expect(
+        adapter
+            .itemsInRange(
+              plan: plan,
+              start: DateTime(2027, 6),
+              end: DateTime(2027, 6, 30),
+            )
+            .single
+            .installmentNumber,
+        6,
+      );
+      expect(
+        adapter.itemsInRange(
+          plan: plan,
+          start: DateTime(2027),
+          end: DateTime(2027, 12, 31),
+        ),
+        hasLength(12),
+      );
+    });
+
+    test('range-aware items match filtered remaining items', () {
+      final cases = <({
+        FiniteFinancialPlan plan,
+        DateTime start,
+        DateTime end,
+      })>[
+        (
+          plan: _plan(
+            totalInstallments: 36,
+            firstInstallmentDate: DateTime(2027, 1, 28),
+            scheduledDayOfMonth: 28,
+          ),
+          start: DateTime(2027, 2),
+          end: DateTime(2028, 3, 31),
+        ),
+        (
+          plan: _plan(
+            totalInstallments: 36,
+            firstInstallmentDate: DateTime(2027, 1, 29),
+            scheduledDayOfMonth: 29,
+          ),
+          start: DateTime(2027, 2),
+          end: DateTime(2028, 3, 31),
+        ),
+        (
+          plan: _plan(
+            totalInstallments: 24,
+            firstInstallmentDate: DateTime(2027, 1, 30),
+            scheduledDayOfMonth: 30,
+          ),
+          start: DateTime(2027, 2),
+          end: DateTime(2028, 2, 29),
+        ),
+        (
+          plan: _plan(
+            totalInstallments: 24,
+            firstInstallmentDate: DateTime(2027, 1, 31),
+            scheduledDayOfMonth: 31,
+          ),
+          start: DateTime(2027, 2),
+          end: DateTime(2028, 2, 29),
+        ),
+        (
+          plan: _plan(
+            totalInstallments: 24,
+            firstInstallmentDate: DateTime(2027, 12, 15),
+          ),
+          start: DateTime(2027, 12, 15),
+          end: DateTime(2028, 2, 15),
+        ),
+      ];
+
+      for (final entry in cases) {
+        final actual = adapter.itemsInRange(
+          plan: entry.plan,
+          start: entry.start,
+          end: entry.end,
+        );
+        final expected = adapter
+            .remainingItems(entry.plan)
+            .where(
+              (item) =>
+                  !item.date.isBefore(entry.start) &&
+                  !item.date.isAfter(entry.end),
+            )
+            .toList();
+
+        expect(_itemSignatures(actual), _itemSignatures(expected));
+      }
+    });
+
+    test('rejects an end before start', () {
+      expect(
+        () => adapter.itemsInRange(
+          plan: _plan(),
+          start: DateTime(2027, 2),
+          end: DateTime(2027, 1, 31),
+        ),
+        throwsArgumentError,
+      );
+    });
+
     test('is projection-only and has no economic or store dependencies', () {
       final source = File(
         'lib/logic/finance/finite_financial_plan_forecast_adapter.dart',
@@ -110,6 +316,7 @@ void main() {
 
 FiniteFinancialPlan _plan({
   int completedInstallments = 0,
+  int totalInstallments = 12,
   DateTime? firstInstallmentDate,
   int scheduledDayOfMonth = 15,
   String? debitBalanceId = 'balance_banca',
@@ -121,10 +328,20 @@ FiniteFinancialPlan _plan({
     subject: FinanceSubject.matteo,
     creditor: 'INPS',
     debitBalanceId: debitBalanceId,
-    totalInstallments: 12,
+    totalInstallments: totalInstallments,
     expectedInstallmentAmount: 386,
     firstInstallmentDate: firstInstallmentDate ?? DateTime(2027, 1, 15),
     scheduledDayOfMonth: scheduledDayOfMonth,
     completedInstallments: completedInstallments,
   );
 }
+
+List<String> _itemSignatures(
+  Iterable<FiniteFinancialPlanForecastItem> items,
+) => [
+  for (final item in items)
+    '${item.identity}|${item.planId}|${item.installmentNumber}|'
+        '${item.date.toIso8601String()}|${item.expectedAmount}|${item.name}|'
+        '${item.description}|${item.subject.name}|${item.debitBalanceId}|'
+        '${item.isOutflow}',
+];

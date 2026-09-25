@@ -38,19 +38,40 @@ class FiniteFinancialPlanForecastAdapter {
     FiniteFinancialPlan plan,
   ) {
     return List.unmodifiable(
-      plan.remainingSchedule.map((installment) {
-        return FiniteFinancialPlanForecastItem(
-          planId: plan.id,
-          installmentNumber: installment.number,
-          date: installment.dueDate,
-          expectedAmount: installment.expectedAmount,
-          name: plan.name,
-          description: plan.description,
-          subject: plan.subject,
-          debitBalanceId: plan.debitBalanceId,
-        );
-      }),
+      plan.remainingSchedule.map((installment) => _toItem(plan, installment)),
     );
+  }
+
+  List<FiniteFinancialPlanForecastItem> itemsInRange({
+    required FiniteFinancialPlan plan,
+    required DateTime start,
+    required DateTime end,
+  }) {
+    if (end.isBefore(start)) {
+      throw ArgumentError.value(end, 'end', 'Must not be before start');
+    }
+
+    final monthOffset =
+        (start.year - plan.firstInstallmentDate.year) * 12 +
+        start.month -
+        plan.firstInstallmentDate.month;
+    var number = monthOffset + 1;
+    if (number < 1) number = 1;
+    final firstRemaining = plan.completedInstallments + 1;
+    if (number < firstRemaining) number = firstRemaining;
+
+    final result = <FiniteFinancialPlanForecastItem>[];
+    while (number <= plan.totalInstallments) {
+      final installment = plan.installment(number)!;
+      if (installment.dueDate.isBefore(start)) {
+        number++;
+        continue;
+      }
+      if (installment.dueDate.isAfter(end)) break;
+      result.add(_toItem(plan, installment));
+      number++;
+    }
+    return List.unmodifiable(result);
   }
 
   List<FiniteFinancialPlanForecastItem> itemsForMonth(
@@ -63,4 +84,18 @@ class FiniteFinancialPlanForecastAdapter {
       ),
     );
   }
+
+  FiniteFinancialPlanForecastItem _toItem(
+    FiniteFinancialPlan plan,
+    FiniteFinancialPlanInstallment installment,
+  ) => FiniteFinancialPlanForecastItem(
+    planId: plan.id,
+    installmentNumber: installment.number,
+    date: installment.dueDate,
+    expectedAmount: installment.expectedAmount,
+    name: plan.name,
+    description: plan.description,
+    subject: plan.subject,
+    debitBalanceId: plan.debitBalanceId,
+  );
 }
