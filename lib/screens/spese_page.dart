@@ -37,7 +37,6 @@ import '../utils/euro_formatter.dart';
 import 'expected_expense_from_real_expense_page.dart';
 import 'expected_expense_completion_page.dart';
 
-const int _futureExpenseProjectionHorizonMonths = 12;
 const _speseCommandBuilder = SpeseCommandBuilder();
 
 String _expensePresentationTitle(RealExpense expense) {
@@ -261,6 +260,38 @@ class _SpesePageState extends State<SpesePage> {
     }
   }
 
+  FutureOutflowOverview _futureOutflowsForYear({
+    required int year,
+    required DateTime referenceTime,
+  }) {
+    final start = DateTime(year, 1, 1);
+    final end = DateTime(
+      year + 1,
+      1,
+      1,
+    ).subtract(const Duration(microseconds: 1));
+    final aggregate = widget.financeStore.expectedExpenseAggregate;
+    final expectedExpenseProjections = const ExpectedExpenseReader().read(
+      aggregate,
+    );
+    final materialized = const FutureExpenseReader().read(
+      projections: expectedExpenseProjections,
+      referenceTime: referenceTime,
+    );
+    final projected = const ExpenseRelationshipProjectionAdapter().project(
+      aggregate: aggregate,
+      horizon: ExpenseProjectionHorizon(start: start, end: end),
+    );
+    return const FutureOutflowPresentationComposer().composeInRange(
+      expectedExpenses: materialized,
+      projectedCycles: projected,
+      finitePlans: widget.financeStore.finiteFinancialPlans,
+      start: start,
+      end: end,
+      referenceTime: referenceTime,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentMonthExpenses = snapshot.currentMonthExpenses;
@@ -278,8 +309,9 @@ class _SpesePageState extends State<SpesePage> {
     );
     final projectionStart = DateTime(referenceTime.year, referenceTime.month);
     final projectionEnd = DateTime(
-      projectionStart.year,
-      projectionStart.month + _futureExpenseProjectionHorizonMonths + 1,
+      referenceTime.year + 1,
+      1,
+      1,
     ).subtract(const Duration(microseconds: 1));
     final projectedCycles = const ExpenseRelationshipProjectionAdapter()
         .project(
@@ -289,19 +321,33 @@ class _SpesePageState extends State<SpesePage> {
             end: projectionEnd,
           ),
         );
-    final futureOutflowOverview = const FutureOutflowPresentationComposer()
-        .compose(
-          expectedExpenses: [
-            ...expectedExpenseOverview.overdueFromPastMonths,
-            ...expectedExpenseOverview.currentMonth,
-            for (final month in expectedExpenseOverview.futureMonths)
-              ...month.expenses,
-            ...expectedExpenseOverview.unplaced,
-          ],
-          projectedCycles: projectedCycles,
-          finitePlans: widget.financeStore.finiteFinancialPlans,
-          referenceTime: referenceTime,
-        );
+    const composer = FutureOutflowPresentationComposer();
+    final completeOverview = composer.compose(
+      expectedExpenses: [
+        ...expectedExpenseOverview.overdueFromPastMonths,
+        ...expectedExpenseOverview.currentMonth,
+        for (final month in expectedExpenseOverview.futureMonths)
+          ...month.expenses,
+        ...expectedExpenseOverview.unplaced,
+      ],
+      projectedCycles: projectedCycles,
+      finitePlans: widget.financeStore.finiteFinancialPlans,
+      referenceTime: referenceTime,
+    );
+    final currentYearOverview = composer.composeInRange(
+      expectedExpenses: futureExpenses,
+      projectedCycles: projectedCycles,
+      finitePlans: widget.financeStore.finiteFinancialPlans,
+      start: projectionStart,
+      end: projectionEnd,
+      referenceTime: referenceTime,
+    );
+    final futureOutflowOverview = FutureOutflowOverview(
+      currentMonth: completeOverview.currentMonth,
+      pastMonths: completeOverview.pastMonths,
+      futureMonths: currentYearOverview.futureMonths,
+      unplaced: completeOverview.unplaced,
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFF101820),
@@ -346,6 +392,11 @@ class _SpesePageState extends State<SpesePage> {
                     _FutureExpensesSection(
                       overview: futureOutflowOverview,
                       onOpen: _openExpectedExpenseCompletion,
+                      referenceTime: referenceTime,
+                      onSearchYear: (year) => _futureOutflowsForYear(
+                        year: year,
+                        referenceTime: referenceTime,
+                      ),
                     ),
                     const SizedBox(height: 18),
                     const Text(
@@ -641,8 +692,15 @@ class _SpesePageState extends State<SpesePage> {
 class _FutureExpensesSection extends StatelessWidget {
   final FutureOutflowOverview overview;
   final Future<bool> Function(FutureExpenseProjection) onOpen;
+  final DateTime referenceTime;
+  final FutureOutflowOverview Function(int year) onSearchYear;
 
-  const _FutureExpensesSection({required this.overview, required this.onOpen});
+  const _FutureExpensesSection({
+    required this.overview,
+    required this.onOpen,
+    required this.referenceTime,
+    required this.onSearchYear,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -670,7 +728,7 @@ class _FutureExpensesSection extends StatelessWidget {
               style: TextStyle(color: Colors.white70),
             ),
           )
-        else ...[
+        else
           ...direct.map(
             (expense) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -682,41 +740,41 @@ class _FutureExpensesSection extends StatelessWidget {
               ),
             ),
           ),
-          if (overview.futureMonths.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _FutureExpenseNavigationTile(
-                key: const Key('future-expenses-months'),
-                icon: Icons.calendar_month_rounded,
-                title: 'Mesi futuri',
-                count: overview.futureCount,
-                onTap: () => Navigator.of(context).push<bool>(
-                  MaterialPageRoute(
-                    builder: (_) => _FutureExpenseMonthsPage(
-                      months: overview.futureMonths,
-                      onOpen: onOpen,
-                    ),
-                  ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: _FutureExpenseNavigationTile(
+            key: const Key('future-expenses-months'),
+            icon: Icons.calendar_month_rounded,
+            title: 'Mesi futuri',
+            count: overview.futureCount,
+            onTap: () => Navigator.of(context).push<bool>(
+              MaterialPageRoute(
+                builder: (_) => _FutureExpenseMonthsPage(
+                  months: overview.futureMonths,
+                  onOpen: onOpen,
+                  referenceTime: referenceTime,
+                  onSearchYear: onSearchYear,
                 ),
               ),
             ),
-          if (overview.unplaced.isNotEmpty)
-            _FutureExpenseNavigationTile(
-              key: const Key('future-expenses-unplaced'),
-              icon: Icons.warning_amber_rounded,
-              title: 'Da pianificare',
-              count: overview.unplaced.length,
-              onTap: () => Navigator.of(context).push<bool>(
-                MaterialPageRoute(
-                  builder: (_) => _FutureExpenseListPage(
-                    title: 'Da pianificare',
-                    expenses: overview.unplaced,
-                    onOpen: onOpen,
-                  ),
+          ),
+        ),
+        if (overview.unplaced.isNotEmpty)
+          _FutureExpenseNavigationTile(
+            key: const Key('future-expenses-unplaced'),
+            icon: Icons.warning_amber_rounded,
+            title: 'Da pianificare',
+            count: overview.unplaced.length,
+            onTap: () => Navigator.of(context).push<bool>(
+              MaterialPageRoute(
+                builder: (_) => _FutureExpenseListPage(
+                  title: 'Da pianificare',
+                  expenses: overview.unplaced,
+                  onOpen: onOpen,
                 ),
               ),
             ),
-        ],
+          ),
       ],
     );
   }
@@ -902,11 +960,89 @@ class _FutureExpenseNavigationTile extends StatelessWidget {
   );
 }
 
-class _FutureExpenseMonthsPage extends StatelessWidget {
+class _FutureExpenseMonthsPage extends StatefulWidget {
   final List<FutureOutflowMonthGroup> months;
   final Future<bool> Function(FutureExpenseProjection) onOpen;
+  final DateTime referenceTime;
+  final FutureOutflowOverview Function(int year) onSearchYear;
 
-  const _FutureExpenseMonthsPage({required this.months, required this.onOpen});
+  const _FutureExpenseMonthsPage({
+    required this.months,
+    required this.onOpen,
+    required this.referenceTime,
+    required this.onSearchYear,
+  });
+
+  @override
+  State<_FutureExpenseMonthsPage> createState() =>
+      _FutureExpenseMonthsPageState();
+}
+
+class _FutureExpenseMonthsPageState extends State<_FutureExpenseMonthsPage> {
+  final TextEditingController _yearController = TextEditingController();
+  int? _selectedYear;
+  FutureOutflowOverview? _annualOverview;
+  String? _yearError;
+
+  int get _nextYear => widget.referenceTime.year + 1;
+
+  @override
+  void dispose() {
+    _yearController.dispose();
+    super.dispose();
+  }
+
+  void _searchYearFromInput() {
+    final raw = _yearController.text.trim();
+    final year = int.tryParse(raw);
+    if (raw.isEmpty || year == null) {
+      _showYearError('Inserisci un anno valido.');
+      return;
+    }
+    _searchYear(year);
+  }
+
+  void _searchYear(int year) {
+    if (year <= widget.referenceTime.year) {
+      _showYearError(
+        'Inserisci un anno successivo al ${widget.referenceTime.year}.',
+      );
+      return;
+    }
+    try {
+      final overview = widget.onSearchYear(year);
+      setState(() {
+        _selectedYear = year;
+        _annualOverview = overview;
+        _yearError = null;
+      });
+    } on ArgumentError {
+      _showYearError('Anno non supportato.');
+    }
+  }
+
+  void _showYearError(String message) {
+    setState(() {
+      _yearError = message;
+      _selectedYear = null;
+      _annualOverview = null;
+    });
+  }
+
+  Future<void> _openMonth(FutureOutflowMonthGroup group) async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => _FutureExpenseListPage(
+          title: _monthLabel(group.month),
+          expenses: group.items,
+          onOpen: widget.onOpen,
+        ),
+      ),
+    );
+    if (changed == true && mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -917,37 +1053,117 @@ class _FutureExpenseMonthsPage extends StatelessWidget {
       backgroundColor: Colors.black.withValues(alpha: 0.08),
     ),
     body: _SpeseBackground(
-      child: ListView.separated(
+      child: ListView(
         padding: const EdgeInsets.all(18),
-        itemCount: months.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 10),
-        itemBuilder: (context, index) {
-          final group = months[index];
-          return _FutureExpenseNavigationTile(
-            key: Key(
-              'future-expense-month-${group.month.year}-${group.month.month}',
-            ),
-            icon: Icons.calendar_today_rounded,
-            title: _monthLabel(group.month),
-            count: group.items.length,
-            onTap: () async {
-              final changed = await Navigator.of(context).push<bool>(
-                MaterialPageRoute(
-                  builder: (_) => _FutureExpenseListPage(
-                    title: _monthLabel(group.month),
-                    expenses: group.items,
-                    onOpen: onOpen,
+        children: [
+          for (final group in widget.months) ...[
+            _monthTile(group),
+            const SizedBox(height: 10),
+          ],
+          _SpeseGlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Cerca un anno futuro',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-              );
-              if (changed == true && context.mounted) {
-                Navigator.of(context).pop(true);
-              }
-            },
-          );
-        },
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  key: const Key('future-expenses-next-year'),
+                  onPressed: () {
+                    _yearController.text = '$_nextYear';
+                    _searchYear(_nextYear);
+                  },
+                  icon: const Icon(Icons.event_rounded),
+                  label: Text('Vai al $_nextYear'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  key: const Key('future-expenses-year-input'),
+                  controller: _yearController,
+                  keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (_) => _searchYearFromInput(),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Anno futuro',
+                    hintText: 'es. 2056',
+                    errorText: _yearError,
+                    labelStyle: const TextStyle(color: Colors.white70),
+                    hintStyle: const TextStyle(color: Colors.white38),
+                    enabledBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.white38),
+                    ),
+                    focusedBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFFFB74D)),
+                    ),
+                    errorBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.redAccent),
+                    ),
+                    focusedErrorBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.redAccent),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                FilledButton.icon(
+                  key: const Key('future-expenses-search-year'),
+                  onPressed: _searchYearFromInput,
+                  icon: const Icon(Icons.search_rounded),
+                  label: const Text('Cerca'),
+                ),
+              ],
+            ),
+          ),
+          if (_selectedYear case final year?) ...[
+            const SizedBox(height: 18),
+            Text(
+              'Spese previste nel $year',
+              key: const Key('future-expenses-selected-year'),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 10),
+            if (_annualOverview!.futureMonths.isEmpty)
+              _SpeseGlassCard(
+                key: const Key('future-expenses-year-empty'),
+                child: Text(
+                  'Nessuna spesa prevista nel $year',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              )
+            else
+              for (final group in _annualOverview!.futureMonths) ...[
+                _monthTile(group, annual: true),
+                const SizedBox(height: 10),
+              ],
+          ],
+        ],
       ),
     ),
+  );
+
+  Widget _monthTile(
+    FutureOutflowMonthGroup group, {
+    bool annual = false,
+  }) => _FutureExpenseNavigationTile(
+    key: Key(
+      annual
+          ? 'future-expense-search-month-${group.month.year}-${group.month.month}'
+          : 'future-expense-month-${group.month.year}-${group.month.month}',
+    ),
+    icon: Icons.calendar_today_rounded,
+    title: _monthLabel(group.month),
+    count: group.items.length,
+    onTap: () => _openMonth(group),
   );
 }
 
@@ -2373,7 +2589,7 @@ class _HistoricalPostingChoice extends StatelessWidget {
 class _SpeseGlassCard extends StatelessWidget {
   final Widget child;
 
-  const _SpeseGlassCard({required this.child});
+  const _SpeseGlassCard({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {

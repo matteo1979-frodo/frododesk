@@ -23,13 +23,14 @@ void main() {
 
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('shows title and empty state without a call to action', (
+  testWidgets('shows title, empty state, and future-year navigation', (
     tester,
   ) async {
     await _pump(tester, ExpectedExpenseAggregate.empty());
 
     expect(find.text('Spese future'), findsOneWidget);
     expect(find.text('Nessuna spesa futura aperta.'), findsOneWidget);
+    expect(find.text('Mesi futuri'), findsOneWidget);
   });
 
   testWidgets('shows Expected Expense and finite-plan installment together', (
@@ -294,7 +295,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const Key('future-expenses-months')),
-        matching: find.text('3'),
+        matching: find.text('2'),
       ),
       findsOneWidget,
     );
@@ -311,7 +312,7 @@ void main() {
     await tester.tap(find.text('Mesi futuri'));
     await tester.pumpAndSettle();
     expect(find.text('Dicembre 2099'), findsOneWidget);
-    expect(find.text('Febbraio 2100'), findsOneWidget);
+    expect(find.text('Febbraio 2100'), findsNothing);
     expect(find.text('Gennaio 2100'), findsNothing);
     expect(
       find.descendant(
@@ -463,6 +464,429 @@ void main() {
     );
     expect(find.textContaining('Da annullare ·'), findsNothing);
   });
+
+  testWidgets('quick access queries the next year and opens its month', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _aggregate([
+        _fixture(
+          'Canone 2027',
+          plannedImpact: _impact(DateTime(2027, 3, 10)),
+        ),
+      ]),
+      referenceTime: DateTime(2026, 9, 20),
+    );
+
+    await tester.tap(find.text('Mesi futuri'));
+    await tester.pumpAndSettle();
+    expect(find.text('Vai al 2027'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('future-expenses-next-year')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Spese previste nel 2027'), findsOneWidget);
+    final march = find.byKey(
+      const Key('future-expense-search-month-2027-3'),
+    );
+    expect(march, findsOneWidget);
+    expect(find.descendant(of: march, matching: find.text('1')), findsOneWidget);
+    await tester.tap(march);
+    await tester.pumpAndSettle();
+    expect(find.text('Canone 2027 · Provider Canone 2027'), findsOneWidget);
+  });
+
+  testWidgets('current horizon stops at year end and next year stays searchable', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _aggregate([
+        _fixture('Ottobre', plannedImpact: _impact(DateTime(2026, 10, 10))),
+        _fixture('Novembre', plannedImpact: _impact(DateTime(2026, 11, 10))),
+        _fixture('Dicembre', plannedImpact: _impact(DateTime(2026, 12, 10))),
+        _fixture('Gennaio', plannedImpact: _impact(DateTime(2027, 1, 10))),
+        _fixture('Settembre', plannedImpact: _impact(DateTime(2027, 9, 10))),
+      ]),
+      referenceTime: DateTime(2026, 9, 20),
+    );
+
+    await tester.tap(find.text('Mesi futuri'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ottobre 2026'), findsOneWidget);
+    expect(find.text('Novembre 2026'), findsOneWidget);
+    expect(find.text('Dicembre 2026'), findsOneWidget);
+    expect(find.text('Gennaio 2027'), findsNothing);
+    expect(find.text('Settembre 2027'), findsNothing);
+
+    await tester.tap(find.byKey(const Key('future-expenses-next-year')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Spese previste nel 2027'), findsOneWidget);
+    expect(
+      find.byKey(const Key('future-expense-search-month-2027-1')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('January rolling horizon reaches December of the same year only', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _aggregate([
+        _fixture(
+          'Dicembre stesso anno',
+          plannedImpact: _impact(DateTime(2027, 12, 10)),
+        ),
+        _fixture(
+          'Gennaio anno dopo',
+          plannedImpact: _impact(DateTime(2028, 1, 10)),
+        ),
+      ]),
+      referenceTime: DateTime(2027, 1, 10),
+    );
+
+    await tester.tap(find.text('Mesi futuri'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Dicembre 2027'), findsOneWidget);
+    expect(find.text('Gennaio 2028'), findsNothing);
+  });
+
+  testWidgets('December keeps future navigation with an empty rolling horizon', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _aggregate([
+        _fixture(
+          'Gennaio successivo',
+          plannedImpact: _impact(DateTime(2028, 1, 10)),
+        ),
+      ]),
+      referenceTime: DateTime(2027, 12, 31),
+    );
+
+    final rollingNavigation = find.byKey(
+      const Key('future-expenses-months'),
+    );
+    expect(rollingNavigation, findsOneWidget);
+    expect(
+      find.descendant(of: rollingNavigation, matching: find.text('0')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Mesi futuri'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Gennaio 2028'), findsNothing);
+    expect(find.text('Vai al 2028'), findsOneWidget);
+  });
+
+  testWidgets('searches 2056 through materialized projected and finite sources', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _aggregate([
+        _fixture(
+          'Materializzata 2056',
+          plannedImpact: _impact(DateTime(2056, 6, 10)),
+        ),
+        _fixture(
+          'Proiettata 2056',
+          cycleSequence: 1,
+          cycleAnchor: DateTime(2055, 12, 12),
+          plannedImpact: _impact(DateTime(2055, 12, 12)),
+        ),
+      ]),
+      referenceTime: DateTime(2026, 9, 20),
+      finitePlans: [
+        _inpsPlan(
+          id: 'plan_2056',
+          name: 'Piano 2056',
+          total: 2,
+          completed: 0,
+          firstDate: DateTime(2056, 1, 15),
+        ),
+      ],
+    );
+
+    await tester.tap(find.text('Mesi futuri'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('future-expenses-year-input')),
+      '2056',
+    );
+    await tester.tap(find.byKey(const Key('future-expenses-search-year')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Spese previste nel 2056'), findsOneWidget);
+    expect(
+      find.byKey(const Key('future-expense-search-month-2056-1')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('future-expense-search-month-2056-1')),
+        matching: find.text('2'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('future-expense-search-month-2056-6')),
+      findsOneWidget,
+    );
+    expect(find.text('Gennaio 2057'), findsNothing);
+    await tester.tap(
+      find.byKey(const Key('future-expense-search-month-2056-6')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Materializzata 2056 · Provider Materializzata 2056'),
+      findsOneWidget,
+    );
+    expect(find.text('Proiettata 2056 · Provider Proiettata 2056'), findsOneWidget);
+  });
+
+  testWidgets('validates empty non numeric current and past years', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      ExpectedExpenseAggregate.empty(),
+      referenceTime: DateTime(2026, 9, 20),
+    );
+    await tester.tap(find.text('Mesi futuri'));
+    await tester.pumpAndSettle();
+    final input = find.byKey(const Key('future-expenses-year-input'));
+    final search = find.byKey(const Key('future-expenses-search-year'));
+
+    await tester.tap(search);
+    await tester.pump();
+    expect(find.text('Inserisci un anno valido.'), findsOneWidget);
+    await tester.enterText(input, 'anno');
+    await tester.tap(search);
+    await tester.pump();
+    expect(find.text('Inserisci un anno valido.'), findsOneWidget);
+    for (final year in ['2026', '2025']) {
+      await tester.enterText(input, year);
+      await tester.tap(search);
+      await tester.pump();
+      expect(
+        find.text('Inserisci un anno successivo al 2026.'),
+        findsOneWidget,
+      );
+    }
+    await tester.enterText(input, '275761');
+    await tester.tap(search);
+    await tester.pump();
+    expect(find.text('Anno non supportato.'), findsOneWidget);
+    expect(find.byKey(const Key('future-expenses-selected-year')), findsNothing);
+  });
+
+  testWidgets('shows an annual empty state without replacing current horizon', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _aggregate([
+        _fixture(
+          'Vicino',
+          plannedImpact: _impact(DateTime(2026, 10, 10)),
+        ),
+      ]),
+      referenceTime: DateTime(2026, 9, 20),
+    );
+    final rollingNavigation = find.byKey(
+      const Key('future-expenses-months'),
+    );
+    expect(rollingNavigation, findsOneWidget);
+    expect(
+      find.descendant(of: rollingNavigation, matching: find.text('1')),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Mesi futuri'));
+    await tester.pumpAndSettle();
+    final rollingOctober = find.byKey(
+      const Key('future-expense-month-2026-10'),
+    );
+    expect(rollingOctober, findsOneWidget);
+    expect(
+      find.descendant(of: rollingOctober, matching: find.text('1')),
+      findsOneWidget,
+    );
+
+    await tester.enterText(
+      find.byKey(const Key('future-expenses-year-input')),
+      '2056',
+    );
+    await tester.tap(find.byKey(const Key('future-expenses-search-year')));
+    await tester.pump();
+
+    expect(find.text('Nessuna spesa prevista nel 2056'), findsOneWidget);
+    expect(rollingOctober, findsOneWidget);
+    expect(find.text('Spese previste nel 2056'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(rollingNavigation, findsOneWidget);
+    expect(
+      find.descendant(of: rollingNavigation, matching: find.text('1')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('annual query preserves materialized cycle precedence', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      _aggregate([
+        _fixture(
+          'Identificata',
+          cycleSequence: 1,
+          cycleAnchor: DateTime(2056, 1, 10),
+          plannedImpact: _impact(DateTime(2055, 12, 20)),
+        ),
+      ]),
+      referenceTime: DateTime(2026, 9, 20),
+      finitePlans: [
+        _inpsPlan(
+          id: 'completed_2056',
+          total: 1,
+          completed: 1,
+          firstDate: DateTime(2056, 1, 15),
+        ),
+      ],
+    );
+    await _searchFutureYear(tester, 2056);
+
+    expect(
+      find.byKey(const Key('future-expense-search-month-2056-1')),
+      findsNothing,
+    );
+    expect(find.text('Febbraio 2056'), findsOneWidget);
+    expect(find.textContaining('INPS'), findsNothing);
+  });
+
+  testWidgets('pending legacy occurrence blocks an otherwise valid projection', (
+    tester,
+  ) async {
+    final base = _fixture(
+      'Legacy base',
+      relationshipId: 'relationship_legacy_blocked',
+      occurrenceId: 'occurrence_legacy_base',
+      cycleSequence: 1,
+      cycleAnchor: DateTime(2055, 12, 10),
+      plannedImpact: _impact(DateTime(2055, 12, 10)),
+    );
+    final legacyPending = _fixture(
+      'Legacy pending',
+      relationshipId: base.relationship.relationshipId,
+      occurrenceId: 'occurrence_legacy_pending',
+      dueDate: DateTime(2055, 12, 20),
+    );
+    await _pump(
+      tester,
+      ExpectedExpenseAggregate(
+        relationships: [base.relationship],
+        occurrences: [base.occurrence, legacyPending.occurrence],
+      ),
+      referenceTime: DateTime(2026, 9, 20),
+    );
+    await _searchFutureYear(tester, 2056);
+
+    expect(find.text('Nessuna spesa prevista nel 2056'), findsOneWidget);
+    expect(
+      find.byKey(const Key('future-expense-search-month-2056-1')),
+      findsNothing,
+    );
+  });
+
+  testWidgets(
+    'terminated relationship keeps materialized pending and adds no projection',
+    (tester) async {
+      await _pump(
+        tester,
+        _aggregate([
+          _fixture(
+            'Terminata materializzata',
+            relationshipStatus: ExpenseRelationshipStatus.terminated,
+            knowledgeState: ExpectedExpenseKnowledgeState.knownUnpaid,
+            knowledgeSource: ExpectedExpenseKnowledgeSource.userConfirmed,
+            cycleSequence: 1,
+            cycleAnchor: DateTime(2055, 12, 12),
+            plannedImpact: _impact(DateTime(2056, 6, 12)),
+          ),
+        ]),
+        referenceTime: DateTime(2026, 9, 20),
+      );
+      await _searchFutureYear(tester, 2056);
+
+      expect(
+        find.byKey(const Key('future-expense-search-month-2056-6')),
+        findsOneWidget,
+      );
+      expect(find.text('Luglio 2056'), findsNothing);
+      await tester.tap(
+        find.byKey(const Key('future-expense-search-month-2056-6')),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Terminata materializzata · Provider Terminata materializzata',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Ciclo previsto'), findsNothing);
+    },
+  );
+
+  testWidgets('rerunning an annual query reads the current FinanceStore', (
+    tester,
+  ) async {
+    final store = await _pump(
+      tester,
+      _aggregate([
+        _fixture(
+          'Da aggiornare',
+          plannedImpact: _impact(DateTime(2056, 6, 10)),
+        ),
+      ]),
+      referenceTime: DateTime(2026, 9, 20),
+    );
+    await tester.tap(find.text('Mesi futuri'));
+    await tester.pumpAndSettle();
+    final input = find.byKey(const Key('future-expenses-year-input'));
+    final search = find.byKey(const Key('future-expenses-search-year'));
+    await tester.enterText(input, '2056');
+    await tester.tap(search);
+    await tester.pump();
+    expect(find.text('Giugno 2056'), findsOneWidget);
+
+    await store.saveExpectedExpenseAggregate(ExpectedExpenseAggregate.empty());
+    await tester.tap(search);
+    await tester.pump();
+
+    expect(find.text('Nessuna spesa prevista nel 2056'), findsOneWidget);
+    expect(
+      find.byKey(const Key('future-expense-search-month-2056-6')),
+      findsNothing,
+    );
+  });
+}
+
+Future<void> _searchFutureYear(WidgetTester tester, int year) async {
+  await tester.tap(find.text('Mesi futuri'));
+  await tester.pumpAndSettle();
+  await tester.enterText(
+    find.byKey(const Key('future-expenses-year-input')),
+    '$year',
+  );
+  await tester.tap(find.byKey(const Key('future-expenses-search-year')));
+  await tester.pump();
 }
 
 Future<FinanceStore> _pump(
@@ -495,16 +919,22 @@ Future<FinanceStore> _pump(
   return store;
 }
 
-FiniteFinancialPlan _inpsPlan() => FiniteFinancialPlan(
-  id: 'plan_inps',
-  name: 'INPS',
+FiniteFinancialPlan _inpsPlan({
+  String id = 'plan_inps',
+  String name = 'INPS',
+  int total = 12,
+  int completed = 3,
+  DateTime? firstDate,
+}) => FiniteFinancialPlan(
+  id: id,
+  name: name,
   subject: FinanceSubject.matteo,
   debitBalanceId: 'balance_banca',
-  totalInstallments: 12,
+  totalInstallments: total,
   expectedInstallmentAmount: 386,
-  firstInstallmentDate: DateTime(2026, 7, 15),
+  firstInstallmentDate: firstDate ?? DateTime(2026, 7, 15),
   scheduledDayOfMonth: 15,
-  completedInstallments: 3,
+  completedInstallments: completed,
 );
 
 ExpectedExpenseAggregate _aggregate(List<_Fixture> fixtures) =>
@@ -515,6 +945,8 @@ ExpectedExpenseAggregate _aggregate(List<_Fixture> fixtures) =>
 
 _Fixture _fixture(
   String service, {
+  String? relationshipId,
+  String? occurrenceId,
   String? provider,
   ExpenseRelationshipStatus relationshipStatus =
       ExpenseRelationshipStatus.active,
@@ -536,7 +968,7 @@ _Fixture _fixture(
 }) {
   final token = service.toLowerCase().replaceAll(' ', '_');
   final relationship = ExpenseRelationship(
-    relationshipId: 'relationship_$token',
+    relationshipId: relationshipId ?? 'relationship_$token',
     service: service,
     provider: provider ?? 'Provider $service',
     subject: FinanceSubject.matteo,
@@ -555,7 +987,7 @@ _Fixture _fixture(
       ? DateTime(2099, 11, 14)
       : dueDate as DateTime?;
   final occurrence = ExpectedExpenseOccurrence(
-    occurrenceId: 'occurrence_$token',
+    occurrenceId: occurrenceId ?? 'occurrence_$token',
     relationshipId: relationship.relationshipId,
     cycleSequence: cycleSequence,
     cycleAnchor: cycleAnchor,
