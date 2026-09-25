@@ -18,39 +18,67 @@ class FutureOutflowPresentationComposer {
     required Iterable<FiniteFinancialPlan> finitePlans,
     required DateTime referenceTime,
   }) {
-    final materializedCycleIds = expectedExpenses
-        .where((item) => item.source.cycleSequence != null)
-        .map((item) => '${item.relationshipId}#${item.source.cycleSequence}')
-        .toSet();
+    final materialized = expectedExpenses.toList();
+    return _compose(
+      expectedExpenses: materialized,
+      projectedCycles: projectedCycles,
+      materializedCycleIds: _materializedCycleIds(materialized),
+      finitePlanItems: [
+        for (final plan in finitePlans)
+          for (final item in finitePlanAdapter.remainingItems(plan))
+            _fromFinitePlan(plan, item),
+      ],
+      referenceTime: referenceTime,
+    );
+  }
+
+  FutureOutflowOverview composeInRange({
+    required Iterable<FutureExpenseProjection> expectedExpenses,
+    Iterable<ProjectedExpenseCycle> projectedCycles = const [],
+    required Iterable<FiniteFinancialPlan> finitePlans,
+    required DateTime start,
+    required DateTime end,
+    required DateTime referenceTime,
+  }) {
+    if (end.isBefore(start)) {
+      throw ArgumentError.value(end, 'end', 'must not be before start');
+    }
+    final materialized = expectedExpenses.toList();
+    return _compose(
+      expectedExpenses: materialized.where((item) {
+        final date = item.displayStart;
+        return date != null && _isInRange(date, start, end);
+      }),
+      projectedCycles: projectedCycles.where(
+        (item) => _isInRange(item.cycleAnchor, start, end),
+      ),
+      materializedCycleIds: _materializedCycleIds(materialized),
+      finitePlanItems: [
+        for (final plan in finitePlans)
+          for (final item in finitePlanAdapter.itemsInRange(
+            plan: plan,
+            start: start,
+            end: end,
+          ))
+            _fromFinitePlan(plan, item),
+      ],
+      referenceTime: referenceTime,
+    );
+  }
+
+  FutureOutflowOverview _compose({
+    required Iterable<FutureExpenseProjection> expectedExpenses,
+    required Iterable<ProjectedExpenseCycle> projectedCycles,
+    required Set<String> materializedCycleIds,
+    required Iterable<FutureOutflowPresentation> finitePlanItems,
+    required DateTime referenceTime,
+  }) {
     final items = <FutureOutflowPresentation>[
       ...expectedExpenses.map(_fromExpectedExpense),
       ...projectedCycles
           .where((item) => !materializedCycleIds.contains(item.identity.value))
           .map(_fromProjectedCycle),
-      for (final plan in finitePlans)
-        ...finitePlanAdapter
-            .remainingItems(plan)
-            .map(
-              (item) => FutureOutflowPresentation(
-                identity: item.identity,
-                authority: FutureOutflowAuthority.finiteFinancialPlan,
-                title: item.name,
-                details:
-                    'Rata ${item.installmentNumber} di ${plan.totalInstallments}',
-                amount: item.expectedAmount,
-                placementStart: item.date,
-                placementEnd: item.date,
-                datePresentation:
-                    FutureOutflowDatePresentation.finitePlanForecast,
-                requiresPlanning: false,
-                provisional: false,
-                requiresUserAction: false,
-                overdue: false,
-                planId: item.planId,
-                installmentNumber: item.installmentNumber,
-                totalInstallments: plan.totalInstallments,
-              ),
-            ),
+      ...finitePlanItems,
     ];
     items.sort(_compare);
 
@@ -86,6 +114,37 @@ class FutureOutflowPresentationComposer {
       unplaced: unplaced,
     );
   }
+
+  Set<String> _materializedCycleIds(
+    Iterable<FutureExpenseProjection> expectedExpenses,
+  ) => expectedExpenses
+      .where((item) => item.source.cycleSequence != null)
+      .map((item) => '${item.relationshipId}#${item.source.cycleSequence}')
+      .toSet();
+
+  bool _isInRange(DateTime value, DateTime start, DateTime end) =>
+      !value.isBefore(start) && !value.isAfter(end);
+
+  FutureOutflowPresentation _fromFinitePlan(
+    FiniteFinancialPlan plan,
+    FiniteFinancialPlanForecastItem item,
+  ) => FutureOutflowPresentation(
+    identity: item.identity,
+    authority: FutureOutflowAuthority.finiteFinancialPlan,
+    title: item.name,
+    details: 'Rata ${item.installmentNumber} di ${plan.totalInstallments}',
+    amount: item.expectedAmount,
+    placementStart: item.date,
+    placementEnd: item.date,
+    datePresentation: FutureOutflowDatePresentation.finitePlanForecast,
+    requiresPlanning: false,
+    provisional: false,
+    requiresUserAction: false,
+    overdue: false,
+    planId: item.planId,
+    installmentNumber: item.installmentNumber,
+    totalInstallments: plan.totalInstallments,
+  );
 
   FutureOutflowPresentation _fromExpectedExpense(
     FutureExpenseProjection expense,
