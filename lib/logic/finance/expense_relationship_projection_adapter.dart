@@ -43,7 +43,12 @@ class ExpenseRelationshipProjectionAdapter {
       final materializedSequences = identified
           .map((item) => item.cycleSequence!)
           .toSet();
-      var sequence = base.cycleSequence!;
+      final firstOffset = _firstOffsetOnOrAfter(
+        base.cycleAnchor!,
+        relationship.periodicity,
+        horizon.start,
+      );
+      var sequence = base.cycleSequence! + firstOffset;
       while (true) {
         final anchor = _anchorFor(
           base.cycleAnchor!,
@@ -81,6 +86,31 @@ class ExpenseRelationshipProjectionAdapter {
           : left.identity.value.compareTo(right.identity.value);
     });
     return List.unmodifiable(result);
+  }
+
+  int _firstOffsetOnOrAfter(
+    DateTime base,
+    ExpenseRelationshipPeriodicity periodicity,
+    DateTime start,
+  ) {
+    if (!_anchorFor(base, periodicity, 0).isBefore(start)) return 0;
+
+    var lower = 0;
+    var upper = 1;
+    while (_anchorFor(base, periodicity, upper).isBefore(start)) {
+      lower = upper;
+      upper *= 2;
+    }
+
+    while (lower + 1 < upper) {
+      final middle = lower + ((upper - lower) ~/ 2);
+      if (_anchorFor(base, periodicity, middle).isBefore(start)) {
+        lower = middle;
+      } else {
+        upper = middle;
+      }
+    }
+    return upper;
   }
 
   DateTime _anchorFor(
