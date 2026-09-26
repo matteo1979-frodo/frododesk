@@ -1,3 +1,4 @@
+import '../../models/economic_operation_metadata.dart';
 import '../../models/finance_balance.dart';
 import '../../models/finance_transaction.dart';
 import '../../models/finite_financial_plan.dart';
@@ -493,12 +494,29 @@ class _ExpectedRecords {
       'real_expense:${confirmation.installmentIdentity}:fee';
   String get feeEconomicFactId =>
       'economic_fact:${confirmation.installmentIdentity}:fee';
+  String get operationId => confirmation.installmentIdentity;
+
+  EconomicOperationMetadata get mainOperationMetadata =>
+      EconomicOperationMetadata(
+        operationId: operationId,
+        role: OperationRole.main,
+        context: OperationContext.financialPlanInstallment,
+      );
+
+  EconomicOperationMetadata get feeOperationMetadata =>
+      EconomicOperationMetadata(
+        operationId: operationId,
+        role: OperationRole.accessory,
+        context: OperationContext.financialPlanInstallment,
+        accessoryCostType: AccessoryCostType.bankCommission,
+      );
 
   FinanceTransaction get mainTransaction => _transaction(
     id: mainTransactionId,
     amount: confirmation.mainAmount,
     economicFactId: confirmation.mainEconomicFactId,
     category: confirmation.mainCategory,
+    operationMetadata: mainOperationMetadata,
   );
 
   FinanceTransaction? get feeTransaction => hasFee
@@ -507,6 +525,7 @@ class _ExpectedRecords {
           amount: confirmation.bankFee!,
           economicFactId: confirmation.feeEconomicFactId!,
           category: confirmation.bankFeeCategory!,
+          operationMetadata: feeOperationMetadata,
         )
       : null;
 
@@ -515,6 +534,7 @@ class _ExpectedRecords {
     amount: confirmation.mainAmount,
     economicFactId: confirmation.mainEconomicFactId,
     category: confirmation.mainCategory,
+    operationMetadata: mainOperationMetadata,
   );
 
   RealExpense? get feeExpense => hasFee
@@ -523,6 +543,7 @@ class _ExpectedRecords {
           amount: confirmation.bankFee!,
           economicFactId: confirmation.feeEconomicFactId!,
           category: confirmation.bankFeeCategory!,
+          operationMetadata: feeOperationMetadata,
         )
       : null;
 
@@ -531,6 +552,7 @@ class _ExpectedRecords {
     required double amount,
     required String economicFactId,
     required String category,
+    required EconomicOperationMetadata operationMetadata,
   }) => FinanceTransaction(
     id: id,
     balanceId: confirmation.debitBalanceId,
@@ -543,6 +565,7 @@ class _ExpectedRecords {
     origin: FinanceTransactionOrigin.manual,
     notes: category,
     economicFactId: economicFactId,
+    operationMetadata: operationMetadata,
   );
 
   RealExpense _expense({
@@ -550,6 +573,7 @@ class _ExpectedRecords {
     required double amount,
     required String economicFactId,
     required String category,
+    required EconomicOperationMetadata operationMetadata,
   }) => RealExpense(
     id: id,
     balanceId: balance.balanceId,
@@ -560,6 +584,7 @@ class _ExpectedRecords {
     date: confirmation.economicDate,
     subject: confirmation.subject,
     economicFactId: economicFactId,
+    operationMetadata: operationMetadata,
   );
 }
 

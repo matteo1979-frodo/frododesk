@@ -8,11 +8,14 @@ import 'package:frododesk/logic/finance/finite_financial_plan_persistence.dart';
 import 'package:frododesk/logic/ledger/economic_event_collector.dart';
 import 'package:frododesk/logic/ledger/economic_event_correlator.dart';
 import 'package:frododesk/logic/persistence_store.dart';
+import 'package:frododesk/models/economic_operation_metadata.dart';
 import 'package:frododesk/models/finance_balance.dart';
 import 'package:frododesk/models/finance_recurring_item.dart';
 import 'package:frododesk/models/finance_transaction.dart';
 import 'package:frododesk/models/finite_financial_plan.dart';
 import 'package:frododesk/models/finite_financial_plan_installment_confirmation.dart';
+import 'package:frododesk/models/real_expense.dart';
+import 'package:frododesk/screens/expected_expense_from_real_expense_page.dart';
 import 'package:frododesk/stores/expense_store.dart';
 import 'package:frododesk/stores/finance_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -37,6 +40,24 @@ void main() {
     final transaction = harness.finance.transactions.single;
     final expense = harness.expenses.all.single;
     expect(transaction.economicFactId, _confirmation().mainEconomicFactId);
+    expect(
+      transaction.operationMetadata?.operationId,
+      _confirmation().installmentIdentity,
+    );
+    expect(transaction.operationMetadata?.role, OperationRole.main);
+    expect(
+      transaction.operationMetadata?.context,
+      OperationContext.financialPlanInstallment,
+    );
+    expect(
+      expense.operationMetadata?.operationId,
+      _confirmation().installmentIdentity,
+    );
+    expect(expense.operationMetadata?.role, OperationRole.main);
+    expect(
+      expense.operationMetadata?.context,
+      OperationContext.financialPlanInstallment,
+    );
     expect(expense.economicFactId, transaction.economicFactId);
     expect(transaction.date, DateTime(2026, 9, 16));
     expect(expense.date, DateTime(2026, 9, 16));
@@ -66,6 +87,39 @@ void main() {
         confirmation.mainEconomicFactId,
         confirmation.feeEconomicFactId,
       });
+      final mainTransaction = harness.finance.transactions.singleWhere(
+        (item) => item.economicFactId == confirmation.mainEconomicFactId,
+      );
+      final feeTransaction = harness.finance.transactions.singleWhere(
+        (item) => item.economicFactId == confirmation.feeEconomicFactId,
+      );
+      final mainExpense = harness.expenses.all.singleWhere(
+        (item) => item.economicFactId == confirmation.mainEconomicFactId,
+      );
+      final feeExpense = harness.expenses.all.singleWhere(
+        (item) => item.economicFactId == confirmation.feeEconomicFactId,
+      );
+      final operationId = confirmation.installmentIdentity;
+      for (final metadata in [
+        mainTransaction.operationMetadata,
+        mainExpense.operationMetadata,
+      ]) {
+        expect(metadata?.operationId, operationId);
+        expect(metadata?.role, OperationRole.main);
+        expect(metadata?.context, OperationContext.financialPlanInstallment);
+        expect(metadata?.accessoryCostType, isNull);
+      }
+      for (final metadata in [
+        feeTransaction.operationMetadata,
+        feeExpense.operationMetadata,
+      ]) {
+        expect(metadata?.operationId, operationId);
+        expect(metadata?.role, OperationRole.accessory);
+        expect(metadata?.context, OperationContext.financialPlanInstallment);
+        expect(metadata?.accessoryCostType, AccessoryCostType.bankCommission);
+      }
+      expect(canCreateExpectedExpensePrediction(mainExpense), isTrue);
+      expect(canCreateExpectedExpensePrediction(feeExpense), isFalse);
       final events = const EconomicEventCorrelator().correlate(
         const EconomicEventCollector().collect(
           transactions: harness.finance.transactions,
@@ -385,6 +439,44 @@ void main() {
     },
   );
 
+  test(
+    'legacy completed facts without metadata remain retry-compatible',
+    () async {
+      final confirmation = _confirmation(fee: 1);
+      final expenses = ExpenseStore();
+      await expenses.addExpense(_legacyExpense(confirmation, fee: false));
+      await expenses.addExpense(_legacyExpense(confirmation, fee: true));
+      final harness = await _Harness.create(
+        expenses: expenses,
+        balanceAmount: 613,
+        completedInstallments: 3,
+        transactions: [
+          _expectedTransaction(confirmation),
+          _expectedFeeTransaction(confirmation),
+        ],
+      );
+
+      final result = await harness.coordinator.confirm(confirmation);
+
+      expect(
+        result.status,
+        FinitePlanInstallmentConfirmationStatus.alreadyComplete,
+      );
+      expect(harness.finance.transactions, hasLength(2));
+      expect(harness.expenses.all, hasLength(2));
+      expect(
+        harness.finance.transactions.every(
+          (item) => item.operationMetadata == null,
+        ),
+        isTrue,
+      );
+      expect(
+        harness.expenses.all.every((item) => item.operationMetadata == null),
+        isTrue,
+      );
+    },
+  );
+
   test('zero fee follows the same one-fact path as null fee', () async {
     final harness = await _Harness.create();
     final result = await harness.coordinator.confirm(_confirmation(fee: 0));
@@ -392,6 +484,14 @@ void main() {
     expect(harness.finance.transactions, hasLength(1));
     expect(harness.expenses.all, hasLength(1));
     expect(harness.finance.balances.single.currentAmount, 614);
+    expect(
+      harness.finance.transactions.single.operationMetadata?.role,
+      OperationRole.main,
+    );
+    expect(
+      harness.expenses.all.single.operationMetadata?.role,
+      OperationRole.main,
+    );
   });
 }
 
@@ -537,4 +637,40 @@ FinanceTransaction _expectedTransaction(
   origin: FinanceTransactionOrigin.manual,
   notes: confirmation.mainCategory,
   economicFactId: confirmation.mainEconomicFactId,
+);
+
+FinanceTransaction _expectedFeeTransaction(
+  FiniteFinancialPlanInstallmentConfirmation confirmation,
+) => FinanceTransaction(
+  id: 'finance_transaction:${confirmation.installmentIdentity}:fee',
+  balanceId: confirmation.debitBalanceId,
+  amount: confirmation.bankFee!,
+  date: confirmation.economicDate,
+  isIncome: false,
+  subject: confirmation.subject,
+  description: confirmation.description,
+  type: FinanceTransactionType.expense,
+  origin: FinanceTransactionOrigin.manual,
+  notes: confirmation.bankFeeCategory,
+  economicFactId: confirmation.feeEconomicFactId,
+);
+
+RealExpense _legacyExpense(
+  FiniteFinancialPlanInstallmentConfirmation confirmation, {
+  required bool fee,
+}) => RealExpense(
+  id:
+      'real_expense:${confirmation.installmentIdentity}:${fee ? 'fee' : 'main'}',
+  balanceId: confirmation.debitBalanceId,
+  balanceName: 'Banca di Imola',
+  amount: fee ? confirmation.bankFee! : confirmation.mainAmount,
+  description: confirmation.description,
+  category: fee
+      ? confirmation.bankFeeCategory!
+      : confirmation.mainCategory,
+  date: confirmation.economicDate,
+  subject: confirmation.subject,
+  economicFactId: fee
+      ? confirmation.feeEconomicFactId
+      : confirmation.mainEconomicFactId,
 );
