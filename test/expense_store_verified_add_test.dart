@@ -16,6 +16,7 @@ void main() {
     'new record is verified, published once, and preserves others',
     () async {
       final store = ExpenseStore();
+      await store.load();
       await store.addExpense(_expense(id: 'existing', factId: 'fact-existing'));
       var notifications = 0;
       store.addListener(() => notifications++);
@@ -45,6 +46,7 @@ void main() {
         );
       },
     );
+    await store.load();
     expect(
       (await store.addExpenseVerified(expense)).status,
       VerifiedExpenseAddStatus.added,
@@ -86,6 +88,7 @@ void main() {
           );
         },
       );
+      await store.load();
       await store.addExpenseVerified(_expense());
       final result = await store.addExpenseVerified(changed);
       expect(result.status, VerifiedExpenseAddStatus.conflict);
@@ -96,6 +99,7 @@ void main() {
 
   test('same economic fact with a different id is a conflict', () async {
     final store = ExpenseStore();
+    await store.load();
     await store.addExpenseVerified(_expense());
 
     final result = await store.addExpenseVerified(_expense(id: 'different-id'));
@@ -106,6 +110,7 @@ void main() {
 
   test('pre-existing duplicates of either identity are a conflict', () async {
     final duplicateIdStore = ExpenseStore();
+    await duplicateIdStore.load();
     await duplicateIdStore.addExpense(_expense());
     await duplicateIdStore.addExpense(_expense(factId: 'other-fact'));
     expect(
@@ -114,6 +119,7 @@ void main() {
     );
 
     final duplicateFactStore = ExpenseStore();
+    await duplicateFactStore.load();
     await duplicateFactStore.addExpense(_expense());
     await duplicateFactStore.addExpense(_expense(id: 'other-id'));
     expect(
@@ -141,6 +147,7 @@ void main() {
 
     for (final failure in failures) {
       final store = ExpenseStore(saveVerified: failure);
+      await store.load();
       await store.addExpense(_expense(id: 'existing', factId: 'existing-fact'));
       var notifications = 0;
       store.addListener(() => notifications++);
@@ -157,6 +164,7 @@ void main() {
     'successful record reloads and remains coherently recognizable',
     () async {
       final store = ExpenseStore();
+      await store.load();
       expect(
         (await store.addExpenseVerified(_expense())).status,
         VerifiedExpenseAddStatus.added,
@@ -175,6 +183,7 @@ void main() {
 
   test('null economic fact uses only structural id identity', () async {
     final store = ExpenseStore();
+    await store.load();
     final first = _expense(id: 'without-fact', factId: null);
     expect(
       (await store.addExpenseVerified(first)).status,

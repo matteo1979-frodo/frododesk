@@ -273,6 +273,7 @@ Future<_Fixture> _fixture() async {
     ],
   );
   final expenses = ExpenseStore();
+  await expenses.load();
   await expenses.addExpense(
     RealExpense(
       id: 'expense-record',

@@ -444,6 +444,7 @@ void main() {
     () async {
       final confirmation = _confirmation(fee: 1);
       final expenses = ExpenseStore();
+      await expenses.load();
       await expenses.addExpense(_legacyExpense(confirmation, fee: false));
       await expenses.addExpense(_legacyExpense(confirmation, fee: true));
       final harness = await _Harness.create(

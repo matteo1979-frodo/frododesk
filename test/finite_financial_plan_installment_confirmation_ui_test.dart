@@ -246,6 +246,7 @@ class _Harness {
       saveVerified: (key, value) async =>
           PersistenceWriteVerification(backendAccepted: true, readBack: value),
     );
+    await expenses.load();
     return _Harness(finance, expenses);
   }
 

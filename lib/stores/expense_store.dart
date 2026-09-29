@@ -14,6 +14,25 @@ enum VerifiedExpenseReplacementStatus {
   writerFailed,
 }
 
+enum VerifiedExpenseRecoveryStatus {
+  committed,
+  alreadyCoherent,
+  conflict,
+  writerFailed,
+}
+
+class VerifiedExpenseRecoveryResult {
+  final VerifiedExpenseRecoveryStatus status;
+  final List<String> errors;
+
+  VerifiedExpenseRecoveryResult(this.status, [Iterable<String> errors = const []])
+    : errors = List.unmodifiable(errors);
+
+  bool get isSuccess =>
+      status == VerifiedExpenseRecoveryStatus.committed ||
+      status == VerifiedExpenseRecoveryStatus.alreadyCoherent;
+}
+
 class VerifiedExpenseAddResult {
   final VerifiedExpenseAddStatus status;
   final List<String> errors;
@@ -83,34 +102,63 @@ class VerifiedExpenseReplacementResult {
 
 typedef ExpenseVerifiedSave =
     Future<PersistenceWriteVerification> Function(String key, String value);
+typedef ExpenseLoad = Future<String?> Function(String key);
 
 class ExpenseStore extends ChangeNotifier {
   static const String _storageKey = 'real_expenses_v1';
 
+  final ExpenseLoad _load;
   final ExpenseVerifiedSave _saveVerified;
   final List<RealExpense> _expenses = [];
+  bool _isLoaded = false;
 
-  ExpenseStore({ExpenseVerifiedSave? saveVerified})
-    : _saveVerified = saveVerified ?? PersistenceStore.saveStringVerified;
+  ExpenseStore({ExpenseLoad? load, ExpenseVerifiedSave? saveVerified})
+    : _load = load ?? PersistenceStore.loadString,
+      _saveVerified = saveVerified ?? PersistenceStore.saveStringVerified;
 
   List<RealExpense> get all => List.unmodifiable(_expenses);
+  bool get isLoaded => _isLoaded;
 
   Future<void> load() async {
-    final jsonList = await PersistenceStore.loadJsonList(_storageKey);
+    _isLoaded = false;
+    final raw = await _load(_storageKey);
+    final List<dynamic> decoded;
+    if (raw == null || raw.isEmpty) {
+      decoded = const [];
+    } else {
+      final value = jsonDecode(raw);
+      if (value is! List) {
+        throw const FormatException(
+          'Invalid real expenses payload: root must be a list',
+        );
+      }
+      decoded = value;
+    }
+    final candidate = <RealExpense>[];
+    for (var index = 0; index < decoded.length; index++) {
+      final item = decoded[index];
+      if (item is! Map) {
+        throw FormatException('Invalid real expense at index $index');
+      }
+      candidate.add(RealExpense.fromJson(Map<String, dynamic>.from(item)));
+    }
 
     _expenses
       ..clear()
-      ..addAll(jsonList.map(RealExpense.fromJson));
+      ..addAll(candidate);
+    _isLoaded = true;
     notifyListeners();
   }
 
   Future<void> save() async {
+    _requireLoaded();
     final jsonList = _expenses.map((expense) => expense.toJson()).toList();
 
     await PersistenceStore.saveJsonList(_storageKey, jsonList);
   }
 
   Future<void> addExpense(RealExpense expense) async {
+    _requireLoaded();
     _expenses.add(expense);
     await save();
     notifyListeners();
@@ -119,6 +167,7 @@ class ExpenseStore extends ChangeNotifier {
   Future<VerifiedExpenseAddResult> addExpenseVerified(
     RealExpense expense,
   ) async {
+    _requireLoaded();
     final idMatches = _expenses.where((item) => item.id == expense.id).toList();
     final factMatches = expense.economicFactId == null
         ? const <RealExpense>[]
@@ -189,6 +238,7 @@ class ExpenseStore extends ChangeNotifier {
     required RealExpense original,
     required RealExpense replacement,
   }) async {
+    _requireLoaded();
     final originalMatches = _expenses
         .where(
           (item) =>
@@ -270,9 +320,76 @@ class ExpenseStore extends ChangeNotifier {
   }
 
   Future<void> removeExpense(String expenseId) async {
+    _requireLoaded();
     _expenses.removeWhere((expense) => expense.id == expenseId);
     await save();
     notifyListeners();
+  }
+
+  Future<VerifiedExpenseRecoveryResult> commitRecoveryCandidateVerified({
+    required List<RealExpense> expectedCurrent,
+    required List<RealExpense> candidate,
+  }) async {
+    _requireLoaded();
+    final expectedSerialized = _serialize(expectedCurrent);
+    if (_serialize(_expenses) != expectedSerialized) {
+      return VerifiedExpenseRecoveryResult(
+        VerifiedExpenseRecoveryStatus.conflict,
+        const ['ExpenseStore memory differs from the recovery preview'],
+      );
+    }
+    final identities = <String>{};
+    for (final expense in candidate) {
+      final factId = expense.economicFactId;
+      if (factId == null || factId.isEmpty || !identities.add(factId)) {
+        return VerifiedExpenseRecoveryResult(
+          VerifiedExpenseRecoveryStatus.conflict,
+          const ['Recovery candidate has missing or duplicate economicFactId'],
+        );
+      }
+    }
+    final candidateSerialized = _serialize(candidate);
+    if (candidateSerialized == expectedSerialized) {
+      return VerifiedExpenseRecoveryResult(
+        VerifiedExpenseRecoveryStatus.alreadyCoherent,
+      );
+    }
+
+    try {
+      final persistedRaw = await _load(_storageKey);
+      final persisted = _decodeExpenses(persistedRaw);
+      if (_serialize(persisted) != expectedSerialized) {
+        return VerifiedExpenseRecoveryResult(
+          VerifiedExpenseRecoveryStatus.conflict,
+          const ['Persisted expenses differ from the recovery preview'],
+        );
+      }
+      final verification = await _saveVerified(
+        _storageKey,
+        candidateSerialized,
+      );
+      if (!verification.backendAccepted ||
+          verification.readBack == null ||
+          !verification.matches(candidateSerialized)) {
+        return VerifiedExpenseRecoveryResult(
+          VerifiedExpenseRecoveryStatus.writerFailed,
+          const ['Expense recovery verified write failed'],
+        );
+      }
+    } catch (error) {
+      return VerifiedExpenseRecoveryResult(
+        VerifiedExpenseRecoveryStatus.writerFailed,
+        ['Expense recovery persistence failed: $error'],
+      );
+    }
+
+    _expenses
+      ..clear()
+      ..addAll(candidate);
+    notifyListeners();
+    return VerifiedExpenseRecoveryResult(
+      VerifiedExpenseRecoveryStatus.committed,
+    );
   }
 
   RealExpense? findById(String expenseId) {
@@ -281,6 +398,32 @@ class ExpenseStore extends ChangeNotifier {
     } catch (_) {
       return null;
     }
+  }
+
+  void _requireLoaded() {
+    if (!_isLoaded) {
+      throw StateError(
+        'ExpenseStore must be loaded successfully before mutations',
+      );
+    }
+  }
+
+  static String _serialize(Iterable<RealExpense> expenses) =>
+      jsonEncode(expenses.map((item) => item.toJson()).toList());
+
+  static List<RealExpense> _decodeExpenses(String? raw) {
+    if (raw == null || raw.isEmpty) return const [];
+    final decoded = jsonDecode(raw);
+    if (decoded is! List) {
+      throw const FormatException('Invalid real expenses persistence root');
+    }
+    return decoded
+        .map(
+          (item) => RealExpense.fromJson(
+            Map<String, dynamic>.from(item as Map),
+          ),
+        )
+        .toList(growable: false);
   }
 
   static bool _sameExpense(RealExpense left, RealExpense right) =>

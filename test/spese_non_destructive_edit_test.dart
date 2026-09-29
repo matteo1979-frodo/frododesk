@@ -375,6 +375,7 @@ Future<_Fixture> _fixture(
   );
   expect(await financeStore.loadSavedPortfolioV3(), isTrue);
   final expenseStore = ExpenseStore(saveVerified: expenseSave);
+  await expenseStore.load();
   final cashWalletStore = CashWalletStore();
   final coordinator = SpeseMutationCoordinator(
     financeStore: financeStore,

@@ -29,7 +29,7 @@ void main() {
     testWidgets(
       'utility bill builds main plus ${testCase.accessories} accessories',
       (tester) async {
-        final fixture = _Fixture.create();
+        final fixture = await _Fixture.create();
         await _pumpPage(tester, fixture);
         await _openUtilityForm(tester);
         await _fillUtilityForm(
@@ -85,7 +85,7 @@ void main() {
   testWidgets('historical utility bill passes non-posting mode', (
     tester,
   ) async {
-    final fixture = _Fixture.create();
+    final fixture = await _Fixture.create();
     await _pumpPage(tester, fixture);
     await _openUtilityForm(tester);
     await _fillUtilityForm(tester, bank: '2', postal: '1');
@@ -169,7 +169,7 @@ void main() {
   testWidgets('ordinary expense and cash withdrawal choices remain available', (
     tester,
   ) async {
-    await _pumpPage(tester, _Fixture.create());
+    await _pumpPage(tester, await _Fixture.create());
 
     await tester.tap(find.text('Nuovo movimento'));
     await tester.pumpAndSettle();
@@ -217,7 +217,7 @@ void main() {
     testWidgets('expense card presents ${testCase.name} semantically', (
       tester,
     ) async {
-      final fixture = _Fixture.create();
+      final fixture = await _Fixture.create();
       await fixture.expenseStore.addExpense(
         RealExpense(
           id: 'expense-${testCase.name}',
@@ -242,7 +242,7 @@ void main() {
   testWidgets('accessory detail preserves the operation description', (
     tester,
   ) async {
-    final fixture = _Fixture.create();
+    final fixture = await _Fixture.create();
     await fixture.expenseStore.addExpense(
       RealExpense(
         id: 'expense-bank',
@@ -277,7 +277,7 @@ void main() {
     (tester) async {
       await _pumpPage(
         tester,
-        _Fixture.create(),
+        await _Fixture.create(),
         surfaceSize: const Size(1200, 500),
       );
 
@@ -319,7 +319,7 @@ void main() {
   testWidgets('composite expense detail blocks single-fact edit and delete', (
     tester,
   ) async {
-    final fixture = _Fixture.create();
+    final fixture = await _Fixture.create();
     await fixture.expenseStore.addExpense(
       RealExpense(
         id: 'expense-main',
@@ -424,7 +424,7 @@ class _Fixture {
     required this.coordinator,
   });
 
-  factory _Fixture.create({
+  static Future<_Fixture> create({
     CompositeEconomicOperationStatus status =
         CompositeEconomicOperationStatus.completed,
     Completer<CompositeEconomicOperationResult>? pending,
@@ -449,6 +449,7 @@ class _Fixture {
       ],
     );
     final expenseStore = ExpenseStore();
+    await expenseStore.load();
     final cashWalletStore = CashWalletStore();
     return _Fixture._(
       financeStore: financeStore,

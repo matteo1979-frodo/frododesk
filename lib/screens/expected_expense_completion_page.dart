@@ -224,12 +224,17 @@ class _ExpectedExpenseCompletionPageState
       _error('Inserisci un importo reale valido.');
       return;
     }
+    final expenseStore = widget.expenseStore;
+    if (expenseStore == null) {
+      _error('Archivio spese non disponibile. Riapri la pagina da Spese.');
+      return;
+    }
     setState(() => _submitting = true);
     try {
       final result =
           await ExpectedExpenseLifecycleCoordinator(
             financeStore: widget.financeStore,
-            expenseStore: widget.expenseStore ?? ExpenseStore(),
+            expenseStore: expenseStore,
           ).recordKnownExpenseData(
             relationshipId: widget.relationshipId,
             occurrenceId: widget.occurrenceId,

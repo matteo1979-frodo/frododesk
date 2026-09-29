@@ -86,6 +86,7 @@ class _Fixture {
 }
 
 Future<void> _openOrdinaryExpense(WidgetTester tester, _Fixture fixture) async {
+  await fixture.expenseStore.load();
   await tester.binding.setSurfaceSize(const Size(1200, 1800));
   addTearDown(() => tester.binding.setSurfaceSize(null));
   await tester.pumpWidget(

@@ -309,6 +309,7 @@ class _Harness {
     final finance = FinanceStore(portfolioV3Writer: _writer());
     expect(await finance.loadSavedPortfolioV3(), isTrue);
     final expenseStore = expenses ?? ExpenseStore();
+    await expenseStore.load();
     return _Harness(
       finance,
       expenseStore,

@@ -135,6 +135,7 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final now = DateTime.now();
     final expenseStore = ExpenseStore();
+    await expenseStore.load();
     await expenseStore.addExpense(
       _expense('older-cents', 37.57, 'Casa', DateTime(now.year, now.month, 1)),
     );
@@ -184,6 +185,7 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final now = DateTime.now();
     final expenseStore = ExpenseStore();
+    await expenseStore.load();
     await expenseStore.addExpense(
       _expense('integer', 38, 'Casa', DateTime(now.year, now.month, now.day)),
     );
@@ -209,6 +211,7 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final now = DateTime.now();
     final expenseStore = ExpenseStore();
+    await expenseStore.load();
     for (final expense in <RealExpense>[
       _expense('Intera', 100, 'Casa', now),
       _expense('Centesimi', 100.25, 'Casa', now),
