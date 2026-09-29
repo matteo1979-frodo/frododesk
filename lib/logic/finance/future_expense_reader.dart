@@ -28,6 +28,10 @@ class FutureExpenseReader {
             displayPlacement: displayPlacement,
             displayStart: _displayStart(projection, displayPlacement),
             displayEnd: _displayEnd(projection, displayPlacement),
+            displayPeriod: displayPlacement ==
+                    FutureExpenseDisplayPlacement.expectedDocumentPeriod
+                ? projection.expectedPeriod
+                : null,
             overdueQualification: _overdue(projection, referenceTime),
           );
         }),
@@ -46,6 +50,9 @@ class FutureExpenseReader {
     if (projection.expectedDueDate != null) {
       return FutureExpenseDisplayPlacement.dueDateFallback;
     }
+    if (projection.expectedPeriod != null) {
+      return FutureExpenseDisplayPlacement.expectedDocumentPeriod;
+    }
     return FutureExpenseDisplayPlacement.unplaced;
   }
 
@@ -58,6 +65,7 @@ class FutureExpenseReader {
     FutureExpenseDisplayPlacement.expectedDebitWindow =>
       projection.expectedPaymentWindow!.start,
     FutureExpenseDisplayPlacement.dueDateFallback => projection.expectedDueDate,
+    FutureExpenseDisplayPlacement.expectedDocumentPeriod => null,
     FutureExpenseDisplayPlacement.unplaced => null,
   };
 
@@ -70,6 +78,7 @@ class FutureExpenseReader {
     FutureExpenseDisplayPlacement.expectedDebitWindow =>
       projection.expectedPaymentWindow!.end,
     FutureExpenseDisplayPlacement.dueDateFallback => projection.expectedDueDate,
+    FutureExpenseDisplayPlacement.expectedDocumentPeriod => null,
     FutureExpenseDisplayPlacement.unplaced => null,
   };
 

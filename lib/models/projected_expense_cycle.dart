@@ -1,4 +1,5 @@
 import 'expense_relationship.dart';
+import 'documentary_obligation.dart';
 import 'finance_recurring_item.dart';
 
 class ExpenseCycleIdentity {
@@ -17,7 +18,8 @@ class ExpenseCycleIdentity {
 /// It is neither persisted nor an economic fact.
 class ProjectedExpenseCycle {
   final ExpenseCycleIdentity identity;
-  final DateTime cycleAnchor;
+  final DateTime? cycleAnchor;
+  final ExpectedDocumentPeriod? expectedPeriod;
   final String sourceOccurrenceId;
   final String service;
   final String provider;
@@ -27,9 +29,10 @@ class ProjectedExpenseCycle {
   final PaymentExecutionMode paymentExecutionMode;
   final bool provisional;
 
-  const ProjectedExpenseCycle({
+  ProjectedExpenseCycle({
     required this.identity,
-    required this.cycleAnchor,
+    this.cycleAnchor,
+    this.expectedPeriod,
     required this.sourceOccurrenceId,
     required this.service,
     required this.provider,
@@ -38,7 +41,13 @@ class ProjectedExpenseCycle {
     required this.expectedPaymentConfiguration,
     required this.paymentExecutionMode,
     required this.provisional,
-  });
+  }) {
+    if ((cycleAnchor == null) == (expectedPeriod == null)) {
+      throw ArgumentError(
+        'Exactly one of cycleAnchor and expectedPeriod is required',
+      );
+    }
+  }
 }
 
 class ExpenseProjectionHorizon {

@@ -252,7 +252,11 @@ void main() {
       expect(overview.futureMonths.single.items, hasLength(1));
       expect(
         _items(overview).map((item) => item.authority).toSet(),
-        FutureOutflowAuthority.values.toSet(),
+        {
+          FutureOutflowAuthority.expectedExpense,
+          FutureOutflowAuthority.projectedExpenseRelationship,
+          FutureOutflowAuthority.finiteFinancialPlan,
+        },
       );
     });
 

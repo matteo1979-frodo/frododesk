@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'expense_relationship.dart';
+import 'documentary_obligation.dart';
 import 'expected_expense_occurrence.dart';
 import 'finance_recurring_item.dart';
 import 'manual_payment_preference.dart';
@@ -15,6 +16,7 @@ class ExpectedExpenseProjection {
   final String relationshipId;
   final int? cycleSequence;
   final DateTime? cycleAnchor;
+  final ExpectedDocumentPeriod? expectedPeriod;
 
   final String service;
   final String provider;
@@ -34,6 +36,7 @@ class ExpectedExpenseProjection {
   final bool provisional;
   final ExpenseEstimateConfidence confidence;
   final ExpenseEstimationMethod estimationMethod;
+  final String? sourceDocumentaryObligationId;
   final UnmodifiableListView<String> evidenceEconomicFactIds;
 
   final DateTime? expectedIssueDate;
@@ -54,6 +57,7 @@ class ExpectedExpenseProjection {
     required this.relationshipId,
     required this.cycleSequence,
     required this.cycleAnchor,
+    this.expectedPeriod,
     required this.service,
     required this.provider,
     required this.relationshipStatus,
@@ -69,6 +73,7 @@ class ExpectedExpenseProjection {
     required this.provisional,
     required this.confidence,
     required this.estimationMethod,
+    this.sourceDocumentaryObligationId,
     required Iterable<String> evidenceEconomicFactIds,
     required this.expectedIssueDate,
     required this.expectedIssueDateSource,

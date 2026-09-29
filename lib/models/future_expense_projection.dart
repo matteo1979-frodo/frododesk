@@ -1,3 +1,4 @@
+import 'documentary_obligation.dart';
 import 'expected_expense_projection.dart';
 
 enum FutureExpenseEconomicImpactPlacement {
@@ -10,6 +11,7 @@ enum FutureExpenseDisplayPlacement {
   plannedEconomicImpact,
   expectedDebitWindow,
   dueDateFallback,
+  expectedDocumentPeriod,
   unplaced,
 }
 
@@ -33,6 +35,7 @@ class FutureExpenseProjection {
   final FutureExpenseDisplayPlacement displayPlacement;
   final DateTime? displayStart;
   final DateTime? displayEnd;
+  final ExpectedDocumentPeriod? displayPeriod;
   final FutureExpenseOverdueQualification overdueQualification;
 
   const FutureExpenseProjection({
@@ -43,6 +46,7 @@ class FutureExpenseProjection {
     required this.displayPlacement,
     required this.displayStart,
     required this.displayEnd,
+    this.displayPeriod,
     required this.overdueQualification,
   });
 

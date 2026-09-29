@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/logic/finance/expense_relationship_projection_adapter.dart';
 import 'package:frododesk/logic/finance/expected_expense_persistence.dart';
 import 'package:frododesk/models/expense_relationship.dart';
+import 'package:frododesk/models/documentary_obligation.dart';
 import 'package:frododesk/models/expected_expense_occurrence.dart';
 import 'package:frododesk/models/finance_category_template.dart';
 import 'package:frododesk/models/finance_recurring_item.dart';
@@ -421,6 +422,39 @@ void main() {
       ),
     );
   });
+  test('month-precision seed projects future cycles without a day', () {
+    final relationship = _relationship(
+      periodicity: ExpenseRelationshipPeriodicity(
+        type: FinanceRecurringType.yearly,
+      ),
+    );
+    final seed = ExpectedExpenseOccurrence(
+      occurrenceId: 'documentary_relationship_2',
+      relationshipId: relationship.relationshipId,
+      cycleSequence: 2,
+      expectedPeriod: ExpectedDocumentPeriod(year: 2027, month: 3),
+      status: ExpectedExpenseOccurrenceStatus.pending,
+      expectedAmount: 173,
+      estimationMethod: ExpenseEstimationMethod.documentaryObligation,
+      sourceDocumentaryObligationId: 'tari-2026',
+      confidence: ExpenseEstimateConfidence.medium,
+      provisional: true,
+      expectedPaymentConfiguration: relationship.paymentConfiguration,
+      expectedSubject: relationship.subject,
+    );
+
+    final result = adapter.project(
+      aggregate: _aggregate(relationship: relationship, occurrence: seed),
+      horizon: ExpenseProjectionHorizon(
+        start: DateTime(2027),
+        end: DateTime(2029, 12, 31),
+      ),
+    );
+
+    expect(result.map((item) => item.identity.cycleSequence), [3, 4]);
+    expect(result.map((item) => item.expectedPeriod!.year), [2028, 2029]);
+    expect(result.every((item) => item.cycleAnchor == null), isTrue);
+  });
 }
 
 List<String> _projectionSignature(Iterable<ProjectedExpenseCycle> items) => [
@@ -495,7 +529,7 @@ List<ProjectedExpenseCycle> _linearProjectionBaseline({
     }
   }
   result.sort((left, right) {
-    final date = left.cycleAnchor.compareTo(right.cycleAnchor);
+    final date = left.cycleAnchor!.compareTo(right.cycleAnchor!);
     return date != 0
         ? date
         : left.identity.value.compareTo(right.identity.value);

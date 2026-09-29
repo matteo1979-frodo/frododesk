@@ -29,6 +29,7 @@ class ExpectedExpenseReader {
           relationshipId: occurrence.relationshipId,
           cycleSequence: occurrence.cycleSequence,
           cycleAnchor: occurrence.cycleAnchor,
+          expectedPeriod: occurrence.expectedPeriod,
           service: relationship.service,
           provider: relationship.provider,
           relationshipStatus: relationship.status,
@@ -44,6 +45,8 @@ class ExpectedExpenseReader {
           provisional: occurrence.provisional,
           confidence: occurrence.confidence,
           estimationMethod: occurrence.estimationMethod,
+          sourceDocumentaryObligationId:
+              occurrence.sourceDocumentaryObligationId,
           evidenceEconomicFactIds: occurrence.evidenceEconomicFactIds,
           expectedIssueDate: occurrence.expectedIssueDate,
           expectedIssueDateSource: occurrence.expectedIssueDateSource,

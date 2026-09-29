@@ -218,13 +218,15 @@ class ExpectedExpensePersistence {
       }
       final sequence = occurrence.cycleSequence;
       final anchor = occurrence.cycleAnchor;
-      if (sequence != null && anchor != null) {
+      final period = occurrence.expectedPeriod;
+      if (sequence != null && (anchor != null || period != null)) {
         final sequenceKey = '${occurrence.relationshipId}#$sequence';
         if (!cycleSequences.add(sequenceKey)) {
           errors.add('Duplicate cycle identity: $sequenceKey');
         }
-        final anchorKey =
-            '${occurrence.relationshipId}#${anchor.toIso8601String()}';
+        final anchorKey = anchor != null
+            ? '${occurrence.relationshipId}#${anchor.toIso8601String()}'
+            : '${occurrence.relationshipId}#${period!.year}-${period.month}';
         if (!cycleAnchors.add(anchorKey)) {
           errors.add('Duplicate cycle anchor: $anchorKey');
         }

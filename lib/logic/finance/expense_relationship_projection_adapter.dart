@@ -1,4 +1,5 @@
 import '../../models/expense_relationship.dart';
+import '../../models/documentary_obligation.dart';
 import '../../models/expected_expense_occurrence.dart';
 import '../../models/finance_recurring_item.dart';
 import '../../models/projected_expense_cycle.dart';
@@ -21,7 +22,8 @@ class ExpenseRelationshipProjectionAdapter {
       if (occurrences.any(
         (item) =>
             item.status == ExpectedExpenseOccurrenceStatus.pending &&
-            item.cycleSequence == null,
+            item.cycleSequence == null &&
+            item.participatesInCycleProjection,
       )) {
         continue;
       }
@@ -29,7 +31,8 @@ class ExpenseRelationshipProjectionAdapter {
           occurrences
               .where(
                 (item) =>
-                    item.cycleSequence != null && item.cycleAnchor != null,
+                    item.cycleSequence != null &&
+                    (item.cycleAnchor != null || item.expectedPeriod != null),
               )
               .toList()
             ..sort(
@@ -43,6 +46,17 @@ class ExpenseRelationshipProjectionAdapter {
       final materializedSequences = identified
           .map((item) => item.cycleSequence!)
           .toSet();
+      if (base.expectedPeriod != null) {
+        _projectMonthlyPrecision(
+          result: result,
+          relationship: relationship,
+          base: base,
+          source: source,
+          materializedSequences: materializedSequences,
+          horizon: horizon,
+        );
+        continue;
+      }
       final firstOffset = _firstOffsetOnOrAfter(
         base.cycleAnchor!,
         relationship.periodicity,
@@ -80,12 +94,76 @@ class ExpenseRelationshipProjectionAdapter {
       }
     }
     result.sort((left, right) {
-      final date = left.cycleAnchor.compareTo(right.cycleAnchor);
+      final date = _periodIndex(left).compareTo(_periodIndex(right));
       return date != 0
           ? date
           : left.identity.value.compareTo(right.identity.value);
     });
     return List.unmodifiable(result);
+  }
+
+  void _projectMonthlyPrecision({
+    required List<ProjectedExpenseCycle> result,
+    required ExpenseRelationship relationship,
+    required ExpectedExpenseOccurrence base,
+    required ExpectedExpenseOccurrence source,
+    required Set<int> materializedSequences,
+    required ExpenseProjectionHorizon horizon,
+  }) {
+    final step = switch (relationship.periodicity.type) {
+      FinanceRecurringType.monthly => 1,
+      FinanceRecurringType.yearly => 12,
+      FinanceRecurringType.custom
+          when relationship.periodicity.customIntervalUnit == 'months' =>
+        relationship.periodicity.customInterval!,
+      FinanceRecurringType.custom
+          when relationship.periodicity.customIntervalUnit == 'years' =>
+        relationship.periodicity.customInterval! * 12,
+      _ => throw StateError(
+        'Month-precision cycles require a month- or year-based periodicity',
+      ),
+    };
+    final basePeriod = base.expectedPeriod!;
+    final baseIndex = basePeriod.year * 12 + basePeriod.month - 1;
+    final startIndex = horizon.start.year * 12 + horizon.start.month - 1;
+    final endIndex = horizon.end.year * 12 + horizon.end.month - 1;
+    final offset = baseIndex >= startIndex
+        ? 0
+        : (startIndex - baseIndex + step - 1) ~/ step;
+    var sequence = base.cycleSequence! + offset;
+    var periodIndex = baseIndex + offset * step;
+    while (periodIndex <= endIndex) {
+      if (!materializedSequences.contains(sequence)) {
+        result.add(
+          ProjectedExpenseCycle(
+            identity: ExpenseCycleIdentity(
+              relationshipId: relationship.relationshipId,
+              cycleSequence: sequence,
+            ),
+            expectedPeriod: ExpectedDocumentPeriod(
+              year: periodIndex ~/ 12,
+              month: periodIndex % 12 + 1,
+            ),
+            sourceOccurrenceId: source.occurrenceId,
+            service: relationship.service,
+            provider: relationship.provider,
+            expectedAmount: source.expectedAmount,
+            expectedSubject: relationship.subject,
+            expectedPaymentConfiguration: relationship.paymentConfiguration,
+            paymentExecutionMode: relationship.paymentExecutionMode,
+            provisional: true,
+          ),
+        );
+      }
+      sequence++;
+      periodIndex += step;
+    }
+  }
+
+  int _periodIndex(ProjectedExpenseCycle cycle) {
+    final period = cycle.expectedPeriod;
+    if (period != null) return period.year * 12 + period.month - 1;
+    return cycle.cycleAnchor!.year * 12 + cycle.cycleAnchor!.month - 1;
   }
 
   int _firstOffsetOnOrAfter(

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:frododesk/models/documentary_obligation.dart';
 import 'package:frododesk/models/expense_relationship.dart';
 import 'package:frododesk/models/expected_expense_occurrence.dart';
 import 'package:frododesk/models/finance_category_template.dart';
@@ -6,6 +7,37 @@ import 'package:frododesk/models/finance_recurring_item.dart';
 
 void main() {
   group('ExpectedExpenseOccurrence', () {
+    test('round-trips a month-precision forecast without inventing a day', () {
+      final occurrence = ExpectedExpenseOccurrence(
+        occurrenceId: 'documentary_relationship_2',
+        relationshipId: 'relationship',
+        cycleSequence: 2,
+        expectedPeriod: ExpectedDocumentPeriod(year: 2027, month: 3),
+        status: ExpectedExpenseOccurrenceStatus.pending,
+        expectedAmount: 173,
+        estimationMethod: ExpenseEstimationMethod.documentaryObligation,
+        sourceDocumentaryObligationId: 'tari-2026',
+        confidence: ExpenseEstimateConfidence.medium,
+        provisional: true,
+        expectedPaymentConfiguration:
+            ExpenseRelationshipPaymentConfiguration(
+              method: FinancePaymentMethod.manual,
+            ),
+        expectedSubject: FinanceSubject.matteo,
+      );
+
+      final restored = ExpectedExpenseOccurrence.fromJson(
+        occurrence.toJson(),
+      );
+
+      expect(restored.expectedPeriod!.year, 2027);
+      expect(restored.expectedPeriod!.month, 3);
+      expect(restored.cycleAnchor, isNull);
+      expect(restored.expectedDueDate, isNull);
+      expect(restored.expectedPaymentWindow, isNull);
+      expect(restored.plannedEconomicImpact, isNull);
+      expect(restored.sourceDocumentaryObligationId, 'tari-2026');
+    });
     test('builds a valid pending occurrence linked to a relationship', () {
       final occurrence = _occurrence();
 

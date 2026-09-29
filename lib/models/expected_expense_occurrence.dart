@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'expense_relationship.dart';
+import 'documentary_obligation.dart';
 import 'finance_recurring_item.dart';
 import 'planned_economic_impact.dart';
 
@@ -16,6 +17,7 @@ enum ExpenseEstimationMethod {
   personalHistory,
   externalEvidence,
   manualEstimate,
+  documentaryObligation,
 }
 
 enum ExpenseEstimateConfidence { low, medium, high }
@@ -120,6 +122,7 @@ class ExpectedExpenseOccurrence {
   final String relationshipId;
   final int? cycleSequence;
   final DateTime? cycleAnchor;
+  final ExpectedDocumentPeriod? expectedPeriod;
   final ExpectedExpenseOccurrenceStatus status;
   final ExpectedExpenseKnowledgeState knowledgeState;
   final ExpectedExpenseKnowledgeSource knowledgeSource;
@@ -132,6 +135,7 @@ class ExpectedExpenseOccurrence {
   final PlannedEconomicImpact? plannedEconomicImpact;
   final double expectedAmount;
   final ExpenseEstimationMethod estimationMethod;
+  final String? sourceDocumentaryObligationId;
   final UnmodifiableListView<String> evidenceEconomicFactIds;
   final ExpenseEstimateConfidence confidence;
   final bool provisional;
@@ -139,12 +143,14 @@ class ExpectedExpenseOccurrence {
   final PaymentExecutionMode paymentExecutionMode;
   final FinanceSubject expectedSubject;
   final String? resolvedEconomicFactId;
+  final bool participatesInCycleProjection;
 
   ExpectedExpenseOccurrence({
     required String occurrenceId,
     required String relationshipId,
     this.cycleSequence,
     this.cycleAnchor,
+    this.expectedPeriod,
     required this.status,
     this.knowledgeState = ExpectedExpenseKnowledgeState.forecast,
     this.knowledgeSource = ExpectedExpenseKnowledgeSource.legacyUnspecified,
@@ -157,6 +163,7 @@ class ExpectedExpenseOccurrence {
     this.plannedEconomicImpact,
     required this.expectedAmount,
     required this.estimationMethod,
+    String? sourceDocumentaryObligationId,
     List<String> evidenceEconomicFactIds = const [],
     required this.confidence,
     required this.provisional,
@@ -164,6 +171,7 @@ class ExpectedExpenseOccurrence {
     this.paymentExecutionMode = PaymentExecutionMode.unknown,
     required this.expectedSubject,
     String? resolvedEconomicFactId,
+    this.participatesInCycleProjection = true,
   }) : occurrenceId = _requiredText(occurrenceId, 'occurrenceId'),
        relationshipId = _requiredText(relationshipId, 'relationshipId'),
        expectedDueDateCertainty = expectedDueDate == null
@@ -173,13 +181,23 @@ class ExpectedExpenseOccurrence {
        evidenceEconomicFactIds = UnmodifiableListView(
          _validatedEvidence(evidenceEconomicFactIds),
        ),
+       sourceDocumentaryObligationId = _optionalText(
+         sourceDocumentaryObligationId,
+         'sourceDocumentaryObligationId',
+       ),
        resolvedEconomicFactId = _optionalText(
          resolvedEconomicFactId,
          'resolvedEconomicFactId',
        ) {
-    if ((cycleSequence == null) != (cycleAnchor == null)) {
+    if ((cycleSequence == null) !=
+        (cycleAnchor == null && expectedPeriod == null)) {
       throw ArgumentError(
-        'cycleSequence and cycleAnchor must either both be present or both be absent',
+        'cycleSequence and a cycleAnchor or expectedPeriod must either both be present or both be absent',
+      );
+    }
+    if (cycleAnchor != null && expectedPeriod != null) {
+      throw ArgumentError(
+        'cycleAnchor and expectedPeriod are alternative temporal precisions',
       );
     }
     if (cycleSequence != null && cycleSequence! <= 0) {
@@ -219,9 +237,10 @@ class ExpectedExpenseOccurrence {
     }
     if (expectedIssueDate == null &&
         expectedDueDate == null &&
-        expectedPaymentWindow == null) {
+        expectedPaymentWindow == null &&
+        expectedPeriod == null) {
       throw ArgumentError(
-        'At least one expected issue, due or payment-window date is required',
+        'At least one expected issue, due, payment-window date or expected period is required',
       );
     }
     _validateDateSource(
@@ -281,11 +300,20 @@ class ExpectedExpenseOccurrence {
         'The estimation method requires economic-fact evidence',
       );
     }
+    if (estimationMethod == ExpenseEstimationMethod.documentaryObligation &&
+        this.sourceDocumentaryObligationId == null) {
+      throw ArgumentError.value(
+        sourceDocumentaryObligationId,
+        'sourceDocumentaryObligationId',
+        'Documentary estimates require their source obligation',
+      );
+    }
   }
 
   ExpectedExpenseOccurrence copyWith({
     Object? cycleSequence = _preserveValue,
     Object? cycleAnchor = _preserveValue,
+    Object? expectedPeriod = _preserveValue,
     ExpectedExpenseOccurrenceStatus? status,
     ExpectedExpenseKnowledgeState? knowledgeState,
     ExpectedExpenseKnowledgeSource? knowledgeSource,
@@ -298,6 +326,7 @@ class ExpectedExpenseOccurrence {
     Object? plannedEconomicImpact = _preserveValue,
     double? expectedAmount,
     ExpenseEstimationMethod? estimationMethod,
+    Object? sourceDocumentaryObligationId = _preserveValue,
     List<String>? evidenceEconomicFactIds,
     ExpenseEstimateConfidence? confidence,
     bool? provisional,
@@ -305,6 +334,7 @@ class ExpectedExpenseOccurrence {
     PaymentExecutionMode? paymentExecutionMode,
     FinanceSubject? expectedSubject,
     Object? resolvedEconomicFactId = _preserveValue,
+    bool? participatesInCycleProjection,
   }) => ExpectedExpenseOccurrence(
     occurrenceId: occurrenceId,
     relationshipId: relationshipId,
@@ -314,6 +344,9 @@ class ExpectedExpenseOccurrence {
     cycleAnchor: identical(cycleAnchor, _preserveValue)
         ? this.cycleAnchor
         : cycleAnchor as DateTime?,
+    expectedPeriod: identical(expectedPeriod, _preserveValue)
+        ? this.expectedPeriod
+        : expectedPeriod as ExpectedDocumentPeriod?,
     status: status ?? this.status,
     knowledgeState: knowledgeState ?? this.knowledgeState,
     knowledgeSource: knowledgeSource ?? this.knowledgeSource,
@@ -343,6 +376,10 @@ class ExpectedExpenseOccurrence {
         : plannedEconomicImpact as PlannedEconomicImpact?,
     expectedAmount: expectedAmount ?? this.expectedAmount,
     estimationMethod: estimationMethod ?? this.estimationMethod,
+    sourceDocumentaryObligationId:
+        identical(sourceDocumentaryObligationId, _preserveValue)
+        ? this.sourceDocumentaryObligationId
+        : sourceDocumentaryObligationId as String?,
     evidenceEconomicFactIds:
         evidenceEconomicFactIds ?? this.evidenceEconomicFactIds,
     confidence: confidence ?? this.confidence,
@@ -354,6 +391,8 @@ class ExpectedExpenseOccurrence {
     resolvedEconomicFactId: identical(resolvedEconomicFactId, _preserveValue)
         ? this.resolvedEconomicFactId
         : resolvedEconomicFactId as String?,
+    participatesInCycleProjection:
+        participatesInCycleProjection ?? this.participatesInCycleProjection,
   );
 
   Map<String, dynamic> toJson() => {
@@ -361,6 +400,7 @@ class ExpectedExpenseOccurrence {
     'relationshipId': relationshipId,
     'cycleSequence': cycleSequence,
     'cycleAnchor': cycleAnchor?.toIso8601String(),
+    'expectedPeriod': expectedPeriod?.toJson(),
     'status': status.name,
     'knowledgeState': knowledgeState.name,
     'knowledgeSource': knowledgeSource.name,
@@ -373,6 +413,7 @@ class ExpectedExpenseOccurrence {
     'plannedEconomicImpact': plannedEconomicImpact?.toJson(),
     'expectedAmount': expectedAmount,
     'estimationMethod': estimationMethod.name,
+    'sourceDocumentaryObligationId': sourceDocumentaryObligationId,
     'evidenceEconomicFactIds': evidenceEconomicFactIds.toList(),
     'confidence': confidence.name,
     'provisional': provisional,
@@ -380,6 +421,8 @@ class ExpectedExpenseOccurrence {
     'paymentExecutionMode': paymentExecutionMode.name,
     'expectedSubject': expectedSubject.name,
     'resolvedEconomicFactId': resolvedEconomicFactId,
+    if (!participatesInCycleProjection)
+      'participatesInCycleProjection': false,
   };
 
   factory ExpectedExpenseOccurrence.fromJson(Map<String, dynamic> json) {
@@ -407,6 +450,10 @@ class ExpectedExpenseOccurrence {
     if (rawPlannedImpact != null && rawPlannedImpact is! Map) {
       throw const FormatException('plannedEconomicImpact must be an object');
     }
+    final rawExpectedPeriod = json['expectedPeriod'];
+    if (rawExpectedPeriod != null && rawExpectedPeriod is! Map) {
+      throw const FormatException('expectedPeriod must be an object');
+    }
     final rawEvidence = json['evidenceEconomicFactIds'];
     if (rawEvidence is! List || rawEvidence.any((item) => item is! String)) {
       throw const FormatException(
@@ -433,11 +480,22 @@ class ExpectedExpenseOccurrence {
         'resolvedEconomicFactId must be a string or null',
       );
     }
+    final participates = json['participatesInCycleProjection'] ?? true;
+    if (participates is! bool) {
+      throw const FormatException(
+        'participatesInCycleProjection must be a boolean',
+      );
+    }
     return ExpectedExpenseOccurrence(
       occurrenceId: _jsonString(json, 'occurrenceId'),
       relationshipId: _jsonString(json, 'relationshipId'),
       cycleSequence: _optionalPositiveInt(json, 'cycleSequence'),
       cycleAnchor: _optionalDate(json, 'cycleAnchor'),
+      expectedPeriod: rawExpectedPeriod == null
+          ? null
+          : ExpectedDocumentPeriod.fromJson(
+              Map<String, dynamic>.from(rawExpectedPeriod),
+            ),
       status: _enumValue(
         json,
         'status',
@@ -480,6 +538,8 @@ class ExpectedExpenseOccurrence {
         ExpenseEstimationMethod.values,
         (value) => value.name,
       ),
+      sourceDocumentaryObligationId:
+          json['sourceDocumentaryObligationId'] as String?,
       evidenceEconomicFactIds: List<String>.from(rawEvidence),
       confidence: _enumValue(
         json,
@@ -506,6 +566,7 @@ class ExpectedExpenseOccurrence {
         (value) => value.name,
       ),
       resolvedEconomicFactId: resolvedFact as String?,
+      participatesInCycleProjection: participates,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'economic_operation_metadata.dart';
+import 'finance_recurring_item.dart';
 
 typedef CompositeEconomicAccessoryInput = ({
   String economicFactId,
@@ -34,6 +35,8 @@ class CompositeEconomicOperation {
     required String mainEconomicFactId,
     required double mainAmount,
     List<CompositeEconomicAccessoryInput> accessories = const [],
+    String? documentaryObligationId,
+    FinanceSubject? documentHolder,
   }) : operationId = _validatedId(operationId, 'operationId'),
        main = CompositeEconomicFact._(
          economicFactId: _validatedId(mainEconomicFactId, 'mainEconomicFactId'),
@@ -42,6 +45,8 @@ class CompositeEconomicOperation {
            operationId: operationId,
            role: OperationRole.main,
            context: context,
+           documentaryObligationId: documentaryObligationId,
+           documentHolder: documentHolder,
          ),
        ),
        accessories = UnmodifiableListView(
@@ -58,6 +63,8 @@ class CompositeEconomicOperation {
                    role: OperationRole.accessory,
                    context: context,
                    accessoryCostType: input.accessoryCostType,
+                   documentaryObligationId: documentaryObligationId,
+                   documentHolder: documentHolder,
                  ),
                ),
              )

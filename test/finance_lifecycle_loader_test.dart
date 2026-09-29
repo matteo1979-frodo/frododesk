@@ -17,6 +17,7 @@ void main() {
       'loadInitialRealData',
       'loadSavedFiniteFinancialPlans',
       'loadSavedExpectedExpenses',
+      'loadSavedDocumentaryObligations',
       'saveBalances',
       'saveFunds',
       'saveRecurringItems',
@@ -46,6 +47,11 @@ class _RecordingFinanceStore extends FinanceStore {
   @override
   Future<void> loadSavedExpectedExpenses() async {
     operations.add('loadSavedExpectedExpenses');
+  }
+
+  @override
+  Future<void> loadSavedDocumentaryObligations() async {
+    operations.add('loadSavedDocumentaryObligations');
   }
 
   @override

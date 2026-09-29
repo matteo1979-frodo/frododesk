@@ -1,3 +1,5 @@
+import 'finance_recurring_item.dart';
+
 enum OperationRole { main, accessory }
 
 enum OperationContext { cashWithdrawal, financialPlanInstallment, utilityBill }
@@ -14,17 +16,30 @@ class EconomicOperationMetadata {
   final OperationRole role;
   final OperationContext context;
   final AccessoryCostType? accessoryCostType;
+  final String? documentaryObligationId;
+  final FinanceSubject? documentHolder;
 
   EconomicOperationMetadata({
     required String operationId,
     required this.role,
     required this.context,
     this.accessoryCostType,
-  }) : operationId = operationId.trim() {
+    String? documentaryObligationId,
+    this.documentHolder,
+  }) : operationId = operationId.trim(),
+       documentaryObligationId = documentaryObligationId?.trim() {
     if (this.operationId.isEmpty) {
       throw ArgumentError.value(
         operationId,
         'operationId',
+        'Must not be empty',
+      );
+    }
+    if (this.documentaryObligationId != null &&
+        this.documentaryObligationId!.isEmpty) {
+      throw ArgumentError.value(
+        documentaryObligationId,
+        'documentaryObligationId',
         'Must not be empty',
       );
     }
@@ -49,6 +64,9 @@ class EconomicOperationMetadata {
     'role': role.name,
     'context': context.name,
     'accessoryCostType': accessoryCostType?.name,
+    if (documentaryObligationId != null)
+      'documentaryObligationId': documentaryObligationId,
+    if (documentHolder != null) 'documentHolder': documentHolder!.name,
   };
 
   factory EconomicOperationMetadata.fromJson(Map<String, dynamic> json) {
@@ -75,11 +93,24 @@ class EconomicOperationMetadata {
             (value) => value.name,
           );
 
+    final rawHolder = json['documentHolder'];
+    if (rawHolder != null && rawHolder is! String) {
+      throw const FormatException('documentHolder must be a string or null');
+    }
     return EconomicOperationMetadata(
       operationId: operationId,
       role: role,
       context: context,
       accessoryCostType: accessoryCostType,
+      documentaryObligationId: json['documentaryObligationId'] as String?,
+      documentHolder: rawHolder == null
+          ? null
+          : FinanceSubject.values.firstWhere(
+              (value) => value.name == rawHolder,
+              orElse: () => throw FormatException(
+                'Unknown documentHolder: $rawHolder',
+              ),
+            ),
     );
   }
 

@@ -23,6 +23,7 @@ import '../logic/finance/finance_portfolio_v3_commit.dart';
 import '../logic/finance/finance_portfolio_v3_writer.dart';
 import '../logic/finance/finance_prepaid_creation.dart';
 import '../logic/finance/expected_expense_persistence.dart';
+import '../logic/finance/documentary_obligation_persistence.dart';
 import '../logic/finance/finite_financial_plan_persistence.dart';
 import '../models/finite_financial_plan.dart';
 
@@ -81,6 +82,7 @@ class FinanceStore extends ChangeNotifier {
   final FinancePrepaidCreationBuilder prepaidCreationBuilder;
   final FiniteFinancialPlanPersistence finiteFinancialPlanPersistence;
   final ExpectedExpensePersistence expectedExpensePersistence;
+  final DocumentaryObligationPersistence documentaryObligationPersistence;
 
   FinanceStore({
     EconomicFactIdGenerator? economicFactIdGenerator,
@@ -88,6 +90,7 @@ class FinanceStore extends ChangeNotifier {
     FinancePrepaidCreationBuilder? prepaidCreationBuilder,
     FiniteFinancialPlanPersistence? finiteFinancialPlanPersistence,
     ExpectedExpensePersistence? expectedExpensePersistence,
+    DocumentaryObligationPersistence? documentaryObligationPersistence,
     Iterable<FinanceBalance> initialBalances = const [],
     Iterable<FinanceAccountLinkedItem> initialLinkedItems = const [],
     Iterable<FinanceTransaction> initialTransactions = const [],
@@ -98,6 +101,7 @@ class FinanceStore extends ChangeNotifier {
     Iterable<FinanceAssetMovement> initialAssetMovements = const [],
     Iterable<FiniteFinancialPlan> initialFiniteFinancialPlans = const [],
     ExpectedExpenseAggregate? initialExpectedExpenseAggregate,
+    DocumentaryObligationAggregate? initialDocumentaryObligationAggregate,
   }) : economicFactIdGenerator =
            economicFactIdGenerator ?? EconomicFactIdGenerator.timestamped(),
        portfolioV3Writer = portfolioV3Writer ?? FinancePortfolioV3Writer(),
@@ -107,6 +111,8 @@ class FinanceStore extends ChangeNotifier {
            finiteFinancialPlanPersistence ?? FiniteFinancialPlanPersistence(),
        expectedExpensePersistence =
            expectedExpensePersistence ?? ExpectedExpensePersistence(),
+       documentaryObligationPersistence =
+           documentaryObligationPersistence ?? DocumentaryObligationPersistence(),
        _balances = List<FinanceBalance>.of(initialBalances),
        _linkedItems = List<FinanceAccountLinkedItem>.of(initialLinkedItems),
        _transactions = List<FinanceTransaction>.of(initialTransactions),
@@ -119,7 +125,9 @@ class FinanceStore extends ChangeNotifier {
          initialFiniteFinancialPlans,
        ),
        _expectedExpenseAggregate =
-           initialExpectedExpenseAggregate ?? ExpectedExpenseAggregate.empty();
+           initialExpectedExpenseAggregate ?? ExpectedExpenseAggregate.empty(),
+       _documentaryObligationAggregate =
+           initialDocumentaryObligationAggregate ?? DocumentaryObligationAggregate.empty();
 
   final List<FinancePerson> people = const [
     FinancePerson(id: 'matteo', name: 'Matteo'),
@@ -137,6 +145,7 @@ class FinanceStore extends ChangeNotifier {
   final List<FinanceAssetMovement> _assetMovements;
   final List<FiniteFinancialPlan> _finiteFinancialPlans;
   ExpectedExpenseAggregate _expectedExpenseAggregate;
+  DocumentaryObligationAggregate _documentaryObligationAggregate;
   bool _portfolioReady = false;
   bool _portfolioV3Authoritative = false;
   bool _legacyLinkedItemsHydrated = false;
@@ -172,6 +181,9 @@ class FinanceStore extends ChangeNotifier {
 
   ExpectedExpenseAggregate get expectedExpenseAggregate =>
       _expectedExpenseAggregate;
+
+  DocumentaryObligationAggregate get documentaryObligationAggregate =>
+      _documentaryObligationAggregate;
 
   bool get isPortfolioV3Authoritative => _portfolioV3Authoritative;
 
@@ -229,7 +241,42 @@ class FinanceStore extends ChangeNotifier {
     'expectedExpenseOccurrences': _expectedExpenseAggregate.occurrences
         .map((item) => item.toJson())
         .toList(),
+    'documentaryObligations': _documentaryObligationAggregate.obligations
+        .map((item) => item.toJson())
+        .toList(),
+    'expectedDocuments': _documentaryObligationAggregate.expectedDocuments
+        .map((item) => item.toJson())
+        .toList(),
   });
+
+  Future<void> loadSavedDocumentaryObligations() =>
+      _runObservableLoad(_loadSavedDocumentaryObligations);
+
+  Future<void> _loadSavedDocumentaryObligations() async {
+    _documentaryObligationAggregate =
+        await documentaryObligationPersistence.load();
+  }
+
+  Future<bool> saveDocumentaryObligationAggregate(
+    DocumentaryObligationAggregate candidate,
+  ) async {
+    final before = jsonEncode(
+      _documentaryObligationAggregate.obligations
+          .map((item) => item.toJson())
+          .toList() +
+          _documentaryObligationAggregate.expectedDocuments
+              .map((item) => item.toJson())
+              .toList(),
+    );
+    await documentaryObligationPersistence.write(candidate);
+    final after = jsonEncode(
+      candidate.obligations.map((item) => item.toJson()).toList() +
+          candidate.expectedDocuments.map((item) => item.toJson()).toList(),
+    );
+    _documentaryObligationAggregate = candidate;
+    if (before != after) _markChanged();
+    return before != after;
+  }
 
   Future<void> loadSavedExpectedExpenses() =>
       _runObservableLoad(_loadSavedExpectedExpenses);

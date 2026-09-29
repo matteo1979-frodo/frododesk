@@ -23,12 +23,15 @@ import '../logic/finance/future_expense_reader.dart';
 import '../logic/finance/future_expense_overview_reader.dart';
 import '../logic/finance/future_outflow_presentation_composer.dart';
 import '../logic/finance/expense_relationship_projection_adapter.dart';
+import '../logic/finance/documentary_obligation_projection_adapter.dart';
+import '../logic/finance/documentary_obligation_coordinator.dart';
 import '../models/expected_expense_occurrence.dart';
 import '../models/expense_relationship.dart';
 import '../models/future_expense_projection.dart';
 import '../models/projected_expense_cycle.dart';
 import '../models/future_outflow_presentation.dart';
 import '../models/composite_economic_operation.dart';
+import '../models/documentary_obligation.dart';
 import '../models/economic_operation_metadata.dart';
 import '../models/economic_event.dart';
 import '../models/spese_command.dart';
@@ -36,6 +39,7 @@ import '../models/spese_snapshot.dart';
 import '../utils/euro_formatter.dart';
 import 'expected_expense_from_real_expense_page.dart';
 import 'expected_expense_completion_page.dart';
+import 'documentary_obligations_page.dart';
 
 const _speseCommandBuilder = SpeseCommandBuilder();
 
@@ -282,6 +286,9 @@ class _SpesePageState extends State<SpesePage> {
       aggregate: aggregate,
       horizon: ExpenseProjectionHorizon(start: start, end: end),
     );
+    final documentary = const DocumentaryObligationProjectionAdapter().project(
+      widget.financeStore.documentaryObligationAggregate,
+    );
     return const FutureOutflowPresentationComposer().composeInRange(
       expectedExpenses: materialized,
       projectedCycles: projected,
@@ -289,6 +296,7 @@ class _SpesePageState extends State<SpesePage> {
       start: start,
       end: end,
       referenceTime: referenceTime,
+      documentaryInstallments: documentary,
     );
   }
 
@@ -321,6 +329,10 @@ class _SpesePageState extends State<SpesePage> {
             end: projectionEnd,
           ),
         );
+    final documentaryInstallments =
+        const DocumentaryObligationProjectionAdapter().project(
+          widget.financeStore.documentaryObligationAggregate,
+        );
     const composer = FutureOutflowPresentationComposer();
     final completeOverview = composer.compose(
       expectedExpenses: [
@@ -333,6 +345,7 @@ class _SpesePageState extends State<SpesePage> {
       projectedCycles: projectedCycles,
       finitePlans: widget.financeStore.finiteFinancialPlans,
       referenceTime: referenceTime,
+      documentaryInstallments: documentaryInstallments,
     );
     final currentYearOverview = composer.composeInRange(
       expectedExpenses: futureExpenses,
@@ -341,6 +354,7 @@ class _SpesePageState extends State<SpesePage> {
       start: projectionStart,
       end: projectionEnd,
       referenceTime: referenceTime,
+      documentaryInstallments: documentaryInstallments,
     );
     final futureOutflowOverview = FutureOutflowOverview(
       currentMonth: completeOverview.currentMonth,
@@ -600,6 +614,7 @@ class _SpesePageState extends State<SpesePage> {
                             await Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => _UtilityBillAccountPage(
+                                  financeStore: widget.financeStore,
                                   snapshot: snapshot,
                                   coordinator: coordinator,
                                   compositeCoordinator: compositeCoordinator,
@@ -608,6 +623,45 @@ class _SpesePageState extends State<SpesePage> {
                             );
 
                             await _refreshSnapshot();
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        _MovementChoiceTile(
+                          icon: Icons.account_tree_rounded,
+                          title: 'Bolletta o pagamento',
+                          subtitle: 'Salva scadenze, alternative e pagamenti che si ripetono',
+                          color: const Color(0xFF26A69A),
+                          onTap: () async {
+                            Navigator.of(context).pop();
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => DocumentaryObligationsPage(
+                                  financeStore: widget.financeStore,
+                                  onRegisterPayment:
+                                      (context, obligation, installment) async {
+                                        await Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                _UtilityBillAccountPage(
+                                                  financeStore:
+                                                      widget.financeStore,
+                                                  snapshot: snapshot,
+                                                  coordinator: coordinator,
+                                                  compositeCoordinator:
+                                                      compositeCoordinator,
+                                                  initialObligation:
+                                                      obligation,
+                                                  initialInstallment:
+                                                      installment,
+                                                ),
+                                          ),
+                                        );
+                                        await _refreshSnapshot();
+                                      },
+                                ),
+                              ),
+                            );
+                            if (mounted) setState(() {});
                           },
                         ),
                         const SizedBox(height: 10),
@@ -884,11 +938,15 @@ class _CompactFutureExpenseTile extends StatelessWidget {
       'Addebito ${_formatInterval(expense.placementStart!, expense.placementEnd!)}',
     FutureOutflowDatePresentation.dueDateFallback =>
       'Scadenza ${_formatDate(expense.placementStart!)}',
+    FutureOutflowDatePresentation.expectedDocumentPeriod =>
+      'Documento atteso ${_monthLabel(DateTime(expense.placementPeriod!.year, expense.placementPeriod!.month))}',
     FutureOutflowDatePresentation.unplaced => 'Data non disponibile',
     FutureOutflowDatePresentation.finitePlanForecast =>
       'Data prevista ${_formatDate(expense.placementStart!)}',
     FutureOutflowDatePresentation.projectedCycle =>
       'Ciclo previsto ${_formatDate(expense.placementStart!)}',
+    FutureOutflowDatePresentation.documentaryDeadline =>
+      'Scadenza scelta ${_formatDate(expense.placementStart!)}',
   };
 
   static String? _attentionLabel(FutureOutflowPresentation expense) {
@@ -1228,14 +1286,20 @@ String _monthLabel(DateTime month) {
 }
 
 class _UtilityBillAccountPage extends StatelessWidget {
+  final FinanceStore financeStore;
   final SpeseSnapshot snapshot;
   final SpeseCoordinator coordinator;
   final CompositeEconomicOperationCoordinator compositeCoordinator;
+  final DocumentaryObligation? initialObligation;
+  final DocumentaryInstallment? initialInstallment;
 
   const _UtilityBillAccountPage({
+    required this.financeStore,
     required this.snapshot,
     required this.coordinator,
     required this.compositeCoordinator,
+    this.initialObligation,
+    this.initialInstallment,
   });
 
   @override
@@ -1285,6 +1349,7 @@ class _UtilityBillAccountPage extends StatelessWidget {
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) => _UtilityBillFormPage(
+                                financeStore: financeStore,
                                 balanceId: balance.balanceId,
                                 balanceName: balance.name,
                                 balanceAmount: balance.availableAmount,
@@ -1292,6 +1357,8 @@ class _UtilityBillAccountPage extends StatelessWidget {
                                 snapshot: snapshot,
                                 coordinator: coordinator,
                                 compositeCoordinator: compositeCoordinator,
+                                initialObligation: initialObligation,
+                                initialInstallment: initialInstallment,
                               ),
                             ),
                           );
@@ -1309,6 +1376,7 @@ class _UtilityBillAccountPage extends StatelessWidget {
 }
 
 class _UtilityBillFormPage extends StatefulWidget {
+  final FinanceStore financeStore;
   final String balanceId;
   final String balanceName;
   final double balanceAmount;
@@ -1316,8 +1384,11 @@ class _UtilityBillFormPage extends StatefulWidget {
   final SpeseSnapshot snapshot;
   final SpeseCoordinator coordinator;
   final CompositeEconomicOperationCoordinator compositeCoordinator;
+  final DocumentaryObligation? initialObligation;
+  final DocumentaryInstallment? initialInstallment;
 
   const _UtilityBillFormPage({
+    required this.financeStore,
     required this.balanceId,
     required this.balanceName,
     required this.balanceAmount,
@@ -1325,6 +1396,8 @@ class _UtilityBillFormPage extends StatefulWidget {
     required this.snapshot,
     required this.coordinator,
     required this.compositeCoordinator,
+    this.initialObligation,
+    this.initialInstallment,
   });
 
   @override
@@ -1339,8 +1412,11 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
   late final String operationIdentity;
   late List<String> categories;
   late FinanceSubject selectedSubject;
+  FinanceSubject? selectedDocumentHolder;
+  String? selectedDocumentaryObligationId;
+  String? selectedDocumentaryInstallmentId;
   String? selectedCategory;
-  DateTime selectedDate = DateTime.now();
+  DateTime? selectedDate;
   bool isSubmitting = false;
   bool alreadyIncludedInCurrentBalance = false;
 
@@ -1353,6 +1429,17 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
       (subject) => subject.name == widget.balancePersonId,
       orElse: () => FinanceSubject.shared,
     );
+    final obligation = widget.initialObligation;
+    final installment = widget.initialInstallment;
+    if (obligation == null || installment == null) {
+      selectedDate = DateTime.now();
+      return;
+    }
+    mainAmountController.text = installment.amount.toStringAsFixed(2);
+    descriptionController.text = obligation.title;
+    selectedDocumentHolder = obligation.documentHolder;
+    selectedDocumentaryObligationId = obligation.obligationId;
+    selectedDocumentaryInstallmentId = installment.installmentId;
   }
 
   @override
@@ -1374,6 +1461,18 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
     if (normalized.isEmpty) return 0;
     final amount = double.tryParse(normalized.replaceAll(',', '.'));
     return amount != null && amount.isFinite && amount >= 0 ? amount : null;
+  }
+
+  Future<void> _selectInitialEconomicDate() async {
+    final value = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (value != null && mounted) {
+      setState(() => selectedDate = value);
+    }
   }
 
   CompositeEconomicOperation? _buildOperation() {
@@ -1408,6 +1507,8 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
       mainEconomicFactId: 'economic_fact:$operationIdentity:main',
       mainAmount: mainAmount,
       accessories: accessories,
+      documentHolder: selectedDocumentHolder,
+      documentaryObligationId: selectedDocumentaryObligationId,
     );
   }
 
@@ -1427,6 +1528,19 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
       );
       return;
     }
+    if (selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Scegli la data effettiva del pagamento.')),
+      );
+      return;
+    }
+    if (selectedDocumentaryObligationId != null &&
+        selectedDocumentaryInstallmentId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Seleziona la scadenza documentale assolta.')),
+      );
+      return;
+    }
 
     setState(() => isSubmitting = true);
     late final CompositeEconomicOperationResult result;
@@ -1436,7 +1550,7 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
           operation: operation,
           debitBalanceId: widget.balanceId,
           subject: selectedSubject,
-          economicDate: selectedDate,
+          economicDate: selectedDate!,
           description: description,
           category: selectedCategory!,
           balancePostingMode: alreadyIncludedInCurrentBalance
@@ -1451,6 +1565,28 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
 
     if (result.status == CompositeEconomicOperationStatus.completed ||
         result.status == CompositeEconomicOperationStatus.alreadyComplete) {
+      if (selectedDocumentaryObligationId != null &&
+          selectedDocumentaryInstallmentId != null) {
+        final outcome = await DocumentaryObligationCoordinator(
+          financeStore: widget.financeStore,
+        ).markInstallmentFulfilled(
+          obligationId: selectedDocumentaryObligationId!,
+          installmentId: selectedDocumentaryInstallmentId!,
+          economicFactId: operation.main.economicFactId,
+        );
+        if (!mounted) return;
+        if (outcome != DocumentaryObligationOutcome.applied &&
+            outcome != DocumentaryObligationOutcome.unchanged) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Bolletta registrata, ma la scadenza documentale richiede verifica.',
+              ),
+            ),
+          );
+          return;
+        }
+      }
       Navigator.of(context).pop();
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1563,11 +1699,20 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      _MovementDateSelector(
-                        selectedDate: selectedDate,
-                        onChanged: (value) =>
-                            setState(() => selectedDate = value),
-                      ),
+                      if (selectedDate == null)
+                        OutlinedButton.icon(
+                          onPressed: _selectInitialEconomicDate,
+                          icon: const Icon(Icons.calendar_today_outlined),
+                          label: const Text(
+                            'Scegli la data effettiva del pagamento',
+                          ),
+                        )
+                      else
+                        _MovementDateSelector(
+                          selectedDate: selectedDate!,
+                          onChanged: (value) =>
+                              setState(() => selectedDate = value),
+                        ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         initialValue: selectedCategory,
@@ -1660,6 +1805,105 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
                                 }
                               },
                       ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<FinanceSubject?>(
+                        initialValue: selectedDocumentHolder,
+                        decoration: _decoration(
+                          'Intestatario documento (opzionale)',
+                          'Può essere diverso dal pagatore',
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: null,
+                            child: Text('Non indicato'),
+                          ),
+                          DropdownMenuItem(
+                            value: FinanceSubject.matteo,
+                            child: Text('Matteo'),
+                          ),
+                          DropdownMenuItem(
+                            value: FinanceSubject.chiara,
+                            child: Text('Chiara'),
+                          ),
+                          DropdownMenuItem(
+                            value: FinanceSubject.alice,
+                            child: Text('Alice'),
+                          ),
+                        ],
+                        onChanged: isSubmitting ||
+                                widget.initialObligation?.documentHolder != null
+                            ? null
+                            : (value) => setState(
+                                () => selectedDocumentHolder = value,
+                              ),
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String?>(
+                        initialValue: selectedDocumentaryObligationId,
+                        decoration: _decoration(
+                          'Bolletta o pagamento collegato (opzionale)',
+                          'Collega una scadenza già censita',
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: null,
+                            child: Text('Nessuna'),
+                          ),
+                          for (final obligation in widget.financeStore
+                              .documentaryObligationAggregate.obligations
+                              .where((item) => item.operationalInstallments.isNotEmpty))
+                            DropdownMenuItem(
+                              value: obligation.obligationId,
+                              child: Text(obligation.title),
+                            ),
+                        ],
+                        onChanged:
+                            isSubmitting || widget.initialObligation != null
+                            ? null
+                            : (value) => setState(() {
+                                selectedDocumentaryObligationId = value;
+                                selectedDocumentaryInstallmentId = null;
+                                if (value != null) {
+                                  final obligation = widget.financeStore
+                                      .documentaryObligationAggregate.obligations
+                                      .firstWhere((item) => item.obligationId == value);
+                                  selectedDocumentHolder = obligation.documentHolder;
+                                }
+                              }),
+                      ),
+                      if (selectedDocumentaryObligationId != null) ...[
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<String>(
+                          initialValue: selectedDocumentaryInstallmentId,
+                          decoration: _decoration(
+                            'Scadenza assolta',
+                            'Seleziona la scadenza pagata',
+                          ),
+                          items: [
+                            for (final installment in widget.financeStore
+                                .documentaryObligationAggregate.obligations
+                                .firstWhere(
+                                  (item) => item.obligationId == selectedDocumentaryObligationId,
+                                )
+                                .operationalInstallments)
+                              DropdownMenuItem(
+                                value: installment.installmentId,
+                                child: Text(
+                                  '${EuroFormatter.format(installment.amount)} · '
+                                  '${installment.dueDate.day.toString().padLeft(2, '0')}/'
+                                  '${installment.dueDate.month.toString().padLeft(2, '0')}/'
+                                  '${installment.dueDate.year}',
+                                ),
+                              ),
+                          ],
+                          onChanged:
+                              isSubmitting || widget.initialInstallment != null
+                              ? null
+                              : (value) => setState(
+                                  () => selectedDocumentaryInstallmentId = value,
+                                ),
+                        ),
+                      ],
                       const SizedBox(height: 12),
                       _HistoricalPostingChoice(
                         value: alreadyIncludedInCurrentBalance,
