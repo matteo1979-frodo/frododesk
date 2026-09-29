@@ -286,9 +286,10 @@ class _SpesePageState extends State<SpesePage> {
       aggregate: aggregate,
       horizon: ExpenseProjectionHorizon(start: start, end: end),
     );
-    final documentary = const DocumentaryObligationProjectionAdapter().project(
-      widget.financeStore.documentaryObligationAggregate,
-    );
+    final documentary = const DocumentaryObligationProjectionAdapter()
+        .projectWithAuthority(
+          widget.financeStore.documentaryObligationAggregate,
+        );
     return const FutureOutflowPresentationComposer().composeInRange(
       expectedExpenses: materialized,
       projectedCycles: projected,
@@ -296,7 +297,9 @@ class _SpesePageState extends State<SpesePage> {
       start: start,
       end: end,
       referenceTime: referenceTime,
-      documentaryInstallments: documentary,
+      documentaryInstallments: documentary.items,
+      materializedDocumentaryCycleIds:
+          documentary.materializedCycleIdentities,
     );
   }
 
@@ -329,8 +332,8 @@ class _SpesePageState extends State<SpesePage> {
             end: projectionEnd,
           ),
         );
-    final documentaryInstallments =
-        const DocumentaryObligationProjectionAdapter().project(
+    final documentary =
+        const DocumentaryObligationProjectionAdapter().projectWithAuthority(
           widget.financeStore.documentaryObligationAggregate,
         );
     const composer = FutureOutflowPresentationComposer();
@@ -345,7 +348,9 @@ class _SpesePageState extends State<SpesePage> {
       projectedCycles: projectedCycles,
       finitePlans: widget.financeStore.finiteFinancialPlans,
       referenceTime: referenceTime,
-      documentaryInstallments: documentaryInstallments,
+      documentaryInstallments: documentary.items,
+      materializedDocumentaryCycleIds:
+          documentary.materializedCycleIdentities,
     );
     final currentYearOverview = composer.composeInRange(
       expectedExpenses: futureExpenses,
@@ -354,7 +359,9 @@ class _SpesePageState extends State<SpesePage> {
       start: projectionStart,
       end: projectionEnd,
       referenceTime: referenceTime,
-      documentaryInstallments: documentaryInstallments,
+      documentaryInstallments: documentary.items,
+      materializedDocumentaryCycleIds:
+          documentary.materializedCycleIdentities,
     );
     final futureOutflowOverview = FutureOutflowOverview(
       currentMonth: completeOverview.currentMonth,
@@ -947,6 +954,8 @@ class _CompactFutureExpenseTile extends StatelessWidget {
       'Ciclo previsto ${_formatDate(expense.placementStart!)}',
     FutureOutflowDatePresentation.documentaryDeadline =>
       'Scadenza scelta ${_formatDate(expense.placementStart!)}',
+    FutureOutflowDatePresentation.documentaryChoiceRequired =>
+      'Scegli come pagare',
   };
 
   static String? _attentionLabel(FutureOutflowPresentation expense) {

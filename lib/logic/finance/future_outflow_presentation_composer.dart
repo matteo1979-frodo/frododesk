@@ -19,6 +19,7 @@ class FutureOutflowPresentationComposer {
     required Iterable<FiniteFinancialPlan> finitePlans,
     required DateTime referenceTime,
     Iterable<FutureOutflowPresentation> documentaryInstallments = const [],
+    Iterable<String> materializedDocumentaryCycleIds = const [],
   }) {
     final materialized = expectedExpenses.toList();
     return _compose(
@@ -31,6 +32,7 @@ class FutureOutflowPresentationComposer {
             _fromFinitePlan(plan, item),
       ],
       documentaryInstallments: documentaryInstallments,
+      materializedDocumentaryCycleIds: materializedDocumentaryCycleIds,
       referenceTime: referenceTime,
     );
   }
@@ -43,6 +45,7 @@ class FutureOutflowPresentationComposer {
     required DateTime end,
     required DateTime referenceTime,
     Iterable<FutureOutflowPresentation> documentaryInstallments = const [],
+    Iterable<String> materializedDocumentaryCycleIds = const [],
   }) {
     if (end.isBefore(start)) {
       throw ArgumentError.value(end, 'end', 'must not be before start');
@@ -73,8 +76,13 @@ class FutureOutflowPresentationComposer {
       ],
       documentaryInstallments: documentaryInstallments.where((item) {
         final date = item.placementStart;
-        return date != null && _isInRange(date, start, end);
+        return date != null
+            ? _isInRange(date, start, end)
+            : item.placementPeriod != null
+            ? _periodInRange(item.placementPeriod!, start, end)
+            : false;
       }),
+      materializedDocumentaryCycleIds: materializedDocumentaryCycleIds,
       referenceTime: referenceTime,
     );
   }
@@ -85,13 +93,19 @@ class FutureOutflowPresentationComposer {
     required Set<String> materializedCycleIds,
     required Iterable<FutureOutflowPresentation> finitePlanItems,
     required Iterable<FutureOutflowPresentation> documentaryInstallments,
+    required Iterable<String> materializedDocumentaryCycleIds,
     required DateTime referenceTime,
   }) {
     final documentaryItems = documentaryInstallments.toList();
-    final documentaryCycleIds = documentaryItems
-        .where((item) => item.relationshipId != null && item.cycleSequence != null)
-        .map((item) => '${item.relationshipId}#${item.cycleSequence}')
-        .toSet();
+    final documentaryCycleIds = <String>{
+      ...materializedDocumentaryCycleIds,
+      ...documentaryItems
+          .where(
+            (item) =>
+                item.relationshipId != null && item.cycleSequence != null,
+          )
+          .map((item) => '${item.relationshipId}#${item.cycleSequence}'),
+    };
     final items = <FutureOutflowPresentation>[
       ...expectedExpenses
           .where((item) {

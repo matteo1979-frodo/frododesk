@@ -20,6 +20,7 @@ enum FutureOutflowDatePresentation {
   finitePlanForecast,
   projectedCycle,
   documentaryDeadline,
+  documentaryChoiceRequired,
 }
 
 class FutureOutflowPresentation {
