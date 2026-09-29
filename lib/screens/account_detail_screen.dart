@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../logic/finance/finance_prepaid_creation.dart';
+import '../models/economic_operation_metadata.dart';
 import '../models/finance_account_linked_item.dart';
 import '../models/finance_balance.dart';
 import '../models/finance_transaction.dart';
@@ -342,6 +343,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
   }
 
   Widget _transactionTile(FinanceTransaction transaction) {
+    final presentation = _transactionPresentation(transaction);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: _glassCard(
@@ -368,12 +370,26 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
               ),
             ),
             Expanded(
-              child: Text(
-                transaction.description,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    presentation.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (presentation.operationDescription case final value?)
+                    Text(
+                      value,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.70),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ],
               ),
             ),
             Text(
@@ -731,7 +747,11 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
     await showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Tutti i movimenti"),
+        backgroundColor: const Color(0xFF142219),
+        title: const Text(
+          "Tutti i movimenti",
+          style: TextStyle(color: Colors.white),
+        ),
         content: SizedBox(
           width: 520,
           child: SingleChildScrollView(
@@ -743,10 +763,33 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(foregroundColor: Colors.white),
             child: const Text("Chiudi"),
           ),
         ],
       ),
+    );
+  }
+
+  ({String title, String? operationDescription}) _transactionPresentation(
+    FinanceTransaction transaction,
+  ) {
+    final metadata = transaction.operationMetadata;
+    if (metadata?.role != OperationRole.accessory) {
+      return (title: transaction.description, operationDescription: null);
+    }
+    final title = switch (metadata!.accessoryCostType) {
+      AccessoryCostType.bankCommission => 'Commissione bancaria',
+      AccessoryCostType.postalAcceptanceCharge =>
+        'Costo accettazione postale',
+      null => transaction.description,
+    };
+    final operationDescription = transaction.description.trim();
+    return (
+      title: title,
+      operationDescription: operationDescription.isEmpty
+          ? null
+          : operationDescription,
     );
   }
 
