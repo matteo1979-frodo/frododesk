@@ -34,6 +34,7 @@ class ExpectedExpenseReader {
           provider: relationship.provider,
           relationshipStatus: relationship.status,
           periodicity: relationship.periodicity,
+          cycleLabelPolicy: relationship.cycleLabelPolicy,
           relationshipSubject: relationship.subject,
           relationshipPaymentConfiguration: relationship.paymentConfiguration,
           relationshipPaymentExecutionMode: relationship.paymentExecutionMode,

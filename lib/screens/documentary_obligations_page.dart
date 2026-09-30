@@ -329,6 +329,7 @@ class _DocumentaryObligationEditorState
   final title = TextEditingController();
   final amount = TextEditingController();
   final reference = TextEditingController();
+  final stableRelationshipName = TextEditingController();
   final provider = TextEditingController();
   final expectedYear = TextEditingController();
   FinanceSubject? holder;
@@ -340,13 +341,23 @@ class _DocumentaryObligationEditorState
   final customRecurringMonths = TextEditingController();
   String? recurringSubjectError;
   String? recurringPeriodicityError;
+  String? stableRelationshipNameError;
+  ExpenseRelationshipCycleLabelPolicy cycleLabelPolicy =
+      ExpenseRelationshipCycleLabelPolicy.stableNameOnly;
   int? expectedMonth;
   final options = <DocumentaryFulfillmentOption>[];
   final contingencies = <DocumentaryContingency>[];
 
   @override
   void dispose() {
-    title.dispose(); amount.dispose(); reference.dispose(); provider.dispose(); expectedYear.dispose(); customRecurringMonths.dispose(); super.dispose();
+    title.dispose();
+    amount.dispose();
+    reference.dispose();
+    stableRelationshipName.dispose();
+    provider.dispose();
+    expectedYear.dispose();
+    customRecurringMonths.dispose();
+    super.dispose();
   }
 
   ExpenseRelationshipPeriodicity? _selectedPeriodicity() {
@@ -416,7 +427,9 @@ class _DocumentaryObligationEditorState
             ? _selectedPeriodicity()
             : null;
         if (relationshipId == null &&
-            (recurringSubject == null || periodicity == null)) {
+            (recurringSubject == null ||
+                periodicity == null ||
+                stableRelationshipName.text.trim().isEmpty)) {
           setState(() {
             recurringSubjectError = recurringSubject == null
                 ? 'Scegli la persona'
@@ -425,6 +438,10 @@ class _DocumentaryObligationEditorState
                 ? recurringMonthsChoice == _customRecurrenceChoice
                       ? 'Inserisci un numero di mesi maggiore di zero'
                       : 'Scegli la frequenza'
+                : null;
+            stableRelationshipNameError =
+                stableRelationshipName.text.trim().isEmpty
+                ? 'Inserisci il nome stabile della spesa'
                 : null;
           });
           return;
@@ -438,11 +455,12 @@ class _DocumentaryObligationEditorState
         relationship = relationshipId == null
             ? ExpenseRelationship(
                 relationshipId: 'document_relationship_$token',
-                service: title.text,
+                service: stableRelationshipName.text,
                 provider: provider.text,
                 subject: recurringSubject!,
                 status: ExpenseRelationshipStatus.active,
                 periodicity: periodicity!,
+                cycleLabelPolicy: cycleLabelPolicy,
                 paymentConfiguration: ExpenseRelationshipPaymentConfiguration(
                   method: FinancePaymentMethod.manual,
                 ),
@@ -672,6 +690,23 @@ class _DocumentaryObligationEditorState
                         ),
                       if (relationshipId == null)
                         TextField(
+                          key: const ValueKey(
+                            'documentary-stable-relationship-name',
+                          ),
+                          controller: stableRelationshipName,
+                          decoration: InputDecoration(
+                            labelText: 'Nome stabile della spesa',
+                            hintText: 'Per esempio TARI',
+                            helperText:
+                                'Resta uguale anche quando cambia l’anno del documento.',
+                            errorText: stableRelationshipNameError,
+                          ),
+                          onChanged: (_) => setState(
+                            () => stableRelationshipNameError = null,
+                          ),
+                        ),
+                      if (relationshipId == null)
+                        TextField(
                           key: const ValueKey('documentary-provider'),
                           controller: provider,
                           decoration: const InputDecoration(
@@ -759,6 +794,12 @@ class _DocumentaryObligationEditorState
                             if (value != _customRecurrenceChoice) {
                               customRecurringMonths.clear();
                             }
+                            if (!(_selectedPeriodicity()?.isAnnualCycle ??
+                                false)) {
+                              cycleLabelPolicy =
+                                  ExpenseRelationshipCycleLabelPolicy
+                                      .stableNameOnly;
+                            }
                           }),
                         ),
                       if (relationshipId == null &&
@@ -773,8 +814,41 @@ class _DocumentaryObligationEditorState
                             errorText: recurringPeriodicityError,
                           ),
                           onChanged: (_) => setState(
-                            () => recurringPeriodicityError = null,
+                            () {
+                              recurringPeriodicityError = null;
+                              if (!(_selectedPeriodicity()?.isAnnualCycle ??
+                                  false)) {
+                                cycleLabelPolicy =
+                                    ExpenseRelationshipCycleLabelPolicy
+                                        .stableNameOnly;
+                              }
+                            },
                           ),
+                        ),
+                      if (relationshipId == null &&
+                          (_selectedPeriodicity()?.isAnnualCycle ?? false))
+                        SwitchListTile(
+                          key: const ValueKey(
+                            'documentary-cycle-label-year',
+                          ),
+                          contentPadding: EdgeInsets.zero,
+                          value:
+                              cycleLabelPolicy ==
+                              ExpenseRelationshipCycleLabelPolicy
+                                  .stableNameWithTargetYear,
+                          title: const Text(
+                            'Mostra l’anno nel titolo delle previsioni',
+                          ),
+                          subtitle: const Text(
+                            'Per esempio: TARI 2027.',
+                          ),
+                          onChanged: (value) => setState(() {
+                            cycleLabelPolicy = value
+                                ? ExpenseRelationshipCycleLabelPolicy
+                                      .stableNameWithTargetYear
+                                : ExpenseRelationshipCycleLabelPolicy
+                                      .stableNameOnly;
+                          }),
                         ),
                       if (relationshipId != null)
                         Builder(

@@ -73,6 +73,30 @@ void main() {
     ]);
   });
 
+  test('propagates the relationship cycle label policy', () {
+    final projected = adapter.project(
+      aggregate: _aggregate(
+        relationship: _relationship(
+          periodicity: ExpenseRelationshipPeriodicity(
+            type: FinanceRecurringType.yearly,
+          ),
+          cycleLabelPolicy:
+              ExpenseRelationshipCycleLabelPolicy.stableNameWithTargetYear,
+        ),
+        occurrence: _occurrence(anchor: DateTime(2026, 11, 15)),
+      ),
+      horizon: ExpenseProjectionHorizon(
+        start: DateTime(2027),
+        end: DateTime(2027, 12, 31),
+      ),
+    );
+
+    expect(
+      projected.single.cycleLabelPolicy,
+      ExpenseRelationshipCycleLabelPolicy.stableNameWithTargetYear,
+    );
+  });
+
   test('annual and custom-day periods use explicit canonical cadence', () {
     final annual = adapter.project(
       aggregate: _aggregate(
@@ -591,6 +615,8 @@ ExpenseRelationship _relationship({
   ExpenseRelationshipStatus status = ExpenseRelationshipStatus.active,
   required ExpenseRelationshipPeriodicity periodicity,
   PaymentExecutionMode mode = PaymentExecutionMode.automatic,
+  ExpenseRelationshipCycleLabelPolicy cycleLabelPolicy =
+      ExpenseRelationshipCycleLabelPolicy.stableNameOnly,
 }) => ExpenseRelationship(
   relationshipId: id,
   service: 'Energia',
@@ -598,6 +624,7 @@ ExpenseRelationship _relationship({
   subject: FinanceSubject.matteo,
   status: status,
   periodicity: periodicity,
+  cycleLabelPolicy: cycleLabelPolicy,
   paymentConfiguration: ExpenseRelationshipPaymentConfiguration(
     method: FinancePaymentMethod.rid,
     expectedBalanceId: 'balance',

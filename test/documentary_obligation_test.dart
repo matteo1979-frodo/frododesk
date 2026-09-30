@@ -962,6 +962,57 @@ void main() {
       expect(find.text('Nuova bolletta o pagamento'), findsOneWidget);
     });
 
+    testWidgets(
+      'new annual recurrence keeps document title and stable name distinct',
+      (tester) async {
+        final finance = _uiFinanceStore();
+        await _openDocumentaryEditor(tester, finance);
+        await _fillRecurringDocument(
+          tester,
+          subject: FinanceSubject.matteo,
+          recurrenceLabel: 'Ogni anno',
+          documentTitle: 'TARI 2026',
+          stableName: 'TARI',
+          includeTargetYear: true,
+        );
+
+        await tester.tap(find.byKey(const ValueKey('documentary-save')));
+        await tester.pumpAndSettle();
+
+        expect(
+          finance.documentaryObligationAggregate.obligations.single.title,
+          'TARI 2026',
+        );
+        final relationship =
+            finance.expectedExpenseAggregate.relationships.single;
+        expect(relationship.service, 'TARI');
+        expect(
+          relationship.cycleLabelPolicy,
+          ExpenseRelationshipCycleLabelPolicy.stableNameWithTargetYear,
+        );
+      },
+    );
+
+    testWidgets('document title is not inferred as the stable name', (
+      tester,
+    ) async {
+      final finance = _uiFinanceStore();
+      await _openDocumentaryEditor(tester, finance);
+      await _fillRecurringDocument(
+        tester,
+        subject: FinanceSubject.matteo,
+        recurrenceLabel: 'Ogni anno',
+        documentTitle: 'Documento con anno 2026',
+        stableName: '',
+      );
+
+      await tester.tap(find.byKey(const ValueKey('documentary-save')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Inserisci il nome stabile della spesa'), findsOneWidget);
+      expect(finance.expectedExpenseAggregate.relationships, isEmpty);
+    });
+
     for (final entry in const [
       (label: 'Ogni mese', type: FinanceRecurringType.monthly, months: null),
       (label: 'Ogni 2 mesi', type: FinanceRecurringType.custom, months: 2),
@@ -1126,10 +1177,13 @@ Future<void> _fillRecurringDocument(
   required FinanceSubject? subject,
   required String recurrenceLabel,
   String? customMonths,
+  String documentTitle = 'Documento ricorrente',
+  String stableName = 'Spesa ricorrente',
+  bool includeTargetYear = false,
 }) async {
   await tester.enterText(
     find.byKey(const ValueKey('documentary-title')),
-    'Documento ricorrente',
+    documentTitle,
   );
   await tester.enterText(
     find.byKey(const ValueKey('documentary-amount')),
@@ -1137,6 +1191,10 @@ Future<void> _fillRecurringDocument(
   );
   await tester.tap(find.byKey(const ValueKey('documentary-repeats')));
   await tester.pumpAndSettle();
+  await tester.enterText(
+    find.byKey(const ValueKey('documentary-stable-relationship-name')),
+    stableName,
+  );
   await tester.enterText(
     find.byKey(const ValueKey('documentary-provider')),
     'Fornitore',
@@ -1156,6 +1214,12 @@ Future<void> _fillRecurringDocument(
       find.byKey(const ValueKey('documentary-custom-months')),
       customMonths,
     );
+  }
+  if (includeTargetYear) {
+    await tester.tap(
+      find.byKey(const ValueKey('documentary-cycle-label-year')),
+    );
+    await tester.pumpAndSettle();
   }
   await tester.tap(find.byKey(const ValueKey('documentary-expected-month')));
   await tester.pumpAndSettle();

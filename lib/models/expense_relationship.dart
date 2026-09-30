@@ -6,6 +6,11 @@ const _preserveManualPaymentPreference = Object();
 
 enum ExpenseRelationshipStatus { active, terminated }
 
+enum ExpenseRelationshipCycleLabelPolicy {
+  stableNameOnly,
+  stableNameWithTargetYear,
+}
+
 enum PaymentExecutionMode {
   unknown,
   requiresUserAction,
@@ -139,6 +144,12 @@ class ExpenseRelationshipPeriodicity {
       customIntervalUnit: unit as String?,
     );
   }
+
+  bool get isAnnualCycle =>
+      type == FinanceRecurringType.yearly ||
+      (type == FinanceRecurringType.custom &&
+          ((customInterval == 12 && customIntervalUnit == 'months') ||
+              (customInterval == 1 && customIntervalUnit == 'years')));
 }
 
 /// Stable identity of a continuing relationship that can generate expenses.
@@ -153,6 +164,7 @@ class ExpenseRelationship {
   final FinanceSubject subject;
   final ExpenseRelationshipStatus status;
   final ExpenseRelationshipPeriodicity periodicity;
+  final ExpenseRelationshipCycleLabelPolicy cycleLabelPolicy;
   final ExpenseRelationshipPaymentConfiguration paymentConfiguration;
   final PaymentExecutionMode paymentExecutionMode;
   final ManualPaymentPreference? manualPaymentPreference;
@@ -164,28 +176,43 @@ class ExpenseRelationship {
     required this.subject,
     required this.status,
     required this.periodicity,
+    this.cycleLabelPolicy =
+        ExpenseRelationshipCycleLabelPolicy.stableNameOnly,
     required this.paymentConfiguration,
     this.paymentExecutionMode = PaymentExecutionMode.unknown,
     this.manualPaymentPreference,
   }) : relationshipId = _requiredText(relationshipId, 'relationshipId'),
        service = _requiredText(service, 'service'),
-       provider = _requiredText(provider, 'provider');
+       provider = _requiredText(provider, 'provider') {
+    if (cycleLabelPolicy ==
+            ExpenseRelationshipCycleLabelPolicy.stableNameWithTargetYear &&
+        !periodicity.isAnnualCycle) {
+      throw ArgumentError.value(
+        cycleLabelPolicy,
+        'cycleLabelPolicy',
+        'The target year label requires an annual cycle',
+      );
+    }
+  }
 
   ExpenseRelationship copyWith({
+    String? service,
     String? provider,
     FinanceSubject? subject,
     ExpenseRelationshipStatus? status,
     ExpenseRelationshipPeriodicity? periodicity,
+    ExpenseRelationshipCycleLabelPolicy? cycleLabelPolicy,
     ExpenseRelationshipPaymentConfiguration? paymentConfiguration,
     PaymentExecutionMode? paymentExecutionMode,
     Object? manualPaymentPreference = _preserveManualPaymentPreference,
   }) => ExpenseRelationship(
     relationshipId: relationshipId,
-    service: service,
+    service: service ?? this.service,
     provider: provider ?? this.provider,
     subject: subject ?? this.subject,
     status: status ?? this.status,
     periodicity: periodicity ?? this.periodicity,
+    cycleLabelPolicy: cycleLabelPolicy ?? this.cycleLabelPolicy,
     paymentConfiguration: paymentConfiguration ?? this.paymentConfiguration,
     paymentExecutionMode: paymentExecutionMode ?? this.paymentExecutionMode,
     manualPaymentPreference:
@@ -201,6 +228,7 @@ class ExpenseRelationship {
     'subject': subject.name,
     'status': status.name,
     'periodicity': periodicity.toJson(),
+    'cycleLabelPolicy': cycleLabelPolicy.name,
     'paymentConfiguration': paymentConfiguration.toJson(),
     'paymentExecutionMode': paymentExecutionMode.name,
     'manualPaymentPreference': manualPaymentPreference?.toJson(),
@@ -245,6 +273,13 @@ class ExpenseRelationship {
       status: status,
       periodicity: ExpenseRelationshipPeriodicity.fromJson(
         Map<String, dynamic>.from(periodicity),
+      ),
+      cycleLabelPolicy: _optionalEnumValue(
+        json,
+        'cycleLabelPolicy',
+        ExpenseRelationshipCycleLabelPolicy.values,
+        (value) => value.name,
+        ExpenseRelationshipCycleLabelPolicy.stableNameOnly,
       ),
       paymentConfiguration:
           ExpenseRelationshipPaymentConfiguration.fromJson(

@@ -22,6 +22,7 @@ class ExpectedExpenseProjection {
   final String provider;
   final ExpenseRelationshipStatus relationshipStatus;
   final ExpenseRelationshipPeriodicity periodicity;
+  final ExpenseRelationshipCycleLabelPolicy cycleLabelPolicy;
   final FinanceSubject relationshipSubject;
   final ExpenseRelationshipPaymentConfiguration
   relationshipPaymentConfiguration;
@@ -62,6 +63,8 @@ class ExpectedExpenseProjection {
     required this.provider,
     required this.relationshipStatus,
     required this.periodicity,
+    this.cycleLabelPolicy =
+        ExpenseRelationshipCycleLabelPolicy.stableNameOnly,
     required this.relationshipSubject,
     required this.relationshipPaymentConfiguration,
     required this.relationshipPaymentExecutionMode,

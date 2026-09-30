@@ -73,6 +73,10 @@ void main() {
         ExpenseRelationshipStatus.terminated,
       );
       expect(projection.periodicity.type, FinanceRecurringType.monthly);
+      expect(
+        projection.cycleLabelPolicy,
+        relationship.cycleLabelPolicy,
+      );
       expect(projection.relationshipSubject, FinanceSubject.matteo);
       expect(projection.expectedSubject, FinanceSubject.chiara);
       expect(
@@ -194,6 +198,36 @@ void main() {
     },
   );
 
+  test('propagates the annual cycle label policy from its authority', () {
+    final relationship = _relationship(
+      id: 'annual_relationship',
+      periodicity: ExpenseRelationshipPeriodicity(
+        type: FinanceRecurringType.yearly,
+      ),
+      cycleLabelPolicy:
+          ExpenseRelationshipCycleLabelPolicy.stableNameWithTargetYear,
+    );
+
+    final projection = reader
+        .read(
+          ExpectedExpenseAggregate(
+            relationships: [relationship],
+            occurrences: [
+              _occurrence(
+                id: 'annual_occurrence',
+                relationshipId: relationship.relationshipId,
+              ),
+            ],
+          ),
+        )
+        .single;
+
+    expect(
+      projection.cycleLabelPolicy,
+      ExpenseRelationshipCycleLabelPolicy.stableNameWithTargetYear,
+    );
+  });
+
   test('preserves lifecycle and knowledge states without filtering', () {
     final relationship = _relationship(id: 'relationship_1');
     final projections = reader.read(
@@ -287,15 +321,19 @@ ExpenseRelationship _relationship({
   ExpenseRelationshipStatus status = ExpenseRelationshipStatus.active,
   FinancePaymentMethod method = FinancePaymentMethod.manual,
   String? balanceId,
+  ExpenseRelationshipPeriodicity? periodicity,
+  ExpenseRelationshipCycleLabelPolicy cycleLabelPolicy =
+      ExpenseRelationshipCycleLabelPolicy.stableNameOnly,
 }) => ExpenseRelationship(
   relationshipId: id,
   service: service,
   provider: provider,
   subject: subject,
   status: status,
-  periodicity: ExpenseRelationshipPeriodicity(
-    type: FinanceRecurringType.monthly,
-  ),
+  periodicity:
+      periodicity ??
+      ExpenseRelationshipPeriodicity(type: FinanceRecurringType.monthly),
+  cycleLabelPolicy: cycleLabelPolicy,
   paymentConfiguration: ExpenseRelationshipPaymentConfiguration(
     method: method,
     expectedBalanceId: balanceId,

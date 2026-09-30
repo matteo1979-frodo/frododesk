@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/logic/finance/expected_expense_reader.dart';
 import 'package:frododesk/logic/finance/future_expense_reader.dart';
+import 'package:frododesk/logic/finance/expense_relationship_projection_adapter.dart';
 import 'package:frododesk/logic/finance/future_outflow_presentation_composer.dart';
 import 'package:frododesk/logic/finance/expected_expense_persistence.dart';
 import 'package:frododesk/models/expense_relationship.dart';
@@ -138,6 +139,119 @@ void main() {
     expect(item.projectedExpenseCycle, isNotNull);
     expect(item.isInteractive, isFalse);
     expect(item.provisional, isTrue);
+  });
+
+  test('uses the structured target year only when the policy requests it', () {
+    final stable = composer.compose(
+      expectedExpenses: _expected(
+        reference: DateTime(2027, 3, 1),
+        service: 'TARI',
+      ),
+      finitePlans: const [],
+      referenceTime: reference,
+    );
+    final withYear = composer.compose(
+      expectedExpenses: _expected(
+        reference: DateTime(2027, 3, 1),
+        service: 'TARI',
+        yearlyLabel: true,
+      ),
+      projectedCycles: [
+        _projected(
+          sequence: 2,
+          anchor: DateTime(2027, 3, 1),
+          yearlyLabel: true,
+        ),
+        _projected(
+          sequence: 3,
+          anchor: DateTime(2028, 3, 1),
+          yearlyLabel: true,
+        ),
+      ],
+      finitePlans: const [],
+      referenceTime: reference,
+    );
+
+    expect(stable.futureMonths.single.items.single.title, 'TARI · Hera');
+    final yearlyTitles = withYear.futureMonths
+        .expand((group) => group.items)
+        .map((item) => item.title)
+        .toList();
+    expect(yearlyTitles.where((item) => item == 'TARI 2027 · Hera'), hasLength(2));
+    expect(yearlyTitles, contains('TARI 2028 · Hera'));
+  });
+
+  test('annual relationship projects structured 2027 and 2028 labels', () {
+    final relationship = ExpenseRelationship(
+      relationshipId: 'annual_tax',
+      service: 'Tributo comunale',
+      provider: 'Comune',
+      subject: FinanceSubject.matteo,
+      status: ExpenseRelationshipStatus.active,
+      periodicity: ExpenseRelationshipPeriodicity(
+        type: FinanceRecurringType.yearly,
+      ),
+      cycleLabelPolicy:
+          ExpenseRelationshipCycleLabelPolicy.stableNameWithTargetYear,
+      paymentConfiguration: ExpenseRelationshipPaymentConfiguration(
+        method: FinancePaymentMethod.manual,
+      ),
+    );
+    final seed = ExpectedExpenseOccurrence(
+      occurrenceId: 'annual_tax_2026',
+      relationshipId: relationship.relationshipId,
+      cycleSequence: 1,
+      expectedPeriod: ExpectedDocumentPeriod(year: 2026, month: 3),
+      status: ExpectedExpenseOccurrenceStatus.pending,
+      expectedAmount: 173,
+      estimationMethod: ExpenseEstimationMethod.documentaryObligation,
+      confidence: ExpenseEstimateConfidence.medium,
+      provisional: true,
+      expectedPaymentConfiguration: relationship.paymentConfiguration,
+      expectedSubject: relationship.subject,
+    );
+    final projected = const ExpenseRelationshipProjectionAdapter().project(
+      aggregate: ExpectedExpenseAggregate(
+        relationships: [relationship],
+        occurrences: [seed],
+      ),
+      horizon: ExpenseProjectionHorizon(
+        start: DateTime(2027),
+        end: DateTime(2028, 12, 31),
+      ),
+    );
+
+    final overview = composer.compose(
+      expectedExpenses: const [],
+      projectedCycles: projected,
+      finitePlans: const [],
+      referenceTime: reference,
+    );
+    final items = overview.futureMonths.expand((group) => group.items).toList();
+
+    expect(projected.map((item) => item.expectedPeriod?.year), [2027, 2028]);
+    expect(items.map((item) => item.title), [
+      'Tributo comunale 2027 · Comune',
+      'Tributo comunale 2028 · Comune',
+    ]);
+  });
+
+  test('target-year policy falls back without inventing an absent year', () {
+    final overview = composer.compose(
+      expectedExpenses: _expected(
+        reference: DateTime(2027, 3, 1),
+        service: 'Tributo comunale',
+        yearlyLabel: true,
+        structuredYear: false,
+      ),
+      finitePlans: const [],
+      referenceTime: reference,
+    );
+
+    expect(
+      overview.futureMonths.single.items.single.title,
+      'Tributo comunale · Hera',
+    );
   });
 
   test(
@@ -448,6 +562,8 @@ List<FutureExpenseProjection> _expected({
   int? cycleSequence,
   bool unplaced = false,
   String occurrenceId = 'occurrence_hera',
+  bool yearlyLabel = false,
+  bool structuredYear = true,
 }) {
   final relationship = ExpenseRelationship(
     relationshipId: 'relationship_hera',
@@ -456,10 +572,15 @@ List<FutureExpenseProjection> _expected({
     subject: FinanceSubject.matteo,
     status: ExpenseRelationshipStatus.active,
     periodicity: ExpenseRelationshipPeriodicity(
-      type: FinanceRecurringType.custom,
-      customInterval: 2,
-      customIntervalUnit: 'months',
+      type: yearlyLabel
+          ? FinanceRecurringType.yearly
+          : FinanceRecurringType.custom,
+      customInterval: yearlyLabel ? null : 2,
+      customIntervalUnit: yearlyLabel ? null : 'months',
     ),
+    cycleLabelPolicy: yearlyLabel
+        ? ExpenseRelationshipCycleLabelPolicy.stableNameWithTargetYear
+        : ExpenseRelationshipCycleLabelPolicy.stableNameOnly,
     paymentConfiguration: ExpenseRelationshipPaymentConfiguration(
       method: FinancePaymentMethod.manual,
     ),
@@ -467,8 +588,14 @@ List<FutureExpenseProjection> _expected({
   final occurrence = ExpectedExpenseOccurrence(
     occurrenceId: occurrenceId,
     relationshipId: relationship.relationshipId,
-    cycleSequence: cycleSequence,
-    cycleAnchor: cycleSequence == null ? null : reference,
+    cycleSequence: yearlyLabel && structuredYear ? 1 : cycleSequence,
+    cycleAnchor:
+        yearlyLabel && structuredYear || cycleSequence == null
+        ? null
+        : reference,
+    expectedPeriod: yearlyLabel && structuredYear
+        ? ExpectedDocumentPeriod(year: reference.year, month: reference.month)
+        : null,
     status: ExpectedExpenseOccurrenceStatus.pending,
     expectedAmount: amount,
     estimationMethod: ExpenseEstimationMethod.manualEstimate,
@@ -505,7 +632,11 @@ List<FutureExpenseProjection> _expected({
   );
 }
 
-ProjectedExpenseCycle _projected({required int sequence, DateTime? anchor}) =>
+ProjectedExpenseCycle _projected({
+  required int sequence,
+  DateTime? anchor,
+  bool yearlyLabel = false,
+}) =>
     ProjectedExpenseCycle(
       identity: ExpenseCycleIdentity(
         relationshipId: 'relationship_hera',
@@ -513,8 +644,11 @@ ProjectedExpenseCycle _projected({required int sequence, DateTime? anchor}) =>
       ),
       cycleAnchor: anchor ?? DateTime(2026, 10 + sequence),
       sourceOccurrenceId: 'occurrence_hera',
-      service: 'Acqua',
+      service: yearlyLabel ? 'TARI' : 'Acqua',
       provider: 'Hera',
+      cycleLabelPolicy: yearlyLabel
+          ? ExpenseRelationshipCycleLabelPolicy.stableNameWithTargetYear
+          : ExpenseRelationshipCycleLabelPolicy.stableNameOnly,
       expectedAmount: 59.63,
       expectedSubject: FinanceSubject.matteo,
       expectedPaymentConfiguration: ExpenseRelationshipPaymentConfiguration(

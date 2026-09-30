@@ -23,6 +23,7 @@ class ProjectedExpenseCycle {
   final String sourceOccurrenceId;
   final String service;
   final String provider;
+  final ExpenseRelationshipCycleLabelPolicy cycleLabelPolicy;
   final double expectedAmount;
   final FinanceSubject expectedSubject;
   final ExpenseRelationshipPaymentConfiguration expectedPaymentConfiguration;
@@ -36,6 +37,8 @@ class ProjectedExpenseCycle {
     required this.sourceOccurrenceId,
     required this.service,
     required this.provider,
+    this.cycleLabelPolicy =
+        ExpenseRelationshipCycleLabelPolicy.stableNameOnly,
     required this.expectedAmount,
     required this.expectedSubject,
     required this.expectedPaymentConfiguration,

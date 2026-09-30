@@ -218,7 +218,14 @@ class FutureOutflowPresentationComposer {
   ) => FutureOutflowPresentation(
     identity: expense.occurrenceId,
     authority: FutureOutflowAuthority.expectedExpense,
-    title: '${expense.source.service} · ${expense.source.provider}',
+    title: _expenseCycleTitle(
+      service: expense.source.service,
+      provider: expense.source.provider,
+      policy: expense.source.cycleLabelPolicy,
+      targetYear:
+          expense.source.expectedPeriod?.year ??
+          expense.source.cycleAnchor?.year,
+    ),
     details: '',
     amount: expense.source.expectedAmount,
     placementStart: expense.displayStart,
@@ -251,7 +258,12 @@ class FutureOutflowPresentationComposer {
       FutureOutflowPresentation(
         identity: cycle.identity.value,
         authority: FutureOutflowAuthority.projectedExpenseRelationship,
-        title: '${cycle.service} · ${cycle.provider}',
+        title: _expenseCycleTitle(
+          service: cycle.service,
+          provider: cycle.provider,
+          policy: cycle.cycleLabelPolicy,
+          targetYear: cycle.expectedPeriod?.year ?? cycle.cycleAnchor?.year,
+        ),
         details: 'Ciclo previsto',
         amount: cycle.expectedAmount,
         placementStart: cycle.cycleAnchor,
@@ -268,6 +280,21 @@ class FutureOutflowPresentationComposer {
         overdue: false,
         projectedExpenseCycle: cycle,
       );
+
+  String _expenseCycleTitle({
+    required String service,
+    required String provider,
+    required ExpenseRelationshipCycleLabelPolicy policy,
+    required int? targetYear,
+  }) {
+    final label =
+        policy ==
+                ExpenseRelationshipCycleLabelPolicy.stableNameWithTargetYear &&
+            targetYear != null
+        ? '$service $targetYear'
+        : service;
+    return '$label · $provider';
+  }
 
   int _compare(
     FutureOutflowPresentation left,

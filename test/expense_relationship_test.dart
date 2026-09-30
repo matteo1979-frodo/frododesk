@@ -35,6 +35,55 @@ void main() {
       expect(restored.toJson(), source.toJson());
     });
 
+    test('legacy JSON defaults to the stable name only policy', () {
+      final json = _relationship().toJson()..remove('cycleLabelPolicy');
+
+      final restored = ExpenseRelationship.fromJson(json);
+
+      expect(
+        restored.cycleLabelPolicy,
+        ExpenseRelationshipCycleLabelPolicy.stableNameOnly,
+      );
+    });
+
+    test('round-trips and copies the annual target-year label policy', () {
+      final source = _relationship(
+        periodicity: ExpenseRelationshipPeriodicity(
+          type: FinanceRecurringType.yearly,
+        ),
+        cycleLabelPolicy:
+            ExpenseRelationshipCycleLabelPolicy.stableNameWithTargetYear,
+      );
+
+      final restored = ExpenseRelationship.fromJson(source.toJson());
+      final renamed = restored.copyWith(service: 'Tributo comunale');
+
+      expect(restored.toJson(), source.toJson());
+      expect(renamed.service, 'Tributo comunale');
+      expect(
+        renamed.cycleLabelPolicy,
+        ExpenseRelationshipCycleLabelPolicy.stableNameWithTargetYear,
+      );
+    });
+
+    test('target-year labels require an annual-compatible cadence', () {
+      expect(
+        () => _relationship(
+          cycleLabelPolicy:
+              ExpenseRelationshipCycleLabelPolicy.stableNameWithTargetYear,
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        ExpenseRelationshipPeriodicity(
+          type: FinanceRecurringType.custom,
+          customInterval: 12,
+          customIntervalUnit: 'months',
+        ).isAnnualCycle,
+        isTrue,
+      );
+    });
+
     test('supports manual payment without an expected balance', () {
       final relationship = _relationship(
         payment: ExpenseRelationshipPaymentConfiguration(
@@ -281,6 +330,8 @@ ExpenseRelationship _relationship({
   FinanceSubject subject = FinanceSubject.matteo,
   ExpenseRelationshipStatus status = ExpenseRelationshipStatus.active,
   ExpenseRelationshipPeriodicity? periodicity,
+  ExpenseRelationshipCycleLabelPolicy cycleLabelPolicy =
+      ExpenseRelationshipCycleLabelPolicy.stableNameOnly,
   ExpenseRelationshipPaymentConfiguration? payment,
   ManualPaymentPreference? manualPaymentPreference,
 }) => ExpenseRelationship(
@@ -292,6 +343,7 @@ ExpenseRelationship _relationship({
   periodicity:
       periodicity ??
       ExpenseRelationshipPeriodicity(type: FinanceRecurringType.monthly),
+  cycleLabelPolicy: cycleLabelPolicy,
   paymentConfiguration:
       payment ??
       ExpenseRelationshipPaymentConfiguration(
