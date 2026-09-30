@@ -26,7 +26,9 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   test('happy path without fee commits one fact and advances once', () async {
-    final harness = await _Harness.create();
+    final harness = await _Harness.create(
+      installmentAmountOverrides: const {1: 388.83, 12: 327.42},
+    );
     final result = await harness.coordinator.confirm(_confirmation());
 
     expect(result.status, FinitePlanInstallmentConfirmationStatus.completed);
@@ -36,6 +38,14 @@ void main() {
     expect(
       harness.finance.finiteFinancialPlans.single.completedInstallments,
       3,
+    );
+    expect(
+      harness
+          .finance
+          .finiteFinancialPlans
+          .single
+          .installmentAmountOverrides,
+      {1: 388.83, 12: 327.42},
     );
     final transaction = harness.finance.transactions.single;
     final expense = harness.expenses.all.single;
@@ -518,6 +528,7 @@ class _Harness {
     double balanceAmount = 1000,
     bool balanceActive = true,
     int completedInstallments = 2,
+    Map<int, double> installmentAmountOverrides = const {},
     Iterable<FinanceTransaction> transactions = const [],
   }) async {
     final portfolio = FinancePortfolioV3(
@@ -545,6 +556,7 @@ class _Harness {
           subject: subject,
           debitBalanceId: 'balance-bank',
           completedInstallments: completedInstallments,
+          installmentAmountOverrides: installmentAmountOverrides,
         ),
       ])).isSuccess,
       isTrue,
@@ -590,6 +602,7 @@ FiniteFinancialPlan _plan({
   FinanceSubject subject = FinanceSubject.matteo,
   String debitBalanceId = 'balance-bank',
   int completedInstallments = 2,
+  Map<int, double> installmentAmountOverrides = const {},
 }) => FiniteFinancialPlan(
   id: 'plan-inps',
   name: 'INPS',
@@ -598,6 +611,7 @@ FiniteFinancialPlan _plan({
   debitBalanceId: debitBalanceId,
   totalInstallments: 12,
   expectedInstallmentAmount: 386,
+  installmentAmountOverrides: installmentAmountOverrides,
   firstInstallmentDate: DateTime(2026, 7, 15),
   completedInstallments: completedInstallments,
 );

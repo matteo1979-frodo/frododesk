@@ -30,6 +30,7 @@ class FiniteFinancialPlan {
   final int totalInstallments;
   final FiniteFinancialPlanFrequency frequency;
   final double expectedInstallmentAmount;
+  final Map<int, double> installmentAmountOverrides;
   final DateTime firstInstallmentDate;
   final int scheduledDayOfMonth;
   final int completedInstallments;
@@ -44,6 +45,7 @@ class FiniteFinancialPlan {
     required this.totalInstallments,
     required this.frequency,
     required this.expectedInstallmentAmount,
+    required this.installmentAmountOverrides,
     required this.firstInstallmentDate,
     required this.scheduledDayOfMonth,
     required this.completedInstallments,
@@ -60,6 +62,7 @@ class FiniteFinancialPlan {
     FiniteFinancialPlanFrequency frequency =
         FiniteFinancialPlanFrequency.monthly,
     required double expectedInstallmentAmount,
+    Map<int, double> installmentAmountOverrides = const {},
     required DateTime firstInstallmentDate,
     int? scheduledDayOfMonth,
     int completedInstallments = 0,
@@ -90,6 +93,22 @@ class FiniteFinancialPlan {
         'expectedInstallmentAmount',
         'Must be finite and greater than zero',
       );
+    }
+    for (final entry in installmentAmountOverrides.entries) {
+      if (entry.key < 1 || entry.key > totalInstallments) {
+        throw ArgumentError.value(
+          entry.key,
+          'installmentAmountOverrides',
+          'Installment number must be between 1 and totalInstallments',
+        );
+      }
+      if (!entry.value.isFinite || entry.value <= 0) {
+        throw ArgumentError.value(
+          entry.value,
+          'installmentAmountOverrides',
+          'Override amount must be finite and greater than zero',
+        );
+      }
     }
     if (contractualDay < 1 || contractualDay > 31) {
       throw ArgumentError.value(
@@ -130,6 +149,9 @@ class FiniteFinancialPlan {
       totalInstallments: totalInstallments,
       frequency: frequency,
       expectedInstallmentAmount: expectedInstallmentAmount,
+      installmentAmountOverrides: Map.unmodifiable(
+        installmentAmountOverrides,
+      ),
       firstInstallmentDate: normalizedFirstDate,
       scheduledDayOfMonth: contractualDay,
       completedInstallments: completedInstallments,
@@ -178,8 +200,28 @@ class FiniteFinancialPlan {
         monthIndex,
         scheduledDayOfMonth,
       ),
-      expectedAmount: expectedInstallmentAmount,
+      expectedAmount: amountForInstallment(number),
     );
+  }
+
+  double amountForInstallment(int installmentNumber) {
+    if (installmentNumber < 1 || installmentNumber > totalInstallments) {
+      throw ArgumentError.value(
+        installmentNumber,
+        'installmentNumber',
+        'Must be between 1 and totalInstallments',
+      );
+    }
+    return installmentAmountOverrides[installmentNumber] ??
+        expectedInstallmentAmount;
+  }
+
+  double get expectedTotalAmount {
+    var total = 0.0;
+    for (var number = 1; number <= totalInstallments; number++) {
+      total += amountForInstallment(number);
+    }
+    return total;
   }
 
   Map<String, dynamic> toJson() => {
@@ -192,6 +234,10 @@ class FiniteFinancialPlan {
     'totalInstallments': totalInstallments,
     'frequency': frequency.name,
     'expectedInstallmentAmount': expectedInstallmentAmount,
+    'installmentAmountOverrides': [
+      for (final entry in installmentAmountOverrides.entries)
+        {'installmentNumber': entry.key, 'amount': entry.value},
+    ],
     'firstInstallmentDate': firstInstallmentDate.toIso8601String(),
     'scheduledDayOfMonth': scheduledDayOfMonth,
     'completedInstallments': completedInstallments,
@@ -226,11 +272,66 @@ class FiniteFinancialPlan {
       frequency: frequency,
       expectedInstallmentAmount: (json['expectedInstallmentAmount'] as num)
           .toDouble(),
+      installmentAmountOverrides: json.containsKey(
+        'installmentAmountOverrides',
+      )
+          ? _decodeInstallmentAmountOverrides(
+              json['installmentAmountOverrides'],
+            )
+          : const {},
       firstInstallmentDate: firstInstallmentDate,
       scheduledDayOfMonth:
           json['scheduledDayOfMonth'] as int? ?? firstInstallmentDate.day,
       completedInstallments: json['completedInstallments'] as int? ?? 0,
     );
+  }
+
+  static Map<int, double> _decodeInstallmentAmountOverrides(dynamic raw) {
+    if (raw is! List) {
+      throw ArgumentError.value(
+        raw,
+        'installmentAmountOverrides',
+        'Must be a list',
+      );
+    }
+
+    final result = <int, double>{};
+    for (var index = 0; index < raw.length; index++) {
+      final item = raw[index];
+      if (item is! Map) {
+        throw ArgumentError.value(
+          item,
+          'installmentAmountOverrides[$index]',
+          'Must be an object',
+        );
+      }
+      final entry = Map<String, dynamic>.from(item);
+      final installmentNumber = entry['installmentNumber'];
+      final amount = entry['amount'];
+      if (installmentNumber is! int) {
+        throw ArgumentError.value(
+          installmentNumber,
+          'installmentAmountOverrides[$index].installmentNumber',
+          'Must be an integer',
+        );
+      }
+      if (amount is! num) {
+        throw ArgumentError.value(
+          amount,
+          'installmentAmountOverrides[$index].amount',
+          'Must be a number',
+        );
+      }
+      if (result.containsKey(installmentNumber)) {
+        throw ArgumentError.value(
+          installmentNumber,
+          'installmentAmountOverrides[$index].installmentNumber',
+          'Duplicate installment number',
+        );
+      }
+      result[installmentNumber] = amount.toDouble();
+    }
+    return result;
   }
 
   static DateTime _monthlyDate(int year, int month, int preferredDay) {

@@ -36,6 +36,16 @@ void main() {
       expect(item.isOutflow, isTrue);
     });
 
+    test('uses an installment override without adapter-specific logic', () {
+      final item = adapter.itemsForMonth(
+        _plan(installmentAmountOverrides: const {3: 401.25}),
+        DateTime(2027, 3),
+      ).single;
+
+      expect(item.installmentNumber, 3);
+      expect(item.expectedAmount, 401.25);
+    });
+
     test('preserves a null debit balance id', () {
       final item = adapter.remainingItems(
         _plan(debitBalanceId: null),
@@ -320,6 +330,7 @@ FiniteFinancialPlan _plan({
   DateTime? firstInstallmentDate,
   int scheduledDayOfMonth = 15,
   String? debitBalanceId = 'balance_banca',
+  Map<int, double> installmentAmountOverrides = const {},
 }) {
   return FiniteFinancialPlan(
     id: 'plan_inps',
@@ -330,6 +341,7 @@ FiniteFinancialPlan _plan({
     debitBalanceId: debitBalanceId,
     totalInstallments: totalInstallments,
     expectedInstallmentAmount: 386,
+    installmentAmountOverrides: installmentAmountOverrides,
     firstInstallmentDate: firstInstallmentDate ?? DateTime(2027, 1, 15),
     scheduledDayOfMonth: scheduledDayOfMonth,
     completedInstallments: completedInstallments,

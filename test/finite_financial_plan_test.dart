@@ -136,13 +136,77 @@ void main() {
     });
 
     test('round-trips every persisted field', () {
-      final plan = _plan(completedInstallments: 2);
+      final plan = _plan(
+        completedInstallments: 2,
+        installmentAmountOverrides: const {1: 388.83, 12: 327.42},
+      );
       final restored = FiniteFinancialPlan.fromJson(plan.toJson());
 
       expect(restored.toJson(), plan.toJson());
       expect(restored.nextInstallmentNumber, 3);
       expect(restored.remainingInstallments, 10);
       expect(restored.lastInstallment.dueDate, plan.lastInstallment.dueDate);
+      expect(restored.installmentAmountOverrides, {1: 388.83, 12: 327.42});
+    });
+
+    test('uses the ordinary amount when no overrides exist', () {
+      final plan = _plan();
+
+      expect(plan.installmentAmountOverrides, isEmpty);
+      expect(
+        [
+          for (var number = 1; number <= 12; number++)
+            plan.installment(number)!.expectedAmount,
+        ],
+        everyElement(386),
+      );
+    });
+
+    test('uses one override without changing ordinary installments', () {
+      final plan = _plan(installmentAmountOverrides: const {3: 401.25});
+
+      expect(plan.amountForInstallment(2), 386);
+      expect(plan.amountForInstallment(3), 401.25);
+      expect(plan.installment(3)!.expectedAmount, 401.25);
+      expect(plan.amountForInstallment(4), 386);
+    });
+
+    test('supports overrides on first, intermediate, and last installment', () {
+      final plan = _plan(
+        totalInstallments: 10,
+        expectedInstallmentAmount: 400,
+        installmentAmountOverrides: const {1: 500, 2: 500, 10: 327.42},
+      );
+
+      expect(plan.amountForInstallment(1), 500);
+      expect(plan.amountForInstallment(2), 500);
+      expect(plan.amountForInstallment(3), 400);
+      expect(plan.amountForInstallment(10), 327.42);
+      expect(plan.expectedTotalAmount, closeTo(4427.42, 0.0000001));
+    });
+
+    test('derives the expected total from ordinary and overridden amounts', () {
+      final plan = _plan(
+        expectedInstallmentAmount: 386,
+        installmentAmountOverrides: const {1: 388.83},
+      );
+
+      expect(plan.amountForInstallment(1), 388.83);
+      expect(plan.amountForInstallment(2), 386);
+      expect(plan.amountForInstallment(12), 386);
+      expect(plan.expectedTotalAmount, closeTo(4634.83, 0.0000001));
+    });
+
+    test('installment amount overrides are externally immutable', () {
+      final source = <int, double>{1: 388.83};
+      final plan = _plan(installmentAmountOverrides: source);
+      source[1] = 1;
+
+      expect(plan.installmentAmountOverrides, {1: 388.83});
+      expect(
+        () => plan.installmentAmountOverrides[2] = 400,
+        throwsUnsupportedError,
+      );
     });
 
     test('reads backward-compatible optional defaults', () {
@@ -151,7 +215,8 @@ void main() {
         ..remove('subject')
         ..remove('frequency')
         ..remove('scheduledDayOfMonth')
-        ..remove('completedInstallments');
+        ..remove('completedInstallments')
+        ..remove('installmentAmountOverrides');
 
       final restored = FiniteFinancialPlan.fromJson(json);
 
@@ -160,6 +225,7 @@ void main() {
       expect(restored.frequency, FiniteFinancialPlanFrequency.monthly);
       expect(restored.scheduledDayOfMonth, 15);
       expect(restored.completedInstallments, 0);
+      expect(restored.installmentAmountOverrides, isEmpty);
     });
 
     test('rejects invalid plan inputs', () {
@@ -174,6 +240,32 @@ void main() {
         throwsArgumentError,
       );
       expect(
+        () => _plan(installmentAmountOverrides: const {0: 10}),
+        throwsArgumentError,
+      );
+      expect(
+        () => _plan(installmentAmountOverrides: const {13: 10}),
+        throwsArgumentError,
+      );
+      expect(
+        () => _plan(installmentAmountOverrides: const {1: 0}),
+        throwsArgumentError,
+      );
+      expect(
+        () => _plan(installmentAmountOverrides: const {1: -1}),
+        throwsArgumentError,
+      );
+      expect(
+        () => _plan(installmentAmountOverrides: const {1: double.nan}),
+        throwsArgumentError,
+      );
+      expect(
+        () => _plan(installmentAmountOverrides: const {1: double.infinity}),
+        throwsArgumentError,
+      );
+      expect(() => _plan().amountForInstallment(0), throwsArgumentError);
+      expect(() => _plan().amountForInstallment(13), throwsArgumentError);
+      expect(
         () => _plan(
           firstInstallmentDate: DateTime(2027, 2, 27),
           scheduledDayOfMonth: 31,
@@ -187,6 +279,63 @@ void main() {
 
       expect(() => FiniteFinancialPlan.fromJson(json), throwsArgumentError);
     });
+
+    test('rejects duplicate installment overrides in JSON', () {
+      final json = _plan().toJson()
+        ..['installmentAmountOverrides'] = [
+          {'installmentNumber': 1, 'amount': 388.83},
+          {'installmentNumber': 1, 'amount': 390},
+        ];
+
+      expect(() => FiniteFinancialPlan.fromJson(json), throwsArgumentError);
+    });
+
+    test('rejects null installment overrides when the field is present', () {
+      final json = _plan().toJson()..['installmentAmountOverrides'] = null;
+
+      expect(() => FiniteFinancialPlan.fromJson(json), throwsArgumentError);
+    });
+
+    test('rejects a non-list installment overrides field', () {
+      final json = _plan().toJson()
+        ..['installmentAmountOverrides'] = {'installmentNumber': 1};
+
+      expect(() => FiniteFinancialPlan.fromJson(json), throwsArgumentError);
+    });
+
+    test('rejects a non-object installment override entry', () {
+      final json = _plan().toJson()
+        ..['installmentAmountOverrides'] = ['invalid'];
+
+      expect(() => FiniteFinancialPlan.fromJson(json), throwsArgumentError);
+    });
+
+    test('rejects a non-numeric installment number in JSON', () {
+      final json = _plan().toJson()
+        ..['installmentAmountOverrides'] = [
+          {'installmentNumber': '1', 'amount': 388.83},
+        ];
+
+      expect(() => FiniteFinancialPlan.fromJson(json), throwsArgumentError);
+    });
+
+    test('rejects a fractional installment number in JSON', () {
+      final json = _plan().toJson()
+        ..['installmentAmountOverrides'] = [
+          {'installmentNumber': 1.5, 'amount': 388.83},
+        ];
+
+      expect(() => FiniteFinancialPlan.fromJson(json), throwsArgumentError);
+    });
+
+    test('rejects a non-numeric installment amount in JSON', () {
+      final json = _plan().toJson()
+        ..['installmentAmountOverrides'] = [
+          {'installmentNumber': 1, 'amount': '388.83'},
+        ];
+
+      expect(() => FiniteFinancialPlan.fromJson(json), throwsArgumentError);
+    });
   });
 }
 
@@ -194,6 +343,7 @@ FiniteFinancialPlan _plan({
   int totalInstallments = 12,
   int completedInstallments = 0,
   double expectedInstallmentAmount = 386,
+  Map<int, double> installmentAmountOverrides = const {},
   DateTime? firstInstallmentDate,
   int scheduledDayOfMonth = 15,
 }) => FiniteFinancialPlan(
@@ -205,6 +355,7 @@ FiniteFinancialPlan _plan({
   debitBalanceId: 'balance_banca',
   totalInstallments: totalInstallments,
   expectedInstallmentAmount: expectedInstallmentAmount,
+  installmentAmountOverrides: installmentAmountOverrides,
   firstInstallmentDate: firstInstallmentDate ?? DateTime(2027, 1, 15),
   scheduledDayOfMonth: scheduledDayOfMonth,
   completedInstallments: completedInstallments,

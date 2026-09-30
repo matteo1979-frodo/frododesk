@@ -439,6 +439,7 @@ class FiniteFinancialPlanInstallmentConfirmationCoordinator {
     totalInstallments: plan.totalInstallments,
     frequency: plan.frequency,
     expectedInstallmentAmount: plan.expectedInstallmentAmount,
+    installmentAmountOverrides: plan.installmentAmountOverrides,
     firstInstallmentDate: plan.firstInstallmentDate,
     scheduledDayOfMonth: plan.scheduledDayOfMonth,
     completedInstallments: completedInstallments,
