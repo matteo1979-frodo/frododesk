@@ -109,7 +109,7 @@ void main() {
     tester,
   ) async {
     final pending = Completer<CompositeEconomicOperationResult>();
-    final fixture = _Fixture.create(pending: pending);
+    final fixture = await _Fixture.create(pending: pending);
     await _pumpPage(tester, fixture);
     await _openUtilityForm(tester);
     await _fillUtilityForm(tester, bank: '2', postal: '1');
@@ -135,7 +135,7 @@ void main() {
     testWidgets('$status remains visible and never reports success', (
       tester,
     ) async {
-      final fixture = _Fixture.create(status: status);
+      final fixture = await _Fixture.create(status: status);
       await _pumpPage(tester, fixture);
       await _openUtilityForm(tester);
       await _fillUtilityForm(tester);
@@ -152,7 +152,7 @@ void main() {
   testWidgets('alreadyComplete reports idempotent success without a retry', (
     tester,
   ) async {
-    final fixture = _Fixture.create(
+    final fixture = await _Fixture.create(
       status: CompositeEconomicOperationStatus.alreadyComplete,
     );
     await _pumpPage(tester, fixture);
@@ -177,7 +177,8 @@ void main() {
     expect(find.text('Spesa reale'), findsOneWidget);
     expect(find.text('Prelievo contanti'), findsOneWidget);
     expect(find.text('Entrata extra'), findsOneWidget);
-    expect(find.text('Bolletta con costi accessori'), findsOneWidget);
+    expect(find.text('Bolletta con costi accessori'), findsNothing);
+    expect(find.text('Bolletta o pagamento'), findsOneWidget);
   });
 
   final presentationCases =
@@ -286,7 +287,8 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('Spesa reale'), findsOneWidget);
-      expect(find.text('Bolletta con costi accessori'), findsOneWidget);
+      expect(find.text('Bolletta con costi accessori'), findsNothing);
+      expect(find.text('Bolletta o pagamento'), findsOneWidget);
       expect(find.text('Prelievo contanti'), findsOneWidget);
       expect(find.text('Entrata extra'), findsOneWidget);
 
@@ -304,11 +306,13 @@ void main() {
       expect(tester.takeException(), isNull);
 
       await tester.scrollUntilVisible(
-        find.text('Bolletta con costi accessori'),
+        find.text('Bolletta o pagamento'),
         -150,
         scrollable: scrollable,
       );
-      await tester.tap(find.text('Bolletta con costi accessori'));
+      await tester.tap(find.text('Bolletta o pagamento'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Pagamento diretto'));
       await tester.pumpAndSettle();
 
       expect(find.text('Nuova bolletta'), findsOneWidget);
@@ -316,7 +320,7 @@ void main() {
     },
   );
 
-  testWidgets('composite expense detail blocks single-fact edit and delete', (
+  testWidgets('composite main exposes whole-operation correction only', (
     tester,
   ) async {
     final fixture = await _Fixture.create();
@@ -345,12 +349,7 @@ void main() {
     await tester.tap(find.text('Bolletta test'));
     await tester.pumpAndSettle();
 
-    expect(
-      find.text(
-        'Operazione composta: modifica ed eliminazione non disponibili.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Correggi pagamento'), findsOneWidget);
     expect(find.text('Modifica'), findsNothing);
     expect(find.text('Elimina'), findsNothing);
   });
@@ -379,7 +378,10 @@ Future<void> _pumpPage(
 Future<void> _openUtilityForm(WidgetTester tester) async {
   await tester.tap(find.text('Nuovo movimento'));
   await tester.pumpAndSettle();
-  await tester.tap(find.text('Bolletta con costi accessori'));
+  expect(find.text('Bolletta con costi accessori'), findsNothing);
+  await tester.tap(find.text('Bolletta o pagamento'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Pagamento diretto'));
   await tester.pumpAndSettle();
   await tester.tap(find.text('Conto test'));
   await tester.pumpAndSettle();
@@ -428,7 +430,7 @@ class _Fixture {
     CompositeEconomicOperationStatus status =
         CompositeEconomicOperationStatus.completed,
     Completer<CompositeEconomicOperationResult>? pending,
-  }) {
+  }) async {
     final financeStore = FinanceStore(
       initialBalances: [
         FinanceBalance(

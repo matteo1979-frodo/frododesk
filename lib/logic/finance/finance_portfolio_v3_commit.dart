@@ -2,6 +2,7 @@ import 'finance_portfolio_v3_contract.dart';
 import 'finance_portfolio_v3_writer.dart';
 
 enum FinancePortfolioV3CommitFailure {
+  snapshotConflict,
   transformationFailed,
   validationFailed,
   writerFailed,

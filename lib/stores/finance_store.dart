@@ -112,7 +112,8 @@ class FinanceStore extends ChangeNotifier {
        expectedExpensePersistence =
            expectedExpensePersistence ?? ExpectedExpensePersistence(),
        documentaryObligationPersistence =
-           documentaryObligationPersistence ?? DocumentaryObligationPersistence(),
+           documentaryObligationPersistence ??
+           DocumentaryObligationPersistence(),
        _balances = List<FinanceBalance>.of(initialBalances),
        _linkedItems = List<FinanceAccountLinkedItem>.of(initialLinkedItems),
        _transactions = List<FinanceTransaction>.of(initialTransactions),
@@ -127,7 +128,8 @@ class FinanceStore extends ChangeNotifier {
        _expectedExpenseAggregate =
            initialExpectedExpenseAggregate ?? ExpectedExpenseAggregate.empty(),
        _documentaryObligationAggregate =
-           initialDocumentaryObligationAggregate ?? DocumentaryObligationAggregate.empty();
+           initialDocumentaryObligationAggregate ??
+           DocumentaryObligationAggregate.empty();
 
   final List<FinancePerson> people = const [
     FinancePerson(id: 'matteo', name: 'Matteo'),
@@ -253,8 +255,8 @@ class FinanceStore extends ChangeNotifier {
       _runObservableLoad(_loadSavedDocumentaryObligations);
 
   Future<void> _loadSavedDocumentaryObligations() async {
-    _documentaryObligationAggregate =
-        await documentaryObligationPersistence.load();
+    _documentaryObligationAggregate = await documentaryObligationPersistence
+        .load();
   }
 
   Future<bool> saveDocumentaryObligationAggregate(
@@ -262,8 +264,8 @@ class FinanceStore extends ChangeNotifier {
   ) async {
     final before = jsonEncode(
       _documentaryObligationAggregate.obligations
-          .map((item) => item.toJson())
-          .toList() +
+              .map((item) => item.toJson())
+              .toList() +
           _documentaryObligationAggregate.expectedDocuments
               .map((item) => item.toJson())
               .toList(),
@@ -1333,8 +1335,7 @@ class FinanceStore extends ChangeNotifier {
             type: FinanceTransactionType.expense,
             origin: FinanceTransactionOrigin.manual,
             notes: notes,
-            economicFactId:
-                economicFactId ?? economicFactIdGenerator.next(),
+            economicFactId: economicFactId ?? economicFactIdGenerator.next(),
             balancePostingMode: balancePostingMode,
           ),
         );
@@ -2089,6 +2090,81 @@ class FinanceStore extends ChangeNotifier {
     return FinancePortfolioV3CommitResult.success(writeResult);
   }
 
+  Future<FinancePortfolioV3CommitResult> commitPortfolioV3CandidateVerified({
+    required Map<String, dynamic> expectedCurrent,
+    required FinancePortfolioV3Transformation transform,
+  }) async {
+    final current = FinancePortfolioV3(
+      balances: _balances,
+      funds: _funds,
+      assetMovements: _assetMovements,
+      transactions: _transactions,
+      fundTransactions: _fundTransactions,
+      linkedItems: _linkedItems,
+    );
+    if (jsonEncode(FinancePortfolioV3Contract.build(current)) !=
+        jsonEncode(expectedCurrent)) {
+      return FinancePortfolioV3CommitResult.failed(
+        failure: FinancePortfolioV3CommitFailure.snapshotConflict,
+        errors: const [
+          'Portfolio V3 memory differs from the expected snapshot',
+        ],
+      );
+    }
+    late final FinancePortfolioV3 candidate;
+    try {
+      candidate = transform(current);
+    } catch (error) {
+      return FinancePortfolioV3CommitResult.failed(
+        failure: FinancePortfolioV3CommitFailure.transformationFailed,
+        errors: ['Portfolio V3 candidate transformation failed: $error'],
+      );
+    }
+    final validation = FinancePortfolioV3Validator.validate(candidate);
+    if (!validation.isValid) {
+      return FinancePortfolioV3CommitResult.failed(
+        failure: FinancePortfolioV3CommitFailure.validationFailed,
+        errors: validation.errors,
+      );
+    }
+    final writeResult = await portfolioV3Writer.writeIfCurrent(
+      expectedCurrent: expectedCurrent,
+      candidate: candidate,
+    );
+    if (!writeResult.isSuccess) {
+      return FinancePortfolioV3CommitResult.failed(
+        failure:
+            writeResult.failure == FinancePortfolioV3WriteFailure.invalidPayload
+            ? FinancePortfolioV3CommitFailure.snapshotConflict
+            : FinancePortfolioV3CommitFailure.writerFailed,
+        errors: writeResult.errors,
+        writeResult: writeResult,
+      );
+    }
+    _balances
+      ..clear()
+      ..addAll(candidate.balances);
+    _funds
+      ..clear()
+      ..addAll(candidate.funds);
+    _assetMovements
+      ..clear()
+      ..addAll(candidate.assetMovements);
+    _transactions
+      ..clear()
+      ..addAll(candidate.transactions);
+    _fundTransactions
+      ..clear()
+      ..addAll(candidate.fundTransactions);
+    _linkedItems
+      ..clear()
+      ..addAll(candidate.linkedItems);
+    _portfolioReady = false;
+    _portfolioV3Authoritative = true;
+    _markChanged();
+    return FinancePortfolioV3CommitResult.success(writeResult);
+  }
+
   Future<bool> loadSavedPortfolioV3() =>
       _runObservableLoad(_loadSavedPortfolioV3);
 
@@ -2668,26 +2744,25 @@ class FinanceStore extends ChangeNotifier {
               persistentStressDays: oldBalance.persistentStressDays,
               recoveryDays: oldBalance.recoveryDays,
             );
-            final candidateTransactions = List<FinanceTransaction>.of(
-              _transactions,
-            )..add(
-                FinanceTransaction(
-                  id: 'transaction_${DateTime.now().microsecondsSinceEpoch}',
-                  balanceId: oldBalance.balanceId,
-                  amount: amount,
-                  date: DateTime.now(),
-                  isIncome: item.isIncome,
-                  subject: item.subject,
-                  description: item.name,
-                  type: item.isIncome
-                      ? FinanceTransactionType.income
-                      : FinanceTransactionType.expense,
-                  origin: FinanceTransactionOrigin.recurringItem,
-                  recurringItemId: item.id,
-                  economicFactId: economicFactIdGenerator.next(),
-                  notes: item.description,
-                ),
-              );
+            final candidateTransactions =
+                List<FinanceTransaction>.of(_transactions)..add(
+                  FinanceTransaction(
+                    id: 'transaction_${DateTime.now().microsecondsSinceEpoch}',
+                    balanceId: oldBalance.balanceId,
+                    amount: amount,
+                    date: DateTime.now(),
+                    isIncome: item.isIncome,
+                    subject: item.subject,
+                    description: item.name,
+                    type: item.isIncome
+                        ? FinanceTransactionType.income
+                        : FinanceTransactionType.expense,
+                    origin: FinanceTransactionOrigin.recurringItem,
+                    recurringItemId: item.id,
+                    economicFactId: economicFactIdGenerator.next(),
+                    notes: item.description,
+                  ),
+                );
 
             await _commitBalanceAndTransactionsCandidate(
               candidateBalances: candidateBalances,

@@ -2,6 +2,7 @@ import 'economic_operation_metadata.dart';
 import 'expense_replacement_metadata.dart';
 import 'finance_recurring_item.dart';
 import 'balance_posting_mode.dart';
+import 'composite_correction_metadata.dart';
 
 enum FinanceTransactionType { income, expense, transfer }
 
@@ -33,6 +34,7 @@ class FinanceTransaction {
   final EconomicOperationMetadata? operationMetadata;
   final ExpenseReplacementMetadata? expenseReplacementMetadata;
   final BalancePostingMode balancePostingMode;
+  final CompositeCorrectionMetadata? compositeCorrectionMetadata;
 
   const FinanceTransaction({
     required this.id,
@@ -50,6 +52,7 @@ class FinanceTransaction {
     this.operationMetadata,
     this.expenseReplacementMetadata,
     this.balancePostingMode = BalancePostingMode.affectsCurrentBalance,
+    this.compositeCorrectionMetadata,
   });
 
   Map<String, dynamic> toJson() {
@@ -70,6 +73,8 @@ class FinanceTransaction {
       if (expenseReplacementMetadata != null)
         'expenseReplacementMetadata': expenseReplacementMetadata!.toJson(),
       'balancePostingMode': balancePostingMode.name,
+      if (compositeCorrectionMetadata != null)
+        'compositeCorrectionMetadata': compositeCorrectionMetadata!.toJson(),
     };
   }
 
@@ -113,6 +118,13 @@ class FinanceTransaction {
       balancePostingMode: balancePostingModeFromJson(
         json['balancePostingMode'],
       ),
+      compositeCorrectionMetadata: json['compositeCorrectionMetadata'] == null
+          ? null
+          : CompositeCorrectionMetadata.fromJson(
+              Map<String, dynamic>.from(
+                json['compositeCorrectionMetadata'] as Map,
+              ),
+            ),
     );
   }
 }

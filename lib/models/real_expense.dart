@@ -1,6 +1,7 @@
 import 'economic_operation_metadata.dart';
 import 'finance_recurring_item.dart';
 import 'balance_posting_mode.dart';
+import 'composite_correction_metadata.dart';
 
 class RealExpense {
   final String id;
@@ -29,6 +30,7 @@ class RealExpense {
   final String? economicFactId;
   final EconomicOperationMetadata? operationMetadata;
   final BalancePostingMode balancePostingMode;
+  final CompositeCorrectionMetadata? compositeCorrectionMetadata;
 
   const RealExpense({
     required this.id,
@@ -46,6 +48,7 @@ class RealExpense {
     this.economicFactId,
     this.operationMetadata,
     this.balancePostingMode = BalancePostingMode.affectsCurrentBalance,
+    this.compositeCorrectionMetadata,
   });
 
   String get displayAmount => "€${amount.toStringAsFixed(2)}";
@@ -67,6 +70,8 @@ class RealExpense {
       'economicFactId': economicFactId,
       'operationMetadata': operationMetadata?.toJson(),
       'balancePostingMode': balancePostingMode.name,
+      if (compositeCorrectionMetadata != null)
+        'compositeCorrectionMetadata': compositeCorrectionMetadata!.toJson(),
     };
   }
 
@@ -95,6 +100,13 @@ class RealExpense {
       balancePostingMode: balancePostingModeFromJson(
         json['balancePostingMode'],
       ),
+      compositeCorrectionMetadata: json['compositeCorrectionMetadata'] == null
+          ? null
+          : CompositeCorrectionMetadata.fromJson(
+              Map<String, dynamic>.from(
+                json['compositeCorrectionMetadata'] as Map,
+              ),
+            ),
     );
   }
 }

@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import '../../models/documentary_obligation.dart';
+import '../../models/finance_transaction.dart';
+import '../../models/economic_operation_metadata.dart';
 import '../../models/expected_expense_occurrence.dart';
 import '../../models/expense_relationship.dart';
 import '../../stores/finance_store.dart';
@@ -30,32 +32,30 @@ class DocumentaryObligationCoordinator {
       return DocumentaryObligationOutcome.conflict;
     }
     final current = financeStore.documentaryObligationAggregate;
-    final expectedIdentity = candidate.relationshipId != null &&
-            candidate.cycleSequence != null
+    final expectedIdentity =
+        candidate.relationshipId != null && candidate.cycleSequence != null
         ? '${candidate.relationshipId}#${candidate.cycleSequence}'
         : null;
     final expected = expectedIdentity == null
         ? <ExpectedDocumentCycle>[]
         : current.expectedDocuments
-            .where((item) => item.identity == expectedIdentity)
-            .toList();
+              .where((item) => item.identity == expectedIdentity)
+              .toList();
     if (expected.length > 1) return DocumentaryObligationOutcome.conflict;
     if (expected.isNotEmpty &&
         expected.single.materializedObligationId != null &&
         expected.single.materializedObligationId != candidate.obligationId) {
       return DocumentaryObligationOutcome.conflict;
     }
-    final markerComplete = expected.isEmpty ||
+    final markerComplete =
+        expected.isEmpty ||
         expected.single.materializedObligationId == candidate.obligationId;
     if (matches.isNotEmpty && markerComplete) {
       return DocumentaryObligationOutcome.unchanged;
     }
     await financeStore.saveDocumentaryObligationAggregate(
       DocumentaryObligationAggregate(
-        obligations: [
-          ...current.obligations,
-          if (matches.isEmpty) candidate,
-        ],
+        obligations: [...current.obligations, if (matches.isEmpty) candidate],
         expectedDocuments: current.expectedDocuments
             .map(
               (item) => item.identity == expectedIdentity
@@ -129,7 +129,10 @@ class DocumentaryObligationCoordinator {
         .where((item) => item.identity == nextExpectedDocument.identity)
         .toList();
     if (expectedMatches.isNotEmpty &&
-        !_same(expectedMatches.single.toJson(), nextExpectedDocument.toJson())) {
+        !_same(
+          expectedMatches.single.toJson(),
+          nextExpectedDocument.toJson(),
+        )) {
       return DocumentaryObligationOutcome.conflict;
     }
     final currentCycleIdentity =
@@ -139,10 +142,12 @@ class DocumentaryObligationCoordinator {
         .toList();
     if (currentCycle.isNotEmpty &&
         currentCycle.single.materializedObligationId != null &&
-        currentCycle.single.materializedObligationId != obligation.obligationId) {
+        currentCycle.single.materializedObligationId !=
+            obligation.obligationId) {
       return DocumentaryObligationOutcome.conflict;
     }
-    final currentMarkerComplete = currentCycle.isEmpty ||
+    final currentMarkerComplete =
+        currentCycle.isEmpty ||
         currentCycle.single.materializedObligationId == obligation.obligationId;
     if (relationships.isEmpty || seedMatches.isEmpty) {
       await financeStore.saveExpectedExpenseAggregate(
@@ -151,10 +156,7 @@ class DocumentaryObligationCoordinator {
             ...economic.relationships,
             if (relationships.isEmpty) relationship,
           ],
-          occurrences: [
-            ...economic.occurrences,
-            if (seedMatches.isEmpty) seed,
-          ],
+          occurrences: [...economic.occurrences, if (seedMatches.isEmpty) seed],
         ),
       );
     }
@@ -190,7 +192,8 @@ class DocumentaryObligationCoordinator {
     final current = _find(obligationId);
     if (current == null) return DocumentaryObligationOutcome.missing;
     if (current.selectedOptionId == optionId ||
-        (current.options.length == 1 && current.options.single.optionId == optionId)) {
+        (current.options.length == 1 &&
+            current.options.single.optionId == optionId)) {
       return DocumentaryObligationOutcome.unchanged;
     }
     if (current.selectedOptionId != null) {
@@ -240,13 +243,67 @@ class DocumentaryObligationCoordinator {
     if (current == null) return DocumentaryObligationOutcome.missing;
     final option = current.selectedOption;
     if (option == null) return DocumentaryObligationOutcome.invalidState;
-    final matches = option.installments.where((item) => item.installmentId == installmentId).toList();
+    final matches = option.installments
+        .where((item) => item.installmentId == installmentId)
+        .toList();
     if (matches.length != 1) return DocumentaryObligationOutcome.missing;
     final installment = matches.single;
-    if (installment.fulfilledEconomicFactId == economicFactId) return DocumentaryObligationOutcome.unchanged;
-    if (installment.fulfilledEconomicFactId != null) return DocumentaryObligationOutcome.conflict;
-    await _replace(current.replaceSelectedInstallment(installment.fulfill(economicFactId)));
+    if (installment.fulfilledEconomicFactId == economicFactId)
+      return DocumentaryObligationOutcome.unchanged;
+    if (installment.fulfilledEconomicFactId != null)
+      return DocumentaryObligationOutcome.conflict;
+    await _replace(
+      current.replaceSelectedInstallment(installment.fulfill(economicFactId)),
+    );
     return DocumentaryObligationOutcome.applied;
+  }
+
+  Future<DocumentaryObligationOutcome> replaceInstallmentFulfillmentVerified({
+    required String obligationId,
+    required String installmentId,
+    required String expectedOldEconomicFactId,
+    required FinanceTransaction replacementMain,
+    required String operationId,
+  }) async {
+    final metadata = replacementMain.operationMetadata;
+    if (replacementMain.economicFactId == null ||
+        metadata == null ||
+        metadata.role != OperationRole.main ||
+        metadata.context != OperationContext.utilityBill ||
+        metadata.operationId != operationId ||
+        metadata.documentaryObligationId != obligationId) {
+      return DocumentaryObligationOutcome.invalidState;
+    }
+    final current = _find(obligationId);
+    if (current == null) return DocumentaryObligationOutcome.missing;
+    final option = current.selectedOption;
+    if (option == null) return DocumentaryObligationOutcome.invalidState;
+    final matches = option.installments
+        .where((item) => item.installmentId == installmentId)
+        .toList();
+    if (matches.length != 1) return DocumentaryObligationOutcome.missing;
+    final installment = matches.single;
+    final replacementId = replacementMain.economicFactId!;
+    if (installment.fulfilledEconomicFactId == replacementId) {
+      return DocumentaryObligationOutcome.unchanged;
+    }
+    if (installment.fulfilledEconomicFactId != expectedOldEconomicFactId) {
+      return DocumentaryObligationOutcome.conflict;
+    }
+    final replacement = DocumentaryInstallment(
+      installmentId: installment.installmentId,
+      amount: installment.amount,
+      dueDate: installment.dueDate,
+      fulfilledEconomicFactId: replacementId,
+    );
+    await _replace(current.replaceSelectedInstallment(replacement));
+    final reloaded = _find(obligationId)?.selectedOption?.installments
+        .where((item) => item.installmentId == installmentId)
+        .toList();
+    return reloaded?.length == 1 &&
+            reloaded!.single.fulfilledEconomicFactId == replacementId
+        ? DocumentaryObligationOutcome.applied
+        : DocumentaryObligationOutcome.conflict;
   }
 
   /// Materializes a formerly non-economic contingency. Expected Expenses are
@@ -308,13 +365,17 @@ class DocumentaryObligationCoordinator {
   }
 
   DocumentaryObligation? _find(String id) => financeStore
-      .documentaryObligationAggregate.obligations
+      .documentaryObligationAggregate
+      .obligations
       .where((item) => item.obligationId == id)
       .firstOrNull;
 
   Future<void> _replace(DocumentaryObligation candidate) async {
     final values = financeStore.documentaryObligationAggregate.obligations
-        .map((item) => item.obligationId == candidate.obligationId ? candidate : item)
+        .map(
+          (item) =>
+              item.obligationId == candidate.obligationId ? candidate : item,
+        )
         .toList();
     await _replaceAll(values);
   }

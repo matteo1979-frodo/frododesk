@@ -369,7 +369,9 @@ class CompositeEconomicOperationCoordinator {
     return left.operationId == right.operationId &&
         left.role == right.role &&
         left.context == right.context &&
-        left.accessoryCostType == right.accessoryCostType;
+        left.accessoryCostType == right.accessoryCostType &&
+        left.documentaryObligationId == right.documentaryObligationId &&
+        left.documentHolder == right.documentHolder;
   }
 }
 

@@ -36,14 +36,19 @@ class FinancePortfolioV3WriteResult {
 
 typedef FinancePortfolioV3VerifiedSave =
     Future<PersistenceWriteVerification> Function(String key, String value);
+typedef FinancePortfolioV3Load = Future<String?> Function(String key);
 
 class FinancePortfolioV3Writer {
   static const String storageKey = 'finance_portfolio_v3';
 
   final FinancePortfolioV3VerifiedSave _saveVerified;
+  final FinancePortfolioV3Load _load;
 
-  FinancePortfolioV3Writer({FinancePortfolioV3VerifiedSave? saveVerified})
-    : _saveVerified = saveVerified ?? PersistenceStore.saveStringVerified;
+  FinancePortfolioV3Writer({
+    FinancePortfolioV3VerifiedSave? saveVerified,
+    FinancePortfolioV3Load? load,
+  }) : _saveVerified = saveVerified ?? PersistenceStore.saveStringVerified,
+       _load = load ?? PersistenceStore.loadString;
 
   Future<FinancePortfolioV3WriteResult> write(
     FinancePortfolioV3 portfolio,
@@ -87,5 +92,26 @@ class FinancePortfolioV3Writer {
     }
 
     return FinancePortfolioV3WriteResult.success();
+  }
+
+  Future<FinancePortfolioV3WriteResult> writeIfCurrent({
+    required Map<String, dynamic> expectedCurrent,
+    required FinancePortfolioV3 candidate,
+  }) async {
+    try {
+      final persisted = await _load(storageKey);
+      if (persisted == null || persisted != jsonEncode(expectedCurrent)) {
+        return FinancePortfolioV3WriteResult.failed(
+          FinancePortfolioV3WriteFailure.invalidPayload,
+          const ['Portfolio V3 persisted snapshot changed'],
+        );
+      }
+    } catch (error) {
+      return FinancePortfolioV3WriteResult.failed(
+        FinancePortfolioV3WriteFailure.persistenceError,
+        ['Portfolio V3 snapshot read failed: $error'],
+      );
+    }
+    return write(candidate);
   }
 }

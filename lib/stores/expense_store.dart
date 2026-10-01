@@ -21,12 +21,33 @@ enum VerifiedExpenseRecoveryStatus {
   writerFailed,
 }
 
+enum VerifiedExpenseSetReplacementStatus {
+  replaced,
+  alreadyCoherent,
+  conflict,
+  writerFailed,
+}
+
+class VerifiedExpenseSetReplacementResult {
+  final VerifiedExpenseSetReplacementStatus status;
+  final List<String> errors;
+  VerifiedExpenseSetReplacementResult(
+    this.status, [
+    Iterable<String> errors = const [],
+  ]) : errors = List.unmodifiable(errors);
+  bool get isSuccess =>
+      status == VerifiedExpenseSetReplacementStatus.replaced ||
+      status == VerifiedExpenseSetReplacementStatus.alreadyCoherent;
+}
+
 class VerifiedExpenseRecoveryResult {
   final VerifiedExpenseRecoveryStatus status;
   final List<String> errors;
 
-  VerifiedExpenseRecoveryResult(this.status, [Iterable<String> errors = const []])
-    : errors = List.unmodifiable(errors);
+  VerifiedExpenseRecoveryResult(
+    this.status, [
+    Iterable<String> errors = const [],
+  ]) : errors = List.unmodifiable(errors);
 
   bool get isSuccess =>
       status == VerifiedExpenseRecoveryStatus.committed ||
@@ -326,6 +347,103 @@ class ExpenseStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<VerifiedExpenseSetReplacementResult> replaceOperationExpensesVerified({
+    required String operationId,
+    required List<RealExpense> expectedOriginal,
+    required List<RealExpense> replacements,
+  }) async {
+    _requireLoaded();
+    if (operationId.trim().isEmpty ||
+        expectedOriginal.isEmpty ||
+        replacements.isEmpty) {
+      return VerifiedExpenseSetReplacementResult(
+        VerifiedExpenseSetReplacementStatus.conflict,
+        const ['Composite expense replacement requires complete snapshots'],
+      );
+    }
+    bool belongs(RealExpense item) =>
+        item.operationMetadata?.operationId == operationId;
+    if (expectedOriginal.any((item) => !belongs(item)) ||
+        replacements.any((item) => !belongs(item))) {
+      return VerifiedExpenseSetReplacementResult(
+        VerifiedExpenseSetReplacementStatus.conflict,
+        const ['Composite expense set contains another operation'],
+      );
+    }
+    final currentSet = _expenses.where(belongs).toList();
+    final originalJson = _serialize(expectedOriginal);
+    final replacementJson = _serialize(replacements);
+    final currentJson = _serialize(currentSet);
+    if (currentJson == replacementJson) {
+      return VerifiedExpenseSetReplacementResult(
+        VerifiedExpenseSetReplacementStatus.alreadyCoherent,
+      );
+    }
+    if (currentJson != originalJson) {
+      return VerifiedExpenseSetReplacementResult(
+        VerifiedExpenseSetReplacementStatus.conflict,
+        const [
+          'Active composite Expense set differs from the expected snapshot',
+        ],
+      );
+    }
+    final ids = <String>{};
+    final facts = <String>{};
+    final candidate = [
+      for (final item in _expenses)
+        if (!belongs(item)) item,
+      ...replacements,
+    ];
+    for (final item in candidate) {
+      if (!ids.add(item.id)) {
+        return VerifiedExpenseSetReplacementResult(
+          VerifiedExpenseSetReplacementStatus.conflict,
+          const ['Duplicate RealExpense id in replacement candidate'],
+        );
+      }
+      final fact = item.economicFactId;
+      if (fact != null && !facts.add(fact)) {
+        return VerifiedExpenseSetReplacementResult(
+          VerifiedExpenseSetReplacementStatus.conflict,
+          const [
+            'Duplicate RealExpense economicFactId in replacement candidate',
+          ],
+        );
+      }
+    }
+    final serialized = _serialize(candidate);
+    try {
+      final persisted = _decodeExpenses(await _load(_storageKey));
+      if (_serialize(persisted) != _serialize(_expenses)) {
+        return VerifiedExpenseSetReplacementResult(
+          VerifiedExpenseSetReplacementStatus.conflict,
+          const ['Persisted Expense snapshot differs from memory'],
+        );
+      }
+      final verification = await _saveVerified(_storageKey, serialized);
+      if (!verification.backendAccepted ||
+          verification.readBack == null ||
+          !verification.matches(serialized)) {
+        return VerifiedExpenseSetReplacementResult(
+          VerifiedExpenseSetReplacementStatus.writerFailed,
+          const ['Composite Expense verified write failed'],
+        );
+      }
+    } catch (error) {
+      return VerifiedExpenseSetReplacementResult(
+        VerifiedExpenseSetReplacementStatus.writerFailed,
+        ['Composite Expense persistence failed: $error'],
+      );
+    }
+    _expenses
+      ..clear()
+      ..addAll(candidate);
+    notifyListeners();
+    return VerifiedExpenseSetReplacementResult(
+      VerifiedExpenseSetReplacementStatus.replaced,
+    );
+  }
+
   Future<VerifiedExpenseRecoveryResult> commitRecoveryCandidateVerified({
     required List<RealExpense> expectedCurrent,
     required List<RealExpense> candidate,
@@ -419,9 +537,8 @@ class ExpenseStore extends ChangeNotifier {
     }
     return decoded
         .map(
-          (item) => RealExpense.fromJson(
-            Map<String, dynamic>.from(item as Map),
-          ),
+          (item) =>
+              RealExpense.fromJson(Map<String, dynamic>.from(item as Map)),
         )
         .toList(growable: false);
   }
@@ -442,5 +559,7 @@ class ExpenseStore extends ChangeNotifier {
       left.economicFactId == right.economicFactId &&
       left.balancePostingMode == right.balancePostingMode &&
       jsonEncode(left.operationMetadata?.toJson()) ==
-          jsonEncode(right.operationMetadata?.toJson());
+          jsonEncode(right.operationMetadata?.toJson()) &&
+      jsonEncode(left.compositeCorrectionMetadata?.toJson()) ==
+          jsonEncode(right.compositeCorrectionMetadata?.toJson());
 }
