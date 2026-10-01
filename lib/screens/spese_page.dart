@@ -12,6 +12,7 @@ import '../models/frodo_observation.dart';
 import '../stores/expense_category_store.dart';
 import '../stores/cash_wallet_store.dart';
 import '../logic/spese/spese_coordinator.dart';
+import '../logic/spese/real_expense_history_reader.dart';
 import '../logic/spese/builders/spese_command_builder.dart';
 import '../logic/spese/spese_mutation_coordinator.dart';
 import '../logic/spese/expense_replacement_coordinator.dart';
@@ -536,6 +537,35 @@ class _SpesePageState extends State<SpesePage> {
                       ),
                     ),
                     const SizedBox(height: 6),
+                    _MovementChoiceTile(
+                      key: const Key('real-expense-history-open'),
+                      icon: Icons.history_rounded,
+                      title: 'Storico spese',
+                      subtitle: 'Consulta i movimenti per anno e mese',
+                      color: const Color(0xFFFFB74D),
+                      onTap: () async {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => _RealExpenseHistoryPage(
+                              financeStore: widget.financeStore,
+                              expenseStore: widget.expenseStore,
+                              history: const RealExpenseHistoryReader().read(
+                                widget.expenseStore.all,
+                              ),
+                              snapshot: snapshot,
+                              coordinator: coordinator,
+                              mutationCoordinator: mutationCoordinator,
+                              replacementPersistence:
+                                  expenseReplacementPersistence,
+                              replacementCoordinator:
+                                  expenseReplacementCoordinator,
+                            ),
+                          ),
+                        );
+                        await _refreshSnapshot();
+                      },
+                    ),
+                    const SizedBox(height: 10),
                     if (currentMonthExpenses.isNotEmpty)
                       _MovementChoiceTile(
                         icon: Icons.history_rounded,
@@ -2900,6 +2930,7 @@ class _MovementChoiceTile extends StatelessWidget {
   final VoidCallback? onTap;
 
   const _MovementChoiceTile({
+    super.key,
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -2958,6 +2989,143 @@ String _formatMovementDate(DateTime date) {
   final minute = date.minute.toString().padLeft(2, '0');
 
   return "$day/$month/$year $hour:$minute";
+}
+
+class _RealExpenseHistoryPage extends StatefulWidget {
+  final FinanceStore financeStore;
+  final ExpenseStore expenseStore;
+  final List<RealExpenseHistoryYear> history;
+  final SpeseSnapshot snapshot;
+  final SpeseCoordinator coordinator;
+  final SpeseMutationCoordinator mutationCoordinator;
+  final ExpenseReplacementPersistence replacementPersistence;
+  final ExpenseReplacementCoordinator replacementCoordinator;
+
+  const _RealExpenseHistoryPage({
+    required this.financeStore,
+    required this.expenseStore,
+    required this.history,
+    required this.snapshot,
+    required this.coordinator,
+    required this.mutationCoordinator,
+    required this.replacementPersistence,
+    required this.replacementCoordinator,
+  });
+
+  @override
+  State<_RealExpenseHistoryPage> createState() =>
+      _RealExpenseHistoryPageState();
+}
+
+class _RealExpenseHistoryPageState extends State<_RealExpenseHistoryPage> {
+  late List<RealExpenseHistoryYear> _history;
+  int? _selectedYear;
+
+  @override
+  void initState() {
+    super.initState();
+    _history = widget.history;
+    _selectedYear = _history.firstOrNull?.year;
+  }
+
+  RealExpenseHistoryYear? get _selectedHistory => _history
+      .where((item) => item.year == _selectedYear)
+      .firstOrNull;
+
+  Future<void> _openMonth(RealExpenseHistoryMonth month) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _ExpenseMonthHistoryPage(
+          financeStore: widget.financeStore,
+          expenseStore: widget.expenseStore,
+          expenses: month.expenses,
+          monthTitle: _monthLabel(DateTime(month.year, month.month)),
+          snapshot: widget.snapshot,
+          coordinator: widget.coordinator,
+          mutationCoordinator: widget.mutationCoordinator,
+          replacementPersistence: widget.replacementPersistence,
+          replacementCoordinator: widget.replacementCoordinator,
+        ),
+      ),
+    );
+    if (!mounted) return;
+    final updated = const RealExpenseHistoryReader().read(
+      widget.expenseStore.all,
+    );
+    setState(() {
+      _history = updated;
+      if (!_history.any((item) => item.year == _selectedYear)) {
+        _selectedYear = _history.firstOrNull?.year;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: const Color(0xFF101820),
+    appBar: AppBar(
+      title: const Text('Storico spese'),
+      foregroundColor: Colors.white,
+      backgroundColor: Colors.black.withValues(alpha: 0.08),
+    ),
+    body: _SpeseBackground(
+      child: ListView(
+        padding: const EdgeInsets.all(18),
+        children: [
+          if (_history.isEmpty)
+            const _SpeseGlassCard(
+              key: Key('real-expense-history-empty'),
+              child: Text(
+                'Non ci sono ancora spese nello storico.',
+                style: TextStyle(color: Colors.white70),
+              ),
+            )
+          else ...[
+            DropdownButtonFormField<int>(
+              key: const Key('real-expense-history-year'),
+              initialValue: _selectedYear,
+              dropdownColor: const Color(0xFF1B2730),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+              decoration: const InputDecoration(
+                labelText: 'Anno',
+                labelStyle: TextStyle(color: Colors.white70),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white38),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFFFFB74D)),
+                ),
+              ),
+              items: [
+                for (final year in _history)
+                  DropdownMenuItem(
+                    value: year.year,
+                    child: Text('${year.year}'),
+                  ),
+              ],
+              onChanged: (year) => setState(() => _selectedYear = year),
+            ),
+            const SizedBox(height: 18),
+            for (final month in _selectedHistory!.months) ...[
+              _FutureExpenseNavigationTile(
+                key: Key(
+                  'real-expense-history-month-${month.year}-${month.month}',
+                ),
+                icon: Icons.calendar_month_rounded,
+                title: _monthLabel(DateTime(month.year, month.month)),
+                count: month.expenses.length,
+                onTap: () => _openMonth(month),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ],
+        ],
+      ),
+    ),
+  );
 }
 
 class _ExpenseMonthHistoryPage extends StatelessWidget {
