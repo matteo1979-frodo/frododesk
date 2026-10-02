@@ -13,8 +13,14 @@ import '../utils/euro_formatter.dart';
 class IncomePage extends StatefulWidget {
   final FinanceStore financeStore;
   final DateTime? referenceTime;
+  final bool startWithCreate;
 
-  const IncomePage({super.key, required this.financeStore, this.referenceTime});
+  const IncomePage({
+    super.key,
+    required this.financeStore,
+    this.referenceTime,
+    this.startWithCreate = false,
+  });
 
   @override
   State<IncomePage> createState() => _IncomePageState();
@@ -23,6 +29,16 @@ class IncomePage extends StatefulWidget {
 class _IncomePageState extends State<IncomePage> {
   IncomeLifecycleCoordinator get coordinator =>
       IncomeLifecycleCoordinator(financeStore: widget.financeStore);
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.startWithCreate) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _addRelationship();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -558,6 +574,7 @@ class _RelationshipDialogState extends State<_RelationshipDialog> {
             ),
             DropdownButtonFormField<IncomeCategoryKind>(
               initialValue: category,
+              isExpanded: true,
               decoration: const InputDecoration(labelText: 'Categoria'),
               items: IncomeCategoryKind.values
                   .where(

@@ -258,68 +258,45 @@ class _FinanceScreenState extends State<FinanceScreen> {
   }
 
   Widget _buildModernFinanceActions() {
-    return Column(
+    return Row(
       children: [
-        SizedBox(
-          width: double.infinity,
+        Expanded(
           child: OutlinedButton.icon(
             onPressed: () async {
               await Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => IncomePage(
-                    financeStore: financeStore,
-                    referenceTime: widget.forecastReferenceTime,
+                  builder: (_) => FinanceFundsPage(
+                    coordinator: FinanceFundsCoordinator(
+                      financeStore: financeStore,
+                    ),
                   ),
                 ),
               );
               if (mounted) setState(() {});
             },
-            icon: const Icon(Icons.arrow_downward_rounded),
-            label: const Text('Entrate'),
+            icon: const Icon(Icons.savings_rounded),
+            label: const Text('Gestisci fondi'),
           ),
         ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () async {
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => FinanceFundsPage(
-                        coordinator: FinanceFundsCoordinator(
-                          financeStore: financeStore,
-                        ),
-                      ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => FinanceLedgerPage(
+                    coordinator: FinanceLedgerPresentationCoordinator(
+                      financeStore: financeStore,
+                      expenseStore: widget.expenseStore,
+                      cashWalletStore: widget.cashWalletStore,
                     ),
-                  );
-                  if (mounted) setState(() {});
-                },
-                icon: const Icon(Icons.savings_rounded),
-                label: const Text('Gestisci fondi'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => FinanceLedgerPage(
-                        coordinator: FinanceLedgerPresentationCoordinator(
-                          financeStore: financeStore,
-                          expenseStore: widget.expenseStore,
-                          cashWalletStore: widget.cashWalletStore,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.receipt_long_rounded),
-                label: const Text('Movimenti della famiglia'),
-              ),
-            ),
-          ],
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.receipt_long_rounded),
+            label: const Text('Movimenti della famiglia'),
+          ),
         ),
       ],
     );
@@ -358,16 +335,20 @@ class _FinanceScreenState extends State<FinanceScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: _FinanceGlassCard(
-            child: _buildIncomeForecastPreviewBlock(
-              title: "Entrate previste",
-              subtitle:
-                  "${incomeItems.length} voci • ${EuroFormatter.format(incomeForecast.totalForMonth(month))}",
-              icon: Icons.arrow_downward_rounded,
-              color: const Color(0xFF43A047),
-              items: incomeItems,
-              addLabel: "Aggiungi entrata",
-              onAdd: _openIncomePage,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(24),
+            onTap: _openIncomePage,
+            child: _FinanceGlassCard(
+              child: _buildIncomeForecastPreviewBlock(
+                title: "Entrate previste",
+                subtitle:
+                    "${incomeItems.length} voci • ${EuroFormatter.format(incomeForecast.totalForMonth(month))}",
+                icon: Icons.arrow_downward_rounded,
+                color: const Color(0xFF43A047),
+                items: incomeItems,
+                addLabel: "Aggiungi entrata",
+                onAdd: () => _openIncomePage(startWithCreate: true),
+              ),
             ),
           ),
         ),
@@ -390,12 +371,13 @@ class _FinanceScreenState extends State<FinanceScreen> {
     );
   }
 
-  Future<void> _openIncomePage() async {
+  Future<void> _openIncomePage({bool startWithCreate = false}) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => IncomePage(
           financeStore: financeStore,
           referenceTime: widget.forecastReferenceTime,
+          startWithCreate: startWithCreate,
         ),
       ),
     );
