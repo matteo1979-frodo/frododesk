@@ -6,7 +6,9 @@ import 'package:intl/intl.dart';
 import '../models/finance_category_template.dart';
 import '../models/finance_month_projection.dart';
 import '../models/finance_recurring_item.dart';
+import '../models/finance_forecast_presentation.dart';
 import '../models/finite_financial_plan.dart';
+import '../models/projected_expense_cycle.dart';
 import '../models/finite_financial_plan_installment_confirmation.dart';
 import '../models/frodo_observation.dart';
 import '../stores/finance_store.dart';
@@ -25,6 +27,7 @@ import '../logic/finance/finance_funds_coordinator.dart';
 import '../logic/finance/finite_financial_plan_installment_confirmation_coordinator.dart';
 import '../logic/finance/finance_ledger_presentation_coordinator.dart';
 import '../logic/finance/finance_recurring_coordinator.dart';
+import '../logic/finance/finance_forecast_reader.dart';
 import '../models/finance_recurring_draft.dart';
 import '../utils/euro_formatter.dart';
 
@@ -32,12 +35,14 @@ class FinanceScreen extends StatefulWidget {
   final FinanceStore financeStore;
   final ExpenseStore expenseStore;
   final CashWalletStore cashWalletStore;
+  final DateTime? forecastReferenceTime;
 
   const FinanceScreen({
     super.key,
     required this.financeStore,
     required this.expenseStore,
     required this.cashWalletStore,
+    this.forecastReferenceTime,
   });
 
   @override
@@ -300,11 +305,25 @@ class _FinanceScreenState extends State<FinanceScreen> {
             .toList()
           ..sort((a, b) => a.nextDueDate.compareTo(b.nextDueDate));
 
-    final expenseItems =
-        financeStore.recurringItems
-            .where((item) => !item.isIncome && !item.confirmed)
-            .toList()
-          ..sort((a, b) => a.nextDueDate.compareTo(b.nextDueDate));
+    final referenceTime = widget.forecastReferenceTime ?? DateTime.now();
+    final month = DateTime(referenceTime.year, referenceTime.month);
+    final forecast = const FinanceForecastReader().read(
+      expectedExpenses: financeStore.expectedExpenseAggregate,
+      documentaryObligations: financeStore.documentaryObligationAggregate,
+      finitePlans: financeStore.finiteFinancialPlans,
+      referenceTime: referenceTime,
+      projectionHorizon: ExpenseProjectionHorizon(
+        start: month,
+        end: DateTime(referenceTime.year + 1, 12, 31, 23, 59, 59, 999, 999),
+      ),
+    );
+    final expenseItems = forecast.economicItemsForMonth(month).toList()
+      ..sort((a, b) {
+        final date = (a.economicStart ?? month).compareTo(
+          b.economicStart ?? month,
+        );
+        return date != 0 ? date : a.identity.compareTo(b.identity);
+      });
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -330,23 +349,138 @@ class _FinanceScreenState extends State<FinanceScreen> {
         const SizedBox(width: 14),
         Expanded(
           child: _FinanceGlassCard(
-            child: _buildRecurringPreviewBlock(
+            child: _buildForecastPreviewBlock(
               title: "Uscite previste",
               subtitle:
-                  "${expenseItems.length} voci • ${EuroFormatter.format(financeStore.totalRecurringAmount(expenseItems))}",
+                  "${expenseItems.length} voci • ${EuroFormatter.format(forecast.economicOutflowForMonth(month))}",
               icon: Icons.arrow_upward_rounded,
               color: const Color(0xFFE53935),
               items: expenseItems,
               addLabel: "Aggiungi uscita",
               onAdd: () => _showAddRecurringItemDialog(isIncome: false),
-              onOpenAll: () => _showRecurringListDialog(
-                title: "Uscite previste",
-                isIncome: false,
-              ),
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildForecastPreviewBlock({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required List<FinanceForecastPresentation> items,
+    required String addLabel,
+    required VoidCallback onAdd,
+  }) {
+    final previewItems = items.take(4);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.16),
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Icon(icon, color: color, size: 21),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.66),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: onAdd,
+            icon: const Icon(Icons.add_rounded),
+            label: Text(addLabel),
+          ),
+        ),
+        const SizedBox(height: 16),
+        if (items.isEmpty)
+          _emptyMini("Nessuna voce inserita.")
+        else
+          ...previewItems.map(_forecastMiniTile),
+      ],
+    );
+  }
+
+  Widget _forecastMiniTile(FinanceForecastPresentation item) {
+    final date = item.economicStart;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.16),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if (date != null)
+                  Text(
+                    _formatDate(date),
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.62),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            EuroFormatter.format(item.amount),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
