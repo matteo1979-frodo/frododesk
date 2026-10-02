@@ -7,6 +7,7 @@ import '../models/finance_category_template.dart';
 import '../models/finance_month_projection.dart';
 import '../models/finance_recurring_item.dart';
 import '../models/finance_forecast_presentation.dart';
+import '../models/income_forecast_presentation.dart';
 import '../models/finite_financial_plan.dart';
 import '../models/projected_expense_cycle.dart';
 import '../models/finite_financial_plan_installment_confirmation.dart';
@@ -28,8 +29,11 @@ import '../logic/finance/finite_financial_plan_installment_confirmation_coordina
 import '../logic/finance/finance_ledger_presentation_coordinator.dart';
 import '../logic/finance/finance_recurring_coordinator.dart';
 import '../logic/finance/finance_forecast_reader.dart';
+import '../logic/finance/income_forecast_reader.dart';
+import '../logic/finance/finance_temporal_projection_reader.dart';
 import '../models/finance_recurring_draft.dart';
 import '../utils/euro_formatter.dart';
+import 'income_page.dart';
 
 class FinanceScreen extends StatefulWidget {
   final FinanceStore financeStore;
@@ -254,57 +258,74 @@ class _FinanceScreenState extends State<FinanceScreen> {
   }
 
   Widget _buildModernFinanceActions() {
-    return Row(
+    return Column(
       children: [
-        Expanded(
+        SizedBox(
+          width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: () async {
               await Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => FinanceFundsPage(
-                    coordinator: FinanceFundsCoordinator(
-                      financeStore: financeStore,
-                    ),
+                  builder: (_) => IncomePage(
+                    financeStore: financeStore,
+                    referenceTime: widget.forecastReferenceTime,
                   ),
                 ),
               );
               if (mounted) setState(() {});
             },
-            icon: const Icon(Icons.savings_rounded),
-            label: const Text('Gestisci fondi'),
+            icon: const Icon(Icons.arrow_downward_rounded),
+            label: const Text('Entrate'),
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => FinanceLedgerPage(
-                    coordinator: FinanceLedgerPresentationCoordinator(
-                      financeStore: financeStore,
-                      expenseStore: widget.expenseStore,
-                      cashWalletStore: widget.cashWalletStore,
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => FinanceFundsPage(
+                        coordinator: FinanceFundsCoordinator(
+                          financeStore: financeStore,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              );
-            },
-            icon: const Icon(Icons.receipt_long_rounded),
-            label: const Text('Movimenti della famiglia'),
-          ),
+                  );
+                  if (mounted) setState(() {});
+                },
+                icon: const Icon(Icons.savings_rounded),
+                label: const Text('Gestisci fondi'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => FinanceLedgerPage(
+                        coordinator: FinanceLedgerPresentationCoordinator(
+                          financeStore: financeStore,
+                          expenseStore: widget.expenseStore,
+                          cashWalletStore: widget.cashWalletStore,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.receipt_long_rounded),
+                label: const Text('Movimenti della famiglia'),
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 
   Widget _buildIncomeExpenseSection() {
-    final incomeItems =
-        financeStore.recurringItems
-            .where((item) => item.isIncome && !item.confirmed)
-            .toList()
-          ..sort((a, b) => a.nextDueDate.compareTo(b.nextDueDate));
-
     final referenceTime = widget.forecastReferenceTime ?? DateTime.now();
     final month = DateTime(referenceTime.year, referenceTime.month);
     final forecast = const FinanceForecastReader().read(
@@ -324,25 +345,29 @@ class _FinanceScreenState extends State<FinanceScreen> {
         );
         return date != 0 ? date : a.identity.compareTo(b.identity);
       });
+    final incomeForecast = const IncomeForecastReader().read(
+      aggregate: financeStore.incomeAggregate,
+      horizon: ExpenseProjectionHorizon(
+        start: month,
+        end: DateTime(referenceTime.year + 1, 12, 31, 23, 59, 59, 999, 999),
+      ),
+    );
+    final incomeItems = incomeForecast.itemsForMonth(month);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: _FinanceGlassCard(
-            child: _buildRecurringPreviewBlock(
+            child: _buildIncomeForecastPreviewBlock(
               title: "Entrate previste",
               subtitle:
-                  "${incomeItems.length} voci • ${EuroFormatter.format(financeStore.totalRecurringAmount(incomeItems))}",
+                  "${incomeItems.length} voci • ${EuroFormatter.format(incomeForecast.totalForMonth(month))}",
               icon: Icons.arrow_downward_rounded,
               color: const Color(0xFF43A047),
               items: incomeItems,
               addLabel: "Aggiungi entrata",
-              onAdd: () => _showAddRecurringItemDialog(isIncome: true),
-              onOpenAll: () => _showRecurringListDialog(
-                title: "Entrate previste",
-                isIncome: true,
-              ),
+              onAdd: _openIncomePage,
             ),
           ),
         ),
@@ -364,6 +389,107 @@ class _FinanceScreenState extends State<FinanceScreen> {
       ],
     );
   }
+
+  Future<void> _openIncomePage() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => IncomePage(
+          financeStore: financeStore,
+          referenceTime: widget.forecastReferenceTime,
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
+  }
+
+  Widget _buildIncomeForecastPreviewBlock({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required List<IncomeForecastPresentation> items,
+    required String addLabel,
+    required VoidCallback onAdd,
+  }) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.16),
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Icon(icon, color: color, size: 21),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.66),
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 18),
+      SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: onAdd,
+          icon: const Icon(Icons.add_rounded),
+          label: Text(addLabel),
+        ),
+      ),
+      const SizedBox(height: 16),
+      if (items.isEmpty)
+        _emptyMini('Nessuna voce inserita.')
+      else
+        ...items
+            .take(4)
+            .map(
+              (item) => ListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                title: Text(
+                  item.label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                subtitle: Text(
+                  _formatDate(item.economicDate),
+                  style: TextStyle(color: Colors.white.withOpacity(.62)),
+                ),
+                trailing: Text(
+                  EuroFormatter.format(item.amount),
+                  style: TextStyle(color: color, fontWeight: FontWeight.w900),
+                ),
+                onTap: _openIncomePage,
+              ),
+            ),
+    ],
+  );
 
   Widget _buildForecastPreviewBlock({
     required String title,
@@ -484,6 +610,8 @@ class _FinanceScreenState extends State<FinanceScreen> {
     );
   }
 
+  // Kept for the still-legacy time sections, but no longer an income source.
+  // ignore: unused_element
   Widget _buildRecurringPreviewBlock({
     required String title,
     required String subtitle,
@@ -1335,9 +1463,108 @@ class _FinanceScreenState extends State<FinanceScreen> {
           const SizedBox(height: 18),
           FinanceYearDashboard(
             financeStore: financeStore,
+            initialYear: widget.forecastReferenceTime?.year,
+            projectionsForYear: _convergentYearProjections,
             onMonthTap: (projection, color) async {
-              await _showMonthDetailDialog(projection, color);
+              await _showConvergentMonthDetailDialog(projection, color);
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<FinanceMonthProjection> _convergentYearProjections(int year) {
+    final horizon = ExpenseProjectionHorizon(
+      start: DateTime(year),
+      end: DateTime(year, 12, 31, 23, 59, 59, 999, 999),
+    );
+    final incomes = const IncomeForecastReader().read(
+      aggregate: financeStore.incomeAggregate,
+      horizon: horizon,
+    );
+    final expenses = const FinanceForecastReader().read(
+      expectedExpenses: financeStore.expectedExpenseAggregate,
+      documentaryObligations: financeStore.documentaryObligationAggregate,
+      finitePlans: financeStore.finiteFinancialPlans,
+      referenceTime: widget.forecastReferenceTime ?? DateTime.now(),
+      projectionHorizon: horizon,
+    );
+    return const FinanceTemporalProjectionReader().readYear(
+      year: year,
+      incomes: incomes,
+      expenses: expenses,
+    );
+  }
+
+  Future<void> _showConvergentMonthDetailDialog(
+    FinanceMonthProjection projection,
+    Color color,
+  ) async {
+    final month = DateTime(projection.month.year, projection.month.month);
+    final horizon = ExpenseProjectionHorizon(
+      start: month,
+      end: DateTime(month.year, month.month + 1, 0, 23, 59, 59, 999, 999),
+    );
+    final incomes = const IncomeForecastReader()
+        .read(aggregate: financeStore.incomeAggregate, horizon: horizon)
+        .itemsForMonth(month);
+    final expenses = const FinanceForecastReader()
+        .read(
+          expectedExpenses: financeStore.expectedExpenseAggregate,
+          documentaryObligations: financeStore.documentaryObligationAggregate,
+          finitePlans: financeStore.finiteFinancialPlans,
+          referenceTime: widget.forecastReferenceTime ?? DateTime.now(),
+          projectionHorizon: horizon,
+        )
+        .economicItemsForMonth(month);
+    await _showFinanceDialog(
+      icon: Icons.calendar_month_rounded,
+      color: color,
+      title: DateFormat('MMMM yyyy', 'it_IT').format(month),
+      subtitle: 'Dettaglio economico del mese',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Entrate ${EuroFormatter.format(projection.expectedIncome)} • Uscite ${EuroFormatter.format(projection.expectedExpenses)}',
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'Entrate',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+          ),
+          if (incomes.isEmpty)
+            const ListTile(
+              title: Text('Nessuna entrata economicamente collocata'),
+            ),
+          ...incomes.map(
+            (item) => ListTile(
+              title: Text(item.label),
+              subtitle: Text(_formatDate(item.economicDate)),
+              trailing: Text(EuroFormatter.format(item.amount)),
+            ),
+          ),
+          const Divider(),
+          const Text(
+            'Uscite',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+          ),
+          if (expenses.isEmpty)
+            const ListTile(
+              title: Text('Nessuna uscita economicamente collocata'),
+            ),
+          ...expenses.map(
+            (item) => ListTile(
+              title: Text(item.label),
+              subtitle: Text(
+                item.economicStart == null
+                    ? 'Data economica non disponibile'
+                    : _formatDate(item.economicStart!),
+              ),
+              trailing: Text(EuroFormatter.format(item.amount)),
+            ),
           ),
         ],
       ),
@@ -1368,6 +1595,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
     );
   }
 
+  // ignore: unused_element
   Future<void> _showMonthDetailDialog(
     FinanceMonthProjection projection,
     Color color,
@@ -1396,6 +1624,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
     if (mounted) setState(() {});
   }
 
+  // ignore: unused_element
   Future<void> _showRecurringListDialog({
     required String title,
     required bool isIncome,
@@ -1677,10 +1906,7 @@ class _FinanceScreenState extends State<FinanceScreen> {
             EuroFormatter.format(item.expectedAmount),
           ),
           if (item.realAmount != null)
-            _detailRow(
-              "Importo reale",
-              EuroFormatter.format(item.realAmount!),
-            ),
+            _detailRow("Importo reale", EuroFormatter.format(item.realAmount!)),
           _detailRow("Ricorrenza", _recurringTypeLabel(item.recurringType)),
           _detailRow("Proprietario", _ownerLabel(item.paymentOwner)),
           _detailRow("Metodo", _paymentMethodLabel(item.paymentMethod)),

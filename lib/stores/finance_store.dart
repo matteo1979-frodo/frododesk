@@ -25,7 +25,9 @@ import '../logic/finance/finance_prepaid_creation.dart';
 import '../logic/finance/expected_expense_persistence.dart';
 import '../logic/finance/documentary_obligation_persistence.dart';
 import '../logic/finance/finite_financial_plan_persistence.dart';
+import '../logic/finance/income_persistence.dart';
 import '../models/finite_financial_plan.dart';
+import '../models/income.dart';
 
 enum FinancePortfolioV3PromotionStatus {
   promoted,
@@ -83,6 +85,7 @@ class FinanceStore extends ChangeNotifier {
   final FiniteFinancialPlanPersistence finiteFinancialPlanPersistence;
   final ExpectedExpensePersistence expectedExpensePersistence;
   final DocumentaryObligationPersistence documentaryObligationPersistence;
+  final IncomePersistence incomePersistence;
 
   FinanceStore({
     EconomicFactIdGenerator? economicFactIdGenerator,
@@ -91,6 +94,7 @@ class FinanceStore extends ChangeNotifier {
     FiniteFinancialPlanPersistence? finiteFinancialPlanPersistence,
     ExpectedExpensePersistence? expectedExpensePersistence,
     DocumentaryObligationPersistence? documentaryObligationPersistence,
+    IncomePersistence? incomePersistence,
     Iterable<FinanceBalance> initialBalances = const [],
     Iterable<FinanceAccountLinkedItem> initialLinkedItems = const [],
     Iterable<FinanceTransaction> initialTransactions = const [],
@@ -102,6 +106,7 @@ class FinanceStore extends ChangeNotifier {
     Iterable<FiniteFinancialPlan> initialFiniteFinancialPlans = const [],
     ExpectedExpenseAggregate? initialExpectedExpenseAggregate,
     DocumentaryObligationAggregate? initialDocumentaryObligationAggregate,
+    IncomeAggregate? initialIncomeAggregate,
   }) : economicFactIdGenerator =
            economicFactIdGenerator ?? EconomicFactIdGenerator.timestamped(),
        portfolioV3Writer = portfolioV3Writer ?? FinancePortfolioV3Writer(),
@@ -114,6 +119,7 @@ class FinanceStore extends ChangeNotifier {
        documentaryObligationPersistence =
            documentaryObligationPersistence ??
            DocumentaryObligationPersistence(),
+       incomePersistence = incomePersistence ?? IncomePersistence(),
        _balances = List<FinanceBalance>.of(initialBalances),
        _linkedItems = List<FinanceAccountLinkedItem>.of(initialLinkedItems),
        _transactions = List<FinanceTransaction>.of(initialTransactions),
@@ -129,7 +135,8 @@ class FinanceStore extends ChangeNotifier {
            initialExpectedExpenseAggregate ?? ExpectedExpenseAggregate.empty(),
        _documentaryObligationAggregate =
            initialDocumentaryObligationAggregate ??
-           DocumentaryObligationAggregate.empty();
+           DocumentaryObligationAggregate.empty(),
+       _incomeAggregate = initialIncomeAggregate ?? IncomeAggregate.empty();
 
   final List<FinancePerson> people = const [
     FinancePerson(id: 'matteo', name: 'Matteo'),
@@ -148,6 +155,7 @@ class FinanceStore extends ChangeNotifier {
   final List<FiniteFinancialPlan> _finiteFinancialPlans;
   ExpectedExpenseAggregate _expectedExpenseAggregate;
   DocumentaryObligationAggregate _documentaryObligationAggregate;
+  IncomeAggregate _incomeAggregate;
   bool _portfolioReady = false;
   bool _portfolioV3Authoritative = false;
   bool _legacyLinkedItemsHydrated = false;
@@ -186,6 +194,8 @@ class FinanceStore extends ChangeNotifier {
 
   DocumentaryObligationAggregate get documentaryObligationAggregate =>
       _documentaryObligationAggregate;
+
+  IncomeAggregate get incomeAggregate => _incomeAggregate;
 
   bool get isPortfolioV3Authoritative => _portfolioV3Authoritative;
 
@@ -247,6 +257,49 @@ class FinanceStore extends ChangeNotifier {
         .map((item) => item.toJson())
         .toList(),
     'expectedDocuments': _documentaryObligationAggregate.expectedDocuments
+        .map((item) => item.toJson())
+        .toList(),
+    'incomeRelationships': _incomeAggregate.relationships
+        .map((item) => item.toJson())
+        .toList(),
+    'incomeOccurrences': _incomeAggregate.occurrences
+        .map((item) => item.toJson())
+        .toList(),
+    'incomeReconciliations': _incomeAggregate.reconciliations
+        .map((item) => item.toJson())
+        .toList(),
+    'incomeCustomCategories': _incomeAggregate.customCategories
+        .map((item) => item.toJson())
+        .toList(),
+  });
+
+  Future<void> loadSavedIncomes() => _runObservableLoad(_loadSavedIncomes);
+
+  Future<void> _loadSavedIncomes() async {
+    _incomeAggregate = await incomePersistence.load();
+  }
+
+  Future<bool> saveIncomeAggregate(IncomeAggregate candidate) async {
+    final before = _incomeFingerprint(_incomeAggregate);
+    final result = await incomePersistence.write(candidate);
+    if (!result.isSuccess) {
+      throw StateError('Income write failed: ${result.errors.join('; ')}');
+    }
+    final changed = before != _incomeFingerprint(candidate);
+    _incomeAggregate = candidate;
+    if (changed) _markChanged();
+    return changed;
+  }
+
+  String _incomeFingerprint(IncomeAggregate aggregate) => jsonEncode({
+    'relationships': aggregate.relationships
+        .map((item) => item.toJson())
+        .toList(),
+    'occurrences': aggregate.occurrences.map((item) => item.toJson()).toList(),
+    'reconciliations': aggregate.reconciliations
+        .map((item) => item.toJson())
+        .toList(),
+    'customCategories': aggregate.customCategories
         .map((item) => item.toJson())
         .toList(),
   });

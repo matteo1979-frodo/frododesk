@@ -11,11 +11,15 @@ typedef FinanceMonthTap =
 class FinanceYearDashboard extends StatefulWidget {
   final FinanceStore financeStore;
   final FinanceMonthTap onMonthTap;
+  final List<FinanceMonthProjection> Function(int year)? projectionsForYear;
+  final int? initialYear;
 
   const FinanceYearDashboard({
     super.key,
     required this.financeStore,
     required this.onMonthTap,
+    this.projectionsForYear,
+    this.initialYear,
   });
 
   @override
@@ -28,12 +32,14 @@ class _FinanceYearDashboardState extends State<FinanceYearDashboard> {
   @override
   void initState() {
     super.initState();
-    selectedYear = DateTime.now().year;
+    selectedYear = widget.initialYear ?? DateTime.now().year;
   }
 
   @override
   Widget build(BuildContext context) {
-    final yearlyProjections = widget.financeStore.yearProjections(selectedYear);
+    final yearlyProjections =
+        widget.projectionsForYear?.call(selectedYear) ??
+        widget.financeStore.yearProjections(selectedYear);
 
     return Container(
       width: double.infinity,
