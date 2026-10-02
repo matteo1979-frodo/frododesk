@@ -91,6 +91,10 @@ class FinanceForecastReader {
           projected?.expectedSubject ??
           plan?.subject ??
           obligation?.documentHolder,
+      balanceId:
+          expected?.expectedPaymentConfiguration.expectedBalanceId ??
+          projected?.expectedPaymentConfiguration.expectedBalanceId ??
+          plan?.debitBalanceId,
       temporalKnowledge: temporal,
       economicStart: _isEconomic(temporal) ? item.placementStart : null,
       economicEnd: _isEconomic(temporal) ? item.placementEnd : null,

@@ -8,6 +8,7 @@ import '../models/finance_month_projection.dart';
 import '../models/finance_recurring_item.dart';
 import '../models/finance_forecast_presentation.dart';
 import '../models/income_forecast_presentation.dart';
+import '../models/financial_resilience.dart';
 import '../models/finite_financial_plan.dart';
 import '../models/projected_expense_cycle.dart';
 import '../models/finite_financial_plan_installment_confirmation.dart';
@@ -31,6 +32,7 @@ import '../logic/finance/finance_recurring_coordinator.dart';
 import '../logic/finance/finance_forecast_reader.dart';
 import '../logic/finance/income_forecast_reader.dart';
 import '../logic/finance/finance_temporal_projection_reader.dart';
+import '../logic/finance/household_resilience_reader.dart';
 import '../models/finance_recurring_draft.dart';
 import '../utils/euro_formatter.dart';
 import 'income_page.dart';
@@ -1447,6 +1449,10 @@ class _FinanceScreenState extends State<FinanceScreen> {
             financeStore: financeStore,
             initialYear: widget.forecastReferenceTime?.year,
             projectionsForYear: _convergentYearProjections,
+            resilienceForYear: _resilienceYear,
+            onResilienceMonthTap: (assessment, color) async {
+              await _showResilienceDetailDialog(assessment, color);
+            },
             onMonthTap: (projection, color) async {
               await _showConvergentMonthDetailDialog(projection, color);
             },
@@ -1476,6 +1482,97 @@ class _FinanceScreenState extends State<FinanceScreen> {
       year: year,
       incomes: incomes,
       expenses: expenses,
+    );
+  }
+
+  List<ResilienceAssessment> _resilienceYear(int year) {
+    final reference = widget.forecastReferenceTime ?? DateTime.now();
+    final horizon = ExpenseProjectionHorizon(
+      start: DateTime(year),
+      end: DateTime(year, 12, 31, 23, 59, 59, 999, 999),
+    );
+    final incomes = const IncomeForecastReader().read(
+      aggregate: financeStore.incomeAggregate,
+      horizon: horizon,
+    );
+    final expenses = const FinanceForecastReader().read(
+      expectedExpenses: financeStore.expectedExpenseAggregate,
+      documentaryObligations: financeStore.documentaryObligationAggregate,
+      finitePlans: financeStore.finiteFinancialPlans,
+      referenceTime: reference,
+      projectionHorizon: horizon,
+    );
+    return const HouseholdResilienceReader().readYear(
+      year: year,
+      referenceTime: reference,
+      financeStore: financeStore,
+      cashWalletStore: widget.cashWalletStore,
+      incomes: incomes,
+      expenses: expenses,
+    );
+  }
+
+  Future<void> _showResilienceDetailDialog(
+    ResilienceAssessment assessment,
+    Color color,
+  ) async {
+    await _showFinanceDialog(
+      icon: Icons.health_and_safety_outlined,
+      color: color,
+      title: DateFormat('MMMM yyyy', 'it_IT').format(assessment.month),
+      subtitle: assessment.phase == ResiliencePhase.realized
+          ? 'Realtà osservata'
+          : 'Sostenibilità secondo le informazioni disponibili',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _detailRow('Entrate', EuroFormatter.format(assessment.inflow)),
+          _detailRow('Uscite', EuroFormatter.format(assessment.outflow)),
+          if (assessment.phase != ResiliencePhase.realized) ...[
+            _detailRow(
+              'Liquidità prevista a fine mese',
+              EuroFormatter.format(assessment.projectedClosingLiquidity),
+            ),
+            _detailRow(
+              'Minimo previsto',
+              EuroFormatter.format(assessment.minimumProjectedLiquidity),
+            ),
+          ],
+          const SizedBox(height: 12),
+          ...assessment.explanations.map(
+            (text) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(text),
+            ),
+          ),
+          if (assessment.alternatives.isNotEmpty) ...[
+            const Divider(),
+            const Text(
+              'Alternative conosciute',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            ...assessment.alternatives.map(
+              (item) => ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(item.explanation),
+                subtitle: item.requiresApproval
+                    ? const Text('Richiede consenso o verifica')
+                    : null,
+              ),
+            ),
+          ],
+          if (assessment.coverage.partial) ...[
+            const Divider(),
+            const Text(
+              'Previsione parziale',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            const Text(
+              'Lo stato economico è separato dalla completezza delle informazioni.',
+            ),
+          ],
+        ],
+      ),
     );
   }
 

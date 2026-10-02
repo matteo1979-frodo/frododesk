@@ -23,6 +23,7 @@ class FinanceForecastPresentation {
   final String label;
   final double amount;
   final FinanceSubject? subject;
+  final String? balanceId;
   final FinanceForecastTemporalKnowledge temporalKnowledge;
   final DateTime? economicStart;
   final DateTime? economicEnd;
@@ -49,6 +50,7 @@ class FinanceForecastPresentation {
     required this.label,
     required this.amount,
     required this.subject,
+    this.balanceId,
     required this.temporalKnowledge,
     required this.economicStart,
     required this.economicEnd,

@@ -2,17 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../models/finance_month_projection.dart';
+import '../../models/financial_resilience.dart';
 import '../../stores/finance_store.dart';
 import '../../utils/euro_formatter.dart';
 
 typedef FinanceMonthTap =
     Future<void> Function(FinanceMonthProjection projection, Color color);
+typedef ResilienceMonthTap =
+    Future<void> Function(ResilienceAssessment assessment, Color color);
 
 class FinanceYearDashboard extends StatefulWidget {
   final FinanceStore financeStore;
   final FinanceMonthTap onMonthTap;
   final List<FinanceMonthProjection> Function(int year)? projectionsForYear;
   final int? initialYear;
+  final List<ResilienceAssessment> Function(int year)? resilienceForYear;
+  final ResilienceMonthTap? onResilienceMonthTap;
 
   const FinanceYearDashboard({
     super.key,
@@ -20,6 +25,8 @@ class FinanceYearDashboard extends StatefulWidget {
     required this.onMonthTap,
     this.projectionsForYear,
     this.initialYear,
+    this.resilienceForYear,
+    this.onResilienceMonthTap,
   });
 
   @override
@@ -40,6 +47,7 @@ class _FinanceYearDashboardState extends State<FinanceYearDashboard> {
     final yearlyProjections =
         widget.projectionsForYear?.call(selectedYear) ??
         widget.financeStore.yearProjections(selectedYear);
+    final resilience = widget.resilienceForYear?.call(selectedYear);
 
     return Container(
       width: double.infinity,
@@ -107,7 +115,9 @@ class _FinanceYearDashboardState extends State<FinanceYearDashboard> {
           Wrap(
             spacing: 10,
             runSpacing: 10,
-            children: yearlyProjections.map((projection) {
+            children: List.generate(12, (index) {
+              final projection = yearlyProjections[index];
+              final assessment = resilience?[index];
               final monthName = DateFormat(
                 'MMM',
                 'it_IT',
@@ -116,7 +126,19 @@ class _FinanceYearDashboardState extends State<FinanceYearDashboard> {
               late final Color color;
               late final String label;
 
-              if (projection.expectedMargin < 0) {
+              if (assessment?.phase == ResiliencePhase.realized) {
+                color = const Color(0xFF607D8B);
+                label = "Realizzato";
+              } else if (assessment?.status == ResilienceStatus.suffers) {
+                color = const Color(0xFFE53935);
+                label = "Soffre";
+              } else if (assessment?.status == ResilienceStatus.attention) {
+                color = const Color(0xFFFFB300);
+                label = "Attenzione";
+              } else if (assessment?.status == ResilienceStatus.breathes) {
+                color = const Color(0xFF43A047);
+                label = "Respira";
+              } else if (projection.expectedMargin < 0) {
                 color = const Color(0xFFE53935);
                 label = "Soffre";
               } else if (projection.expectedMargin <= 200) {
@@ -130,7 +152,12 @@ class _FinanceYearDashboardState extends State<FinanceYearDashboard> {
               return InkWell(
                 borderRadius: BorderRadius.circular(18),
                 onTap: () async {
-                  await widget.onMonthTap(projection, color);
+                  if (assessment != null &&
+                      widget.onResilienceMonthTap != null) {
+                    await widget.onResilienceMonthTap!(assessment, color);
+                  } else {
+                    await widget.onMonthTap(projection, color);
+                  }
                 },
                 child: Container(
                   width: 96,
@@ -180,7 +207,13 @@ class _FinanceYearDashboardState extends State<FinanceYearDashboard> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        EuroFormatter.format(projection.expectedMargin),
+                        assessment == null
+                            ? EuroFormatter.format(projection.expectedMargin)
+                            : assessment.phase == ResiliencePhase.realized
+                            ? EuroFormatter.format(assessment.flow)
+                            : EuroFormatter.format(
+                                assessment.projectedClosingLiquidity,
+                              ),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: color,
