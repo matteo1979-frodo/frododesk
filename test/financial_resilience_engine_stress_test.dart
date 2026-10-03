@@ -115,6 +115,12 @@ void main() {
       a.alternatives.any((x) => x.kind == MitigationKind.sameOwnerBalance),
       isTrue,
     );
+    final option = a.alternatives.firstWhere(
+      (x) => x.kind == MitigationKind.sameOwnerBalance,
+    );
+    expect(option.explanation, contains('Funding gap'));
+    expect(option.explanation, isNot(contains('deficit')));
+    expect(option.sourceResourceId, 'other');
     expect(a.status, ResilienceStatus.attention);
   });
 
@@ -130,6 +136,7 @@ void main() {
       (x) => x.kind == MitigationKind.otherOwnerRequiresApproval,
     );
     expect(option.requiresApproval, isTrue);
+    expect(option.sourceResourceId, 'partner');
   });
 
   test('case 13: only explicitly flexible commitment may be deferred', () {

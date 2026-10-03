@@ -59,7 +59,67 @@ void main() {
       expect(assessments[9].coverage.partial, isTrue);
     },
   );
+
+  test('legacy replacement lifecycle yields one economic outflow', () {
+    const namespace = 'expense_replacement_dG9rZW4';
+    final store = FinanceStore(
+      initialBalances: [_balance()],
+      initialTransactions: [
+        _actual('real_expense_original', 'original', 13.3),
+        _actual(
+          '${namespace}_compensation_transaction',
+          '${namespace}_compensation_fact',
+          13.3,
+          income: true,
+        ),
+        _actual('real_expense_spese_replacement', 'replacement', 13.3),
+        _actual('real_income', 'income', 20, income: true),
+      ],
+    );
+    final september = const HouseholdResilienceReader().readYear(
+      year: 2026,
+      referenceTime: DateTime(2026, 10, 3),
+      financeStore: store,
+      cashWalletStore: CashWalletStore(),
+      incomes: IncomeForecastOverview(const []),
+      expenses: FinanceForecastOverview(const []),
+      activeRealExpenseEconomicFactIds: const ['replacement'],
+    )[8];
+
+    expect(september.inflow, 20);
+    expect(september.outflow, 13.3);
+    expect(
+      september.items.map((item) => item.identity),
+      containsAll(<String>['replacement', 'income']),
+    );
+    expect(september.items, hasLength(2));
+    final person = september.people.firstWhere(
+      (item) => item.ownerId == FinanceSubject.matteo.name,
+    );
+    expect(person.inflow, 20);
+    expect(person.outflow, 13.3);
+    expect(september.coverageTitle, 'Storico parziale');
+    expect(september.coverageTitle, isNot(contains('Previsione')));
+  });
 }
+
+FinanceTransaction _actual(
+  String id,
+  String fact,
+  double amount, {
+  bool income = false,
+}) => FinanceTransaction(
+  id: id,
+  balanceId: 'main',
+  amount: amount,
+  date: DateTime(2026, 9, 14),
+  isIncome: income,
+  subject: FinanceSubject.matteo,
+  description: income ? 'Entrata' : 'Spesa',
+  type: income ? FinanceTransactionType.income : FinanceTransactionType.expense,
+  origin: FinanceTransactionOrigin.manual,
+  economicFactId: fact,
+);
 
 FinanceBalance _balance() => FinanceBalance(
   personId: 'matteo',

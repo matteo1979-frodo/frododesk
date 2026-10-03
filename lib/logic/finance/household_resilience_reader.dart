@@ -7,6 +7,7 @@ import '../../models/income_forecast_presentation.dart';
 import '../../stores/cash_wallet_store.dart';
 import '../../stores/finance_store.dart';
 import 'financial_resilience_engine.dart';
+import 'finance_transaction_semantics.dart';
 
 class HouseholdResilienceReader {
   const HouseholdResilienceReader();
@@ -18,6 +19,7 @@ class HouseholdResilienceReader {
     required CashWalletStore cashWalletStore,
     required IncomeForecastOverview incomes,
     required FinanceForecastOverview expenses,
+    Iterable<String>? activeRealExpenseEconomicFactIds,
   }) {
     final resources = <FinancialResource>[
       ...financeStore.balances
@@ -77,21 +79,58 @@ class HouseholdResilienceReader {
       ),
       ...expenses.items.map(_expenseEvent),
     ];
-    final facts = financeStore.transactions.map(
-      (item) => HistoricalFinancialFact(
-        identity: item.economicFactId ?? item.id,
-        date: item.date,
-        amount: item.amount,
-        direction: item.isIncome
-            ? FinancialEventDirection.income
-            : FinancialEventDirection.outflow,
-        balanceId: item.balanceId,
-        ownerId: _owner(item.subject),
-        structural: item.recurringItemId != null,
-        extraordinary: item.origin == FinanceTransactionOrigin.adjustment,
-        transfer: item.type == FinanceTransactionType.transfer,
-      ),
-    );
+    final balanceNames = {
+      for (final balance in financeStore.balances)
+        balance.balanceId: balance.name,
+    };
+    final activeExpenseFacts = activeRealExpenseEconomicFactIds?.toSet();
+    final supersededFacts = <String>{
+      ...financeStore.transactions
+          .map(
+            (item) => item.expenseReplacementMetadata?.originalEconomicFactId,
+          )
+          .whereType<String>(),
+      ...financeStore.transactions
+          .map(
+            (item) => item.compositeCorrectionMetadata?.originalEconomicFactId,
+          )
+          .whereType<String>(),
+    };
+    final facts = financeStore.transactions
+        .where((item) {
+          final role = item.economicRole;
+          if (role == FinanceTransactionEconomicRole.compensation ||
+              role == FinanceTransactionEconomicRole.transfer ||
+              supersededFacts.contains(item.economicFactId)) {
+            return false;
+          }
+          final isRealExpenseLedgerFact = item.id.startsWith('real_expense_');
+          if (activeExpenseFacts != null &&
+              isRealExpenseLedgerFact &&
+              item.economicFactId != null &&
+              !activeExpenseFacts.contains(item.economicFactId)) {
+            return false;
+          }
+          return true;
+        })
+        .map(
+          (item) => HistoricalFinancialFact(
+            identity: item.economicFactId ?? item.id,
+            date: item.date,
+            amount: item.amount,
+            direction:
+                item.economicRole == FinanceTransactionEconomicRole.income
+                ? FinancialEventDirection.income
+                : FinancialEventDirection.outflow,
+            balanceId: item.balanceId,
+            ownerId: _owner(item.subject),
+            structural: item.recurringItemId != null,
+            extraordinary: item.origin == FinanceTransactionOrigin.adjustment,
+            transfer: false,
+            label: item.description,
+            balanceLabel: balanceNames[item.balanceId],
+          ),
+        );
     return const FinancialResilienceEngine().assessYear(
       year: year,
       referenceTime: referenceTime,
@@ -145,10 +184,6 @@ class HouseholdResilienceReader {
       .where((item) => item.relationshipId == id)
       .any((item) => item.periodicity != IncomePeriodicity.oneTime);
 
-  String? _owner(FinanceSubject subject) => switch (subject) {
-    FinanceSubject.matteo => 'matteo',
-    FinanceSubject.chiara => 'chiara',
-    FinanceSubject.alice => 'alice',
-    FinanceSubject.shared => null,
-  };
+  String? _owner(FinanceSubject subject) =>
+      subject == FinanceSubject.shared ? null : subject.name;
 }

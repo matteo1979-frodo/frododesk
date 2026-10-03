@@ -493,6 +493,7 @@ class _ExpectedReplacement {
     notes: 'Ripristino movimento sostituito',
     economicFactId: intent.identities.compensationEconomicFactId,
     expenseReplacementMetadata: _metadata(ExpenseReplacementRole.compensation),
+    semanticRole: FinanceTransactionSemanticRole.balanceCompensation,
   );
 
   FinanceTransaction get replacementTransaction => FinanceTransaction(

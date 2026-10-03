@@ -1509,6 +1509,9 @@ class _FinanceScreenState extends State<FinanceScreen> {
       cashWalletStore: widget.cashWalletStore,
       incomes: incomes,
       expenses: expenses,
+      activeRealExpenseEconomicFactIds: widget.expenseStore.all
+          .map((item) => item.economicFactId)
+          .whereType<String>(),
     );
   }
 
@@ -1528,6 +1531,16 @@ class _FinanceScreenState extends State<FinanceScreen> {
         children: [
           _detailRow('Entrate', EuroFormatter.format(assessment.inflow)),
           _detailRow('Uscite', EuroFormatter.format(assessment.outflow)),
+          if (assessment.phase == ResiliencePhase.realized) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'Fatti economici',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
+            if (assessment.items.isEmpty)
+              const Text('Nessun fatto economico registrato per il mese.'),
+            ...assessment.items.map(_resilienceItemTile),
+          ],
           if (assessment.phase != ResiliencePhase.realized) ...[
             _detailRow(
               'Liquidità prevista a fine mese',
@@ -1561,20 +1574,76 @@ class _FinanceScreenState extends State<FinanceScreen> {
               ),
             ),
           ],
-          if (assessment.coverage.partial) ...[
+          if (assessment.people.isNotEmpty) ...[
             const Divider(),
             const Text(
-              'Previsione parziale',
+              'Persone',
               style: TextStyle(fontWeight: FontWeight.w900),
             ),
-            const Text(
-              'Lo stato economico è separato dalla completezza delle informazioni.',
+            ...assessment.people.map(_personResilienceTile),
+          ],
+          if (assessment.coverage.partial) ...[
+            const Divider(),
+            Text(
+              assessment.coverageTitle,
+              style: TextStyle(fontWeight: FontWeight.w900),
             ),
+            Text(assessment.coverageExplanation),
           ],
         ],
       ),
     );
   }
+
+  Widget _resilienceItemTile(ResilienceLineItem item) => ListTile(
+    contentPadding: EdgeInsets.zero,
+    dense: true,
+    title: Text(item.label),
+    subtitle: Text(
+      [
+        if (item.date != null) DateFormat('dd/MM/yyyy').format(item.date!),
+        if (item.ownerId != null) _displayOwner(item.ownerId!),
+        if (item.balanceLabel != null) item.balanceLabel!,
+      ].join(' • '),
+    ),
+    trailing: Text(
+      EuroFormatter.formatSigned(
+        item.direction == FinancialEventDirection.income
+            ? item.amount
+            : -item.amount,
+      ),
+      style: TextStyle(
+        color: item.direction == FinancialEventDirection.income
+            ? const Color(0xFF43A047)
+            : const Color(0xFFE53935),
+        fontWeight: FontWeight.w900,
+      ),
+    ),
+  );
+
+  Widget _personResilienceTile(PersonResilienceDetail detail) => ExpansionTile(
+    tilePadding: EdgeInsets.zero,
+    title: Text(_displayOwner(detail.ownerId)),
+    subtitle: Text(
+      'Liquidità ${EuroFormatter.format(detail.liquidity)} • '
+      'Entrate ${EuroFormatter.format(detail.inflow)} • '
+      'Uscite ${EuroFormatter.format(detail.outflow)}',
+    ),
+    children: [
+      ...detail.resources.map(
+        (resource) => ListTile(
+          dense: true,
+          contentPadding: const EdgeInsets.only(left: 12),
+          title: Text(resource.label),
+          trailing: Text(EuroFormatter.format(resource.amount)),
+        ),
+      ),
+      ...detail.items.map(_resilienceItemTile),
+    ],
+  );
+
+  String _displayOwner(String value) =>
+      value.isEmpty ? value : '${value[0].toUpperCase()}${value.substring(1)}';
 
   Future<void> _showConvergentMonthDetailDialog(
     FinanceMonthProjection projection,

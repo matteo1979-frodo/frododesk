@@ -1649,6 +1649,7 @@ class FinanceStore extends ChangeNotifier {
             origin: FinanceTransactionOrigin.manual,
             notes: 'Ripristino movimento eliminato',
             economicFactId: economicFactIdGenerator.next(),
+            semanticRole: FinanceTransactionSemanticRole.balanceCompensation,
           ),
         );
       await _commitBalanceAndTransactionsCandidate(
@@ -1687,6 +1688,7 @@ class FinanceStore extends ChangeNotifier {
         origin: FinanceTransactionOrigin.manual,
         notes: 'Ripristino movimento eliminato',
         economicFactId: economicFactIdGenerator.next(),
+        semanticRole: FinanceTransactionSemanticRole.balanceCompensation,
       ),
     );
 

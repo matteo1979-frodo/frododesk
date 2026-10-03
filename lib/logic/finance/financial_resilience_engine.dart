@@ -35,7 +35,7 @@ class FinancialResilienceEngine {
           ? ResiliencePhase.current
           : ResiliencePhase.forecast;
       if (phase == ResiliencePhase.realized) {
-        result.add(_realized(month, liquidity, facts));
+        result.add(_realized(month, liquidity, facts, resourceList));
         continue;
       }
       final monthEvents = events
@@ -61,10 +61,14 @@ class FinancialResilienceEngine {
     DateTime month,
     double currentLiquidity,
     List<HistoricalFinancialFact> facts,
+    List<FinancialResource> resources,
   ) {
-    final monthFacts = facts.where(
-      (item) => item.date.year == month.year && item.date.month == month.month,
-    );
+    final monthFacts = facts
+        .where(
+          (item) =>
+              item.date.year == month.year && item.date.month == month.month,
+        )
+        .toList();
     final income = monthFacts
         .where((item) => item.direction == FinancialEventDirection.income)
         .fold<double>(0, (sum, item) => sum + item.amount);
@@ -95,6 +99,37 @@ class FinancialResilienceEngine {
         'Mese realizzato: entrate €${income.toStringAsFixed(2)}, uscite €${outflow.toStringAsFixed(2)}.',
       ],
       alternatives: const [],
+      items: monthFacts
+          .map(
+            (item) => ResilienceLineItem(
+              identity: item.identity,
+              label: item.label,
+              amount: item.amount,
+              direction: item.direction,
+              date: item.date,
+              ownerId: item.ownerId,
+              balanceId: item.balanceId,
+              balanceLabel: item.balanceLabel,
+            ),
+          )
+          .toList(growable: false),
+      people: _people(
+        resources,
+        monthFacts
+            .map(
+              (item) => ResilienceLineItem(
+                identity: item.identity,
+                label: item.label,
+                amount: item.amount,
+                direction: item.direction,
+                date: item.date,
+                ownerId: item.ownerId,
+                balanceId: item.balanceId,
+                balanceLabel: item.balanceLabel,
+              ),
+            )
+            .toList(),
+      ),
     );
   }
 
@@ -295,6 +330,43 @@ class FinancialResilienceEngine {
       structuralNeed: need,
       explanations: List.unmodifiable(explanations),
       alternatives: List.unmodifiable(alternatives),
+      items: monthEvents
+          .map(
+            (item) => ResilienceLineItem(
+              identity: item.identity,
+              label: item.label,
+              amount: item.amount,
+              direction: item.direction,
+              date: item.start,
+              ownerId: item.ownerId,
+              balanceId: item.balanceId,
+              balanceLabel: resources
+                  .where((resource) => resource.id == item.balanceId)
+                  .firstOrNull
+                  ?.label,
+            ),
+          )
+          .toList(growable: false),
+      people: _people(
+        resources,
+        monthEvents
+            .map(
+              (item) => ResilienceLineItem(
+                identity: item.identity,
+                label: item.label,
+                amount: item.amount,
+                direction: item.direction,
+                date: item.start,
+                ownerId: item.ownerId,
+                balanceId: item.balanceId,
+                balanceLabel: resources
+                    .where((resource) => resource.id == item.balanceId)
+                    .firstOrNull
+                    ?.label,
+              ),
+            )
+            .toList(),
+      ),
     );
   }
 
@@ -314,27 +386,33 @@ class FinancialResilienceEngine {
       String text, {
       bool approval = false,
     }) {
-      final available = candidates.fold<double>(0, (sum, item) {
+      for (final candidate in candidates) {
         final laterCommitments = events
             .where(
               (event) =>
                   event.direction == FinancialEventDirection.outflow &&
-                  event.balanceId == item.id,
+                  event.balanceId == candidate.id,
             )
             .fold<double>(0, (value, event) => value + event.amount);
-        return sum + (item.amount - laterCommitments).clamp(0, item.amount);
-      });
-      final amount = available.clamp(0, gap).toDouble();
-      if (amount > 0) {
+        final available = (candidate.amount - laterCommitments)
+            .clamp(0, candidate.amount)
+            .toDouble();
+        final amount = available.clamp(0, gap).toDouble();
+        if (amount <= 0) continue;
         options.add(
           MitigationOption(
             kind: kind,
             amount: amount,
-            explanation: text,
+            explanation:
+                '$text ${candidate.label}: €${amount.toStringAsFixed(2)}.',
             requiresApproval: approval,
+            sourceResourceId: candidate.id,
+            sourceResourceLabel: candidate.label,
+            ownerId: candidate.ownerId,
           ),
         );
         gap -= amount;
+        if (gap <= .005) break;
       }
       return gap;
     }
@@ -347,7 +425,7 @@ class FinancialResilienceEngine {
             item.ownerId == triggering.ownerId,
       ),
       MitigationKind.sameOwnerBalance,
-      'Un altro saldo della stessa persona può coprire il deficit.',
+      'Funding gap sul conto richiesto. Capacità disponibile su',
     );
     if (gap > .005) {
       use(
@@ -398,6 +476,29 @@ class FinancialResilienceEngine {
       );
     }
     return gap;
+  }
+
+  static List<PersonResilienceDetail> _people(
+    List<FinancialResource> resources,
+    List<ResilienceLineItem> items,
+  ) {
+    final owners = <String>{
+      ...resources.map((item) => item.ownerId).whereType<String>(),
+      ...items.map((item) => item.ownerId).whereType<String>(),
+    }.toList()..sort();
+    return owners
+        .map(
+          (owner) => PersonResilienceDetail(
+            ownerId: owner,
+            resources: resources
+                .where((item) => item.ownerId == owner)
+                .toList(growable: false),
+            items: items
+                .where((item) => item.ownerId == owner)
+                .toList(growable: false),
+          ),
+        )
+        .toList(growable: false);
   }
 
   static StructuralNeedEstimate _structuralNeed(

@@ -12,6 +12,48 @@ enum FinancialFlexibility { fixed, flexible, unknown }
 
 enum FinancialResourceKind { balance, cash, fund }
 
+class ResilienceLineItem {
+  final String identity;
+  final String label;
+  final double amount;
+  final FinancialEventDirection direction;
+  final DateTime? date;
+  final String? ownerId;
+  final String? balanceId;
+  final String? balanceLabel;
+
+  const ResilienceLineItem({
+    required this.identity,
+    required this.label,
+    required this.amount,
+    required this.direction,
+    this.date,
+    this.ownerId,
+    this.balanceId,
+    this.balanceLabel,
+  });
+}
+
+class PersonResilienceDetail {
+  final String ownerId;
+  final List<FinancialResource> resources;
+  final List<ResilienceLineItem> items;
+
+  const PersonResilienceDetail({
+    required this.ownerId,
+    required this.resources,
+    required this.items,
+  });
+
+  double get liquidity => resources.fold(0, (sum, item) => sum + item.amount);
+  double get inflow => items
+      .where((item) => item.direction == FinancialEventDirection.income)
+      .fold(0, (sum, item) => sum + item.amount);
+  double get outflow => items
+      .where((item) => item.direction == FinancialEventDirection.outflow)
+      .fold(0, (sum, item) => sum + item.amount);
+}
+
 enum MitigationKind {
   designatedFund,
   sameBalance,
@@ -101,6 +143,8 @@ class HistoricalFinancialFact {
   final bool structural;
   final bool extraordinary;
   final bool transfer;
+  final String label;
+  final String? balanceLabel;
 
   const HistoricalFinancialFact({
     required this.identity,
@@ -112,6 +156,8 @@ class HistoricalFinancialFact {
     this.structural = false,
     this.extraordinary = false,
     this.transfer = false,
+    this.label = 'Movimento',
+    this.balanceLabel,
   });
 }
 
@@ -121,6 +167,9 @@ class MitigationOption {
   final String explanation;
   final bool requiresApproval;
   final String? sacrificedPurpose;
+  final String? sourceResourceId;
+  final String? sourceResourceLabel;
+  final String? ownerId;
 
   const MitigationOption({
     required this.kind,
@@ -128,6 +177,9 @@ class MitigationOption {
     required this.explanation,
     this.requiresApproval = false,
     this.sacrificedPurpose,
+    this.sourceResourceId,
+    this.sourceResourceLabel,
+    this.ownerId,
   });
 }
 
@@ -181,6 +233,8 @@ class ResilienceAssessment {
   final StructuralNeedEstimate structuralNeed;
   final List<String> explanations;
   final List<MitigationOption> alternatives;
+  final List<ResilienceLineItem> items;
+  final List<PersonResilienceDetail> people;
 
   const ResilienceAssessment({
     required this.month,
@@ -197,7 +251,17 @@ class ResilienceAssessment {
     required this.structuralNeed,
     required this.explanations,
     required this.alternatives,
+    this.items = const [],
+    this.people = const [],
   });
 
   double get flow => inflow - outflow;
+
+  String get coverageTitle => phase == ResiliencePhase.realized
+      ? 'Storico parziale'
+      : 'Previsione parziale';
+
+  String get coverageExplanation => phase == ResiliencePhase.realized
+      ? 'Sono mostrati i fatti storici conosciuti; potrebbero mancare movimenti non registrati.'
+      : 'Lo stato economico è separato dalla completezza delle informazioni.';
 }

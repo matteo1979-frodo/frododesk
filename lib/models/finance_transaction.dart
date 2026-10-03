@@ -8,6 +8,8 @@ enum FinanceTransactionType { income, expense, transfer }
 
 enum FinanceTransactionOrigin { recurringItem, manual, fund, adjustment }
 
+enum FinanceTransactionSemanticRole { economicEvent, balanceCompensation }
+
 class FinanceTransaction {
   final String id;
 
@@ -35,6 +37,7 @@ class FinanceTransaction {
   final ExpenseReplacementMetadata? expenseReplacementMetadata;
   final BalancePostingMode balancePostingMode;
   final CompositeCorrectionMetadata? compositeCorrectionMetadata;
+  final FinanceTransactionSemanticRole semanticRole;
 
   const FinanceTransaction({
     required this.id,
@@ -53,6 +56,7 @@ class FinanceTransaction {
     this.expenseReplacementMetadata,
     this.balancePostingMode = BalancePostingMode.affectsCurrentBalance,
     this.compositeCorrectionMetadata,
+    this.semanticRole = FinanceTransactionSemanticRole.economicEvent,
   });
 
   Map<String, dynamic> toJson() {
@@ -75,6 +79,7 @@ class FinanceTransaction {
       'balancePostingMode': balancePostingMode.name,
       if (compositeCorrectionMetadata != null)
         'compositeCorrectionMetadata': compositeCorrectionMetadata!.toJson(),
+      'semanticRole': semanticRole.name,
     };
   }
 
@@ -125,6 +130,10 @@ class FinanceTransaction {
                 json['compositeCorrectionMetadata'] as Map,
               ),
             ),
+      semanticRole: FinanceTransactionSemanticRole.values.firstWhere(
+        (value) => value.name == json['semanticRole'],
+        orElse: () => FinanceTransactionSemanticRole.economicEvent,
+      ),
     );
   }
 }
