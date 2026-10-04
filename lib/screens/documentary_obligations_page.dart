@@ -9,11 +9,12 @@ import '../models/finance_recurring_item.dart';
 import '../stores/finance_store.dart';
 import '../utils/euro_formatter.dart';
 
-typedef DocumentaryPaymentLauncher = Future<void> Function(
-  BuildContext context,
-  DocumentaryObligation obligation,
-  DocumentaryInstallment installment,
-);
+typedef DocumentaryPaymentLauncher =
+    Future<void> Function(
+      BuildContext context,
+      DocumentaryObligation obligation,
+      DocumentaryInstallment installment,
+    );
 
 class DocumentaryObligationsPage extends StatefulWidget {
   final FinanceStore financeStore;
@@ -38,9 +39,8 @@ class _DocumentaryObligationsPageState
   Future<void> _add() async {
     final draft = await Navigator.of(context).push<_DocumentaryDraft>(
       MaterialPageRoute(
-        builder: (_) => _DocumentaryObligationEditor(
-          financeStore: widget.financeStore,
-        ),
+        builder: (_) =>
+            _DocumentaryObligationEditor(financeStore: widget.financeStore),
       ),
     );
     if (draft == null) return;
@@ -54,7 +54,9 @@ class _DocumentaryObligationsPageState
     if (!mounted) return;
     if (result == DocumentaryObligationOutcome.conflict) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Identità già presente con dati diversi.')),
+        const SnackBar(
+          content: Text('Identità già presente con dati diversi.'),
+        ),
       );
     }
     setState(() {});
@@ -66,7 +68,10 @@ class _DocumentaryObligationsPageState
   ) async {
     final relationshipId = obligation.relationshipId;
     if (relationshipId == null) return;
-    final relationship = widget.financeStore.expectedExpenseAggregate.relationships
+    final relationship = widget
+        .financeStore
+        .expectedExpenseAggregate
+        .relationships
         .where((item) => item.relationshipId == relationshipId)
         .firstOrNull;
     if (relationship == null) return;
@@ -106,9 +111,12 @@ class _DocumentaryObligationsPageState
 
   @override
   Widget build(BuildContext context) {
-    final obligations = widget.financeStore.documentaryObligationAggregate.obligations;
-    final expectedDocuments = widget.financeStore
-        .documentaryObligationAggregate.expectedDocuments
+    final obligations =
+        widget.financeStore.documentaryObligationAggregate.obligations;
+    final expectedDocuments = widget
+        .financeStore
+        .documentaryObligationAggregate
+        .expectedDocuments
         .where((item) => item.status == ExpectedDocumentCycleStatus.expected)
         .toList();
     return Scaffold(
@@ -175,6 +183,33 @@ class _DocumentaryObligationsPageState
                                       title: const Text('Riferimento'),
                                       subtitle: Text(value),
                                     ),
+                                  if (obligation.issuedAt case final value?)
+                                    ListTile(
+                                      title: const Text('Data emissione'),
+                                      subtitle: Text(_date(value)),
+                                    ),
+                                  if (obligation.receivedAt case final value?)
+                                    ListTile(
+                                      title: const Text('Data ricezione'),
+                                      subtitle: Text(_date(value)),
+                                    ),
+                                  if (obligation.competencePeriod
+                                      case final value?)
+                                    ListTile(
+                                      title: const Text(
+                                        'Periodo di competenza',
+                                      ),
+                                      subtitle: Text(
+                                        '${_date(value.startDate)} – ${_date(value.endDate)}',
+                                      ),
+                                    ),
+                                  for (final component in obligation.components)
+                                    ListTile(
+                                      title: Text(component.label),
+                                      subtitle: Text(
+                                        '${component.classificationCode} · ${EuroFormatter.format(component.amount)}',
+                                      ),
+                                    ),
                                   for (final option in obligation.options)
                                     RadioListTile<String>(
                                       value: option.optionId,
@@ -191,17 +226,16 @@ class _DocumentaryObligationsPageState
                                       ),
                                       onChanged:
                                           obligation.selectedOptionId != null
-                                              ? null
-                                              : (value) async {
-                                                  if (value == null) return;
-                                                  await coordinator
-                                                      .selectOption(
-                                                    obligationId: obligation
-                                                        .obligationId,
-                                                    optionId: value,
-                                                  );
-                                                  if (mounted) setState(() {});
-                                                },
+                                          ? null
+                                          : (value) async {
+                                              if (value == null) return;
+                                              await coordinator.selectOption(
+                                                obligationId:
+                                                    obligation.obligationId,
+                                                optionId: value,
+                                              );
+                                              if (mounted) setState(() {});
+                                            },
                                     ),
                                   for (final installment
                                       in obligation.operationalInstallments)
@@ -215,27 +249,25 @@ class _DocumentaryObligationsPageState
                                         ),
                                       ),
                                       subtitle: Text(
-                                        'Scadenza ${_date(installment.dueDate)}',
+                                        'Scadenza ${_date(installment.dueDate)} · pagamento non ancora verificato',
                                       ),
-                                      trailing:
-                                          widget.onRegisterPayment == null
-                                              ? null
-                                              : FilledButton(
-                                                  onPressed: () async {
-                                                    await widget
-                                                        .onRegisterPayment!(
-                                                      context,
-                                                      obligation,
-                                                      installment,
-                                                    );
-                                                    if (mounted) {
-                                                      setState(() {});
-                                                    }
-                                                  },
-                                                  child: const Text(
-                                                    'Registra pagamento',
-                                                  ),
-                                                ),
+                                      trailing: widget.onRegisterPayment == null
+                                          ? null
+                                          : FilledButton(
+                                              onPressed: () async {
+                                                await widget.onRegisterPayment!(
+                                                  context,
+                                                  obligation,
+                                                  installment,
+                                                );
+                                                if (mounted) {
+                                                  setState(() {});
+                                                }
+                                              },
+                                              child: const Text(
+                                                'Registra pagamento',
+                                              ),
+                                            ),
                                     ),
                                   for (final contingency
                                       in obligation.contingencies)
@@ -245,7 +277,8 @@ class _DocumentaryObligationsPageState
                                         '${contingency.anticipatedDueDate == null ? 'Data non indicata' : _date(contingency.anticipatedDueDate!)} · '
                                         '${_contingencyStatus(contingency.status)}',
                                       ),
-                                      trailing: contingency.status ==
+                                      trailing:
+                                          contingency.status ==
                                               DocumentaryContingencyStatus
                                                   .pending
                                           ? Wrap(
@@ -255,9 +288,9 @@ class _DocumentaryObligationsPageState
                                                   TextButton(
                                                     onPressed: () =>
                                                         _materialize(
-                                                      obligation,
-                                                      contingency,
-                                                    ),
+                                                          obligation,
+                                                          contingency,
+                                                        ),
                                                     child: const Text(
                                                       'È arrivata',
                                                     ),
@@ -266,11 +299,13 @@ class _DocumentaryObligationsPageState
                                                   onPressed: () async {
                                                     await coordinator
                                                         .closeContingencyNotDue(
-                                                      obligationId: obligation
-                                                          .obligationId,
-                                                      contingencyId: contingency
-                                                          .contingencyId,
-                                                    );
+                                                          obligationId:
+                                                              obligation
+                                                                  .obligationId,
+                                                          contingencyId:
+                                                              contingency
+                                                                  .contingencyId,
+                                                        );
                                                     if (mounted) {
                                                       setState(() {});
                                                     }
@@ -296,11 +331,12 @@ class _DocumentaryObligationsPageState
     );
   }
 
-  String _relationshipName(String id) => widget
-      .financeStore.expectedExpenseAggregate.relationships
-      .where((item) => item.relationshipId == id)
-      .map((item) => item.service)
-      .firstOrNull ?? 'Pagamento ricorrente';
+  String _relationshipName(String id) =>
+      widget.financeStore.expectedExpenseAggregate.relationships
+          .where((item) => item.relationshipId == id)
+          .map((item) => item.service)
+          .firstOrNull ??
+      'Pagamento ricorrente';
 }
 
 class _DocumentaryDraft {
@@ -329,8 +365,19 @@ class _DocumentaryObligationEditorState
   final title = TextEditingController();
   final amount = TextEditingController();
   final reference = TextEditingController();
+  DocumentaryReferenceType referenceType =
+      DocumentaryReferenceType.invoiceNumber;
+  DateTime? issuedAt;
+  DateTime? receivedAt;
+  DateTime? competenceStart;
+  DateTime? competenceEnd;
+  final components = <DocumentaryEconomicComponent>[];
   final stableRelationshipName = TextEditingController();
   final provider = TextEditingController();
+  FinancePaymentMethod paymentMethod = FinancePaymentMethod.manual;
+  final relationshipIdentifiers = <ExpenseRelationshipIdentifier>[];
+  DateTime? relationshipEffectiveFrom;
+  DateTime? relationshipCommercialEnd;
   final expectedYear = TextEditingController();
   FinanceSubject? holder;
   FinanceSubject? recurringSubject;
@@ -364,14 +411,10 @@ class _DocumentaryObligationEditorState
     final choice = recurringMonthsChoice;
     if (choice == null) return null;
     if (choice == 1) {
-      return ExpenseRelationshipPeriodicity(
-        type: FinanceRecurringType.monthly,
-      );
+      return ExpenseRelationshipPeriodicity(type: FinanceRecurringType.monthly);
     }
     if (choice == 12) {
-      return ExpenseRelationshipPeriodicity(
-        type: FinanceRecurringType.yearly,
-      );
+      return ExpenseRelationshipPeriodicity(type: FinanceRecurringType.yearly);
     }
     final months = choice == _customRecurrenceChoice
         ? int.tryParse(customRecurringMonths.text.trim())
@@ -403,6 +446,31 @@ class _DocumentaryObligationEditorState
     );
     if (option != null) setState(() => options.add(option));
   }
+
+  Future<void> _addComponent() async {
+    final component = await showDialog<DocumentaryEconomicComponent>(
+      context: context,
+      builder: (_) => _DocumentComponentDialog(index: components.length + 1),
+    );
+    if (component != null) setState(() => components.add(component));
+  }
+
+  Future<void> _addRelationshipIdentifier() async {
+    final identifier = await showDialog<ExpenseRelationshipIdentifier>(
+      context: context,
+      builder: (_) => const _RelationshipIdentifierDialog(),
+    );
+    if (identifier != null) {
+      setState(() => relationshipIdentifiers.add(identifier));
+    }
+  }
+
+  Future<DateTime?> _pickOptionalDate(DateTime? initial) => showDatePicker(
+    context: context,
+    initialDate: initial ?? DateTime.now(),
+    firstDate: DateTime(1900),
+    lastDate: DateTime(2200),
+  );
 
   Future<void> _addContingency() async {
     final value = await showDialog<DocumentaryContingency>(
@@ -448,8 +516,7 @@ class _DocumentaryObligationEditorState
         }
         if (year == null ||
             expectedMonth == null ||
-            (relationshipId == null &&
-                provider.text.trim().isEmpty)) {
+            (relationshipId == null && provider.text.trim().isEmpty)) {
           return;
         }
         relationship = relationshipId == null
@@ -462,31 +529,61 @@ class _DocumentaryObligationEditorState
                 periodicity: periodicity!,
                 cycleLabelPolicy: cycleLabelPolicy,
                 paymentConfiguration: ExpenseRelationshipPaymentConfiguration(
-                  method: FinancePaymentMethod.manual,
+                  method: paymentMethod,
                 ),
+                identifiers: relationshipIdentifiers,
+                commercialTerm:
+                    relationshipEffectiveFrom == null &&
+                        relationshipCommercialEnd == null
+                    ? null
+                    : ExpenseRelationshipCommercialTerm(
+                        effectiveFrom: relationshipEffectiveFrom,
+                        commercialEnd: relationshipCommercialEnd,
+                      ),
               )
             : widget.financeStore.expectedExpenseAggregate.relationships
-                .firstWhere((item) => item.relationshipId == relationshipId);
+                  .firstWhere((item) => item.relationshipId == relationshipId);
         linkedRelationshipId = relationship.relationshipId;
         final sequences = <int>[
-          for (final item in widget.financeStore.documentaryObligationAggregate.obligations)
-            if (item.relationshipId == linkedRelationshipId && item.cycleSequence != null)
+          for (final item
+              in widget.financeStore.documentaryObligationAggregate.obligations)
+            if (item.relationshipId == linkedRelationshipId &&
+                item.cycleSequence != null)
               item.cycleSequence!,
-          for (final item in widget.financeStore.documentaryObligationAggregate.expectedDocuments)
+          for (final item
+              in widget
+                  .financeStore
+                  .documentaryObligationAggregate
+                  .expectedDocuments)
             if (item.relationshipId == linkedRelationshipId) item.cycleSequence,
-          for (final item in widget.financeStore.expectedExpenseAggregate.occurrences)
-            if (item.relationshipId == linkedRelationshipId && item.cycleSequence != null)
+          for (final item
+              in widget.financeStore.expectedExpenseAggregate.occurrences)
+            if (item.relationshipId == linkedRelationshipId &&
+                item.cycleSequence != null)
               item.cycleSequence!,
         ];
-        final pendingExpected = widget.financeStore.documentaryObligationAggregate.expectedDocuments
-            .where((item) => item.relationshipId == linkedRelationshipId && item.status == ExpectedDocumentCycleStatus.expected)
+        final pendingExpected = widget
+            .financeStore
+            .documentaryObligationAggregate
+            .expectedDocuments
+            .where(
+              (item) =>
+                  item.relationshipId == linkedRelationshipId &&
+                  item.status == ExpectedDocumentCycleStatus.expected,
+            )
             .toList();
-        if (pendingExpected.isNotEmpty && expectedDocumentIdentity == null) return;
+        if (pendingExpected.isNotEmpty && expectedDocumentIdentity == null)
+          return;
         cycleSequence = pendingExpected.isNotEmpty
-            ? pendingExpected.firstWhere((item) => item.identity == expectedDocumentIdentity).cycleSequence
+            ? pendingExpected
+                  .firstWhere(
+                    (item) => item.identity == expectedDocumentIdentity,
+                  )
+                  .cycleSequence
             : sequences.isEmpty
-                ? 1
-                : sequences.reduce((left, right) => left > right ? left : right) + 1;
+            ? 1
+            : sequences.reduce((left, right) => left > right ? left : right) +
+                  1;
         nextExpectedDocument = ExpectedDocumentCycle(
           relationshipId: linkedRelationshipId,
           cycleSequence: cycleSequence + 1,
@@ -504,7 +601,21 @@ class _DocumentaryObligationEditorState
             title: title.text,
             totalAmount: parsed,
             documentHolder: holder,
-            documentReference: reference.text.trim().isEmpty ? null : reference.text,
+            documentReference: reference.text.trim().isEmpty
+                ? null
+                : reference.text,
+            documentReferenceType: reference.text.trim().isEmpty
+                ? null
+                : referenceType,
+            issuedAt: issuedAt,
+            receivedAt: receivedAt,
+            competencePeriod: competenceStart == null || competenceEnd == null
+                ? null
+                : DocumentaryCompetencePeriod(
+                    startDate: competenceStart!,
+                    endDate: competenceEnd!,
+                  ),
+            components: components,
             relationshipId: linkedRelationshipId,
             cycleSequence: cycleSequence,
             options: options,
@@ -515,7 +626,9 @@ class _DocumentaryObligationEditorState
         ),
       );
     } catch (error) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$error')));
     }
   }
 
@@ -535,6 +648,7 @@ class _DocumentaryObligationEditorState
           child: Theme(
             data: _documentaryTheme(context),
             child: ListView(
+              cacheExtent: 5000,
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
               children: [
                 const _DocumentaryEditorIntroduction(),
@@ -589,8 +703,121 @@ class _DocumentaryObligationEditorState
                     TextField(
                       controller: reference,
                       decoration: const InputDecoration(
-                        labelText: 'Riferimento o note (opzionale)',
+                        labelText: 'Numero o riferimento documento (opzionale)',
                       ),
+                    ),
+                    ExpansionTile(
+                      tilePadding: EdgeInsets.zero,
+                      childrenPadding: EdgeInsets.zero,
+                      dense: true,
+                      visualDensity: VisualDensity.compact,
+                      title: const Text('Dettagli del documento'),
+                      children: [
+                        DropdownButtonFormField<DocumentaryReferenceType>(
+                          initialValue: referenceType,
+                          decoration: const InputDecoration(
+                            labelText: 'Tipo riferimento',
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: DocumentaryReferenceType.invoiceNumber,
+                              child: Text('Numero fattura/documento'),
+                            ),
+                            DropdownMenuItem(
+                              value: DocumentaryReferenceType.other,
+                              child: Text('Altro riferimento'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            if (value != null)
+                              setState(() => referenceType = value);
+                          },
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Data emissione'),
+                          subtitle: Text(
+                            issuedAt == null
+                                ? 'Non indicata'
+                                : _date(issuedAt!),
+                          ),
+                          onTap: () async {
+                            final value = await _pickOptionalDate(issuedAt);
+                            if (value != null && mounted)
+                              setState(() => issuedAt = value);
+                          },
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Data ricezione (opzionale)'),
+                          subtitle: Text(
+                            receivedAt == null
+                                ? 'Non conosciuta'
+                                : _date(receivedAt!),
+                          ),
+                          trailing: receivedAt == null
+                              ? null
+                              : IconButton(
+                                  onPressed: () =>
+                                      setState(() => receivedAt = null),
+                                  icon: const Icon(Icons.clear),
+                                ),
+                          onTap: () async {
+                            final value = await _pickOptionalDate(
+                              receivedAt ?? issuedAt,
+                            );
+                            if (value != null && mounted)
+                              setState(() => receivedAt = value);
+                          },
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Inizio periodo di competenza'),
+                          subtitle: Text(
+                            competenceStart == null
+                                ? 'Non indicato'
+                                : _date(competenceStart!),
+                          ),
+                          onTap: () async {
+                            final value = await _pickOptionalDate(
+                              competenceStart,
+                            );
+                            if (value != null && mounted)
+                              setState(() => competenceStart = value);
+                          },
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Fine periodo di competenza'),
+                          subtitle: Text(
+                            competenceEnd == null
+                                ? 'Non indicato'
+                                : _date(competenceEnd!),
+                          ),
+                          onTap: () async {
+                            final value = await _pickOptionalDate(
+                              competenceEnd ?? competenceStart,
+                            );
+                            if (value != null && mounted)
+                              setState(() => competenceEnd = value);
+                          },
+                        ),
+                        for (final component in components)
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(component.label),
+                            subtitle: Text(
+                              '${component.classificationCode} · ${EuroFormatter.format(component.amount)}',
+                            ),
+                          ),
+                        OutlinedButton.icon(
+                          onPressed: _addComponent,
+                          icon: const Icon(Icons.add_rounded),
+                          label: const Text(
+                            'Aggiungi componente del documento',
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -612,8 +839,11 @@ class _DocumentaryObligationEditorState
                           value: null,
                           child: Text('Nessuna'),
                         ),
-                        for (final relationship in widget.financeStore
-                            .expectedExpenseAggregate.relationships)
+                        for (final relationship
+                            in widget
+                                .financeStore
+                                .expectedExpenseAggregate
+                                .relationships)
                           DropdownMenuItem(
                             value: relationship.relationshipId,
                             child: Text(
@@ -628,8 +858,10 @@ class _DocumentaryObligationEditorState
                         if (value == null) {
                           recurringSubject = null;
                         } else {
-                          recurringSubject = widget.financeStore
-                              .expectedExpenseAggregate.relationships
+                          recurringSubject = widget
+                              .financeStore
+                              .expectedExpenseAggregate
+                              .relationships
                               .firstWhere(
                                 (item) => item.relationshipId == value,
                               )
@@ -653,7 +885,9 @@ class _DocumentaryObligationEditorState
                     ),
                     if (repeats) ...[
                       if (relationshipId != null &&
-                          widget.financeStore.documentaryObligationAggregate
+                          widget
+                              .financeStore
+                              .documentaryObligationAggregate
                               .expectedDocuments
                               .any(
                                 (item) =>
@@ -667,15 +901,19 @@ class _DocumentaryObligationEditorState
                             labelText: 'Quale documento è arrivato?',
                           ),
                           items: [
-                            for (final item in widget.financeStore
-                                .documentaryObligationAggregate
-                                .expectedDocuments
-                                .where(
-                                  (item) =>
-                                      item.relationshipId == relationshipId &&
-                                      item.status ==
-                                          ExpectedDocumentCycleStatus.expected,
-                                ))
+                            for (final item
+                                in widget
+                                    .financeStore
+                                    .documentaryObligationAggregate
+                                    .expectedDocuments
+                                    .where(
+                                      (item) =>
+                                          item.relationshipId ==
+                                              relationshipId &&
+                                          item.status ==
+                                              ExpectedDocumentCycleStatus
+                                                  .expected,
+                                    ))
                               DropdownMenuItem(
                                 value: item.identity,
                                 child: Text(
@@ -684,9 +922,8 @@ class _DocumentaryObligationEditorState
                                 ),
                               ),
                           ],
-                          onChanged: (value) => setState(
-                            () => expectedDocumentIdentity = value,
-                          ),
+                          onChanged: (value) =>
+                              setState(() => expectedDocumentIdentity = value),
                         ),
                       if (relationshipId == null)
                         TextField(
@@ -705,6 +942,78 @@ class _DocumentaryObligationEditorState
                             () => stableRelationshipNameError = null,
                           ),
                         ),
+                      if (relationshipId == null)
+                        DropdownButtonFormField<FinancePaymentMethod>(
+                          initialValue: paymentMethod,
+                          decoration: const InputDecoration(
+                            labelText: 'Metodo di pagamento previsto',
+                            helperText:
+                                'Il metodo non certifica conto o pagamento.',
+                          ),
+                          items: FinancePaymentMethod.values
+                              .map(
+                                (value) => DropdownMenuItem(
+                                  value: value,
+                                  child: Text(
+                                    value == FinancePaymentMethod.rid
+                                        ? 'SDD / RID'
+                                        : value.name,
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value != null)
+                              setState(() => paymentMethod = value);
+                          },
+                        ),
+                      if (relationshipId == null) ...[
+                        for (final identifier in relationshipIdentifiers)
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(identifier.namespace),
+                            subtitle: Text(identifier.value),
+                          ),
+                        OutlinedButton.icon(
+                          onPressed: _addRelationshipIdentifier,
+                          icon: const Icon(Icons.badge_outlined),
+                          label: const Text(
+                            'Aggiungi identificatore relazione',
+                          ),
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Decorrenza relazione (opzionale)'),
+                          subtitle: Text(
+                            relationshipEffectiveFrom == null
+                                ? 'Non indicata'
+                                : _date(relationshipEffectiveFrom!),
+                          ),
+                          onTap: () async {
+                            final value = await _pickOptionalDate(
+                              relationshipEffectiveFrom,
+                            );
+                            if (value != null && mounted)
+                              setState(() => relationshipEffectiveFrom = value);
+                          },
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Fine commerciale (opzionale)'),
+                          subtitle: Text(
+                            relationshipCommercialEnd == null
+                                ? 'Non indicata'
+                                : _date(relationshipCommercialEnd!),
+                          ),
+                          onTap: () async {
+                            final value = await _pickOptionalDate(
+                              relationshipCommercialEnd,
+                            );
+                            if (value != null && mounted)
+                              setState(() => relationshipCommercialEnd = value);
+                          },
+                        ),
+                      ],
                       if (relationshipId == null)
                         TextField(
                           key: const ValueKey('documentary-provider'),
@@ -753,8 +1062,7 @@ class _DocumentaryObligationEditorState
                             labelText: 'Quanto spesso torna',
                             hintText: 'Scegli la frequenza',
                             errorText:
-                                recurringMonthsChoice ==
-                                    _customRecurrenceChoice
+                                recurringMonthsChoice == _customRecurrenceChoice
                                 ? null
                                 : recurringPeriodicityError,
                           ),
@@ -813,24 +1121,20 @@ class _DocumentaryObligationEditorState
                             hintText: 'Inserisci un numero maggiore di zero',
                             errorText: recurringPeriodicityError,
                           ),
-                          onChanged: (_) => setState(
-                            () {
-                              recurringPeriodicityError = null;
-                              if (!(_selectedPeriodicity()?.isAnnualCycle ??
-                                  false)) {
-                                cycleLabelPolicy =
-                                    ExpenseRelationshipCycleLabelPolicy
-                                        .stableNameOnly;
-                              }
-                            },
-                          ),
+                          onChanged: (_) => setState(() {
+                            recurringPeriodicityError = null;
+                            if (!(_selectedPeriodicity()?.isAnnualCycle ??
+                                false)) {
+                              cycleLabelPolicy =
+                                  ExpenseRelationshipCycleLabelPolicy
+                                      .stableNameOnly;
+                            }
+                          }),
                         ),
                       if (relationshipId == null &&
                           (_selectedPeriodicity()?.isAnnualCycle ?? false))
                         SwitchListTile(
-                          key: const ValueKey(
-                            'documentary-cycle-label-year',
-                          ),
+                          key: const ValueKey('documentary-cycle-label-year'),
                           contentPadding: EdgeInsets.zero,
                           value:
                               cycleLabelPolicy ==
@@ -839,9 +1143,7 @@ class _DocumentaryObligationEditorState
                           title: const Text(
                             'Mostra l’anno nel titolo delle previsioni',
                           ),
-                          subtitle: const Text(
-                            'Per esempio: TARI 2027.',
-                          ),
+                          subtitle: const Text('Per esempio: TARI 2027.'),
                           onChanged: (value) => setState(() {
                             cycleLabelPolicy = value
                                 ? ExpenseRelationshipCycleLabelPolicy
@@ -853,8 +1155,10 @@ class _DocumentaryObligationEditorState
                       if (relationshipId != null)
                         Builder(
                           builder: (context) {
-                            final relationship = widget.financeStore
-                                .expectedExpenseAggregate.relationships
+                            final relationship = widget
+                                .financeStore
+                                .expectedExpenseAggregate
+                                .relationships
                                 .firstWhere(
                                   (item) =>
                                       item.relationshipId == relationshipId,
@@ -988,13 +1292,13 @@ class _DocumentaryBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.asset('assets/images/bg.jpg', fit: BoxFit.cover),
-          ColoredBox(color: Colors.black.withValues(alpha: 0.30)),
-          SafeArea(top: false, child: child),
-        ],
-      );
+    fit: StackFit.expand,
+    children: [
+      Image.asset('assets/images/bg.jpg', fit: BoxFit.cover),
+      ColoredBox(color: Colors.black.withValues(alpha: 0.30)),
+      SafeArea(top: false, child: child),
+    ],
+  );
 }
 
 class _DocumentaryGlassCard extends StatelessWidget {
@@ -1003,13 +1307,13 @@ class _DocumentaryGlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.20)),
-        ),
-        child: child,
-      );
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: 0.14),
+      borderRadius: BorderRadius.circular(22),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.20)),
+    ),
+    child: child,
+  );
 }
 
 class _DocumentaryPageIntroduction extends StatelessWidget {
@@ -1018,68 +1322,21 @@ class _DocumentaryPageIntroduction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => _DocumentaryGlassCard(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    child: Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Row(
             children: [
-              const Row(
-                children: [
-                  Icon(Icons.receipt_long_outlined, size: 34),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Bollette e pagamenti',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Conserva importi, scadenze e alternative di pagamento in un unico posto.',
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton.icon(
-                  onPressed: onAdd,
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Aggiungi'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-}
-
-class _DocumentaryEditorIntroduction extends StatelessWidget {
-  const _DocumentaryEditorIntroduction();
-
-  @override
-  Widget build(BuildContext context) => const _DocumentaryGlassCard(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(Icons.edit_note_rounded, size: 34),
+              Icon(Icons.receipt_long_outlined, size: 34),
               SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Aggiungi ciò che sai',
+                      'Bollette e pagamenti',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -1087,15 +1344,59 @@ class _DocumentaryEditorIntroduction extends StatelessWidget {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      'Puoi indicare più modi di pagare e annotare costi futuri ancora incerti.',
+                      'Conserva importi, scadenze e alternative di pagamento in un unico posto.',
                     ),
                   ],
                 ),
               ),
             ],
           ),
-        ),
-      );
+          const SizedBox(height: 16),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Aggiungi'),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _DocumentaryEditorIntroduction extends StatelessWidget {
+  const _DocumentaryEditorIntroduction();
+
+  @override
+  Widget build(BuildContext context) => const _DocumentaryGlassCard(
+    child: Padding(
+      padding: EdgeInsets.all(20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.edit_note_rounded, size: 34),
+          SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Aggiungi ciò che sai',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Puoi indicare più modi di pagare e annotare costi futuri ancora incerti.',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _DocumentaryFormSection extends StatelessWidget {
@@ -1113,48 +1414,48 @@ class _DocumentaryFormSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => _DocumentaryGlassCard(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    child: Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(icon, color: const Color(0xFFA8D5BA)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          subtitle,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.72),
-                          ),
-                        ),
-                      ],
+              Icon(icon, color: const Color(0xFFA8D5BA)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.72),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 18),
-              for (var index = 0; index < children.length; index++) ...[
-                if (index > 0) const SizedBox(height: 12),
-                children[index],
-              ],
             ],
           ),
-        ),
-      );
+          const SizedBox(height: 18),
+          for (var index = 0; index < children.length; index++) ...[
+            if (index > 0) const SizedBox(height: 12),
+            children[index],
+          ],
+        ],
+      ),
+    ),
+  );
 }
 
 class _DocumentaryEmptyState extends StatelessWidget {
@@ -1163,62 +1464,96 @@ class _DocumentaryEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: _DocumentaryGlassCard(
-            child: Padding(
-              padding: const EdgeInsets.all(28),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.receipt_long_outlined, size: 52),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Nessuna bolletta o pagamento',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 21, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Aggiungi il primo documento per ricordare importi, scadenze e alternative di pagamento.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.75),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  FilledButton.icon(
-                    onPressed: onAdd,
-                    icon: const Icon(Icons.add_rounded),
-                    label: const Text('Aggiungi'),
-                  ),
-                ],
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: _DocumentaryGlassCard(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.receipt_long_outlined, size: 52),
+              const SizedBox(height: 16),
+              const Text(
+                'Nessuna bolletta o pagamento',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 21, fontWeight: FontWeight.w700),
               ),
-            ),
+              const SizedBox(height: 8),
+              Text(
+                'Aggiungi il primo documento per ricordare importi, scadenze e alternative di pagamento.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.75)),
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: onAdd,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Aggiungi'),
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _MaterializeDialog extends StatefulWidget {
   final DateTime initialDate;
   const _MaterializeDialog({required this.initialDate});
-  @override State<_MaterializeDialog> createState() => _MaterializeDialogState();
+  @override
+  State<_MaterializeDialog> createState() => _MaterializeDialogState();
 }
 
 class _MaterializeDialogState extends State<_MaterializeDialog> {
   final amount = TextEditingController();
   late DateTime dueDate = widget.initialDate;
-  @override void dispose() { amount.dispose(); super.dispose(); }
-  @override Widget build(BuildContext context) => AlertDialog(
+  @override
+  void dispose() {
+    amount.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
     title: const Text('Documento arrivato'),
-    content: Column(mainAxisSize: MainAxisSize.min, children: [
-      TextField(controller: amount, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Importo conosciuto')),
-      ListTile(title: const Text('Scadenza reale'), subtitle: Text(_date(dueDate)), onTap: () async { final value = await showDatePicker(context: context, initialDate: dueDate, firstDate: DateTime(2000), lastDate: DateTime(2100)); if (value != null) setState(() => dueDate = value); }),
-    ]),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextField(
+          controller: amount,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(labelText: 'Importo conosciuto'),
+        ),
+        ListTile(
+          title: const Text('Scadenza reale'),
+          subtitle: Text(_date(dueDate)),
+          onTap: () async {
+            final value = await showDatePicker(
+              context: context,
+              initialDate: dueDate,
+              firstDate: DateTime(2000),
+              lastDate: DateTime(2100),
+            );
+            if (value != null) setState(() => dueDate = value);
+          },
+        ),
+      ],
+    ),
     actions: [
-      TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annulla')),
-      FilledButton(onPressed: () { final parsed = double.tryParse(amount.text.replaceAll(',', '.')); if (parsed != null && parsed > 0) Navigator.pop(context, (amount: parsed, dueDate: dueDate)); }, child: const Text('Conferma arrivo')),
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Annulla'),
+      ),
+      FilledButton(
+        onPressed: () {
+          final parsed = double.tryParse(amount.text.replaceAll(',', '.'));
+          if (parsed != null && parsed > 0)
+            Navigator.pop(context, (amount: parsed, dueDate: dueDate));
+        },
+        child: const Text('Conferma arrivo'),
+      ),
     ],
   );
 }
@@ -1226,7 +1561,146 @@ class _MaterializeDialogState extends State<_MaterializeDialog> {
 class _OptionDialog extends StatefulWidget {
   final int index;
   const _OptionDialog({required this.index});
-  @override State<_OptionDialog> createState() => _OptionDialogState();
+  @override
+  State<_OptionDialog> createState() => _OptionDialogState();
+}
+
+class _DocumentComponentDialog extends StatefulWidget {
+  final int index;
+  const _DocumentComponentDialog({required this.index});
+  @override
+  State<_DocumentComponentDialog> createState() =>
+      _DocumentComponentDialogState();
+}
+
+class _DocumentComponentDialogState extends State<_DocumentComponentDialog> {
+  final label = TextEditingController();
+  final classification = TextEditingController();
+  final amount = TextEditingController();
+  @override
+  void dispose() {
+    label.dispose();
+    classification.dispose();
+    amount.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Componente del documento'),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextField(
+          controller: label,
+          decoration: const InputDecoration(labelText: 'Descrizione'),
+        ),
+        TextField(
+          controller: classification,
+          decoration: const InputDecoration(labelText: 'Codice categoria'),
+        ),
+        TextField(
+          controller: amount,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(labelText: 'Importo'),
+        ),
+      ],
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Annulla'),
+      ),
+      FilledButton(
+        onPressed: () {
+          final parsed = double.tryParse(amount.text.replaceAll(',', '.'));
+          if (parsed == null ||
+              parsed <= 0 ||
+              label.text.trim().isEmpty ||
+              classification.text.trim().isEmpty)
+            return;
+          Navigator.pop(
+            context,
+            DocumentaryEconomicComponent(
+              componentId: 'component_${widget.index}',
+              label: label.text,
+              classificationCode: classification.text,
+              amount: parsed,
+            ),
+          );
+        },
+        child: const Text('Aggiungi'),
+      ),
+    ],
+  );
+}
+
+class _RelationshipIdentifierDialog extends StatefulWidget {
+  const _RelationshipIdentifierDialog();
+  @override
+  State<_RelationshipIdentifierDialog> createState() =>
+      _RelationshipIdentifierDialogState();
+}
+
+class _RelationshipIdentifierDialogState
+    extends State<_RelationshipIdentifierDialog> {
+  final namespace = TextEditingController();
+  final value = TextEditingController();
+  final provenance = TextEditingController();
+  @override
+  void dispose() {
+    namespace.dispose();
+    value.dispose();
+    provenance.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Identificatore relazione'),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextField(
+          controller: namespace,
+          decoration: const InputDecoration(labelText: 'Tipo / namespace'),
+        ),
+        TextField(
+          controller: value,
+          decoration: const InputDecoration(labelText: 'Valore'),
+        ),
+        TextField(
+          controller: provenance,
+          decoration: const InputDecoration(
+            labelText: 'Provenienza (opzionale)',
+          ),
+        ),
+      ],
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Annulla'),
+      ),
+      FilledButton(
+        onPressed: () {
+          if (namespace.text.trim().isEmpty || value.text.trim().isEmpty)
+            return;
+          Navigator.pop(
+            context,
+            ExpenseRelationshipIdentifier(
+              namespace: namespace.text,
+              value: value.text,
+              provenance: provenance.text.trim().isEmpty
+                  ? null
+                  : provenance.text,
+            ),
+          );
+        },
+        child: const Text('Aggiungi'),
+      ),
+    ],
+  );
 }
 
 class _OptionDialogState extends State<_OptionDialog> {
@@ -1234,7 +1708,13 @@ class _OptionDialogState extends State<_OptionDialog> {
   final amount = TextEditingController();
   DateTime? dueDate;
   final installments = <DocumentaryInstallment>[];
-  @override void dispose() { label.dispose(); amount.dispose(); super.dispose(); }
+  @override
+  void dispose() {
+    label.dispose();
+    amount.dispose();
+    super.dispose();
+  }
+
   void _addInstallment() {
     final parsed = double.tryParse(amount.text.replaceAll(',', '.'));
     if (parsed == null || parsed <= 0 || dueDate == null) return;
@@ -1251,40 +1731,157 @@ class _OptionDialogState extends State<_OptionDialog> {
       dueDate = null;
     });
   }
-  @override Widget build(BuildContext context) => AlertDialog(
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
     title: const Text('Come puoi pagarla?'),
-    content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      TextField(controller: label, decoration: const InputDecoration(labelText: 'Nome dell’alternativa')),
-      TextField(controller: amount, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Importo di questo pagamento')),
-      ListTile(title: const Text('Quando scade?'), subtitle: Text(dueDate == null ? 'Scegli una data' : _date(dueDate!)), onTap: () async { final value = await showDatePicker(context: context, initialDate: dueDate ?? DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100)); if (value != null) setState(() => dueDate = value); }),
-      OutlinedButton(onPressed: dueDate == null ? null : _addInstallment, child: const Text('Aggiungi questo pagamento')),
-      for (final item in installments) Text('${EuroFormatter.format(item.amount)} · ${_date(item.dueDate)}'),
-    ])),
-    actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annulla')), FilledButton(onPressed: installments.isEmpty ? null : () => Navigator.pop(context, DocumentaryFulfillmentOption(optionId: 'option_${widget.index}', label: label.text, installments: installments)), child: const Text('Conferma'))],
+    content: SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: label,
+            decoration: const InputDecoration(
+              labelText: 'Nome dell’alternativa',
+            ),
+          ),
+          TextField(
+            controller: amount,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Importo di questo pagamento',
+            ),
+          ),
+          ListTile(
+            title: const Text('Quando scade?'),
+            subtitle: Text(
+              dueDate == null ? 'Scegli una data' : _date(dueDate!),
+            ),
+            onTap: () async {
+              final value = await showDatePicker(
+                context: context,
+                initialDate: dueDate ?? DateTime.now(),
+                firstDate: DateTime(2000),
+                lastDate: DateTime(2100),
+              );
+              if (value != null) setState(() => dueDate = value);
+            },
+          ),
+          OutlinedButton(
+            onPressed: dueDate == null ? null : _addInstallment,
+            child: const Text('Aggiungi questo pagamento'),
+          ),
+          for (final item in installments)
+            Text(
+              '${EuroFormatter.format(item.amount)} · ${_date(item.dueDate)}',
+            ),
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Annulla'),
+      ),
+      FilledButton(
+        onPressed: installments.isEmpty
+            ? null
+            : () => Navigator.pop(
+                context,
+                DocumentaryFulfillmentOption(
+                  optionId: 'option_${widget.index}',
+                  label: label.text,
+                  installments: installments,
+                ),
+              ),
+        child: const Text('Conferma'),
+      ),
+    ],
   );
 }
 
 class _ContingencyDialog extends StatefulWidget {
-  final int index; const _ContingencyDialog({required this.index});
-  @override State<_ContingencyDialog> createState() => _ContingencyDialogState();
+  final int index;
+  const _ContingencyDialog({required this.index});
+  @override
+  State<_ContingencyDialog> createState() => _ContingencyDialogState();
 }
+
 class _ContingencyDialogState extends State<_ContingencyDialog> {
-  final description = TextEditingController(); DateTime? date;
-  @override void dispose() { description.dispose(); super.dispose(); }
-  @override Widget build(BuildContext context) => AlertDialog(
+  final description = TextEditingController();
+  DateTime? date;
+  @override
+  void dispose() {
+    description.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
     title: const Text('Possibile pagamento futuro'),
-    content: Column(mainAxisSize: MainAxisSize.min, children: [TextField(controller: description, decoration: const InputDecoration(labelText: 'Che cosa potrebbe arrivare?')), ListTile(title: const Text('Quando potrebbe arrivare? (opzionale)'), subtitle: Text(date == null ? 'Data non indicata' : _date(date!)), onTap: () async { final value = await showDatePicker(context: context, initialDate: date ?? DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100)); if (value != null) setState(() => date = value); })]),
-    actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annulla')), FilledButton(onPressed: () => Navigator.pop(context, DocumentaryContingency(contingencyId: 'contingency_${widget.index}', description: description.text, anticipatedDueDate: date)), child: const Text('Aggiungi'))],
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextField(
+          controller: description,
+          decoration: const InputDecoration(
+            labelText: 'Che cosa potrebbe arrivare?',
+          ),
+        ),
+        ListTile(
+          title: const Text('Quando potrebbe arrivare? (opzionale)'),
+          subtitle: Text(date == null ? 'Data non indicata' : _date(date!)),
+          onTap: () async {
+            final value = await showDatePicker(
+              context: context,
+              initialDate: date ?? DateTime.now(),
+              firstDate: DateTime(2000),
+              lastDate: DateTime(2100),
+            );
+            if (value != null) setState(() => date = value);
+          },
+        ),
+      ],
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Annulla'),
+      ),
+      FilledButton(
+        onPressed: () => Navigator.pop(
+          context,
+          DocumentaryContingency(
+            contingencyId: 'contingency_${widget.index}',
+            description: description.text,
+            anticipatedDueDate: date,
+          ),
+        ),
+        child: const Text('Aggiungi'),
+      ),
+    ],
   );
 }
 
-String _date(DateTime value) => '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
+String _date(DateTime value) =>
+    '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
 String _monthName(int month) => const [
-  'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-  'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
+  'Gennaio',
+  'Febbraio',
+  'Marzo',
+  'Aprile',
+  'Maggio',
+  'Giugno',
+  'Luglio',
+  'Agosto',
+  'Settembre',
+  'Ottobre',
+  'Novembre',
+  'Dicembre',
 ][month - 1];
-String _contingencyStatus(DocumentaryContingencyStatus status) => switch (status) {
-  DocumentaryContingencyStatus.pending => 'Da verificare',
-  DocumentaryContingencyStatus.materialized => 'Arrivato',
-  DocumentaryContingencyStatus.notDue => 'Non dovuto',
-};
+String _contingencyStatus(DocumentaryContingencyStatus status) =>
+    switch (status) {
+      DocumentaryContingencyStatus.pending => 'Da verificare',
+      DocumentaryContingencyStatus.materialized => 'Arrivato',
+      DocumentaryContingencyStatus.notDue => 'Non dovuto',
+    };

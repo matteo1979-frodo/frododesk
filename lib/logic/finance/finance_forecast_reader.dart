@@ -169,8 +169,9 @@ class FinanceForecastReader {
             ? FinanceForecastTemporalKnowledge.economicDateKnown
             : FinanceForecastTemporalKnowledge.unlocated;
       case FutureOutflowDatePresentation.finitePlanForecast:
-      case FutureOutflowDatePresentation.documentaryDeadline:
         return FinanceForecastTemporalKnowledge.economicDateKnown;
+      case FutureOutflowDatePresentation.documentaryDeadline:
+        return FinanceForecastTemporalKnowledge.unlocated;
       case FutureOutflowDatePresentation.expectedDocumentPeriod:
       case FutureOutflowDatePresentation.documentaryChoiceRequired:
         return item.placementPeriod == null

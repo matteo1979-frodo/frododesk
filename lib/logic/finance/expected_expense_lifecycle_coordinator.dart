@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../../models/composite_economic_operation.dart';
+import '../../models/balance_posting_mode.dart';
 import '../../models/economic_operation_metadata.dart';
 import '../../models/expense_relationship.dart';
 import '../../models/expected_expense_occurrence.dart';
@@ -75,6 +76,7 @@ class ExpectedExpensePayment {
   final String description;
   final double amount;
   final List<ExpectedExpenseAccessoryPayment> accessories;
+  final BalancePostingMode balancePostingMode;
 
   ExpectedExpensePayment({
     required this.paidAt,
@@ -84,6 +86,7 @@ class ExpectedExpensePayment {
     required String description,
     required this.amount,
     Iterable<ExpectedExpenseAccessoryPayment> accessories = const [],
+    this.balancePostingMode = BalancePostingMode.affectsCurrentBalance,
   }) : balanceId = _requiredText(balanceId, 'balanceId'),
        category = _requiredText(category, 'category'),
        description = _requiredText(description, 'description'),
@@ -229,6 +232,7 @@ class ExpectedExpenseLifecycleCoordinator {
             economicDate: payment.paidAt,
             description: payment.description,
             category: payment.category,
+            balancePostingMode: payment.balancePostingMode,
           ),
         );
     if (economic.status == CompositeEconomicOperationStatus.inconsistent) {

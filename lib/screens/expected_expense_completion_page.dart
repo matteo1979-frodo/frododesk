@@ -9,6 +9,7 @@ import '../logic/finance/manual_payment_window_materializer.dart';
 import '../models/expense_relationship.dart';
 import '../models/expected_expense_occurrence.dart';
 import '../models/economic_operation_metadata.dart';
+import '../models/balance_posting_mode.dart';
 import '../models/manual_payment_preference.dart';
 import '../models/planned_economic_impact.dart';
 import '../stores/finance_store.dart';
@@ -296,6 +297,7 @@ class _ExpectedExpenseCompletionPageState
     final bankFee = TextEditingController();
     final postalFee = TextEditingController();
     var paidAt = DateTime.now();
+    var alreadyIncludedInCurrentBalance = false;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -326,6 +328,17 @@ class _ExpectedExpenseCompletionPageState
                   ),
                   decoration: const InputDecoration(
                     labelText: 'Importo pagato',
+                  ),
+                ),
+                CheckboxListTile(
+                  key: const Key('expected-payment-historical-posting'),
+                  value: alreadyIncludedInCurrentBalance,
+                  title: const Text('Pagamento già incluso nel saldo attuale'),
+                  subtitle: const Text(
+                    'Registra lo storico senza sottrarre nuovamente il denaro.',
+                  ),
+                  onChanged: (value) => setDialogState(
+                    () => alreadyIncludedInCurrentBalance = value ?? false,
                   ),
                 ),
                 TextField(
@@ -420,6 +433,9 @@ class _ExpectedExpenseCompletionPageState
               category: category.text,
               description: description.text,
               amount: parsedAmount,
+              balancePostingMode: alreadyIncludedInCurrentBalance
+                  ? BalancePostingMode.alreadyIncludedInCurrentBalance
+                  : BalancePostingMode.affectsCurrentBalance,
               accessories: [
                 if (parsedBankFee != null)
                   (

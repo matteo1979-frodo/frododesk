@@ -30,6 +30,120 @@ import 'package:frododesk/screens/documentary_obligations_page.dart';
 
 void main() {
   group('DocumentaryObligation', () {
+    test(
+      'generic invoice knowledge round-trips without inventing payment data',
+      () {
+        final relationship = ExpenseRelationship(
+          relationshipId: 'relationship-electricity',
+          service: 'Fornitura energia',
+          provider: 'Fornitore energia',
+          subject: FinanceSubject.chiara,
+          status: ExpenseRelationshipStatus.active,
+          periodicity: ExpenseRelationshipPeriodicity(
+            type: FinanceRecurringType.monthly,
+          ),
+          paymentConfiguration: ExpenseRelationshipPaymentConfiguration(
+            method: FinancePaymentMethod.rid,
+          ),
+          identifiers: [
+            ExpenseRelationshipIdentifier(
+              namespace: 'supplier-customer-code',
+              value: 'C-001',
+              provenance: 'document',
+            ),
+            ExpenseRelationshipIdentifier(
+              namespace: 'service-point',
+              value: 'POD-001',
+            ),
+          ],
+          commercialTerm: ExpenseRelationshipCommercialTerm(
+            effectiveFrom: DateTime(2025, 7, 1),
+          ),
+        );
+        final document = DocumentaryObligation(
+          obligationId: 'invoice-2026-02',
+          title: 'Documento febbraio 2026',
+          totalAmount: 65.84,
+          documentHolder: FinanceSubject.chiara,
+          documentReference: 'INV-2026-02',
+          documentReferenceType: DocumentaryReferenceType.invoiceNumber,
+          issuedAt: DateTime(2026, 3, 12),
+          competencePeriod: DocumentaryCompetencePeriod(
+            startDate: DateTime(2026, 2, 1),
+            endDate: DateTime(2026, 2, 28),
+            semantic: DocumentaryCompetencePeriodSemantic.service,
+          ),
+          components: [
+            DocumentaryEconomicComponent(
+              componentId: 'energy',
+              label: 'Fornitura',
+              classificationCode: 'utility.energy',
+              amount: 56.84,
+            ),
+            DocumentaryEconomicComponent(
+              componentId: 'public-fee',
+              label: 'Componente pubblica',
+              classificationCode: 'public_fee.broadcasting',
+              amount: 9,
+            ),
+          ],
+          relationshipId: relationship.relationshipId,
+          cycleSequence: 1,
+          options: [
+            DocumentaryFulfillmentOption(
+              optionId: 'single',
+              label: 'Soluzione unica',
+              installments: [
+                DocumentaryInstallment(
+                  installmentId: 'single-1',
+                  amount: 65.84,
+                  dueDate: DateTime(2026, 4, 1),
+                ),
+              ],
+            ),
+          ],
+        );
+
+        final restoredRelationship = ExpenseRelationship.fromJson(
+          relationship.toJson(),
+        );
+        final restoredDocument = DocumentaryObligation.fromJson(
+          document.toJson(),
+        );
+        expect(restoredRelationship.toJson(), relationship.toJson());
+        expect(
+          restoredRelationship.paymentConfiguration.expectedBalanceId,
+          isNull,
+        );
+        expect(restoredRelationship.identifiers, hasLength(2));
+        expect(restoredDocument.toJson(), document.toJson());
+        expect(restoredDocument.receivedAt, isNull);
+        expect(
+          restoredDocument.competencePeriod!.endDate,
+          DateTime(2026, 2, 28),
+        );
+        expect(
+          restoredDocument.components.map((item) => item.classificationCode),
+          ['utility.energy', 'public_fee.broadcasting'],
+        );
+        expect(
+          restoredDocument.operationalInstallments.single.isFulfilled,
+          isFalse,
+        );
+      },
+    );
+
+    test('legacy JSON defaults new documentary knowledge safely', () {
+      final legacy = _sorit().toJson()
+        ..remove('documentReferenceType')
+        ..remove('competencePeriod')
+        ..remove('components');
+      final restored = DocumentaryObligation.fromJson(legacy);
+      expect(restored.documentReferenceType, isNull);
+      expect(restored.competencePeriod, isNull);
+      expect(restored.components, isEmpty);
+    });
+
     test('JSON round-trip preserves optional documentary knowledge', () {
       final source = _tari();
       final restored = DocumentaryObligation.fromJson(source.toJson());
@@ -39,17 +153,22 @@ void main() {
     });
 
     test('legacy aggregate without obligations loads empty', () async {
-      final persistence = DocumentaryObligationPersistence(load: (_) async => null);
+      final persistence = DocumentaryObligationPersistence(
+        load: (_) async => null,
+      );
       expect((await persistence.load()).obligations, isEmpty);
     });
 
-    test('legacy aggregate without expected documents remains compatible', () async {
-      final persistence = DocumentaryObligationPersistence(
-        load: (_) async => '{"version":1,"obligations":[]}',
-      );
-      final restored = await persistence.load();
-      expect(restored.expectedDocuments, isEmpty);
-    });
+    test(
+      'legacy aggregate without expected documents remains compatible',
+      () async {
+        final persistence = DocumentaryObligationPersistence(
+          load: (_) async => '{"version":1,"obligations":[]}',
+        );
+        final restored = await persistence.load();
+        expect(restored.expectedDocuments, isEmpty);
+      },
+    );
 
     test('expected document cycle carries a month but no economic amount', () {
       final expected = ExpectedDocumentCycle(
@@ -72,17 +191,42 @@ void main() {
       final value = _tari().selectOption('single');
       expect(value.operationalInstallments, hasLength(1));
       expect(value.operationalInstallments.single.amount, 173);
-      expect(value.operationalInstallments.single.dueDate, DateTime(2026, 6, 30));
-      expect(value.isLate(installmentId: 'single-1', paidAt: DateTime(2026, 4, 7)), isFalse);
-      expect(value.options.singleWhere((item) => item.optionId == 'installments').installments.map((item) => item.amount), [58, 58, 57]);
+      expect(
+        value.operationalInstallments.single.dueDate,
+        DateTime(2026, 6, 30),
+      );
+      expect(
+        value.isLate(installmentId: 'single-1', paidAt: DateTime(2026, 4, 7)),
+        isFalse,
+      );
+      expect(
+        value.options
+            .singleWhere((item) => item.optionId == 'installments')
+            .installments
+            .map((item) => item.amount),
+        [58, 58, 57],
+      );
     });
 
-    test('installment option has three distinct deadlines summing obligation', () {
-      final value = _tari().selectOption('installments');
-      expect(value.operationalInstallments, hasLength(3));
-      expect(value.operationalInstallments.fold<double>(0, (sum, item) => sum + item.amount), 173);
-      expect(value.operationalInstallments.map((item) => item.dueDate), [DateTime(2026, 3, 31), DateTime(2026, 6, 30), DateTime(2026, 9, 30)]);
-    });
+    test(
+      'installment option has three distinct deadlines summing obligation',
+      () {
+        final value = _tari().selectOption('installments');
+        expect(value.operationalInstallments, hasLength(3));
+        expect(
+          value.operationalInstallments.fold<double>(
+            0,
+            (sum, item) => sum + item.amount,
+          ),
+          173,
+        );
+        expect(value.operationalInstallments.map((item) => item.dueDate), [
+          DateTime(2026, 3, 31),
+          DateTime(2026, 6, 30),
+          DateTime(2026, 9, 30),
+        ]);
+      },
+    );
 
     test('different second selection conflicts while retry is stable', () {
       final selected = _tari().selectOption('single');
@@ -92,51 +236,77 @@ void main() {
 
     test('pending contingency has no amount and no projected outflow', () {
       final value = _tari();
-      expect(value.contingencies.single.status, DocumentaryContingencyStatus.pending);
-      final projected = const DocumentaryObligationProjectionAdapter().project(DocumentaryObligationAggregate(obligations: [value]));
+      expect(
+        value.contingencies.single.status,
+        DocumentaryContingencyStatus.pending,
+      );
+      final projected = const DocumentaryObligationProjectionAdapter().project(
+        DocumentaryObligationAggregate(obligations: [value]),
+      );
       expect(projected, isEmpty);
     });
 
-    test('legacy contingency status decodes without rewriting persistence', () async {
-      var writes = 0;
-      final source = _tari().toJson();
-      final raw = jsonEncode({
-        'version': 1,
-        'obligations': [source],
-        'expectedDocuments': const [],
-      });
-      final persistence = DocumentaryObligationPersistence(
-        load: (_) async => raw,
-        save: (_, value) async {
-          writes++;
-          return PersistenceWriteVerification(
-            backendAccepted: true,
-            readBack: value,
-          );
-        },
-      );
+    test(
+      'legacy contingency status decodes without rewriting persistence',
+      () async {
+        var writes = 0;
+        final source = _tari().toJson();
+        final raw = jsonEncode({
+          'version': 1,
+          'obligations': [source],
+          'expectedDocuments': const [],
+        });
+        final persistence = DocumentaryObligationPersistence(
+          load: (_) async => raw,
+          save: (_, value) async {
+            writes++;
+            return PersistenceWriteVerification(
+              backendAccepted: true,
+              readBack: value,
+            );
+          },
+        );
 
-      final restored = await persistence.load();
+        final restored = await persistence.load();
 
-      expect(restored.obligations.single.contingencies.single.status,
-          DocumentaryContingencyStatus.pending);
-      expect(writes, 0);
-    });
+        expect(
+          restored.obligations.single.contingencies.single.status,
+          DocumentaryContingencyStatus.pending,
+        );
+        expect(writes, 0);
+      },
+    );
 
     test('not-due contingency stays closed and creates no outflow', () {
       final source = _tari();
-      final closed = source.replaceContingency(source.contingencies.single.copyWith(status: DocumentaryContingencyStatus.notDue));
-      expect(closed.contingencies.single.status, DocumentaryContingencyStatus.notDue);
-      expect(const DocumentaryObligationProjectionAdapter().project(DocumentaryObligationAggregate(obligations: [closed])), isEmpty);
+      final closed = source.replaceContingency(
+        source.contingencies.single.copyWith(
+          status: DocumentaryContingencyStatus.notDue,
+        ),
+      );
+      expect(
+        closed.contingencies.single.status,
+        DocumentaryContingencyStatus.notDue,
+      );
+      expect(
+        const DocumentaryObligationProjectionAdapter().project(
+          DocumentaryObligationAggregate(obligations: [closed]),
+        ),
+        isEmpty,
+      );
     });
 
-    test('projection contains selected option only and does not double count', () {
-      final value = _tari().selectOption('single');
-      final projected = const DocumentaryObligationProjectionAdapter().project(DocumentaryObligationAggregate(obligations: [value]));
-      expect(projected, hasLength(1));
-      expect(projected.single.amount, 173);
-      expect(projected.single.identity, 'documentary:tari-2026:single-1');
-    });
+    test(
+      'projection contains selected option only and does not double count',
+      () {
+        final value = _tari().selectOption('single');
+        final projected = const DocumentaryObligationProjectionAdapter()
+            .project(DocumentaryObligationAggregate(obligations: [value]));
+        expect(projected, hasLength(1));
+        expect(projected.single.amount, 173);
+        expect(projected.single.identity, 'documentary:tari-2026:single-1');
+      },
+    );
 
     test('documentary installment takes precedence over projected cycle', () {
       final obligation = DocumentaryObligation.fromJson({
@@ -144,9 +314,8 @@ void main() {
         'relationshipId': 'annual-tax',
         'cycleSequence': 1,
       });
-      final documentary = const DocumentaryObligationProjectionAdapter().project(
-        DocumentaryObligationAggregate(obligations: [obligation]),
-      );
+      final documentary = const DocumentaryObligationProjectionAdapter()
+          .project(DocumentaryObligationAggregate(obligations: [obligation]));
       final projected = ProjectedExpenseCycle(
         identity: const ExpenseCycleIdentity(
           relationshipId: 'annual-tax',
@@ -182,59 +351,61 @@ void main() {
     });
 
     for (final realAmount in [160.0, 190.0]) {
-      test('real document $realAmount suppresses a 173 estimate by cycle identity', () {
-        final projected = ProjectedExpenseCycle(
-          identity: const ExpenseCycleIdentity(
+      test(
+        'real document $realAmount suppresses a 173 estimate by cycle identity',
+        () {
+          final projected = ProjectedExpenseCycle(
+            identity: const ExpenseCycleIdentity(
+              relationshipId: 'annual-tax',
+              cycleSequence: 2,
+            ),
+            expectedPeriod: ExpectedDocumentPeriod(year: 2027, month: 3),
+            sourceOccurrenceId: 'documentary_annual-tax_2',
+            service: 'TARI',
+            provider: 'Comune',
+            expectedAmount: 173,
+            expectedSubject: FinanceSubject.matteo,
+            expectedPaymentConfiguration:
+                ExpenseRelationshipPaymentConfiguration(
+                  method: FinancePaymentMethod.manual,
+                ),
+            paymentExecutionMode: PaymentExecutionMode.unknown,
+            provisional: true,
+          );
+          final documentary = FutureOutflowPresentation(
+            identity: 'documentary:tari-2027:single',
+            authority: FutureOutflowAuthority.documentaryObligation,
+            title: 'TARI 2027',
+            details: '',
+            amount: realAmount,
+            placementStart: DateTime(2027, 6, 30),
+            placementEnd: DateTime(2027, 6, 30),
+            datePresentation: FutureOutflowDatePresentation.documentaryDeadline,
+            requiresPlanning: false,
+            provisional: false,
+            requiresUserAction: true,
+            overdue: false,
             relationshipId: 'annual-tax',
             cycleSequence: 2,
-          ),
-          expectedPeriod: ExpectedDocumentPeriod(year: 2027, month: 3),
-          sourceOccurrenceId: 'documentary_annual-tax_2',
-          service: 'TARI',
-          provider: 'Comune',
-          expectedAmount: 173,
-          expectedSubject: FinanceSubject.matteo,
-          expectedPaymentConfiguration:
-              ExpenseRelationshipPaymentConfiguration(
-                method: FinancePaymentMethod.manual,
-              ),
-          paymentExecutionMode: PaymentExecutionMode.unknown,
-          provisional: true,
-        );
-        final documentary = FutureOutflowPresentation(
-          identity: 'documentary:tari-2027:single',
-          authority: FutureOutflowAuthority.documentaryObligation,
-          title: 'TARI 2027',
-          details: '',
-          amount: realAmount,
-          placementStart: DateTime(2027, 6, 30),
-          placementEnd: DateTime(2027, 6, 30),
-          datePresentation:
-              FutureOutflowDatePresentation.documentaryDeadline,
-          requiresPlanning: false,
-          provisional: false,
-          requiresUserAction: true,
-          overdue: false,
-          relationshipId: 'annual-tax',
-          cycleSequence: 2,
-        );
+          );
 
-        final overview = const FutureOutflowPresentationComposer().compose(
-          expectedExpenses: const [],
-          projectedCycles: [projected],
-          finitePlans: const [],
-          referenceTime: DateTime(2027),
-          documentaryInstallments: [documentary],
-        );
-        final items = [
-          ...overview.pastMonths,
-          ...overview.currentMonth,
-          for (final month in overview.futureMonths) ...month.items,
-          ...overview.unplaced,
-        ];
-        expect(items, hasLength(1));
-        expect(items.single.amount, realAmount);
-      });
+          final overview = const FutureOutflowPresentationComposer().compose(
+            expectedExpenses: const [],
+            projectedCycles: [projected],
+            finitePlans: const [],
+            referenceTime: DateTime(2027),
+            documentaryInstallments: [documentary],
+          );
+          final items = [
+            ...overview.pastMonths,
+            ...overview.currentMonth,
+            for (final month in overview.futureMonths) ...month.items,
+            ...overview.unplaced,
+          ];
+          expect(items, hasLength(1));
+          expect(items.single.amount, realAmount);
+        },
+      );
     }
 
     group('permanent documentary precedence', () {
@@ -245,75 +416,79 @@ void main() {
             final aggregate = _materializedDocumentaryAggregate(
               amount: realAmount,
             );
-            final sourceJson = aggregate.toJson();
-            final documentary =
-                const DocumentaryObligationProjectionAdapter()
-                    .projectWithAuthority(aggregate);
+            final sourceJson = _documentaryAggregateJson(aggregate);
+            final documentary = const DocumentaryObligationProjectionAdapter()
+                .projectWithAuthority(aggregate);
 
-            final overview =
-                const FutureOutflowPresentationComposer().compose(
-                  expectedExpenses: [_documentarySeed()],
-                  projectedCycles: [_documentaryProjectedCycle(sequence: 2)],
-                  finitePlans: const [],
-                  referenceTime: DateTime(2027, 1, 1),
-                  documentaryInstallments: documentary.items,
-                  materializedDocumentaryCycleIds:
-                      documentary.materializedCycleIdentities,
-                );
+            final overview = const FutureOutflowPresentationComposer().compose(
+              expectedExpenses: [_documentarySeed()],
+              projectedCycles: [_documentaryProjectedCycle(sequence: 2)],
+              finitePlans: const [],
+              referenceTime: DateTime(2027, 1, 1),
+              documentaryInstallments: documentary.items,
+              materializedDocumentaryCycleIds:
+                  documentary.materializedCycleIdentities,
+            );
             final items = _futureOutflowItems(overview);
 
-            expect(documentary.materializedCycleIdentities, [
-              'annual-tax#2',
-            ]);
+            expect(documentary.materializedCycleIdentities, ['annual-tax#2']);
             expect(documentary.operationalInstallments, isEmpty);
             expect(
               documentary.materializedObligationsAwaitingChoice,
               hasLength(1),
             );
             expect(items, hasLength(1));
-            expect(items.single.authority,
-                FutureOutflowAuthority.documentaryObligation);
+            expect(
+              items.single.authority,
+              FutureOutflowAuthority.documentaryObligation,
+            );
             expect(items.single.amount, realAmount);
-            expect(items.single.datePresentation,
-                FutureOutflowDatePresentation.documentaryChoiceRequired);
+            expect(
+              items.single.datePresentation,
+              FutureOutflowDatePresentation.documentaryChoiceRequired,
+            );
             expect(items.single.details, 'Scegli come pagare');
             expect(items.single.requiresUserAction, isTrue);
-            expect(aggregate.toJson(), sourceJson);
+            expect(_documentaryAggregateJson(aggregate), sourceJson);
           },
         );
       }
 
-      test('selected option exposes only installments without total duplication',
-          () {
-        final aggregate = _materializedDocumentaryAggregate(
-          amount: 173,
-          selected: true,
-        );
-        final documentary = const DocumentaryObligationProjectionAdapter()
-            .projectWithAuthority(aggregate);
-        final overview = const FutureOutflowPresentationComposer().compose(
-          expectedExpenses: [_documentarySeed()],
-          projectedCycles: [_documentaryProjectedCycle(sequence: 2)],
-          finitePlans: const [],
-          referenceTime: DateTime(2027, 1, 1),
-          documentaryInstallments: documentary.items,
-          materializedDocumentaryCycleIds:
-              documentary.materializedCycleIdentities,
-        );
-        final items = _futureOutflowItems(overview);
+      test(
+        'selected option exposes only installments without total duplication',
+        () {
+          final aggregate = _materializedDocumentaryAggregate(
+            amount: 173,
+            selected: true,
+          );
+          final documentary = const DocumentaryObligationProjectionAdapter()
+              .projectWithAuthority(aggregate);
+          final overview = const FutureOutflowPresentationComposer().compose(
+            expectedExpenses: [_documentarySeed()],
+            projectedCycles: [_documentaryProjectedCycle(sequence: 2)],
+            finitePlans: const [],
+            referenceTime: DateTime(2027, 1, 1),
+            documentaryInstallments: documentary.items,
+            materializedDocumentaryCycleIds:
+                documentary.materializedCycleIdentities,
+          );
+          final items = _futureOutflowItems(overview);
 
-        expect(documentary.operationalInstallments, hasLength(1));
-        expect(documentary.materializedObligationsAwaitingChoice, isEmpty);
-        expect(items, hasLength(1));
-        expect(items.single.identity, 'documentary:tari-2027:single-1');
-        expect(items.single.amount, 173);
-        expect(
-          items.where((item) =>
-              item.datePresentation ==
-              FutureOutflowDatePresentation.documentaryChoiceRequired),
-          isEmpty,
-        );
-      });
+          expect(documentary.operationalInstallments, hasLength(1));
+          expect(documentary.materializedObligationsAwaitingChoice, isEmpty);
+          expect(items, hasLength(1));
+          expect(items.single.identity, 'documentary:tari-2027:single-1');
+          expect(items.single.amount, 173);
+          expect(
+            items.where(
+              (item) =>
+                  item.datePresentation ==
+                  FutureOutflowDatePresentation.documentaryChoiceRequired,
+            ),
+            isEmpty,
+          );
+        },
+      );
 
       test('fulfilled document keeps authority and seed never returns', () {
         final aggregate = _materializedDocumentaryAggregate(
@@ -339,9 +514,9 @@ void main() {
       });
 
       test('duplicate documentary cycle identity fails explicitly', () {
-        final first = _materializedDocumentaryAggregate(amount: 173)
-            .obligations
-            .single;
+        final first = _materializedDocumentaryAggregate(
+          amount: 173,
+        ).obligations.single;
         final duplicate = DocumentaryObligation.fromJson({
           ...first.toJson(),
           'obligationId': 'tari-2027-duplicate',
@@ -371,9 +546,9 @@ void main() {
       });
 
       test('different cycle sequences and relationships remain valid', () {
-        final first = _materializedDocumentaryAggregate(amount: 173)
-            .obligations
-            .single;
+        final first = _materializedDocumentaryAggregate(
+          amount: 173,
+        ).obligations.single;
         final nextCycle = DocumentaryObligation.fromJson({
           ...first.toJson(),
           'obligationId': 'tari-2028',
@@ -387,140 +562,151 @@ void main() {
 
         final result = const DocumentaryObligationProjectionAdapter()
             .projectWithAuthority(
-          DocumentaryObligationAggregate(
-            obligations: [first, nextCycle, otherRelationship],
-          ),
-        );
-
-        expect(
-          result.materializedCycleIdentities,
-          ['annual-tax#2', 'annual-tax#3', 'other-tax#2'],
-        );
-      });
-
-      test('reload preserves complete fulfilled documentary precedence',
-          () async {
-        String? stored;
-        final persistence = DocumentaryObligationPersistence(
-          load: (_) async => stored,
-          save: (_, value) async {
-            stored = value;
-            return PersistenceWriteVerification(
-              backendAccepted: true,
-              readBack: value,
+              DocumentaryObligationAggregate(
+                obligations: [first, nextCycle, otherRelationship],
+              ),
             );
-          },
-        );
-        final source = _materializedDocumentaryAggregate(
-          amount: 181,
-          selected: true,
-          fulfilled: true,
-        );
-        await persistence.write(source);
-        final restored = await persistence.load();
-        final adapter = const DocumentaryObligationProjectionAdapter();
 
-        final before = adapter.projectWithAuthority(source);
-        final after = adapter.projectWithAuthority(restored);
-        final composer = const FutureOutflowPresentationComposer();
-        final expectedExpenses = [
-          _documentarySeed(sequence: 2),
-          _documentarySeed(identity: 'next-seed', sequence: 3),
-        ];
-        final projectedCycles = [
-          _documentaryProjectedCycle(sequence: 2),
-          _documentaryProjectedCycle(sequence: 3),
-        ];
-        final beforeOverview = composer.compose(
-          expectedExpenses: expectedExpenses,
-          projectedCycles: projectedCycles,
-          finitePlans: const [],
-          referenceTime: DateTime(2027, 1, 1),
-          documentaryInstallments: before.items,
-          materializedDocumentaryCycleIds:
-              before.materializedCycleIdentities,
-        );
-        final afterOverview = composer.compose(
-          expectedExpenses: expectedExpenses,
-          projectedCycles: projectedCycles,
-          finitePlans: const [],
-          referenceTime: DateTime(2027, 1, 1),
-          documentaryInstallments: after.items,
-          materializedDocumentaryCycleIds:
-              after.materializedCycleIdentities,
-        );
-        final beforeItems = _futureOutflowItems(beforeOverview);
-        final afterItems = _futureOutflowItems(afterOverview);
-
-        expect(after.materializedCycleIdentities,
-            before.materializedCycleIdentities);
-        expect(before.items, isEmpty);
-        expect(after.items, isEmpty);
-        expect(
-          afterItems.map(_futureOutflowSignature),
-          beforeItems.map(_futureOutflowSignature),
-        );
-        expect(afterItems.map((item) => item.identity), contains('next-seed'));
-        expect(
-          afterItems.map((item) => item.identity),
-          isNot(contains('documentary_annual-tax_2')),
-        );
-        expect(
-          afterItems.map((item) => item.identity),
-          isNot(contains('documentary:tari-2027:choice')),
-        );
+        expect(result.materializedCycleIdentities, [
+          'annual-tax#2',
+          'annual-tax#3',
+          'other-tax#2',
+        ]);
       });
 
-      test('materialized 2027 cycle does not suppress projected 2028 cycle', () {
-        final aggregate = _materializedDocumentaryAggregate(amount: 173);
-        final documentary = const DocumentaryObligationProjectionAdapter()
-            .projectWithAuthority(aggregate);
-        final overview = const FutureOutflowPresentationComposer().compose(
-          expectedExpenses: [_documentarySeed()],
-          projectedCycles: [
+      test(
+        'reload preserves complete fulfilled documentary precedence',
+        () async {
+          String? stored;
+          final persistence = DocumentaryObligationPersistence(
+            load: (_) async => stored,
+            save: (_, value) async {
+              stored = value;
+              return PersistenceWriteVerification(
+                backendAccepted: true,
+                readBack: value,
+              );
+            },
+          );
+          final source = _materializedDocumentaryAggregate(
+            amount: 181,
+            selected: true,
+            fulfilled: true,
+          );
+          await persistence.write(source);
+          final restored = await persistence.load();
+          final adapter = const DocumentaryObligationProjectionAdapter();
+
+          final before = adapter.projectWithAuthority(source);
+          final after = adapter.projectWithAuthority(restored);
+          final composer = const FutureOutflowPresentationComposer();
+          final expectedExpenses = [
+            _documentarySeed(sequence: 2),
+            _documentarySeed(identity: 'next-seed', sequence: 3),
+          ];
+          final projectedCycles = [
             _documentaryProjectedCycle(sequence: 2),
             _documentaryProjectedCycle(sequence: 3),
-          ],
-          finitePlans: const [],
-          referenceTime: DateTime(2027, 1, 1),
-          documentaryInstallments: documentary.items,
-          materializedDocumentaryCycleIds:
-              documentary.materializedCycleIdentities,
-        );
-        final items = _futureOutflowItems(overview);
+          ];
+          final beforeOverview = composer.compose(
+            expectedExpenses: expectedExpenses,
+            projectedCycles: projectedCycles,
+            finitePlans: const [],
+            referenceTime: DateTime(2027, 1, 1),
+            documentaryInstallments: before.items,
+            materializedDocumentaryCycleIds: before.materializedCycleIdentities,
+          );
+          final afterOverview = composer.compose(
+            expectedExpenses: expectedExpenses,
+            projectedCycles: projectedCycles,
+            finitePlans: const [],
+            referenceTime: DateTime(2027, 1, 1),
+            documentaryInstallments: after.items,
+            materializedDocumentaryCycleIds: after.materializedCycleIdentities,
+          );
+          final beforeItems = _futureOutflowItems(beforeOverview);
+          final afterItems = _futureOutflowItems(afterOverview);
 
-        expect(items, hasLength(2));
-        expect(
-          items.map((item) => item.identity),
-          containsAll([
-            'documentary:tari-2027:choice',
-            'annual-tax#3',
-          ]),
-        );
-      });
+          expect(
+            after.materializedCycleIdentities,
+            before.materializedCycleIdentities,
+          );
+          expect(before.items, isEmpty);
+          expect(after.items, isEmpty);
+          expect(
+            afterItems.map(_futureOutflowSignature),
+            beforeItems.map(_futureOutflowSignature),
+          );
+          expect(
+            afterItems.map((item) => item.identity),
+            contains('next-seed'),
+          );
+          expect(
+            afterItems.map((item) => item.identity),
+            isNot(contains('documentary_annual-tax_2')),
+          );
+          expect(
+            afterItems.map((item) => item.identity),
+            isNot(contains('documentary:tari-2027:choice')),
+          );
+        },
+      );
 
-      test('backfilled seed is suppressed only by its structural cycle identity',
-          () {
-        final aggregate = _materializedDocumentaryAggregate(amount: 173);
-        final documentary = const DocumentaryObligationProjectionAdapter()
-            .projectWithAuthority(aggregate);
-        final overview = const FutureOutflowPresentationComposer().compose(
-          expectedExpenses: [
-            _documentarySeed(identity: 'backfilled-seed', sequence: 2),
-            _documentarySeed(identity: 'next-seed', sequence: 3),
-          ],
-          projectedCycles: const [],
-          finitePlans: const [],
-          referenceTime: DateTime(2027, 1, 1),
-          documentaryInstallments: documentary.items,
-          materializedDocumentaryCycleIds:
-              documentary.materializedCycleIdentities,
-        );
-        final items = _futureOutflowItems(overview);
+      test(
+        'materialized 2027 cycle does not suppress projected 2028 cycle',
+        () {
+          final aggregate = _materializedDocumentaryAggregate(amount: 173);
+          final documentary = const DocumentaryObligationProjectionAdapter()
+              .projectWithAuthority(aggregate);
+          final overview = const FutureOutflowPresentationComposer().compose(
+            expectedExpenses: [_documentarySeed()],
+            projectedCycles: [
+              _documentaryProjectedCycle(sequence: 2),
+              _documentaryProjectedCycle(sequence: 3),
+            ],
+            finitePlans: const [],
+            referenceTime: DateTime(2027, 1, 1),
+            documentaryInstallments: documentary.items,
+            materializedDocumentaryCycleIds:
+                documentary.materializedCycleIdentities,
+          );
+          final items = _futureOutflowItems(overview);
 
-        expect(items.map((item) => item.identity), isNot(contains('backfilled-seed')));
-        expect(items.map((item) => item.identity), contains('next-seed'));
-      });
+          expect(items, hasLength(2));
+          expect(
+            items.map((item) => item.identity),
+            containsAll(['documentary:tari-2027:choice', 'annual-tax#3']),
+          );
+        },
+      );
+
+      test(
+        'backfilled seed is suppressed only by its structural cycle identity',
+        () {
+          final aggregate = _materializedDocumentaryAggregate(amount: 173);
+          final documentary = const DocumentaryObligationProjectionAdapter()
+              .projectWithAuthority(aggregate);
+          final overview = const FutureOutflowPresentationComposer().compose(
+            expectedExpenses: [
+              _documentarySeed(identity: 'backfilled-seed', sequence: 2),
+              _documentarySeed(identity: 'next-seed', sequence: 3),
+            ],
+            projectedCycles: const [],
+            finitePlans: const [],
+            referenceTime: DateTime(2027, 1, 1),
+            documentaryInstallments: documentary.items,
+            materializedDocumentaryCycleIds:
+                documentary.materializedCycleIdentities,
+          );
+          final items = _futureOutflowItems(overview);
+
+          expect(
+            items.map((item) => item.identity),
+            isNot(contains('backfilled-seed')),
+          );
+          expect(items.map((item) => item.identity), contains('next-seed'));
+        },
+      );
 
       test('projection precedence does not mutate economic stores', () async {
         final balance = FinanceBalance(
@@ -598,274 +784,511 @@ void main() {
       });
     });
 
-    test('verified persistence reload preserves selected option and contingency', () async {
-      String? stored;
-      final persistence = DocumentaryObligationPersistence(
-        load: (_) async => stored,
-        save: (_, value) async { stored = value; return PersistenceWriteVerification(backendAccepted: true, readBack: value); },
-      );
-      final candidate = DocumentaryObligationAggregate(obligations: [_tari().selectOption('single')]);
-      await persistence.write(candidate);
-      final restored = await persistence.load();
-      expect(restored.obligations.single.toJson(), candidate.obligations.single.toJson());
-    });
+    test(
+      'verified persistence reload preserves selected option and contingency',
+      () async {
+        String? stored;
+        final persistence = DocumentaryObligationPersistence(
+          load: (_) async => stored,
+          save: (_, value) async {
+            stored = value;
+            return PersistenceWriteVerification(
+              backendAccepted: true,
+              readBack: value,
+            );
+          },
+        );
+        final candidate = DocumentaryObligationAggregate(
+          obligations: [_tari().selectOption('single')],
+        );
+        await persistence.write(candidate);
+        final restored = await persistence.load();
+        expect(
+          restored.obligations.single.toJson(),
+          candidate.obligations.single.toJson(),
+        );
+      },
+    );
 
     test('coordinator selection and not-due closure are idempotent', () async {
       String? stored;
       final persistence = DocumentaryObligationPersistence(
         load: (_) async => stored,
-        save: (_, value) async { stored = value; return PersistenceWriteVerification(backendAccepted: true, readBack: value); },
-      );
-      final finance = FinanceStore(documentaryObligationPersistence: persistence, initialDocumentaryObligationAggregate: DocumentaryObligationAggregate(obligations: [_tari()]));
-      final coordinator = DocumentaryObligationCoordinator(financeStore: finance);
-      expect(await coordinator.selectOption(obligationId: 'tari-2026', optionId: 'single'), DocumentaryObligationOutcome.applied);
-      expect(await coordinator.selectOption(obligationId: 'tari-2026', optionId: 'single'), DocumentaryObligationOutcome.unchanged);
-      expect(await coordinator.closeContingencyNotDue(obligationId: 'tari-2026', contingencyId: 'balance'), DocumentaryObligationOutcome.applied);
-      expect(await coordinator.closeContingencyNotDue(obligationId: 'tari-2026', contingencyId: 'balance'), DocumentaryObligationOutcome.unchanged);
-    });
-
-    test('recurring document creates continuity and next amount-free expectation idempotently', () async {
-      String? expectedStored;
-      String? documentaryStored;
-      final relationship = ExpenseRelationship(
-        relationshipId: 'annual-service',
-        service: 'Pagamento annuale',
-        provider: 'Ente generico',
-        subject: FinanceSubject.matteo,
-        status: ExpenseRelationshipStatus.active,
-        periodicity: ExpenseRelationshipPeriodicity(
-          type: FinanceRecurringType.yearly,
-        ),
-        paymentConfiguration: ExpenseRelationshipPaymentConfiguration(
-          method: FinancePaymentMethod.manual,
-        ),
-      );
-      final obligation = DocumentaryObligation.fromJson({
-        ..._sorit().toJson(),
-        'relationshipId': relationship.relationshipId,
-        'cycleSequence': 1,
-      });
-      final next = ExpectedDocumentCycle(
-        relationshipId: relationship.relationshipId,
-        cycleSequence: 2,
-        expectedPeriod: ExpectedDocumentPeriod(year: 2027, month: 3),
-      );
-      final finance = FinanceStore(
-        expectedExpensePersistence: ExpectedExpensePersistence(
-          load: (_) async => expectedStored,
-          save: (_, value) async {
-            expectedStored = value;
-            return PersistenceWriteVerification(backendAccepted: true, readBack: value);
-          },
-        ),
-        documentaryObligationPersistence: DocumentaryObligationPersistence(
-          load: (_) async => documentaryStored,
-          save: (_, value) async {
-            documentaryStored = value;
-            return PersistenceWriteVerification(backendAccepted: true, readBack: value);
-          },
-        ),
-      );
-      final coordinator = DocumentaryObligationCoordinator(financeStore: finance);
-      expect(
-        await coordinator.registerRecurringDocument(
-          obligation: obligation,
-          relationship: relationship,
-          nextExpectedDocument: next,
-        ),
-        DocumentaryObligationOutcome.applied,
-      );
-      expect(
-        await coordinator.registerRecurringDocument(
-          obligation: obligation,
-          relationship: relationship,
-          nextExpectedDocument: next,
-        ),
-        DocumentaryObligationOutcome.unchanged,
-      );
-      expect(finance.expectedExpenseAggregate.relationships.single.relationshipId, 'annual-service');
-      final seed = finance.expectedExpenseAggregate.occurrences.single;
-      expect(seed.relationshipId, next.relationshipId);
-      expect(seed.cycleSequence, next.cycleSequence);
-      expect(seed.expectedPeriod!.year, 2027);
-      expect(seed.expectedPeriod!.month, 3);
-      expect(seed.expectedAmount, obligation.totalAmount);
-      expect(seed.provisional, isTrue);
-      expect(seed.sourceDocumentaryObligationId, obligation.obligationId);
-      expect(seed.evidenceEconomicFactIds, isEmpty);
-      expect(seed.expectedDueDate, isNull);
-      expect(seed.expectedPaymentWindow, isNull);
-      expect(seed.plannedEconomicImpact, isNull);
-      expect(seed.paymentExecutionMode, PaymentExecutionMode.unknown);
-      expect(finance.expectedExpenseAggregate.occurrences, hasLength(1));
-      expect(finance.documentaryObligationAggregate.expectedDocuments.single.toJson(), isNot(contains('amount')));
-    });
-
-    test('fulfilled installment is removed from operational projection and retry is stable', () async {
-      String? stored;
-      final persistence = DocumentaryObligationPersistence(
-        load: (_) async => stored,
         save: (_, value) async {
           stored = value;
-          return PersistenceWriteVerification(backendAccepted: true, readBack: value);
+          return PersistenceWriteVerification(
+            backendAccepted: true,
+            readBack: value,
+          );
         },
       );
       final finance = FinanceStore(
         documentaryObligationPersistence: persistence,
         initialDocumentaryObligationAggregate: DocumentaryObligationAggregate(
-          obligations: [_tari().selectOption('single')],
+          obligations: [_tari()],
         ),
       );
-      final coordinator = DocumentaryObligationCoordinator(financeStore: finance);
+      final coordinator = DocumentaryObligationCoordinator(
+        financeStore: finance,
+      );
       expect(
-        await coordinator.markInstallmentFulfilled(
+        await coordinator.selectOption(
           obligationId: 'tari-2026',
-          installmentId: 'single-1',
-          economicFactId: 'tari-payment-2026',
+          optionId: 'single',
         ),
         DocumentaryObligationOutcome.applied,
       );
       expect(
-        await coordinator.markInstallmentFulfilled(
+        await coordinator.selectOption(
           obligationId: 'tari-2026',
-          installmentId: 'single-1',
-          economicFactId: 'tari-payment-2026',
+          optionId: 'single',
         ),
         DocumentaryObligationOutcome.unchanged,
       );
-      expect(finance.documentaryObligationAggregate.obligations.single.operationalInstallments, isEmpty);
       expect(
-        const DocumentaryObligationProjectionAdapter().project(
-          finance.documentaryObligationAggregate,
+        await coordinator.closeContingencyNotDue(
+          obligationId: 'tari-2026',
+          contingencyId: 'balance',
         ),
-        isEmpty,
+        DocumentaryObligationOutcome.applied,
       );
       expect(
-        (await persistence.load())
-            .obligations
-            .single
-            .selectedOption!
-            .installments
-            .single
-            .fulfilledEconomicFactId,
-        'tari-payment-2026',
+        await coordinator.closeContingencyNotDue(
+          obligationId: 'tari-2026',
+          contingencyId: 'balance',
+        ),
+        DocumentaryObligationOutcome.unchanged,
       );
     });
 
-    test('contingency materialization is recoverable and does not duplicate occurrence', () async {
-      String? expectedStored;
-      String? documentaryStored;
-      final expectedPersistence = ExpectedExpensePersistence(
-        load: (_) async => expectedStored,
-        save: (_, value) async {
-          expectedStored = value;
-          return PersistenceWriteVerification(backendAccepted: true, readBack: value);
-        },
-      );
-      final documentaryPersistence = DocumentaryObligationPersistence(
-        load: (_) async => documentaryStored,
-        save: (_, value) async {
-          documentaryStored = value;
-          return PersistenceWriteVerification(backendAccepted: true, readBack: value);
-        },
-      );
-      final relationship = ExpenseRelationship(
-        relationshipId: 'tari-relationship',
-        service: 'Tributo locale',
-        provider: 'Ente',
-        subject: FinanceSubject.matteo,
-        status: ExpenseRelationshipStatus.active,
-        periodicity: ExpenseRelationshipPeriodicity(
-          type: FinanceRecurringType.yearly,
-        ),
-        paymentConfiguration: ExpenseRelationshipPaymentConfiguration(
-          method: FinancePaymentMethod.manual,
-        ),
-        paymentExecutionMode: PaymentExecutionMode.requiresUserAction,
-      );
-      final obligation = DocumentaryObligation.fromJson({
-        ..._tari().toJson(),
-        'relationshipId': relationship.relationshipId,
-      });
-      final finance = FinanceStore(
-        expectedExpensePersistence: expectedPersistence,
-        documentaryObligationPersistence: documentaryPersistence,
-        initialExpectedExpenseAggregate: ExpectedExpenseAggregate(
-          relationships: [relationship],
-          occurrences: [
-            ExpectedExpenseOccurrence(
-              occurrenceId: 'annual-cycle-1',
-              relationshipId: relationship.relationshipId,
-              cycleSequence: 1,
-              cycleAnchor: DateTime(2026, 3, 1),
-              status: ExpectedExpenseOccurrenceStatus.resolved,
-              expectedDueDate: DateTime(2026, 3, 31),
-              expectedDueDateSource: ExpectedExpenseDateSource.explicit,
-              expectedAmount: 173,
-              estimationMethod: ExpenseEstimationMethod.manualEstimate,
-              confidence: ExpenseEstimateConfidence.high,
-              provisional: false,
-              expectedPaymentConfiguration: relationship.paymentConfiguration,
-              paymentExecutionMode: relationship.paymentExecutionMode,
-              expectedSubject: relationship.subject,
-              resolvedEconomicFactId: 'paid-cycle-1',
+    test(
+      'document correction is safe before fulfillment and guarded after it',
+      () async {
+        String? stored;
+        final persistence = DocumentaryObligationPersistence(
+          load: (_) async => stored,
+          save: (_, value) async {
+            stored = value;
+            return PersistenceWriteVerification(
+              backendAccepted: true,
+              readBack: value,
+            );
+          },
+        );
+        final original = DocumentaryObligation(
+          obligationId: 'invoice-correction',
+          title: 'Documento',
+          totalAmount: 10,
+          relationshipId: 'relationship-correction',
+          cycleSequence: 1,
+          documentReference: 'INV-1',
+          documentReferenceType: DocumentaryReferenceType.invoiceNumber,
+          components: [
+            DocumentaryEconomicComponent(
+              componentId: 'service',
+              label: 'Servizio',
+              classificationCode: 'service.generic',
+              amount: 10,
             ),
           ],
-        ),
-        initialDocumentaryObligationAggregate: DocumentaryObligationAggregate(
-          obligations: [obligation],
-        ),
-      );
-      final occurrence = ExpectedExpenseOccurrence(
-        occurrenceId: 'tari-balance-2026',
-        relationshipId: relationship.relationshipId,
-        status: ExpectedExpenseOccurrenceStatus.pending,
-        knowledgeState: ExpectedExpenseKnowledgeState.knownUnpaid,
-        knowledgeSource: ExpectedExpenseKnowledgeSource.userConfirmed,
-        expectedDueDate: DateTime(2026, 11, 30),
-        expectedDueDateSource: ExpectedExpenseDateSource.explicit,
-        expectedDueDateCertainty: ExpectedExpenseDateCertainty.known,
-        expectedAmount: 25,
-        estimationMethod: ExpenseEstimationMethod.manualEstimate,
-        confidence: ExpenseEstimateConfidence.high,
-        provisional: false,
-        expectedPaymentConfiguration: relationship.paymentConfiguration,
-        paymentExecutionMode: relationship.paymentExecutionMode,
-        expectedSubject: relationship.subject,
-        participatesInCycleProjection: false,
-      );
-      final coordinator = DocumentaryObligationCoordinator(financeStore: finance);
-      expect(
-        await coordinator.materializeContingency(
-          obligationId: obligation.obligationId,
-          contingencyId: 'balance',
-          occurrence: occurrence,
-        ),
-        DocumentaryObligationOutcome.applied,
-      );
-      expect(
-        await coordinator.materializeContingency(
-          obligationId: obligation.obligationId,
-          contingencyId: 'balance',
-          occurrence: occurrence,
-        ),
-        DocumentaryObligationOutcome.unchanged,
-      );
-      expect(finance.expectedExpenseAggregate.occurrences, hasLength(2));
-      expect(
-        finance.documentaryObligationAggregate.obligations.single.contingencies.single.status,
-        DocumentaryContingencyStatus.materialized,
-      );
-      final projected = const ExpenseRelationshipProjectionAdapter().project(
-        aggregate: finance.expectedExpenseAggregate,
-        horizon: ExpenseProjectionHorizon(
-          start: DateTime(2027, 1, 1),
-          end: DateTime(2027, 12, 31),
-        ),
-      );
-      expect(projected, hasLength(1));
-      expect(projected.single.identity.value, 'tari-relationship#2');
-    });
+          options: [
+            DocumentaryFulfillmentOption(
+              optionId: 'single',
+              label: 'Unica',
+              installments: [
+                DocumentaryInstallment(
+                  installmentId: 'one',
+                  amount: 10,
+                  dueDate: DateTime(2026, 4, 1),
+                ),
+              ],
+            ),
+          ],
+        );
+        final finance = FinanceStore(
+          documentaryObligationPersistence: persistence,
+          initialDocumentaryObligationAggregate: DocumentaryObligationAggregate(
+            obligations: [original],
+          ),
+        );
+        final coordinator = DocumentaryObligationCoordinator(
+          financeStore: finance,
+        );
+        final corrected = DocumentaryObligation.fromJson({
+          ...original.toJson(),
+          'issuedAt': DateTime(2026, 3, 12).toIso8601String(),
+        });
+
+        expect(
+          await coordinator.correctDocument(corrected),
+          DocumentaryObligationOutcome.applied,
+        );
+        expect(
+          finance.documentaryObligationAggregate.obligations.single.issuedAt,
+          DateTime(2026, 3, 12),
+        );
+        await coordinator.markInstallmentFulfilled(
+          obligationId: original.obligationId,
+          installmentId: 'one',
+          economicFactId: 'fact-1',
+        );
+        final incompatible = DocumentaryObligation.fromJson({
+          ...finance.documentaryObligationAggregate.obligations.single.toJson(),
+          'components': [
+            {
+              'componentId': 'service-updated',
+              'label': 'Servizio corretto',
+              'classificationCode': 'service.generic',
+              'amount': 10,
+            },
+          ],
+        });
+        expect(
+          await coordinator.correctDocument(incompatible),
+          DocumentaryObligationOutcome.invalidState,
+        );
+      },
+    );
+
+    test(
+      'authoritative document identity prevents duplicate registration',
+      () async {
+        String? stored;
+        final persistence = DocumentaryObligationPersistence(
+          load: (_) async => stored,
+          save: (_, value) async {
+            stored = value;
+            return PersistenceWriteVerification(
+              backendAccepted: true,
+              readBack: value,
+            );
+          },
+        );
+        final first = DocumentaryObligation.fromJson({
+          ..._sorit().toJson(),
+          'obligationId': 'document-a',
+          'relationshipId': 'relationship-a',
+          'cycleSequence': 1,
+          'documentReference': 'INV-42',
+          'documentReferenceType': DocumentaryReferenceType.invoiceNumber.name,
+        });
+        final duplicate = DocumentaryObligation.fromJson({
+          ...first.toJson(),
+          'obligationId': 'document-b',
+        });
+        final finance = FinanceStore(
+          documentaryObligationPersistence: persistence,
+        );
+        final coordinator = DocumentaryObligationCoordinator(
+          financeStore: finance,
+        );
+        expect(
+          await coordinator.register(first),
+          DocumentaryObligationOutcome.applied,
+        );
+        expect(
+          await coordinator.register(duplicate),
+          DocumentaryObligationOutcome.conflict,
+        );
+        expect(
+          finance.documentaryObligationAggregate.obligations,
+          hasLength(1),
+        );
+      },
+    );
+
+    test(
+      'recurring document creates continuity and next amount-free expectation idempotently',
+      () async {
+        String? expectedStored;
+        String? documentaryStored;
+        final relationship = ExpenseRelationship(
+          relationshipId: 'annual-service',
+          service: 'Pagamento annuale',
+          provider: 'Ente generico',
+          subject: FinanceSubject.matteo,
+          status: ExpenseRelationshipStatus.active,
+          periodicity: ExpenseRelationshipPeriodicity(
+            type: FinanceRecurringType.yearly,
+          ),
+          paymentConfiguration: ExpenseRelationshipPaymentConfiguration(
+            method: FinancePaymentMethod.manual,
+          ),
+        );
+        final obligation = DocumentaryObligation.fromJson({
+          ..._sorit().toJson(),
+          'relationshipId': relationship.relationshipId,
+          'cycleSequence': 1,
+        });
+        final next = ExpectedDocumentCycle(
+          relationshipId: relationship.relationshipId,
+          cycleSequence: 2,
+          expectedPeriod: ExpectedDocumentPeriod(year: 2027, month: 3),
+        );
+        final finance = FinanceStore(
+          expectedExpensePersistence: ExpectedExpensePersistence(
+            load: (_) async => expectedStored,
+            saveVerified: (_, value) async {
+              expectedStored = value;
+              return PersistenceWriteVerification(
+                backendAccepted: true,
+                readBack: value,
+              );
+            },
+          ),
+          documentaryObligationPersistence: DocumentaryObligationPersistence(
+            load: (_) async => documentaryStored,
+            save: (_, value) async {
+              documentaryStored = value;
+              return PersistenceWriteVerification(
+                backendAccepted: true,
+                readBack: value,
+              );
+            },
+          ),
+        );
+        final coordinator = DocumentaryObligationCoordinator(
+          financeStore: finance,
+        );
+        expect(
+          await coordinator.registerRecurringDocument(
+            obligation: obligation,
+            relationship: relationship,
+            nextExpectedDocument: next,
+          ),
+          DocumentaryObligationOutcome.applied,
+        );
+        expect(
+          await coordinator.registerRecurringDocument(
+            obligation: obligation,
+            relationship: relationship,
+            nextExpectedDocument: next,
+          ),
+          DocumentaryObligationOutcome.unchanged,
+        );
+        expect(
+          finance.expectedExpenseAggregate.relationships.single.relationshipId,
+          'annual-service',
+        );
+        final seed = finance.expectedExpenseAggregate.occurrences.single;
+        expect(seed.relationshipId, next.relationshipId);
+        expect(seed.cycleSequence, next.cycleSequence);
+        expect(seed.expectedPeriod!.year, 2027);
+        expect(seed.expectedPeriod!.month, 3);
+        expect(seed.expectedAmount, obligation.totalAmount);
+        expect(seed.provisional, isTrue);
+        expect(seed.sourceDocumentaryObligationId, obligation.obligationId);
+        expect(seed.evidenceEconomicFactIds, isEmpty);
+        expect(seed.expectedDueDate, isNull);
+        expect(seed.expectedPaymentWindow, isNull);
+        expect(seed.plannedEconomicImpact, isNull);
+        expect(seed.paymentExecutionMode, PaymentExecutionMode.unknown);
+        expect(finance.expectedExpenseAggregate.occurrences, hasLength(1));
+        expect(
+          finance.documentaryObligationAggregate.expectedDocuments.single
+              .toJson(),
+          isNot(contains('amount')),
+        );
+      },
+    );
+
+    test(
+      'fulfilled installment is removed from operational projection and retry is stable',
+      () async {
+        String? stored;
+        final persistence = DocumentaryObligationPersistence(
+          load: (_) async => stored,
+          save: (_, value) async {
+            stored = value;
+            return PersistenceWriteVerification(
+              backendAccepted: true,
+              readBack: value,
+            );
+          },
+        );
+        final finance = FinanceStore(
+          documentaryObligationPersistence: persistence,
+          initialDocumentaryObligationAggregate: DocumentaryObligationAggregate(
+            obligations: [_tari().selectOption('single')],
+          ),
+        );
+        final coordinator = DocumentaryObligationCoordinator(
+          financeStore: finance,
+        );
+        expect(
+          await coordinator.markInstallmentFulfilled(
+            obligationId: 'tari-2026',
+            installmentId: 'single-1',
+            economicFactId: 'tari-payment-2026',
+          ),
+          DocumentaryObligationOutcome.applied,
+        );
+        expect(
+          await coordinator.markInstallmentFulfilled(
+            obligationId: 'tari-2026',
+            installmentId: 'single-1',
+            economicFactId: 'tari-payment-2026',
+          ),
+          DocumentaryObligationOutcome.unchanged,
+        );
+        expect(
+          finance
+              .documentaryObligationAggregate
+              .obligations
+              .single
+              .operationalInstallments,
+          isEmpty,
+        );
+        expect(
+          const DocumentaryObligationProjectionAdapter().project(
+            finance.documentaryObligationAggregate,
+          ),
+          isEmpty,
+        );
+        expect(
+          (await persistence.load())
+              .obligations
+              .single
+              .selectedOption!
+              .installments
+              .single
+              .fulfilledEconomicFactId,
+          'tari-payment-2026',
+        );
+      },
+    );
+
+    test(
+      'contingency materialization is recoverable and does not duplicate occurrence',
+      () async {
+        String? expectedStored;
+        String? documentaryStored;
+        final expectedPersistence = ExpectedExpensePersistence(
+          load: (_) async => expectedStored,
+          saveVerified: (_, value) async {
+            expectedStored = value;
+            return PersistenceWriteVerification(
+              backendAccepted: true,
+              readBack: value,
+            );
+          },
+        );
+        final documentaryPersistence = DocumentaryObligationPersistence(
+          load: (_) async => documentaryStored,
+          save: (_, value) async {
+            documentaryStored = value;
+            return PersistenceWriteVerification(
+              backendAccepted: true,
+              readBack: value,
+            );
+          },
+        );
+        final relationship = ExpenseRelationship(
+          relationshipId: 'tari-relationship',
+          service: 'Tributo locale',
+          provider: 'Ente',
+          subject: FinanceSubject.matteo,
+          status: ExpenseRelationshipStatus.active,
+          periodicity: ExpenseRelationshipPeriodicity(
+            type: FinanceRecurringType.yearly,
+          ),
+          paymentConfiguration: ExpenseRelationshipPaymentConfiguration(
+            method: FinancePaymentMethod.manual,
+          ),
+          paymentExecutionMode: PaymentExecutionMode.requiresUserAction,
+        );
+        final obligation = DocumentaryObligation.fromJson({
+          ..._tari().toJson(),
+          'relationshipId': relationship.relationshipId,
+        });
+        final finance = FinanceStore(
+          expectedExpensePersistence: expectedPersistence,
+          documentaryObligationPersistence: documentaryPersistence,
+          initialExpectedExpenseAggregate: ExpectedExpenseAggregate(
+            relationships: [relationship],
+            occurrences: [
+              ExpectedExpenseOccurrence(
+                occurrenceId: 'annual-cycle-1',
+                relationshipId: relationship.relationshipId,
+                cycleSequence: 1,
+                cycleAnchor: DateTime(2026, 3, 1),
+                status: ExpectedExpenseOccurrenceStatus.resolved,
+                expectedDueDate: DateTime(2026, 3, 31),
+                expectedDueDateSource: ExpectedExpenseDateSource.explicit,
+                expectedAmount: 173,
+                estimationMethod: ExpenseEstimationMethod.manualEstimate,
+                confidence: ExpenseEstimateConfidence.high,
+                provisional: false,
+                expectedPaymentConfiguration: relationship.paymentConfiguration,
+                paymentExecutionMode: relationship.paymentExecutionMode,
+                expectedSubject: relationship.subject,
+                resolvedEconomicFactId: 'paid-cycle-1',
+              ),
+            ],
+          ),
+          initialDocumentaryObligationAggregate: DocumentaryObligationAggregate(
+            obligations: [obligation],
+          ),
+        );
+        final occurrence = ExpectedExpenseOccurrence(
+          occurrenceId: 'tari-balance-2026',
+          relationshipId: relationship.relationshipId,
+          status: ExpectedExpenseOccurrenceStatus.pending,
+          knowledgeState: ExpectedExpenseKnowledgeState.knownUnpaid,
+          knowledgeSource: ExpectedExpenseKnowledgeSource.userConfirmed,
+          expectedDueDate: DateTime(2026, 11, 30),
+          expectedDueDateSource: ExpectedExpenseDateSource.explicit,
+          expectedDueDateCertainty: ExpectedExpenseDateCertainty.known,
+          expectedAmount: 25,
+          estimationMethod: ExpenseEstimationMethod.manualEstimate,
+          confidence: ExpenseEstimateConfidence.high,
+          provisional: false,
+          expectedPaymentConfiguration: relationship.paymentConfiguration,
+          paymentExecutionMode: relationship.paymentExecutionMode,
+          expectedSubject: relationship.subject,
+          participatesInCycleProjection: false,
+        );
+        final coordinator = DocumentaryObligationCoordinator(
+          financeStore: finance,
+        );
+        expect(
+          await coordinator.materializeContingency(
+            obligationId: obligation.obligationId,
+            contingencyId: 'balance',
+            occurrence: occurrence,
+          ),
+          DocumentaryObligationOutcome.applied,
+        );
+        expect(
+          await coordinator.materializeContingency(
+            obligationId: obligation.obligationId,
+            contingencyId: 'balance',
+            occurrence: occurrence,
+          ),
+          DocumentaryObligationOutcome.unchanged,
+        );
+        expect(finance.expectedExpenseAggregate.occurrences, hasLength(2));
+        expect(
+          finance
+              .documentaryObligationAggregate
+              .obligations
+              .single
+              .contingencies
+              .single
+              .status,
+          DocumentaryContingencyStatus.materialized,
+        );
+        final projected = const ExpenseRelationshipProjectionAdapter().project(
+          aggregate: finance.expectedExpenseAggregate,
+          horizon: ExpenseProjectionHorizon(
+            start: DateTime(2027, 1, 1),
+            end: DateTime(2027, 12, 31),
+          ),
+        );
+        expect(projected, hasLength(1));
+        expect(projected.single.identity.value, 'tari-relationship#2');
+      },
+    );
 
     test('SORIT metadata separates holder from payer and groups accessory', () {
       final operation = CompositeEconomicOperation(
@@ -875,12 +1298,27 @@ void main() {
         mainAmount: 46.32,
         documentaryObligationId: 'sorit-obligation',
         documentHolder: FinanceSubject.chiara,
-        accessories: const [(economicFactId: 'sorit-fee', amount: 1.50, accessoryCostType: AccessoryCostType.bankCommission)],
+        accessories: const [
+          (
+            economicFactId: 'sorit-fee',
+            amount: 1.50,
+            accessoryCostType: AccessoryCostType.bankCommission,
+          ),
+        ],
       );
       expect(operation.totalAmount, 47.82);
-      expect(operation.main.operationMetadata.documentHolder, FinanceSubject.chiara);
-      expect(operation.accessories.single.operationMetadata.operationId, operation.main.operationMetadata.operationId);
-      expect(operation.accessories.single.operationMetadata.role, OperationRole.accessory);
+      expect(
+        operation.main.operationMetadata.documentHolder,
+        FinanceSubject.chiara,
+      );
+      expect(
+        operation.accessories.single.operationMetadata.operationId,
+        operation.main.operationMetadata.operationId,
+      );
+      expect(
+        operation.accessories.single.operationMetadata.role,
+        OperationRole.accessory,
+      );
     });
 
     testWidgets(
@@ -888,8 +1326,9 @@ void main() {
       (tester) async {
         final obligation = _tari().selectOption('installments');
         final finance = FinanceStore(
-          initialDocumentaryObligationAggregate:
-              DocumentaryObligationAggregate(obligations: [obligation]),
+          initialDocumentaryObligationAggregate: DocumentaryObligationAggregate(
+            obligations: [obligation],
+          ),
         );
         DocumentaryObligation? launchedObligation;
         DocumentaryInstallment? launchedInstallment;
@@ -914,7 +1353,10 @@ void main() {
         expect(launchedInstallment?.installmentId, 'rate-1');
         expect(launchedInstallment?.amount, 58);
         expect(
-          finance.documentaryObligationAggregate.obligations.single
+          finance
+              .documentaryObligationAggregate
+              .obligations
+              .single
               .operationalInstallments,
           hasLength(3),
         );
@@ -926,7 +1368,13 @@ void main() {
     ) async {
       final finance = _uiFinanceStore();
       await _openDocumentaryEditor(tester, finance);
-      await tester.tap(find.byKey(const ValueKey('documentary-repeats')));
+      final repeats = find.byKey(const ValueKey('documentary-repeats'));
+      await tester.scrollUntilVisible(
+        repeats,
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(repeats);
       await tester.pumpAndSettle();
 
       expect(find.text('Scegli la persona'), findsOneWidget);
@@ -1009,7 +1457,10 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('documentary-save')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Inserisci il nome stabile della spesa'), findsOneWidget);
+      expect(
+        find.text('Inserisci il nome stabile della spesa'),
+        findsOneWidget,
+      );
       expect(finance.expectedExpenseAggregate.relationships, isEmpty);
     });
 
@@ -1050,28 +1501,29 @@ void main() {
       });
     }
 
-    testWidgets('custom positive month interval is persisted without coercion', (
-      tester,
-    ) async {
-      final finance = _uiFinanceStore();
-      await _openDocumentaryEditor(tester, finance);
-      await _fillRecurringDocument(
-        tester,
-        subject: FinanceSubject.alice,
-        recurrenceLabel: 'Personalizzata…',
-        customMonths: '5',
-      );
+    testWidgets(
+      'custom positive month interval is persisted without coercion',
+      (tester) async {
+        final finance = _uiFinanceStore();
+        await _openDocumentaryEditor(tester, finance);
+        await _fillRecurringDocument(
+          tester,
+          subject: FinanceSubject.alice,
+          recurrenceLabel: 'Personalizzata…',
+          customMonths: '5',
+        );
 
-      await tester.tap(find.byKey(const ValueKey('documentary-save')));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('documentary-save')));
+        await tester.pumpAndSettle();
 
-      final relationship =
-          finance.expectedExpenseAggregate.relationships.single;
-      expect(relationship.periodicity.type, FinanceRecurringType.custom);
-      expect(relationship.periodicity.customInterval, 5);
-      expect(relationship.periodicity.customIntervalUnit, 'months');
-      expect(relationship.subject, FinanceSubject.alice);
-    });
+        final relationship =
+            finance.expectedExpenseAggregate.relationships.single;
+        expect(relationship.periodicity.type, FinanceRecurringType.custom);
+        expect(relationship.periodicity.customInterval, 5);
+        expect(relationship.periodicity.customIntervalUnit, 'months');
+        expect(relationship.subject, FinanceSubject.alice);
+      },
+    );
 
     for (final invalid in const ['0', '-2', 'non valido']) {
       testWidgets('custom interval rejects "$invalid"', (tester) async {
@@ -1095,41 +1547,49 @@ void main() {
       });
     }
 
-    testWidgets('existing custom recurrence is shown without losing its value', (
-      tester,
-    ) async {
-      final relationship = ExpenseRelationship(
-        relationshipId: 'existing-custom',
-        service: 'Servizio esistente',
-        provider: 'Fornitore',
-        subject: FinanceSubject.chiara,
-        status: ExpenseRelationshipStatus.active,
-        periodicity: ExpenseRelationshipPeriodicity(
-          type: FinanceRecurringType.custom,
-          customInterval: 5,
-          customIntervalUnit: 'months',
-        ),
-        paymentConfiguration: ExpenseRelationshipPaymentConfiguration(
-          method: FinancePaymentMethod.manual,
-        ),
-      );
-      final finance = _uiFinanceStore(
-        aggregate: ExpectedExpenseAggregate(relationships: [relationship]),
-      );
-      await _openDocumentaryEditor(tester, finance);
+    testWidgets(
+      'existing custom recurrence is shown without losing its value',
+      (tester) async {
+        final relationship = ExpenseRelationship(
+          relationshipId: 'existing-custom',
+          service: 'Servizio esistente',
+          provider: 'Fornitore',
+          subject: FinanceSubject.chiara,
+          status: ExpenseRelationshipStatus.active,
+          periodicity: ExpenseRelationshipPeriodicity(
+            type: FinanceRecurringType.custom,
+            customInterval: 5,
+            customIntervalUnit: 'months',
+          ),
+          paymentConfiguration: ExpenseRelationshipPaymentConfiguration(
+            method: FinancePaymentMethod.manual,
+          ),
+        );
+        final finance = _uiFinanceStore(
+          aggregate: ExpectedExpenseAggregate(relationships: [relationship]),
+        );
+        await _openDocumentaryEditor(tester, finance);
 
-      await tester.tap(find.text('È collegata a una spesa già ricorrente? (opzionale)'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Servizio esistente · Fornitore').last);
-      await tester.pumpAndSettle();
+        final relationshipPicker = find.text(
+          'È collegata a una spesa già ricorrente? (opzionale)',
+        );
+        await _revealEditorControl(tester, relationshipPicker);
+        await tester.tap(relationshipPicker);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Servizio esistente · Fornitore').last);
+        await tester.pumpAndSettle();
 
-      expect(find.text('Ogni 5 mesi'), findsOneWidget);
-      final subject = tester.widget<DropdownButtonFormField<FinanceSubject>>(
-        find.byType(DropdownButtonFormField<FinanceSubject>),
-      );
-      expect(subject.initialValue, FinanceSubject.chiara);
-      expect(finance.expectedExpenseAggregate.relationships.single.toJson(), relationship.toJson());
-    });
+        expect(find.text('Ogni 5 mesi'), findsOneWidget);
+        final subject = tester.widget<DropdownButtonFormField<FinanceSubject>>(
+          find.byType(DropdownButtonFormField<FinanceSubject>),
+        );
+        expect(subject.initialValue, FinanceSubject.chiara);
+        expect(
+          finance.expectedExpenseAggregate.relationships.single.toJson(),
+          relationship.toJson(),
+        );
+      },
+    );
   });
 }
 
@@ -1140,7 +1600,7 @@ FinanceStore _uiFinanceStore({ExpectedExpenseAggregate? aggregate}) {
     initialExpectedExpenseAggregate: aggregate,
     expectedExpensePersistence: ExpectedExpensePersistence(
       load: (_) async => expectedStored,
-      save: (_, value) async {
+      saveVerified: (_, value) async {
         expectedStored = value;
         return PersistenceWriteVerification(
           backendAccepted: true,
@@ -1189,46 +1649,91 @@ Future<void> _fillRecurringDocument(
     find.byKey(const ValueKey('documentary-amount')),
     '10',
   );
-  await tester.tap(find.byKey(const ValueKey('documentary-repeats')));
+  final repeats = find.byKey(const ValueKey('documentary-repeats'));
+  await _revealEditorControl(tester, repeats);
+  await tester.tap(repeats);
   await tester.pumpAndSettle();
+  await _revealEditorControl(
+    tester,
+    find.byKey(const ValueKey('documentary-stable-relationship-name')),
+  );
   await tester.enterText(
     find.byKey(const ValueKey('documentary-stable-relationship-name')),
     stableName,
+  );
+  await _revealEditorControl(
+    tester,
+    find.byKey(const ValueKey('documentary-provider')),
   );
   await tester.enterText(
     find.byKey(const ValueKey('documentary-provider')),
     'Fornitore',
   );
   if (subject != null) {
+    await _revealEditorControl(
+      tester,
+      find.text('Di chi è normalmente la spesa'),
+    );
     await tester.tap(find.text('Di chi è normalmente la spesa'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(subject.name[0].toUpperCase() + subject.name.substring(1)).last);
+    await tester.tap(
+      find.text(subject.name[0].toUpperCase() + subject.name.substring(1)).last,
+    );
     await tester.pumpAndSettle();
   }
+  await _revealEditorControl(
+    tester,
+    find.byKey(const ValueKey('documentary-recurrence')),
+  );
   await tester.tap(find.byKey(const ValueKey('documentary-recurrence')));
   await tester.pumpAndSettle();
   await tester.tap(find.text(recurrenceLabel).last);
   await tester.pumpAndSettle();
   if (customMonths != null) {
+    await _revealEditorControl(
+      tester,
+      find.byKey(const ValueKey('documentary-custom-months')),
+    );
     await tester.enterText(
       find.byKey(const ValueKey('documentary-custom-months')),
       customMonths,
     );
   }
   if (includeTargetYear) {
+    await _revealEditorControl(
+      tester,
+      find.byKey(const ValueKey('documentary-cycle-label-year')),
+    );
     await tester.tap(
       find.byKey(const ValueKey('documentary-cycle-label-year')),
     );
     await tester.pumpAndSettle();
   }
+  await _revealEditorControl(
+    tester,
+    find.byKey(const ValueKey('documentary-expected-month')),
+  );
   await tester.tap(find.byKey(const ValueKey('documentary-expected-month')));
   await tester.pumpAndSettle();
   await tester.tap(find.text('Marzo').last);
   await tester.pumpAndSettle();
+  await _revealEditorControl(
+    tester,
+    find.byKey(const ValueKey('documentary-expected-year')),
+  );
   await tester.enterText(
     find.byKey(const ValueKey('documentary-expected-year')),
     '2027',
   );
+}
+
+Future<void> _revealEditorControl(WidgetTester tester, Finder finder) async {
+  for (var attempt = 0; attempt < 12 && finder.evaluate().isEmpty; attempt++) {
+    await tester.drag(find.byType(ListView), const Offset(0, -300));
+    await tester.pumpAndSettle();
+  }
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
 }
 
 DocumentaryObligationAggregate _materializedDocumentaryAggregate({
@@ -1314,10 +1819,7 @@ FutureExpenseProjection _documentarySeed({
     occurrenceId: identity,
     relationshipId: relationship.relationshipId,
     cycleSequence: sequence,
-    expectedPeriod: ExpectedDocumentPeriod(
-      year: 2026 + sequence - 1,
-      month: 3,
-    ),
+    expectedPeriod: ExpectedDocumentPeriod(year: 2026 + sequence - 1, month: 3),
     status: ExpectedExpenseOccurrenceStatus.pending,
     expectedAmount: 173,
     estimationMethod: ExpenseEstimationMethod.documentaryObligation,
@@ -1372,6 +1874,15 @@ List<FutureOutflowPresentation> _futureOutflowItems(
   ...overview.unplaced,
 ];
 
+Map<String, Object> _documentaryAggregateJson(
+  DocumentaryObligationAggregate aggregate,
+) => {
+  'obligations': aggregate.obligations.map((item) => item.toJson()).toList(),
+  'expectedDocuments': aggregate.expectedDocuments
+      .map((item) => item.toJson())
+      .toList(),
+};
+
 String _futureOutflowSignature(FutureOutflowPresentation item) =>
     '${item.identity}|${item.authority.name}|${item.amount}|'
     '${item.placementStart?.toIso8601String()}|'
@@ -1379,21 +1890,70 @@ String _futureOutflowSignature(FutureOutflowPresentation item) =>
     '${item.datePresentation.name}|${item.requiresUserAction}';
 
 DocumentaryObligation _sorit() => DocumentaryObligation(
-  obligationId: 'sorit-2026', title: 'Avviso bonifica 2026', totalAmount: 46.32,
-  documentHolder: FinanceSubject.chiara, documentReference: 'avviso documentale',
-  options: [DocumentaryFulfillmentOption(optionId: 'single', label: 'Rata unica', installments: [DocumentaryInstallment(installmentId: 'single-1', amount: 46.32, dueDate: DateTime(2026, 3, 31))])],
+  obligationId: 'sorit-2026',
+  title: 'Avviso bonifica 2026',
+  totalAmount: 46.32,
+  documentHolder: FinanceSubject.chiara,
+  documentReference: 'avviso documentale',
+  options: [
+    DocumentaryFulfillmentOption(
+      optionId: 'single',
+      label: 'Rata unica',
+      installments: [
+        DocumentaryInstallment(
+          installmentId: 'single-1',
+          amount: 46.32,
+          dueDate: DateTime(2026, 3, 31),
+        ),
+      ],
+    ),
+  ],
 );
 
 DocumentaryObligation _tari() => DocumentaryObligation(
-  obligationId: 'tari-2026', title: 'Acconto comunale 2026', totalAmount: 173,
+  obligationId: 'tari-2026',
+  title: 'Acconto comunale 2026',
+  totalAmount: 173,
   documentHolder: FinanceSubject.chiara,
   options: [
-    DocumentaryFulfillmentOption(optionId: 'single', label: 'Rata unica', installments: [DocumentaryInstallment(installmentId: 'single-1', amount: 173, dueDate: DateTime(2026, 6, 30))]),
-    DocumentaryFulfillmentOption(optionId: 'installments', label: 'Tre rate', installments: [
-      DocumentaryInstallment(installmentId: 'rate-1', amount: 58, dueDate: DateTime(2026, 3, 31)),
-      DocumentaryInstallment(installmentId: 'rate-2', amount: 58, dueDate: DateTime(2026, 6, 30)),
-      DocumentaryInstallment(installmentId: 'rate-3', amount: 57, dueDate: DateTime(2026, 9, 30)),
-    ]),
+    DocumentaryFulfillmentOption(
+      optionId: 'single',
+      label: 'Rata unica',
+      installments: [
+        DocumentaryInstallment(
+          installmentId: 'single-1',
+          amount: 173,
+          dueDate: DateTime(2026, 6, 30),
+        ),
+      ],
+    ),
+    DocumentaryFulfillmentOption(
+      optionId: 'installments',
+      label: 'Tre rate',
+      installments: [
+        DocumentaryInstallment(
+          installmentId: 'rate-1',
+          amount: 58,
+          dueDate: DateTime(2026, 3, 31),
+        ),
+        DocumentaryInstallment(
+          installmentId: 'rate-2',
+          amount: 58,
+          dueDate: DateTime(2026, 6, 30),
+        ),
+        DocumentaryInstallment(
+          installmentId: 'rate-3',
+          amount: 57,
+          dueDate: DateTime(2026, 9, 30),
+        ),
+      ],
+    ),
   ],
-  contingencies: [DocumentaryContingency(contingencyId: 'balance', description: 'Conguaglio eventuale', anticipatedDueDate: DateTime(2026, 11, 30))],
+  contingencies: [
+    DocumentaryContingency(
+      contingencyId: 'balance',
+      description: 'Conguaglio eventuale',
+      anticipatedDueDate: DateTime(2026, 11, 30),
+    ),
+  ],
 );

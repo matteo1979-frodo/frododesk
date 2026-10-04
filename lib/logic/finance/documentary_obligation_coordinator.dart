@@ -24,6 +24,17 @@ class DocumentaryObligationCoordinator {
   Future<DocumentaryObligationOutcome> register(
     DocumentaryObligation candidate,
   ) async {
+    final identityMatches = financeStore
+        .documentaryObligationAggregate
+        .obligations
+        .where((item) => _sameAuthoritativeIdentity(item, candidate))
+        .toList();
+    if (identityMatches.isNotEmpty) {
+      return identityMatches.length == 1 &&
+              _same(identityMatches.single.toJson(), candidate.toJson())
+          ? DocumentaryObligationOutcome.unchanged
+          : DocumentaryObligationOutcome.conflict;
+    }
     final matches = financeStore.documentaryObligationAggregate.obligations
         .where((item) => item.obligationId == candidate.obligationId)
         .toList();
@@ -80,6 +91,17 @@ class DocumentaryObligationCoordinator {
         nextExpectedDocument.relationshipId != relationship.relationshipId ||
         nextExpectedDocument.cycleSequence <= obligation.cycleSequence!) {
       return DocumentaryObligationOutcome.invalidState;
+    }
+    final identityMatches = financeStore
+        .documentaryObligationAggregate
+        .obligations
+        .where((item) => _sameAuthoritativeIdentity(item, obligation))
+        .toList();
+    if (identityMatches.isNotEmpty) {
+      return identityMatches.length == 1 &&
+              _same(identityMatches.single.toJson(), obligation.toJson())
+          ? DocumentaryObligationOutcome.unchanged
+          : DocumentaryObligationOutcome.conflict;
     }
     final economic = financeStore.expectedExpenseAggregate;
     final relationships = economic.relationships
@@ -204,6 +226,38 @@ class DocumentaryObligationCoordinator {
       candidate = current.selectOption(optionId);
     } catch (_) {
       return DocumentaryObligationOutcome.invalidState;
+    }
+    await _replace(candidate);
+    return DocumentaryObligationOutcome.applied;
+  }
+
+  Future<DocumentaryObligationOutcome> correctDocument(
+    DocumentaryObligation candidate,
+  ) async {
+    final current = _find(candidate.obligationId);
+    if (current == null) return DocumentaryObligationOutcome.missing;
+    if (current.relationshipId != candidate.relationshipId ||
+        current.cycleSequence != candidate.cycleSequence) {
+      return DocumentaryObligationOutcome.invalidState;
+    }
+    if (current.selectedOption?.installments.any((item) => item.isFulfilled) ==
+            true &&
+        jsonEncode(current.components.map((item) => item.toJson()).toList()) !=
+            jsonEncode(
+              candidate.components.map((item) => item.toJson()).toList(),
+            )) {
+      return DocumentaryObligationOutcome.invalidState;
+    }
+    final conflicts = financeStore.documentaryObligationAggregate.obligations
+        .where(
+          (item) =>
+              item.obligationId != candidate.obligationId &&
+              _sameAuthoritativeIdentity(item, candidate),
+        )
+        .toList();
+    if (conflicts.isNotEmpty) return DocumentaryObligationOutcome.conflict;
+    if (_same(current.toJson(), candidate.toJson())) {
+      return DocumentaryObligationOutcome.unchanged;
     }
     await _replace(candidate);
     return DocumentaryObligationOutcome.applied;
@@ -391,4 +445,16 @@ class DocumentaryObligationCoordinator {
 
   bool _same(Map<String, dynamic> left, Map<String, dynamic> right) =>
       jsonEncode(left) == jsonEncode(right);
+
+  bool _sameAuthoritativeIdentity(
+    DocumentaryObligation left,
+    DocumentaryObligation right,
+  ) =>
+      left.obligationId != right.obligationId &&
+      left.relationshipId != null &&
+      left.relationshipId == right.relationshipId &&
+      left.documentReferenceType != null &&
+      left.documentReferenceType == right.documentReferenceType &&
+      left.documentReference != null &&
+      left.documentReference == right.documentReference;
 }

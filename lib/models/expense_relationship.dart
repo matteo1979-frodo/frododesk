@@ -4,6 +4,57 @@ import 'manual_payment_preference.dart';
 
 const _preserveManualPaymentPreference = Object();
 
+class ExpenseRelationshipIdentifier {
+  final String namespace;
+  final String value;
+  final String? provenance;
+
+  ExpenseRelationshipIdentifier({
+    required String namespace,
+    required String value,
+    String? provenance,
+  }) : namespace = _requiredText(namespace, 'namespace'),
+       value = _requiredText(value, 'value'),
+       provenance = _optionalText(provenance, 'provenance');
+
+  String get identity => '$namespace:$value';
+
+  Map<String, dynamic> toJson() => {
+    'namespace': namespace,
+    'value': value,
+    'provenance': provenance,
+  };
+
+  factory ExpenseRelationshipIdentifier.fromJson(Map<String, dynamic> json) =>
+      ExpenseRelationshipIdentifier(
+        namespace: _jsonString(json, 'namespace'),
+        value: _jsonString(json, 'value'),
+        provenance: json['provenance'] as String?,
+      );
+}
+
+class ExpenseRelationshipCommercialTerm {
+  final DateTime? effectiveFrom;
+  final DateTime? commercialEnd;
+
+  const ExpenseRelationshipCommercialTerm({
+    this.effectiveFrom,
+    this.commercialEnd,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'effectiveFrom': effectiveFrom?.toIso8601String(),
+    'commercialEnd': commercialEnd?.toIso8601String(),
+  };
+
+  factory ExpenseRelationshipCommercialTerm.fromJson(
+    Map<String, dynamic> json,
+  ) => ExpenseRelationshipCommercialTerm(
+    effectiveFrom: _optionalDate(json, 'effectiveFrom'),
+    commercialEnd: _optionalDate(json, 'commercialEnd'),
+  );
+}
+
 enum ExpenseRelationshipStatus { active, terminated }
 
 enum ExpenseRelationshipCycleLabelPolicy {
@@ -11,12 +62,7 @@ enum ExpenseRelationshipCycleLabelPolicy {
   stableNameWithTargetYear,
 }
 
-enum PaymentExecutionMode {
-  unknown,
-  requiresUserAction,
-  automatic,
-  scheduled,
-}
+enum PaymentExecutionMode { unknown, requiresUserAction, automatic, scheduled }
 
 /// The current payment configuration of a continuing expense relationship.
 ///
@@ -80,10 +126,7 @@ class ExpenseRelationshipPeriodicity {
            ? customInterval ?? 1
            : null,
        customIntervalUnit = type == FinanceRecurringType.custom
-           ? _requiredText(
-               customIntervalUnit ?? 'months',
-               'customIntervalUnit',
-             )
+           ? _requiredText(customIntervalUnit ?? 'months', 'customIntervalUnit')
            : null {
     if (type == FinanceRecurringType.oneShot) {
       throw ArgumentError.value(
@@ -115,9 +158,7 @@ class ExpenseRelationshipPeriodicity {
     'customIntervalUnit': customIntervalUnit,
   };
 
-  factory ExpenseRelationshipPeriodicity.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory ExpenseRelationshipPeriodicity.fromJson(Map<String, dynamic> json) {
     final rawType = json['type'];
     if (rawType is! String) {
       throw const FormatException('type must be a string');
@@ -168,6 +209,8 @@ class ExpenseRelationship {
   final ExpenseRelationshipPaymentConfiguration paymentConfiguration;
   final PaymentExecutionMode paymentExecutionMode;
   final ManualPaymentPreference? manualPaymentPreference;
+  final List<ExpenseRelationshipIdentifier> identifiers;
+  final ExpenseRelationshipCommercialTerm? commercialTerm;
 
   ExpenseRelationship({
     required String relationshipId,
@@ -176,14 +219,26 @@ class ExpenseRelationship {
     required this.subject,
     required this.status,
     required this.periodicity,
-    this.cycleLabelPolicy =
-        ExpenseRelationshipCycleLabelPolicy.stableNameOnly,
+    this.cycleLabelPolicy = ExpenseRelationshipCycleLabelPolicy.stableNameOnly,
     required this.paymentConfiguration,
     this.paymentExecutionMode = PaymentExecutionMode.unknown,
     this.manualPaymentPreference,
+    this.identifiers = const [],
+    this.commercialTerm,
   }) : relationshipId = _requiredText(relationshipId, 'relationshipId'),
        service = _requiredText(service, 'service'),
        provider = _requiredText(provider, 'provider') {
+    final identities = identifiers.map((item) => item.identity).toList();
+    if (identities.toSet().length != identities.length) {
+      throw ArgumentError.value(identifiers, 'identifiers', 'Must be unique');
+    }
+    if (commercialTerm?.effectiveFrom != null &&
+        commercialTerm?.commercialEnd != null &&
+        commercialTerm!.commercialEnd!.isBefore(
+          commercialTerm!.effectiveFrom!,
+        )) {
+      throw ArgumentError.value(commercialTerm, 'commercialTerm');
+    }
     if (cycleLabelPolicy ==
             ExpenseRelationshipCycleLabelPolicy.stableNameWithTargetYear &&
         !periodicity.isAnnualCycle) {
@@ -205,6 +260,8 @@ class ExpenseRelationship {
     ExpenseRelationshipPaymentConfiguration? paymentConfiguration,
     PaymentExecutionMode? paymentExecutionMode,
     Object? manualPaymentPreference = _preserveManualPaymentPreference,
+    List<ExpenseRelationshipIdentifier>? identifiers,
+    Object? commercialTerm = _preserveManualPaymentPreference,
   }) => ExpenseRelationship(
     relationshipId: relationshipId,
     service: service ?? this.service,
@@ -219,6 +276,10 @@ class ExpenseRelationship {
         identical(manualPaymentPreference, _preserveManualPaymentPreference)
         ? this.manualPaymentPreference
         : manualPaymentPreference as ManualPaymentPreference?,
+    identifiers: identifiers ?? this.identifiers,
+    commercialTerm: identical(commercialTerm, _preserveManualPaymentPreference)
+        ? this.commercialTerm
+        : commercialTerm as ExpenseRelationshipCommercialTerm?,
   );
 
   Map<String, dynamic> toJson() => {
@@ -232,6 +293,8 @@ class ExpenseRelationship {
     'paymentConfiguration': paymentConfiguration.toJson(),
     'paymentExecutionMode': paymentExecutionMode.name,
     'manualPaymentPreference': manualPaymentPreference?.toJson(),
+    'identifiers': identifiers.map((item) => item.toJson()).toList(),
+    'commercialTerm': commercialTerm?.toJson(),
   };
 
   factory ExpenseRelationship.fromJson(Map<String, dynamic> json) {
@@ -254,6 +317,8 @@ class ExpenseRelationship {
     final periodicity = json['periodicity'];
     final payment = json['paymentConfiguration'];
     final manualPaymentPreference = json['manualPaymentPreference'];
+    final identifiers = json['identifiers'] ?? const [];
+    final commercialTerm = json['commercialTerm'];
     if (periodicity is! Map) {
       throw const FormatException('periodicity must be an object');
     }
@@ -264,6 +329,12 @@ class ExpenseRelationship {
       throw const FormatException(
         'manualPaymentPreference must be an object or null',
       );
+    }
+    if (identifiers is! List) {
+      throw const FormatException('identifiers must be a list');
+    }
+    if (commercialTerm != null && commercialTerm is! Map) {
+      throw const FormatException('commercialTerm must be an object or null');
     }
     return ExpenseRelationship(
       relationshipId: _jsonString(json, 'relationshipId'),
@@ -281,10 +352,9 @@ class ExpenseRelationship {
         (value) => value.name,
         ExpenseRelationshipCycleLabelPolicy.stableNameOnly,
       ),
-      paymentConfiguration:
-          ExpenseRelationshipPaymentConfiguration.fromJson(
-            Map<String, dynamic>.from(payment),
-          ),
+      paymentConfiguration: ExpenseRelationshipPaymentConfiguration.fromJson(
+        Map<String, dynamic>.from(payment),
+      ),
       paymentExecutionMode: _optionalEnumValue(
         json,
         'paymentExecutionMode',
@@ -296,6 +366,18 @@ class ExpenseRelationship {
           ? null
           : ManualPaymentPreference.fromJson(
               Map<String, dynamic>.from(manualPaymentPreference),
+            ),
+      identifiers: identifiers
+          .map(
+            (item) => ExpenseRelationshipIdentifier.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList(),
+      commercialTerm: commercialTerm == null
+          ? null
+          : ExpenseRelationshipCommercialTerm.fromJson(
+              Map<String, dynamic>.from(commercialTerm),
             ),
     );
   }
@@ -328,6 +410,13 @@ String _requiredText(String value, String field) {
 String? _optionalText(String? value, String field) {
   if (value == null) return null;
   return _requiredText(value, field);
+}
+
+DateTime? _optionalDate(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value == null) return null;
+  if (value is! String) throw FormatException('$key must be a string or null');
+  return DateTime.parse(value);
 }
 
 String _jsonString(Map<String, dynamic> json, String key) {

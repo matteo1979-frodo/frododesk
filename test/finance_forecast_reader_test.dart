@@ -224,6 +224,15 @@ void main() {
         'documentary-installment:tax-obligation#b',
       });
       expect(overview.items.every((item) => item.occurrenceId == null), isTrue);
+      expect(
+        overview.items.map((item) => item.temporalKnowledge),
+        everyElement(FinanceForecastTemporalKnowledge.unlocated),
+      );
+      expect(
+        overview.items.every((item) => item.economicStart == null),
+        isTrue,
+      );
+      expect(overview.economicOutflowForMonth(DateTime(2027, 3)), 0);
     },
   );
 

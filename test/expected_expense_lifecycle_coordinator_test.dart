@@ -8,6 +8,7 @@ import 'package:frododesk/logic/ledger/economic_event_collector.dart';
 import 'package:frododesk/logic/ledger/economic_event_correlator.dart';
 import 'package:frododesk/logic/persistence_store.dart';
 import 'package:frododesk/models/economic_operation_metadata.dart';
+import 'package:frododesk/models/balance_posting_mode.dart';
 import 'package:frododesk/models/expense_relationship.dart';
 import 'package:frododesk/models/expected_expense_occurrence.dart';
 import 'package:frododesk/models/finance_balance.dart';
@@ -175,6 +176,54 @@ void main() {
       );
       expect(ledger, hasLength(3));
       expect(ledger.every((item) => item.sourceLinks.length == 2), isTrue);
+    },
+  );
+
+  test(
+    'historical composite payment preserves balance and propagates posting mode',
+    () async {
+      final harness = await _Harness.create(known: true);
+      final before = harness.store.balances.single.currentAmount;
+      final result = await harness.coordinator.recordExpectedExpensePayment(
+        relationshipId: 'relationship-utility',
+        occurrenceId: 'occurrence-september',
+        payment: _payment(
+          balancePostingMode:
+              BalancePostingMode.alreadyIncludedInCurrentBalance,
+          accessories: const [
+            (amount: 1.80, type: AccessoryCostType.bankCommission),
+          ],
+        ),
+      );
+
+      expect(result.status, ExpectedExpenseLifecycleStatus.completed);
+      expect(harness.store.balances.single.currentAmount, before);
+      expect(harness.store.transactions, hasLength(2));
+      expect(harness.expenses.all, hasLength(2));
+      expect(
+        harness.store.transactions.map((item) => item.balancePostingMode),
+        everyElement(BalancePostingMode.alreadyIncludedInCurrentBalance),
+      );
+      expect(
+        harness.expenses.all.map((item) => item.balancePostingMode),
+        everyElement(BalancePostingMode.alreadyIncludedInCurrentBalance),
+      );
+
+      final retry = await harness.coordinator.recordExpectedExpensePayment(
+        relationshipId: 'relationship-utility',
+        occurrenceId: 'occurrence-september',
+        payment: _payment(
+          balancePostingMode:
+              BalancePostingMode.alreadyIncludedInCurrentBalance,
+          accessories: const [
+            (amount: 1.80, type: AccessoryCostType.bankCommission),
+          ],
+        ),
+      );
+      expect(retry.status, ExpectedExpenseLifecycleStatus.unchanged);
+      expect(harness.store.balances.single.currentAmount, before);
+      expect(harness.store.transactions, hasLength(2));
+      expect(harness.expenses.all, hasLength(2));
     },
   );
 
@@ -483,6 +532,8 @@ class _Harness {
 
 ExpectedExpensePayment _payment({
   Iterable<ExpectedExpenseAccessoryPayment> accessories = const [],
+  BalancePostingMode balancePostingMode =
+      BalancePostingMode.affectsCurrentBalance,
 }) => ExpectedExpensePayment(
   paidAt: DateTime(2026, 9, 18, 11),
   balanceId: 'balance-bank',
@@ -491,6 +542,7 @@ ExpectedExpensePayment _payment({
   description: 'Bolletta reale',
   amount: 80,
   accessories: accessories,
+  balancePostingMode: balancePostingMode,
 );
 
 ExpenseRelationship _relationship({
