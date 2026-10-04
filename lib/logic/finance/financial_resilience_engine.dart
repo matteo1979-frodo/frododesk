@@ -179,7 +179,7 @@ class FinancialResilienceEngine {
       ))
         item.id: item.amount,
     };
-    var localGap = 0.0;
+    final fundingGaps = <FundingGap>[];
     // Conservative bound: imprecise outflows precede imprecise incomes. This
     // does not claim a date; it exposes the worst ordering allowed by facts.
     for (final event in imprecise.where(
@@ -195,13 +195,32 @@ class FinancialResilienceEngine {
       if (running < minimum) minimum = running;
       final balanceId = event.balanceId;
       if (balanceId != null && accountBalances.containsKey(balanceId)) {
+        final previous = accountBalances[balanceId]!;
         final next =
-            accountBalances[balanceId]! +
+            previous +
             (event.direction == FinancialEventDirection.income
                 ? event.amount
                 : -event.amount);
         accountBalances[balanceId] = next;
-        if (next < 0 && -next > localGap) localGap = -next;
+        if (event.direction == FinancialEventDirection.outflow && next < 0) {
+          final available = previous.clamp(0, event.amount).toDouble();
+          final resource = resources
+              .where((item) => item.id == balanceId)
+              .firstOrNull;
+          fundingGaps.add(
+            FundingGap(
+              commitmentId: event.identity,
+              commitmentLabel: event.label,
+              targetBalanceId: balanceId,
+              targetBalanceLabel: resource?.label ?? balanceId,
+              ownerId: resource?.ownerId ?? event.ownerId,
+              requiredAmount: event.amount,
+              availableAmount: available,
+              amount: event.amount - available,
+              date: event.start,
+            ),
+          );
+        }
       }
     }
     for (final event in imprecise.where(
@@ -213,7 +232,7 @@ class FinancialResilienceEngine {
     final alternatives = <MitigationOption>[];
     var fundCoverage = 0.0;
     final totalGap = minimum < 0 ? -minimum : 0.0;
-    var unresolved = totalGap > 0 ? totalGap : localGap;
+    var unresolved = totalGap;
     for (final event in monthEvents.where(
       (item) =>
           item.direction == FinancialEventDirection.outflow &&
@@ -240,13 +259,17 @@ class FinancialResilienceEngine {
         );
       }
     }
-    if (unresolved > 0 && totalGap <= .005) {
-      unresolved = _alternatives(
-        unresolved,
-        monthEvents,
-        resources,
-        alternatives,
-      );
+    if (totalGap <= .005 && fundingGaps.isNotEmpty) {
+      final remainingCapacity = _alternativeCapacity(monthEvents, resources);
+      for (final gap in fundingGaps) {
+        unresolved += _alternatives(
+          gap,
+          monthEvents,
+          resources,
+          alternatives,
+          remainingCapacity,
+        );
+      }
     }
     if (unresolved > .005 &&
         totalGap > .005 &&
@@ -286,9 +309,12 @@ class FinancialResilienceEngine {
         'Con risorse e alternative conosciute non risultano coperti €${unresolved.toStringAsFixed(2)}.',
       );
     }
-    if (localGap > .005) {
+    for (final gap in fundingGaps) {
       explanations.add(
-        'La liquidità familiare totale non è collocata interamente sul conto richiesto dall’impegno.',
+        '${gap.commitmentLabel} richiede €${gap.requiredAmount.toStringAsFixed(2)} '
+        'su ${gap.targetBalanceLabel}, dove risultano '
+        '€${gap.availableAmount.toStringAsFixed(2)}: mancano '
+        '€${gap.amount.toStringAsFixed(2)}.',
       );
     }
     if (futureLoss > opening && unresolved <= .005) {
@@ -367,19 +393,18 @@ class FinancialResilienceEngine {
             )
             .toList(),
       ),
+      fundingGaps: List.unmodifiable(fundingGaps),
     );
   }
 
   double _alternatives(
-    double gap,
+    FundingGap fundingGap,
     List<FinancialTimelineEvent> events,
     List<FinancialResource> resources,
     List<MitigationOption> options,
+    Map<String, double> remainingCapacity,
   ) {
-    final triggering = events
-        .where((item) => item.direction == FinancialEventDirection.outflow)
-        .firstOrNull;
-    if (triggering == null) return gap;
+    var gap = fundingGap.amount;
     double use(
       Iterable<FinancialResource> candidates,
       MitigationKind kind,
@@ -387,16 +412,7 @@ class FinancialResilienceEngine {
       bool approval = false,
     }) {
       for (final candidate in candidates) {
-        final laterCommitments = events
-            .where(
-              (event) =>
-                  event.direction == FinancialEventDirection.outflow &&
-                  event.balanceId == candidate.id,
-            )
-            .fold<double>(0, (value, event) => value + event.amount);
-        final available = (candidate.amount - laterCommitments)
-            .clamp(0, candidate.amount)
-            .toDouble();
+        final available = remainingCapacity[candidate.id] ?? 0;
         final amount = available.clamp(0, gap).toDouble();
         if (amount <= 0) continue;
         options.add(
@@ -404,13 +420,18 @@ class FinancialResilienceEngine {
             kind: kind,
             amount: amount,
             explanation:
-                '$text ${candidate.label}: €${amount.toStringAsFixed(2)}.',
+                '$text ${candidate.label}: €${amount.toStringAsFixed(2)}.'
+                '${kind == MitigationKind.sameOwnerBalance ? ' La trasferibilità verso ${fundingGap.targetBalanceLabel} non è certificata.' : ''}',
             requiresApproval: approval,
             sourceResourceId: candidate.id,
             sourceResourceLabel: candidate.label,
             ownerId: candidate.ownerId,
+            fundingGapCommitmentId: fundingGap.commitmentId,
+            targetBalanceId: fundingGap.targetBalanceId,
+            actionKnowledge: MitigationActionKnowledge.capacityOnly,
           ),
         );
+        remainingCapacity[candidate.id] = available - amount;
         gap -= amount;
         if (gap <= .005) break;
       }
@@ -421,8 +442,8 @@ class FinancialResilienceEngine {
       resources.where(
         (item) =>
             item.kind != FinancialResourceKind.fund &&
-            item.id != triggering.balanceId &&
-            item.ownerId == triggering.ownerId,
+            item.id != fundingGap.targetBalanceId &&
+            item.ownerId == fundingGap.ownerId,
       ),
       MitigationKind.sameOwnerBalance,
       'Funding gap sul conto richiesto. Capacità disponibile su',
@@ -433,7 +454,7 @@ class FinancialResilienceEngine {
           (item) =>
               item.kind == FinancialResourceKind.fund &&
               !item.protected &&
-              item.purposeKey != triggering.purposeKey,
+              item.id != fundingGap.targetBalanceId,
         ),
         MitigationKind.reallocateFund,
         'Un Fondo non protetto può essere riallocato, sacrificandone la destinazione.',
@@ -445,7 +466,7 @@ class FinancialResilienceEngine {
           (item) =>
               item.kind != FinancialResourceKind.fund &&
               item.ownerId != null &&
-              item.ownerId != triggering.ownerId,
+              item.ownerId != fundingGap.ownerId,
         ),
         MitigationKind.otherOwnerRequiresApproval,
         'Risorse di un altro membro sono potenzialmente disponibili, ma richiedono consenso.',
@@ -477,6 +498,25 @@ class FinancialResilienceEngine {
     }
     return gap;
   }
+
+  Map<String, double> _alternativeCapacity(
+    List<FinancialTimelineEvent> events,
+    List<FinancialResource> resources,
+  ) => {
+    for (final resource in resources)
+      resource.id:
+          (resource.amount -
+                  events
+                      .where(
+                        (event) =>
+                            event.direction ==
+                                FinancialEventDirection.outflow &&
+                            event.balanceId == resource.id,
+                      )
+                      .fold<double>(0, (sum, event) => sum + event.amount))
+              .clamp(0, resource.amount)
+              .toDouble(),
+  };
 
   static List<PersonResilienceDetail> _people(
     List<FinancialResource> resources,

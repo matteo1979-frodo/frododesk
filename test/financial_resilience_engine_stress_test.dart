@@ -246,6 +246,90 @@ void main() {
     );
     expect(resources.single.amount, 1000);
   });
+
+  test('case 25: real equivalent gap keeps commitment and target identity', () {
+    final a = _assess(
+      resources: [
+        _balance('bank', 1814.54, owner: 'matteo', label: 'Banca di Imola'),
+        _balance('credit', 111.40, owner: 'matteo', label: 'Findomestic'),
+        _balance('sim', 4.23, owner: 'matteo', label: 'Credito SIM'),
+        _balance('partner', 8367.07, owner: 'chiara', label: 'Conto Chiara'),
+      ],
+      events: [
+        _out(
+          386,
+          day: 15,
+          balance: 'bank',
+          owner: 'matteo',
+          id: 'inps',
+          label: 'INPS',
+        ),
+        _out(
+          4.99,
+          day: 12,
+          balance: 'sim',
+          owner: 'matteo',
+          id: 'tim',
+          label: 'TIM POWER FAMIGLIA IRON',
+        ),
+      ],
+    );
+
+    expect(a.fundingGaps, hasLength(1));
+    final gap = a.fundingGaps.single;
+    expect(gap.commitmentId, 'tim');
+    expect(gap.commitmentLabel, 'TIM POWER FAMIGLIA IRON');
+    expect(gap.targetBalanceId, 'sim');
+    expect(gap.targetBalanceId, isNot('bank'));
+    expect(gap.targetBalanceLabel, 'Credito SIM');
+    expect(gap.requiredAmount, 4.99);
+    expect(gap.availableAmount, 4.23);
+    expect(gap.amount, closeTo(.76, .000001));
+    expect(gap.date, DateTime(2026, 10, 12));
+    expect(a.fundingGaps.any((item) => item.commitmentId == 'inps'), isFalse);
+    final option = a.alternatives.firstWhere(
+      (item) => item.kind == MitigationKind.sameOwnerBalance,
+    );
+    expect(option.fundingGapCommitmentId, 'tim');
+    expect(option.targetBalanceId, 'sim');
+    expect(option.ownerId, 'matteo');
+    expect(option.actionKnowledge, MitigationActionKnowledge.capacityOnly);
+    expect(option.explanation, contains('non è certificata'));
+    expect(
+      a.alternatives.any(
+        (item) => item.kind == MitigationKind.otherOwnerRequiresApproval,
+      ),
+      isFalse,
+    );
+    expect(a.status, ResilienceStatus.attention);
+    expect(a.explanations.join(' '), contains('TIM POWER FAMIGLIA IRON'));
+    expect(a.explanations.join(' '), contains('Credito SIM'));
+  });
+
+  test('case 26: two local gaps retain distinct identities', () {
+    final a = _assess(
+      resources: [
+        _balance('first', 4, owner: 'm'),
+        _balance('second', 3, owner: 'm'),
+        _balance('reserve', 20, owner: 'm'),
+      ],
+      events: [
+        _out(5, day: 2, balance: 'first', owner: 'm', id: 'commitment-a'),
+        _out(7, day: 3, balance: 'second', owner: 'm', id: 'commitment-b'),
+      ],
+    );
+
+    expect(a.fundingGaps, hasLength(2));
+    expect(
+      a.fundingGaps.map((item) => item.commitmentId),
+      containsAll(<String>['commitment-a', 'commitment-b']),
+    );
+    expect(a.fundingGaps.map((item) => item.amount), containsAll([1, 4]));
+    expect(
+      a.alternatives.map((item) => item.fundingGapCommitmentId).toSet(),
+      containsAll(<String>{'commitment-a', 'commitment-b'}),
+    );
+  });
 }
 
 List<ResilienceAssessment> _year({
@@ -268,14 +352,18 @@ ResilienceAssessment _assess({
   List<HistoricalFinancialFact> facts = const [],
 }) => _year(resources: resources, events: events, facts: facts)[9];
 
-FinancialResource _balance(String id, double amount, {String? owner}) =>
-    FinancialResource(
-      id: id,
-      label: id,
-      ownerId: owner,
-      amount: amount,
-      kind: FinancialResourceKind.balance,
-    );
+FinancialResource _balance(
+  String id,
+  double amount, {
+  String? owner,
+  String? label,
+}) => FinancialResource(
+  id: id,
+  label: label ?? id,
+  ownerId: owner,
+  amount: amount,
+  kind: FinancialResourceKind.balance,
+);
 FinancialResource _fund(String id, double amount, {String? purpose}) =>
     FinancialResource(
       id: id,
@@ -297,9 +385,11 @@ FinancialTimelineEvent _out(
   bool transfer = false,
   FinancialFlexibility flexibility = FinancialFlexibility.unknown,
   FinancialTemporalPrecision precision = FinancialTemporalPrecision.exactDate,
+  String? id,
+  String label = 'Uscita',
 }) => FinancialTimelineEvent(
-  identity: 'out:$amount:$month:$day:$balance',
-  label: 'Uscita',
+  identity: id ?? 'out:$amount:$month:$day:$balance',
+  label: label,
   amount: amount,
   direction: FinancialEventDirection.outflow,
   temporalPrecision: precision,

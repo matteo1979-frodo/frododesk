@@ -12,6 +12,32 @@ enum FinancialFlexibility { fixed, flexible, unknown }
 
 enum FinancialResourceKind { balance, cash, fund }
 
+enum MitigationActionKnowledge { capacityOnly, executableActionKnown }
+
+class FundingGap {
+  final String commitmentId;
+  final String commitmentLabel;
+  final String targetBalanceId;
+  final String targetBalanceLabel;
+  final String? ownerId;
+  final double requiredAmount;
+  final double availableAmount;
+  final double amount;
+  final DateTime? date;
+
+  const FundingGap({
+    required this.commitmentId,
+    required this.commitmentLabel,
+    required this.targetBalanceId,
+    required this.targetBalanceLabel,
+    required this.ownerId,
+    required this.requiredAmount,
+    required this.availableAmount,
+    required this.amount,
+    this.date,
+  });
+}
+
 class ResilienceLineItem {
   final String identity;
   final String label;
@@ -170,6 +196,9 @@ class MitigationOption {
   final String? sourceResourceId;
   final String? sourceResourceLabel;
   final String? ownerId;
+  final String? fundingGapCommitmentId;
+  final String? targetBalanceId;
+  final MitigationActionKnowledge actionKnowledge;
 
   const MitigationOption({
     required this.kind,
@@ -180,6 +209,9 @@ class MitigationOption {
     this.sourceResourceId,
     this.sourceResourceLabel,
     this.ownerId,
+    this.fundingGapCommitmentId,
+    this.targetBalanceId,
+    this.actionKnowledge = MitigationActionKnowledge.capacityOnly,
   });
 }
 
@@ -235,6 +267,7 @@ class ResilienceAssessment {
   final List<MitigationOption> alternatives;
   final List<ResilienceLineItem> items;
   final List<PersonResilienceDetail> people;
+  final List<FundingGap> fundingGaps;
 
   const ResilienceAssessment({
     required this.month,
@@ -253,6 +286,7 @@ class ResilienceAssessment {
     required this.alternatives,
     this.items = const [],
     this.people = const [],
+    this.fundingGaps = const [],
   });
 
   double get flow => inflow - outflow;
