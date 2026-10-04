@@ -129,6 +129,8 @@ class TurnPersonSourceBuilder {
         return 'Pomeriggio';
       case TurnOverrideShift.notte:
         return 'Notte';
+      case TurnOverrideShift.giornata:
+        return 'Giornata';
       case TurnOverrideShift.off:
         return 'Off';
     }

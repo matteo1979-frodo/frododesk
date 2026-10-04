@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'work_shift.dart';
 
 enum TurnOverrideType {
   dailyShiftChange,
@@ -9,7 +8,7 @@ enum TurnOverrideType {
 
 enum TurnPersonId { matteo, chiara }
 
-enum TurnOverrideShift { mattina, pomeriggio, notte, off }
+enum TurnOverrideShift { mattina, pomeriggio, notte, giornata, off }
 
 @immutable
 class TurnOverride {

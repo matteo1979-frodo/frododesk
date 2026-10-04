@@ -49,6 +49,11 @@ void main() {
         TurnPresentationIcon.work,
       ),
       const TurnPlan.notte(): ('N', '22:00–06:00', TurnPresentationIcon.work),
+      const TurnPlan.giornata(): (
+        'G',
+        '08:00–17:00',
+        TurnPresentationIcon.work,
+      ),
       const TurnPlan.off(): ('OFF', 'OFF', TurnPresentationIcon.rest),
     };
 

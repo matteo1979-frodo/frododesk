@@ -65,6 +65,8 @@ class TurnPresentationStateBuilder {
         return 'P';
       case TurnType.notte:
         return 'N';
+      case TurnType.giornata:
+        return 'G';
       case TurnType.off:
         return 'OFF';
     }

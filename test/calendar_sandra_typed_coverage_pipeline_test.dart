@@ -84,14 +84,14 @@ Future<_PipelineRun> _runPipeline({
       id: 'chiara-lunch',
       person: 'chiara',
       start: const TimeOfDay(hour: 13, minute: 0),
-      end: const TimeOfDay(hour: 14, minute: 30),
+      end: const TimeOfDay(hour: 14, minute: 45),
     );
     for (final person in const ['matteo', 'chiara']) {
       addBusy(
         id: '$person-evening',
         person: person,
         start: const TimeOfDay(hour: 21, minute: 0),
-        end: const TimeOfDay(hour: 22, minute: 35),
+        end: const TimeOfDay(hour: 22, minute: 45),
       );
     }
   }
@@ -158,11 +158,11 @@ void main() {
 
   group('typed Sandra coverage pipeline', () {
     const morningStart = TimeOfDay(hour: 5, minute: 0);
-    const morningEnd = TimeOfDay(hour: 6, minute: 35);
+    const morningEnd = TimeOfDay(hour: 6, minute: 45);
     const lunchStart = TimeOfDay(hour: 13, minute: 0);
-    const lunchEnd = TimeOfDay(hour: 14, minute: 30);
+    const lunchEnd = TimeOfDay(hour: 14, minute: 45);
     const eveningStart = TimeOfDay(hour: 21, minute: 0);
-    const eveningEnd = TimeOfDay(hour: 22, minute: 35);
+    const eveningEnd = TimeOfDay(hour: 22, minute: 45);
 
     Future<_PipelineRun> scenario({
       required bool global,

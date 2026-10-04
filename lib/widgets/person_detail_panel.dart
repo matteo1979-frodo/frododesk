@@ -521,6 +521,8 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
         return Icons.wb_twilight_rounded;
       case TurnType.notte:
         return Icons.nights_stay_rounded;
+      case TurnType.giornata:
+        return Icons.work_rounded;
       case TurnType.off:
         return Icons.home_rounded;
     }
@@ -610,6 +612,8 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
         return Colors.orange;
       case TurnType.notte:
         return Colors.blue;
+      case TurnType.giornata:
+        return Colors.teal;
       case TurnType.off:
         return Colors.grey;
     }
@@ -687,6 +691,8 @@ class _PersonDetailPanelState extends State<PersonDetailPanel> {
         return "Pomeriggio";
       case TurnType.notte:
         return "Notte";
+      case TurnType.giornata:
+        return "Giornata";
       case TurnType.off:
         return "Riposo";
     }

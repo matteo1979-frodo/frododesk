@@ -208,6 +208,7 @@ class CoreStore {
     await summerCampSpecialEventStore.load();
     await supportNetworkStore.load();
     await fourthShiftStore.load();
+    await turnOverrideStore.load();
     await rotationOverrideStore.load();
     await realEventStore.load();
     await schoolStore.load();

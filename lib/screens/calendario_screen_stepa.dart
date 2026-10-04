@@ -2973,6 +2973,11 @@ class _CalendarioScreenStepAStabileState
                           child: const Text("Notte"),
                         ),
                         TextButton(
+                          onPressed: () =>
+                              Navigator.pop(context, TurnType.giornata),
+                          child: const Text("Giornata"),
+                        ),
+                        TextButton(
                           onPressed: () => Navigator.pop(context, TurnType.off),
                           child: const Text("OFF"),
                         ),
@@ -2987,20 +2992,34 @@ class _CalendarioScreenStepAStabileState
                     ? TurnPersonId.matteo
                     : TurnPersonId.chiara;
 
-                final shiftId = newTurn == TurnType.mattina
-                    ? TurnOverrideShift.mattina
-                    : newTurn == TurnType.pomeriggio
-                    ? TurnOverrideShift.pomeriggio
-                    : newTurn == TurnType.notte
-                    ? TurnOverrideShift.notte
-                    : TurnOverrideShift.off;
+                final shiftId = switch (newTurn) {
+                  TurnType.mattina => TurnOverrideShift.mattina,
+                  TurnType.pomeriggio => TurnOverrideShift.pomeriggio,
+                  TurnType.notte => TurnOverrideShift.notte,
+                  TurnType.giornata => TurnOverrideShift.giornata,
+                  TurnType.off => TurnOverrideShift.off,
+                };
 
-                turnOverrideStore.setDailyOverride(
-                  person: personId,
-                  day: _selectedDay,
-                  newShift: shiftId,
-                );
+                try {
+                  await turnOverrideStore.setDailyOverride(
+                    person: personId,
+                    day: _selectedDay,
+                    newShift: shiftId,
+                  );
+                } catch (_) {
+                  if (!mounted) return;
+                  setState(() {});
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Cambio turno applicato alla sessione, ma non salvato.',
+                      ),
+                    ),
+                  );
+                  return;
+                }
 
+                if (!mounted) return;
                 setState(() {});
               },
               icon: const Icon(Icons.swap_horiz),
@@ -3082,6 +3101,11 @@ class _CalendarioScreenStepAStabileState
                           child: const Text("Notte"),
                         ),
                         TextButton(
+                          onPressed: () =>
+                              Navigator.pop(context, TurnType.giornata),
+                          child: const Text("Giornata"),
+                        ),
+                        TextButton(
                           onPressed: () => Navigator.pop(context, TurnType.off),
                           child: const Text("OFF"),
                         ),
@@ -3096,21 +3120,35 @@ class _CalendarioScreenStepAStabileState
                     ? TurnPersonId.matteo
                     : TurnPersonId.chiara;
 
-                final shiftId = newTurn == TurnType.mattina
-                    ? TurnOverrideShift.mattina
-                    : newTurn == TurnType.pomeriggio
-                    ? TurnOverrideShift.pomeriggio
-                    : newTurn == TurnType.notte
-                    ? TurnOverrideShift.notte
-                    : TurnOverrideShift.off;
+                final shiftId = switch (newTurn) {
+                  TurnType.mattina => TurnOverrideShift.mattina,
+                  TurnType.pomeriggio => TurnOverrideShift.pomeriggio,
+                  TurnType.notte => TurnOverrideShift.notte,
+                  TurnType.giornata => TurnOverrideShift.giornata,
+                  TurnType.off => TurnOverrideShift.off,
+                };
 
-                turnOverrideStore.setPeriodOverride(
-                  person: personId,
-                  startDay: startDay,
-                  endDay: endDay,
-                  newShift: shiftId,
-                );
+                try {
+                  await turnOverrideStore.setPeriodOverride(
+                    person: personId,
+                    startDay: startDay,
+                    endDay: endDay,
+                    newShift: shiftId,
+                  );
+                } catch (_) {
+                  if (!mounted) return;
+                  setState(() {});
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Cambio turno applicato alla sessione, ma non salvato.',
+                      ),
+                    ),
+                  );
+                  return;
+                }
 
+                if (!mounted) return;
                 setState(() {});
               },
               icon: const Icon(Icons.date_range),

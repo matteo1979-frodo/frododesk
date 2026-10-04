@@ -141,16 +141,16 @@ void main() {
     );
     expect(
       analysis.gapDetails.single.end,
-      const TimeOfDay(hour: 6, minute: 35),
+      const TimeOfDay(hour: 6, minute: 45),
     );
 
     final sacrificed = criticality(
       analysis,
       CoverageCriticalityKind.recoverySacrificed,
       6,
-      35,
+      45,
       14,
-      30,
+      45,
     );
     expect(sacrificed.personId, 'chiara');
     expect(sacrificed.source, CoverageSource.parentForced);
@@ -160,7 +160,7 @@ void main() {
       analysis,
       CoverageCriticalityKind.recoveryProtected,
       14,
-      30,
+      45,
       21,
       0,
     );
@@ -177,9 +177,9 @@ void main() {
       analysis,
       CoverageCriticalityKind.recoverySacrificed,
       6,
-      35,
+      45,
       14,
-      30,
+      45,
     );
     expect(
       const CalendarDayStatusBuilder().build(
@@ -195,8 +195,8 @@ void main() {
     final analysis = await analyze(
       supportSlots: const [
         SupportTimeSlot(
-          start: TimeOfDay(hour: 6, minute: 35),
-          end: TimeOfDay(hour: 14, minute: 30),
+          start: TimeOfDay(hour: 6, minute: 45),
+          end: TimeOfDay(hour: 14, minute: 45),
         ),
       ],
     );
@@ -205,8 +205,8 @@ void main() {
       analysis.criticalityDetails.where(
         (detail) =>
             detail.kind == CoverageCriticalityKind.recoverySacrificed &&
-            detail.start.isBefore(DateTime(2026, 8, 11, 14, 30)) &&
-            detail.end.isAfter(DateTime(2026, 8, 11, 6, 35)),
+            detail.start.isBefore(DateTime(2026, 8, 11, 14, 45)) &&
+            detail.end.isAfter(DateTime(2026, 8, 11, 6, 45)),
       ),
       isEmpty,
     );
@@ -215,9 +215,9 @@ void main() {
         analysis,
         CoverageCriticalityKind.recoveryProtected,
         6,
-        35,
+        45,
         14,
-        30,
+        45,
       ).source,
       CoverageSource.supportNetwork,
     );
@@ -226,9 +226,9 @@ void main() {
         analysis,
         CoverageCriticalityKind.recoveryProtected,
         6,
-        35,
+        45,
         14,
-        30,
+        45,
       ).coverageProviderId,
       'support-id',
     );
@@ -248,7 +248,7 @@ void main() {
       analysis,
       CoverageCriticalityKind.recoverySacrificed,
       6,
-      35,
+      45,
       7,
       30,
     );
@@ -278,7 +278,7 @@ void main() {
       analysis,
       CoverageCriticalityKind.recoverySacrificed,
       6,
-      35,
+      45,
       10,
       0,
     );
@@ -298,13 +298,13 @@ void main() {
       12,
       0,
       14,
-      30,
+      45,
     );
   });
 
   test('adulto normale protegge recovery senza sacrificed', () async {
     final analysis = await analyze();
-    final afterMatteoReturns = DateTime(2026, 8, 11, 14, 30);
+    final afterMatteoReturns = DateTime(2026, 8, 11, 14, 45);
 
     expect(
       analysis.criticalityDetails.where(
@@ -483,7 +483,7 @@ void main() {
   test('Sandra adiacente a SupportPerson non viene unita', () async {
     final analysis = await analyze(
       sandraMorning: true,
-      sandraMorningStart: const TimeOfDay(hour: 6, minute: 35),
+      sandraMorningStart: const TimeOfDay(hour: 6, minute: 45),
       sandraMorningEnd: const TimeOfDay(hour: 7, minute: 30),
       supportPeople: const [
         SupportPerson(
@@ -501,7 +501,7 @@ void main() {
       analysis,
       CoverageCriticalityKind.recoveryProtected,
       6,
-      35,
+      45,
       7,
       30,
     );
@@ -529,8 +529,8 @@ void main() {
               id: 'inactive-support',
               name: 'Inattivo',
               enabled: enabledGlobally,
-              start: const TimeOfDay(hour: 6, minute: 35),
-              end: const TimeOfDay(hour: 14, minute: 30),
+              start: const TimeOfDay(hour: 6, minute: 45),
+              end: const TimeOfDay(hour: 14, minute: 45),
             ),
           ],
           enabledSupportIds: enabledGlobally
@@ -542,9 +542,9 @@ void main() {
           analysis,
           CoverageCriticalityKind.recoverySacrificed,
           6,
-          35,
+          45,
           14,
-          30,
+          45,
         );
         expect(sacrificed.coverageProviderId, sacrificed.personId);
         expect(

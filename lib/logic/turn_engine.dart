@@ -17,7 +17,7 @@ enum TurnPerson { matteo, chiara }
 
 /// ✅ COMPATIBILITÀ UI
 /// La UI vecchia ragiona con TurnType + TurnPlan.
-enum TurnType { mattina, pomeriggio, notte, off }
+enum TurnType { mattina, pomeriggio, notte, giornata, off }
 
 enum TravelDirection { outbound, returnTrip }
 
@@ -31,17 +31,7 @@ class TravelDurationPolicy {
     Map<String, Duration>? shiftDirectionDefaults,
     Duration generalDefault = const Duration(minutes: 30),
   }) {
-    final personValues =
-        personShiftDirection ??
-        {
-          keyFor(
-            personId: 'chiara',
-            shiftType: TurnType.notte,
-            direction: TravelDirection.returnTrip,
-          ): const Duration(
-            minutes: 35,
-          ),
-        };
+    final personValues = personShiftDirection ?? const <String, Duration>{};
     final shiftValues =
         shiftDirectionDefaults ??
         {
@@ -59,7 +49,7 @@ class TravelDurationPolicy {
                 shiftType: shift,
                 direction: TravelDirection.returnTrip,
               ): const Duration(
-                minutes: 30,
+                minutes: 45,
               ),
         };
 
@@ -159,6 +149,14 @@ class TurnPlan {
         isOff: false,
       );
 
+  const TurnPlan.giornata()
+    : this._(
+        type: TurnType.giornata,
+        start: const TimeOfDay(hour: 8, minute: 0),
+        end: const TimeOfDay(hour: 17, minute: 0),
+        isOff: false,
+      );
+
   const TurnPlan.off()
     : this._(
         type: TurnType.off,
@@ -192,6 +190,8 @@ class TurnConflictInfo {
         return 'Conflitto turni: pomeriggio + pomeriggio';
       case 'notte_notte':
         return 'Conflitto turni: notte + notte';
+      case 'giornata_giornata':
+        return 'Conflitto turni: giornata + giornata';
       default:
         return 'Nessun conflitto turni';
     }
@@ -214,7 +214,7 @@ class TurnEventConflictInfo {
 }
 
 /// Interno: tipo rotazione
-enum _TurnoTipo { mattina, pomeriggio, notte, off }
+enum _TurnoTipo { mattina, pomeriggio, notte, giornata, off }
 
 class _TurnoOrari {
   final TimeOfDay start;
@@ -241,6 +241,9 @@ class TurnEngine {
 
   static const TimeOfDay _notteStart = TimeOfDay(hour: 22, minute: 0);
   static const TimeOfDay _notteEnd = TimeOfDay(hour: 6, minute: 0);
+
+  static const TimeOfDay _giornataStart = TimeOfDay(hour: 8, minute: 0);
+  static const TimeOfDay _giornataEnd = TimeOfDay(hour: 17, minute: 0);
 
   /// ✅ Monday di riferimento per la rotazione (settimana “0”)
   /// NOTA: per evitare DST, le date di rotazione vengono gestite in UTC a mezzogiorno.
@@ -305,6 +308,8 @@ class TurnEngine {
         return const TurnPlan.pomeriggio();
       case _TurnoTipo.notte:
         return const TurnPlan.notte();
+      case _TurnoTipo.giornata:
+        return const TurnPlan.giornata();
       case _TurnoTipo.off:
         return const TurnPlan.off();
     }
@@ -331,6 +336,9 @@ class TurnEngine {
           break;
         case TurnType.notte:
           code = 'notte_notte';
+          break;
+        case TurnType.giornata:
+          code = 'giornata_giornata';
           break;
         case TurnType.off:
           code = null;
@@ -427,9 +435,17 @@ class TurnEngine {
     final shifts = <WorkShift>[];
 
     // 1) turno di oggi (con viaggio)
-    final today = _turnoGiorno(person, d0);
+    final todayType = _turnoTipoGiorno(person, d0);
+    final today = _orariFromTipo(todayType);
     if (!today.isOff) {
-      shifts.add(_shiftConViaggio(baseDay: d0, turno: today));
+      shifts.add(
+        _shiftConViaggio(
+          person: person,
+          shiftType: _turnTypeFromTurnoTipo(todayType),
+          baseDay: d0,
+          turno: today,
+        ),
+      );
     }
 
     // 2) se ieri era NOTTE: aggiungi shift di ieri
@@ -439,7 +455,14 @@ class TurnEngine {
     if (ieriTipo == _TurnoTipo.notte) {
       final tIeri = _turnoGiorno(person, ieri);
       if (!tIeri.isOff) {
-        shifts.add(_shiftConViaggio(baseDay: ieri, turno: tIeri));
+        shifts.add(
+          _shiftConViaggio(
+            person: person,
+            shiftType: TurnType.notte,
+            baseDay: ieri,
+            turno: tIeri,
+          ),
+        );
       }
     }
 
@@ -633,6 +656,8 @@ class TurnEngine {
         return _TurnoTipo.pomeriggio;
       case TurnType.notte:
         return _TurnoTipo.notte;
+      case TurnType.giornata:
+        return _TurnoTipo.giornata;
       case TurnType.off:
         return _TurnoTipo.off;
     }
@@ -646,6 +671,8 @@ class TurnEngine {
         return TurnType.pomeriggio;
       case _TurnoTipo.notte:
         return TurnType.notte;
+      case _TurnoTipo.giornata:
+        return TurnType.giornata;
       case _TurnoTipo.off:
         return TurnType.off;
     }
@@ -659,6 +686,8 @@ class TurnEngine {
         return _TurnoTipo.pomeriggio;
       case TurnOverrideShift.notte:
         return _TurnoTipo.notte;
+      case TurnOverrideShift.giornata:
+        return _TurnoTipo.giornata;
       case TurnOverrideShift.off:
         return _TurnoTipo.off;
     }
@@ -776,6 +805,8 @@ class TurnEngine {
         return const _TurnoOrari(start: _pomeriggioStart, end: _pomeriggioEnd);
       case _TurnoTipo.notte:
         return const _TurnoOrari(start: _notteStart, end: _notteEnd);
+      case _TurnoTipo.giornata:
+        return const _TurnoOrari(start: _giornataStart, end: _giornataEnd);
       case _TurnoTipo.off:
         return const _TurnoOrari.off();
     }
@@ -899,8 +930,10 @@ class TurnEngine {
     return aStart.isBefore(bEnd) && bStart.isBefore(aEnd);
   }
 
-  // Turno + viaggio: 1h prima, 30m dopo. Gestisce NOTTE cross-day.
+  // Turno + viaggio secondo la policy condivisa. Gestisce NOTTE cross-day.
   WorkShift _shiftConViaggio({
+    required TurnPerson person,
+    required TurnType shiftType,
     required DateTime baseDay,
     required _TurnoOrari turno,
   }) {
@@ -928,9 +961,18 @@ class TurnEngine {
       e = e.add(const Duration(days: 1));
     }
 
-    return WorkShift(
-      start: s.subtract(const Duration(hours: 1)),
-      end: e.add(const Duration(minutes: 30)),
+    final personId = _personIdFor(person);
+    final outbound = travelDurationPolicy.travelDurationFor(
+      personId: personId,
+      shiftType: shiftType,
+      direction: TravelDirection.outbound,
     );
+    final returnTrip = travelDurationPolicy.travelDurationFor(
+      personId: personId,
+      shiftType: shiftType,
+      direction: TravelDirection.returnTrip,
+    );
+
+    return WorkShift(start: s.subtract(outbound), end: e.add(returnTrip));
   }
 }

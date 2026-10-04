@@ -99,8 +99,8 @@ void main() {
 
     expect(work.end, DateTime(2026, 8, 11, 6));
     expect(travel.start, DateTime(2026, 8, 11, 6));
-    expect(travel.end, DateTime(2026, 8, 11, 6, 35));
-    expect(recovery.start, DateTime(2026, 8, 11, 6, 35));
+    expect(travel.end, DateTime(2026, 8, 11, 6, 45));
+    expect(recovery.start, DateTime(2026, 8, 11, 6, 45));
     expect(recovery.end, DateTime(2026, 8, 12));
     expect(recovery.canBeSacrificedForCare, isTrue);
   });
@@ -134,7 +134,7 @@ void main() {
         (c) =>
             c.kind == AdultConstraintKind.returnTravel &&
             c.start == DateTime(2026, 8, 11, 14) &&
-            c.end == DateTime(2026, 8, 11, 14, 30),
+            c.end == DateTime(2026, 8, 11, 14, 45),
       ),
       isTrue,
     );
@@ -173,7 +173,7 @@ void main() {
         shiftType: TurnType.notte,
         direction: TravelDirection.returnTrip,
       ),
-      const Duration(minutes: 30),
+      const Duration(minutes: 45),
     );
   });
 
@@ -182,7 +182,7 @@ void main() {
 
     expect(
       coverage.isChiaraBusyBetween(
-        DateTime(2026, 8, 11, 6, 35),
+        DateTime(2026, 8, 11, 6, 45),
         DateTime(2026, 8, 11, 14, 30),
         isHomePresenceWindow: true,
       ),
@@ -191,7 +191,7 @@ void main() {
     expect(
       coverage.isChiaraBusyBetween(
         DateTime(2026, 8, 11, 6),
-        DateTime(2026, 8, 11, 6, 35),
+        DateTime(2026, 8, 11, 6, 45),
         isHomePresenceWindow: true,
       ),
       isTrue,
@@ -206,17 +206,17 @@ void main() {
     );
   });
 
-  test('11 agosto ha solo il gap reale 05:00-06:35', () {
+  test('11 agosto ha solo il gap reale 05:00-06:45', () {
     final analysis = analyzeCanonical(canonicalCoverage());
 
     expect(analysis.gaps, hasLength(1));
     expect(analysis.details.single.start, const TimeOfDay(hour: 5, minute: 0));
-    expect(analysis.details.single.end, const TimeOfDay(hour: 6, minute: 35));
+    expect(analysis.details.single.end, const TimeOfDay(hour: 6, minute: 45));
     expect(
       analysis.details.any(
         (detail) =>
             detail.start == const TimeOfDay(hour: 13, minute: 0) &&
-            detail.end == const TimeOfDay(hour: 14, minute: 30),
+            detail.end == const TimeOfDay(hour: 14, minute: 45),
       ),
       isFalse,
     );
@@ -285,7 +285,7 @@ void main() {
     final analysis = analyzeCanonical(canonicalCoverage(realEvents: events));
 
     expect(analysis.details.single.start, const TimeOfDay(hour: 0, minute: 0));
-    expect(analysis.details.single.end, const TimeOfDay(hour: 6, minute: 35));
+    expect(analysis.details.single.end, const TimeOfDay(hour: 6, minute: 45));
   });
 
   test('orari Sandra mattina 07:00-08:00 non cambiano il gap reale', () {
@@ -297,7 +297,7 @@ void main() {
     );
 
     expect(analysis.details.single.start, const TimeOfDay(hour: 5, minute: 0));
-    expect(analysis.details.single.end, const TimeOfDay(hour: 6, minute: 35));
+    expect(analysis.details.single.end, const TimeOfDay(hour: 6, minute: 45));
   });
 
   test('orari Sandra mattina 04:00-07:00 non cambiano il gap reale', () {
@@ -309,7 +309,7 @@ void main() {
     );
 
     expect(analysis.details.single.start, const TimeOfDay(hour: 5, minute: 0));
-    expect(analysis.details.single.end, const TimeOfDay(hour: 6, minute: 35));
+    expect(analysis.details.single.end, const TimeOfDay(hour: 6, minute: 45));
   });
 
   test('orari Sandra pranzo non cambiano il gap reale se disabilitata', () {
@@ -321,10 +321,10 @@ void main() {
     );
 
     expect(analysis.details.single.start, const TimeOfDay(hour: 5, minute: 0));
-    expect(analysis.details.single.end, const TimeOfDay(hour: 6, minute: 35));
+    expect(analysis.details.single.end, const TimeOfDay(hour: 6, minute: 45));
   });
 
-  test('supporto 05:00-06:35 elimina il gap reale', () async {
+  test('supporto 05:00-06:45 elimina il gap reale', () async {
     final support = SupportNetworkStore()
       ..addPerson(
         const SupportPerson(
@@ -332,7 +332,7 @@ void main() {
           name: 'Supporto',
           enabled: true,
           start: TimeOfDay(hour: 5, minute: 0),
-          end: TimeOfDay(hour: 6, minute: 35),
+          end: TimeOfDay(hour: 6, minute: 45),
         ),
       );
     final settings = DaySettingsStore();

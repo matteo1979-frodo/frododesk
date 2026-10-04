@@ -115,14 +115,14 @@ class CoverageEngine {
        sandraCambioMattinaStart =
            sandraCambioMattinaStart ?? const TimeOfDay(hour: 5, minute: 0),
        sandraCambioMattinaEnd =
-           sandraCambioMattinaEnd ?? const TimeOfDay(hour: 6, minute: 35),
+           sandraCambioMattinaEnd ?? const TimeOfDay(hour: 6, minute: 45),
        sandraPranzoStart =
            sandraPranzoStart ?? const TimeOfDay(hour: 13, minute: 0),
        sandraPranzoEnd =
-           sandraPranzoEnd ?? const TimeOfDay(hour: 14, minute: 30),
+           sandraPranzoEnd ?? const TimeOfDay(hour: 14, minute: 45),
        sandraSeraStart =
            sandraSeraStart ?? const TimeOfDay(hour: 21, minute: 0),
-       sandraSeraEnd = sandraSeraEnd ?? const TimeOfDay(hour: 22, minute: 35);
+       sandraSeraEnd = sandraSeraEnd ?? const TimeOfDay(hour: 22, minute: 45);
 
   // Pennina UI
   void setSandraCambioMattina(TimeOfDay start, TimeOfDay end) {
@@ -933,11 +933,27 @@ class CoverageEngine {
     }
 
     if (aliceSchoolNormal) {
-      final schoolInStart = DateTime(d0.year, d0.month, d0.day, 7, 30);
       final schoolInEnd = _atTime(d0, schoolStart);
       final schoolInRealStart = schoolInEnd.subtract(
         const Duration(minutes: 20),
       );
+
+      if (schoolInRealStart.isAfter(d0)) {
+        entries.addAll(
+          _uncoveredHomeSegments(
+            day: d0,
+            windowStart: d0,
+            windowEnd: schoolInRealStart,
+            labelPrefix: 'Alice a casa',
+            sandraMattinaAvailable: effSandraMattina,
+            sandraPranzoAvailable: effSandraPranzo,
+            sandraSeraAvailable: effSandraSera,
+            overrides: overrides,
+            ferieStore: ferieStore,
+          ),
+        );
+      }
+
       final labelSchoolIn =
           "Alice ingresso: ${_fmtTimeDate(schoolInRealStart)}–${_fmt(schoolStart)}";
 
@@ -1264,7 +1280,7 @@ class CoverageEngine {
       mattinaGapEnd = effectiveCampStart;
     }
 
-    if (mattinaGapEnd.isAfter(mattinaGapStart)) {
+    if (!aliceSchoolNormal && mattinaGapEnd.isAfter(mattinaGapStart)) {
       final okCambioMattina = _isFasciaCovered(
         day: d0,
         fasciaStart: mattinaGapStart,
@@ -1486,7 +1502,9 @@ class CoverageEngine {
       );
       if (shiftState.isPlannedShiftActive) return constraints;
       return constraints
-          .where((constraint) => constraint.kind != AdultConstraintKind.recovery)
+          .where(
+            (constraint) => constraint.kind != AdultConstraintKind.recovery,
+          )
           .toList();
     }
 
@@ -2012,24 +2030,31 @@ class CoverageEngine {
       );
       if (!enabledForDay) continue;
 
-      final start = DateTime(
-        day.year,
-        day.month,
-        day.day,
-        person.start.hour,
-        person.start.minute,
-      );
+      for (final slot in person.effectiveSlots) {
+        addIfInside(_atTime(day, slot.start));
+        addIfInside(_atTime(day, slot.end));
+      }
+    }
 
-      final end = DateTime(
-        day.year,
-        day.month,
-        day.day,
-        person.end.hour,
-        person.end.minute,
-      );
+    for (final entry in aliceCompanionStore.entriesForDay(day)) {
+      addIfInside(_atTime(day, entry.start));
+      addIfInside(_atTime(day, entry.end));
+    }
 
-      addIfInside(start);
-      addIfInside(end);
+    for (final event in realEventStore.eventsForDay(day)) {
+      if (!event.involvesPerson('alice') ||
+          event.startTime == null ||
+          event.endTime == null) {
+        continue;
+      }
+      addIfInside(_atTime(day, event.startTime!));
+      addIfInside(_atTime(day, event.endTime!));
+    }
+
+    for (final event in aliceSpecialEventStore.eventsForDay(day)) {
+      if (!event.enabled) continue;
+      addIfInside(_atTime(day, event.start));
+      addIfInside(_atTime(day, event.end));
     }
 
     if (sandraMattinaAvailable) {
@@ -2070,7 +2095,16 @@ class CoverageEngine {
         ferieStore: ferieStore,
       );
 
-      if (!covered &&
+      final aliceIsHome =
+          _presenceEngine().stateForRange(
+            day: day,
+            start: segStart,
+            end: segEnd,
+          ) ==
+          AlicePresenceState.home;
+
+      if (aliceIsHome &&
+          !covered &&
           !_presenceEngine().isAliceAccompaniedDuringRange(
             day: day,
             start: segStart,
