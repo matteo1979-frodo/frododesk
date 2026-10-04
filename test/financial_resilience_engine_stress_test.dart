@@ -118,7 +118,10 @@ void main() {
     final option = a.alternatives.firstWhere(
       (x) => x.kind == MitigationKind.sameOwnerBalance,
     );
-    expect(option.explanation, contains('Funding gap'));
+    expect(option.explanation, isNot(contains('Funding gap')));
+    expect(option.explanation, contains('M dispone di €20.00 su other'));
+    expect(option.explanation, contains('trasferita direttamente a pay'));
+    expect(option.explanation, contains('Non è però certificato'));
     expect(option.explanation, isNot(contains('deficit')));
     expect(option.sourceResourceId, 'other');
     expect(a.status, ResilienceStatus.attention);
@@ -294,7 +297,13 @@ void main() {
     expect(option.targetBalanceId, 'sim');
     expect(option.ownerId, 'matteo');
     expect(option.actionKnowledge, MitigationActionKnowledge.capacityOnly);
-    expect(option.explanation, contains('non è certificata'));
+    expect(
+      option.explanation,
+      'Matteo dispone di €0.76 su Banca di Imola. Non è però certificato '
+      'che questa disponibilità possa essere trasferita direttamente a '
+      'Credito SIM.',
+    );
+    expect(option.explanation, isNot(contains('Funding gap')));
     expect(
       a.alternatives.any(
         (item) => item.kind == MitigationKind.otherOwnerRequiresApproval,

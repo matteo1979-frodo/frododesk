@@ -419,9 +419,9 @@ class FinancialResilienceEngine {
           MitigationOption(
             kind: kind,
             amount: amount,
-            explanation:
-                '$text ${candidate.label}: €${amount.toStringAsFixed(2)}.'
-                '${kind == MitigationKind.sameOwnerBalance ? ' La trasferibilità verso ${fundingGap.targetBalanceLabel} non è certificata.' : ''}',
+            explanation: kind == MitigationKind.sameOwnerBalance
+                ? _sameOwnerCapacityExplanation(candidate, fundingGap, amount)
+                : '$text ${candidate.label}: €${amount.toStringAsFixed(2)}.',
             requiresApproval: approval,
             sourceResourceId: candidate.id,
             sourceResourceLabel: candidate.label,
@@ -497,6 +497,25 @@ class FinancialResilienceEngine {
       );
     }
     return gap;
+  }
+
+  String _sameOwnerCapacityExplanation(
+    FinancialResource source,
+    FundingGap fundingGap,
+    double amount,
+  ) {
+    final owner = _displayOwner(source.ownerId);
+    final capacity = owner == null
+        ? 'È disponibile una capacità di €${amount.toStringAsFixed(2)} su ${source.label}'
+        : '$owner dispone di €${amount.toStringAsFixed(2)} su ${source.label}';
+    return '$capacity. Non è però certificato che questa disponibilità possa '
+        'essere trasferita direttamente a ${fundingGap.targetBalanceLabel}.';
+  }
+
+  String? _displayOwner(String? ownerId) {
+    final value = ownerId?.trim();
+    if (value == null || value.isEmpty) return null;
+    return '${value[0].toUpperCase()}${value.substring(1)}';
   }
 
   Map<String, double> _alternativeCapacity(
