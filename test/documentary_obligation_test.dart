@@ -998,6 +998,147 @@ void main() {
     );
 
     test(
+      'real-equivalent recurring document persists without a future forecast',
+      () async {
+        String? expectedStored;
+        String? documentaryStored;
+        final relationship = ExpenseRelationship(
+          relationshipId: 'energy-relationship',
+          service: 'Fornitura energia',
+          provider: 'Fornitore energia',
+          subject: FinanceSubject.chiara,
+          status: ExpenseRelationshipStatus.active,
+          periodicity: ExpenseRelationshipPeriodicity(
+            type: FinanceRecurringType.monthly,
+          ),
+          paymentConfiguration: ExpenseRelationshipPaymentConfiguration(
+            method: FinancePaymentMethod.rid,
+          ),
+          identifiers: [
+            ExpenseRelationshipIdentifier(
+              namespace: 'codice_fornitura',
+              value: 'A-001',
+            ),
+            ExpenseRelationshipIdentifier(
+              namespace: 'POD',
+              value: 'IT001E00000000',
+            ),
+          ],
+          commercialTerm: ExpenseRelationshipCommercialTerm(
+            effectiveFrom: DateTime(2026, 2, 1),
+            commercialEnd: DateTime(2027, 1, 31),
+          ),
+        );
+        final obligation = DocumentaryObligation(
+          obligationId: 'energy-document-2026-02',
+          title: 'Documento energia - Febbraio 2026',
+          totalAmount: 65.84,
+          documentHolder: FinanceSubject.chiara,
+          documentReference: 'DOC-2026-02-001',
+          documentReferenceType: DocumentaryReferenceType.invoiceNumber,
+          issuedAt: DateTime(2026, 3, 12),
+          competencePeriod: DocumentaryCompetencePeriod(
+            startDate: DateTime(2026, 2, 1),
+            endDate: DateTime(2026, 2, 28),
+          ),
+          components: [
+            DocumentaryEconomicComponent(
+              componentId: 'energy',
+              label: 'Energia elettrica',
+              classificationCode: 'energia_elettrica',
+              amount: 56.84,
+            ),
+            DocumentaryEconomicComponent(
+              componentId: 'public-fee',
+              label: 'Componente pubblica',
+              classificationCode: 'canone_rai',
+              amount: 9,
+            ),
+          ],
+          relationshipId: relationship.relationshipId,
+          cycleSequence: 1,
+          options: [
+            DocumentaryFulfillmentOption(
+              optionId: 'direct-debit',
+              label: 'Addebito diretto SDD',
+              installments: [
+                DocumentaryInstallment(
+                  installmentId: 'direct-debit-1',
+                  amount: 65.84,
+                  dueDate: DateTime(2026, 4, 1),
+                ),
+              ],
+            ),
+          ],
+        );
+        final finance = FinanceStore(
+          expectedExpensePersistence: ExpectedExpensePersistence(
+            load: (_) async => expectedStored,
+            saveVerified: (_, value) async {
+              expectedStored = value;
+              return PersistenceWriteVerification(
+                backendAccepted: true,
+                readBack: value,
+              );
+            },
+          ),
+          documentaryObligationPersistence: DocumentaryObligationPersistence(
+            load: (_) async => documentaryStored,
+            save: (_, value) async {
+              documentaryStored = value;
+              return PersistenceWriteVerification(
+                backendAccepted: true,
+                readBack: value,
+              );
+            },
+          ),
+        );
+        final coordinator = DocumentaryObligationCoordinator(
+          financeStore: finance,
+        );
+
+        expect(
+          await coordinator.registerRecurringDocument(
+            obligation: obligation,
+            relationship: relationship,
+          ),
+          DocumentaryObligationOutcome.applied,
+        );
+        expect(finance.expectedExpenseAggregate.relationships, hasLength(1));
+        expect(
+          finance
+              .expectedExpenseAggregate
+              .relationships
+              .single
+              .paymentConfiguration
+              .expectedBalanceId,
+          isNull,
+        );
+        expect(finance.expectedExpenseAggregate.occurrences, isEmpty);
+        expect(finance.documentaryObligationAggregate.obligations, [
+          obligation,
+        ]);
+        expect(
+          finance.documentaryObligationAggregate.expectedDocuments,
+          isEmpty,
+        );
+
+        expect(
+          await coordinator.registerRecurringDocument(
+            obligation: obligation,
+            relationship: relationship,
+          ),
+          DocumentaryObligationOutcome.unchanged,
+        );
+        expect(finance.expectedExpenseAggregate.relationships, hasLength(1));
+        expect(
+          finance.documentaryObligationAggregate.obligations,
+          hasLength(1),
+        );
+      },
+    );
+
+    test(
       'recurring document creates continuity and next amount-free expectation idempotently',
       () async {
         String? expectedStored;
@@ -1391,6 +1532,152 @@ void main() {
       );
     });
 
+    testWidgets(
+      'recurring relationship saves without inventing a future document',
+      (tester) async {
+        final finance = _uiFinanceStore();
+        await _openDocumentaryEditor(tester, finance);
+        await _fillRecurringDocument(
+          tester,
+          subject: FinanceSubject.chiara,
+          recurrenceLabel: 'Ogni mese',
+          documentTitle: 'Documento febbraio 2026',
+          stableName: 'Fornitura energia',
+          includeExpectedDocument: false,
+        );
+        final save = find.byKey(const ValueKey('documentary-save'));
+        await _revealEditorControl(tester, save);
+        await tester.tap(save);
+        await tester.pumpAndSettle();
+
+        expect(finance.expectedExpenseAggregate.relationships, hasLength(1));
+        expect(
+          finance.expectedExpenseAggregate.relationships.single.subject,
+          FinanceSubject.chiara,
+        );
+        expect(finance.expectedExpenseAggregate.occurrences, isEmpty);
+        expect(
+          finance.documentaryObligationAggregate.obligations,
+          hasLength(1),
+        );
+        expect(
+          finance.documentaryObligationAggregate.expectedDocuments,
+          isEmpty,
+        );
+        expect(find.text('Nuova bolletta o pagamento'), findsNothing);
+      },
+    );
+
+    testWidgets('month without year blocks writes and shows feedback', (
+      tester,
+    ) async {
+      final finance = _uiFinanceStore();
+      await _openDocumentaryEditor(tester, finance);
+      await _fillRecurringDocument(
+        tester,
+        subject: FinanceSubject.chiara,
+        recurrenceLabel: 'Ogni mese',
+        includeExpectedDocument: false,
+      );
+      final month = find.byKey(const ValueKey('documentary-expected-month'));
+      await _revealEditorControl(tester, month);
+      await tester.tap(month);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Marzo').last);
+      await tester.pumpAndSettle();
+      final save = find.byKey(const ValueKey('documentary-save'));
+      await _revealEditorControl(tester, save);
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+
+      await _revealEditorControl(tester, month);
+      expect(find.text('Inserisci anche l’anno'), findsOneWidget);
+      expect(finance.expectedExpenseAggregate.relationships, isEmpty);
+      expect(finance.documentaryObligationAggregate.obligations, isEmpty);
+    });
+
+    testWidgets('year without month blocks writes and shows feedback', (
+      tester,
+    ) async {
+      final finance = _uiFinanceStore();
+      await _openDocumentaryEditor(tester, finance);
+      await _fillRecurringDocument(
+        tester,
+        subject: FinanceSubject.chiara,
+        recurrenceLabel: 'Ogni mese',
+        includeExpectedDocument: false,
+      );
+      final year = find.byKey(const ValueKey('documentary-expected-year'));
+      await _revealEditorControl(tester, year);
+      await tester.enterText(year, '2027');
+      final save = find.byKey(const ValueKey('documentary-save'));
+      await _revealEditorControl(tester, save);
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+
+      await _revealEditorControl(tester, year);
+      expect(find.text('Scegli anche il mese'), findsOneWidget);
+      expect(finance.expectedExpenseAggregate.relationships, isEmpty);
+      expect(finance.documentaryObligationAggregate.obligations, isEmpty);
+    });
+
+    testWidgets('missing provider blocks writes and shows feedback', (
+      tester,
+    ) async {
+      final finance = _uiFinanceStore();
+      await _openDocumentaryEditor(tester, finance);
+      await _fillRecurringDocument(
+        tester,
+        subject: FinanceSubject.chiara,
+        recurrenceLabel: 'Ogni mese',
+        providerName: '',
+        includeExpectedDocument: false,
+      );
+      final save = find.byKey(const ValueKey('documentary-save'));
+      await _revealEditorControl(tester, save);
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+
+      for (var attempt = 0; attempt < 12; attempt++) {
+        await tester.drag(find.byType(ListView).first, const Offset(0, 300));
+        await tester.pumpAndSettle();
+      }
+      await _revealEditorControl(
+        tester,
+        find.byKey(const ValueKey('documentary-provider')),
+      );
+      expect(find.text('Inserisci il fornitore'), findsOneWidget);
+      expect(finance.expectedExpenseAggregate.relationships, isEmpty);
+      expect(finance.documentaryObligationAggregate.obligations, isEmpty);
+    });
+
+    testWidgets('invalid title and amount show feedback without writes', (
+      tester,
+    ) async {
+      final finance = _uiFinanceStore();
+      await _openDocumentaryEditor(tester, finance);
+      final save = find.byKey(const ValueKey('documentary-save'));
+      await _revealEditorControl(tester, save);
+      await tester.tap(save);
+      await tester.pumpAndSettle();
+
+      for (var attempt = 0; attempt < 12; attempt++) {
+        await tester.drag(find.byType(ListView).first, const Offset(0, 300));
+        await tester.pumpAndSettle();
+      }
+      await _revealEditorControl(
+        tester,
+        find.byKey(const ValueKey('documentary-title')),
+      );
+      expect(find.text('Inserisci il nome del documento'), findsOneWidget);
+      expect(
+        find.text('Inserisci un importo maggiore di zero'),
+        findsOneWidget,
+      );
+      expect(finance.expectedExpenseAggregate.relationships, isEmpty);
+      expect(finance.documentaryObligationAggregate.obligations, isEmpty);
+    });
+
     testWidgets('new recurrence requires an explicit economic subject', (
       tester,
     ) async {
@@ -1402,7 +1689,7 @@ void main() {
         recurrenceLabel: 'Ogni mese',
       );
 
-      await tester.tap(find.byKey(const ValueKey('documentary-save')));
+      await _tapDocumentarySave(tester);
       await tester.pumpAndSettle();
 
       expect(find.text('Scegli la persona'), findsWidgets);
@@ -1424,7 +1711,7 @@ void main() {
           includeTargetYear: true,
         );
 
-        await tester.tap(find.byKey(const ValueKey('documentary-save')));
+        await _tapDocumentarySave(tester);
         await tester.pumpAndSettle();
 
         expect(
@@ -1454,7 +1741,7 @@ void main() {
         stableName: '',
       );
 
-      await tester.tap(find.byKey(const ValueKey('documentary-save')));
+      await _tapDocumentarySave(tester);
       await tester.pumpAndSettle();
 
       expect(
@@ -1483,7 +1770,7 @@ void main() {
           recurrenceLabel: entry.label,
         );
 
-        await tester.tap(find.byKey(const ValueKey('documentary-save')));
+        await _tapDocumentarySave(tester);
         await tester.pumpAndSettle();
 
         final periodicity =
@@ -1513,7 +1800,7 @@ void main() {
           customMonths: '5',
         );
 
-        await tester.tap(find.byKey(const ValueKey('documentary-save')));
+        await _tapDocumentarySave(tester);
         await tester.pumpAndSettle();
 
         final relationship =
@@ -1536,7 +1823,7 @@ void main() {
           customMonths: invalid,
         );
 
-        await tester.tap(find.byKey(const ValueKey('documentary-save')));
+        await _tapDocumentarySave(tester);
         await tester.pumpAndSettle();
 
         expect(
@@ -1639,7 +1926,9 @@ Future<void> _fillRecurringDocument(
   String? customMonths,
   String documentTitle = 'Documento ricorrente',
   String stableName = 'Spesa ricorrente',
+  String providerName = 'Fornitore',
   bool includeTargetYear = false,
+  bool includeExpectedDocument = true,
 }) async {
   await tester.enterText(
     find.byKey(const ValueKey('documentary-title')),
@@ -1667,7 +1956,7 @@ Future<void> _fillRecurringDocument(
   );
   await tester.enterText(
     find.byKey(const ValueKey('documentary-provider')),
-    'Fornitore',
+    providerName,
   );
   if (subject != null) {
     await _revealEditorControl(
@@ -1709,30 +1998,47 @@ Future<void> _fillRecurringDocument(
     );
     await tester.pumpAndSettle();
   }
-  await _revealEditorControl(
-    tester,
-    find.byKey(const ValueKey('documentary-expected-month')),
-  );
-  await tester.tap(find.byKey(const ValueKey('documentary-expected-month')));
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('Marzo').last);
-  await tester.pumpAndSettle();
-  await _revealEditorControl(
-    tester,
-    find.byKey(const ValueKey('documentary-expected-year')),
-  );
-  await tester.enterText(
-    find.byKey(const ValueKey('documentary-expected-year')),
-    '2027',
-  );
+  if (includeExpectedDocument) {
+    await _revealEditorControl(
+      tester,
+      find.byKey(const ValueKey('documentary-expected-month')),
+    );
+    await tester.tap(find.byKey(const ValueKey('documentary-expected-month')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Marzo').last);
+    await tester.pumpAndSettle();
+    await _revealEditorControl(
+      tester,
+      find.byKey(const ValueKey('documentary-expected-year')),
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('documentary-expected-year')),
+      '2027',
+    );
+  }
 }
 
 Future<void> _revealEditorControl(WidgetTester tester, Finder finder) async {
   for (var attempt = 0; attempt < 12 && finder.evaluate().isEmpty; attempt++) {
-    await tester.drag(find.byType(ListView), const Offset(0, -300));
+    await tester.drag(find.byType(ListView).first, const Offset(0, -300));
     await tester.pumpAndSettle();
   }
   await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  final y = tester.getCenter(finder).dy;
+  if (y > 540) {
+    await tester.drag(find.byType(ListView).first, const Offset(0, -120));
+    await tester.pumpAndSettle();
+  } else if (y < 90) {
+    await tester.drag(find.byType(ListView).first, const Offset(0, 120));
+    await tester.pumpAndSettle();
+  }
+}
+
+Future<void> _tapDocumentarySave(WidgetTester tester) async {
+  final save = find.byKey(const ValueKey('documentary-save'));
+  await _revealEditorControl(tester, save);
+  await tester.tap(save);
   await tester.pumpAndSettle();
 }
 

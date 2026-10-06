@@ -84,12 +84,15 @@ class DocumentaryObligationCoordinator {
   Future<DocumentaryObligationOutcome> registerRecurringDocument({
     required DocumentaryObligation obligation,
     required ExpenseRelationship relationship,
-    required ExpectedDocumentCycle nextExpectedDocument,
+    ExpectedDocumentCycle? nextExpectedDocument,
   }) async {
     if (obligation.relationshipId != relationship.relationshipId ||
         obligation.cycleSequence == null ||
-        nextExpectedDocument.relationshipId != relationship.relationshipId ||
-        nextExpectedDocument.cycleSequence <= obligation.cycleSequence!) {
+        (nextExpectedDocument != null &&
+            (nextExpectedDocument.relationshipId !=
+                    relationship.relationshipId ||
+                nextExpectedDocument.cycleSequence <=
+                    obligation.cycleSequence!))) {
       return DocumentaryObligationOutcome.invalidState;
     }
     final identityMatches = financeStore
@@ -111,32 +114,36 @@ class DocumentaryObligationCoordinator {
         !_same(relationships.single.toJson(), relationship.toJson())) {
       return DocumentaryObligationOutcome.conflict;
     }
-    final seed = ExpectedExpenseOccurrence(
-      occurrenceId:
-          'documentary_${relationship.relationshipId}_${nextExpectedDocument.cycleSequence}',
-      relationshipId: relationship.relationshipId,
-      cycleSequence: nextExpectedDocument.cycleSequence,
-      expectedPeriod: nextExpectedDocument.expectedPeriod,
-      status: ExpectedExpenseOccurrenceStatus.pending,
-      expectedAmount: obligation.totalAmount,
-      estimationMethod: ExpenseEstimationMethod.documentaryObligation,
-      sourceDocumentaryObligationId: obligation.obligationId,
-      confidence: ExpenseEstimateConfidence.medium,
-      provisional: true,
-      expectedPaymentConfiguration: relationship.paymentConfiguration,
-      paymentExecutionMode: PaymentExecutionMode.unknown,
-      expectedSubject: relationship.subject,
-    );
-    final seedMatches = economic.occurrences
-        .where(
-          (item) =>
-              item.relationshipId == relationship.relationshipId &&
-              item.cycleSequence == nextExpectedDocument.cycleSequence,
-        )
-        .toList();
+    final seed = nextExpectedDocument == null
+        ? null
+        : ExpectedExpenseOccurrence(
+            occurrenceId:
+                'documentary_${relationship.relationshipId}_${nextExpectedDocument.cycleSequence}',
+            relationshipId: relationship.relationshipId,
+            cycleSequence: nextExpectedDocument.cycleSequence,
+            expectedPeriod: nextExpectedDocument.expectedPeriod,
+            status: ExpectedExpenseOccurrenceStatus.pending,
+            expectedAmount: obligation.totalAmount,
+            estimationMethod: ExpenseEstimationMethod.documentaryObligation,
+            sourceDocumentaryObligationId: obligation.obligationId,
+            confidence: ExpenseEstimateConfidence.medium,
+            provisional: true,
+            expectedPaymentConfiguration: relationship.paymentConfiguration,
+            paymentExecutionMode: PaymentExecutionMode.unknown,
+            expectedSubject: relationship.subject,
+          );
+    final seedMatches = seed == null
+        ? <ExpectedExpenseOccurrence>[]
+        : economic.occurrences
+              .where(
+                (item) =>
+                    item.relationshipId == relationship.relationshipId &&
+                    item.cycleSequence == seed.cycleSequence,
+              )
+              .toList();
     if (seedMatches.length > 1 ||
         (seedMatches.isNotEmpty &&
-            !_same(seedMatches.single.toJson(), seed.toJson()))) {
+            !_same(seedMatches.single.toJson(), seed!.toJson()))) {
       return DocumentaryObligationOutcome.conflict;
     }
     final current = financeStore.documentaryObligationAggregate;
@@ -147,13 +154,15 @@ class DocumentaryObligationCoordinator {
         !_same(obligationMatches.single.toJson(), obligation.toJson())) {
       return DocumentaryObligationOutcome.conflict;
     }
-    final expectedMatches = current.expectedDocuments
-        .where((item) => item.identity == nextExpectedDocument.identity)
-        .toList();
+    final expectedMatches = nextExpectedDocument == null
+        ? <ExpectedDocumentCycle>[]
+        : current.expectedDocuments
+              .where((item) => item.identity == nextExpectedDocument.identity)
+              .toList();
     if (expectedMatches.isNotEmpty &&
         !_same(
           expectedMatches.single.toJson(),
-          nextExpectedDocument.toJson(),
+          nextExpectedDocument!.toJson(),
         )) {
       return DocumentaryObligationOutcome.conflict;
     }
@@ -171,21 +180,24 @@ class DocumentaryObligationCoordinator {
     final currentMarkerComplete =
         currentCycle.isEmpty ||
         currentCycle.single.materializedObligationId == obligation.obligationId;
-    if (relationships.isEmpty || seedMatches.isEmpty) {
+    if (relationships.isEmpty || (seed != null && seedMatches.isEmpty)) {
       await financeStore.saveExpectedExpenseAggregate(
         ExpectedExpenseAggregate(
           relationships: [
             ...economic.relationships,
             if (relationships.isEmpty) relationship,
           ],
-          occurrences: [...economic.occurrences, if (seedMatches.isEmpty) seed],
+          occurrences: [
+            ...economic.occurrences,
+            if (seed != null && seedMatches.isEmpty) seed,
+          ],
         ),
       );
     }
     if (obligationMatches.isNotEmpty &&
-        expectedMatches.isNotEmpty &&
+        (nextExpectedDocument == null || expectedMatches.isNotEmpty) &&
         currentMarkerComplete &&
-        seedMatches.isNotEmpty) {
+        (seed == null || seedMatches.isNotEmpty)) {
       return DocumentaryObligationOutcome.unchanged;
     }
     await financeStore.saveDocumentaryObligationAggregate(
@@ -200,7 +212,8 @@ class DocumentaryObligationCoordinator {
                 ? item.materialize(obligation.obligationId)
                 : item,
           ),
-          if (expectedMatches.isEmpty) nextExpectedDocument,
+          if (nextExpectedDocument != null && expectedMatches.isEmpty)
+            nextExpectedDocument,
         ],
       ),
     );

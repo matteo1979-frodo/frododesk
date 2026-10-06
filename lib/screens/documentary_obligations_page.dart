@@ -44,20 +44,37 @@ class _DocumentaryObligationsPageState
       ),
     );
     if (draft == null) return;
-    final result = draft.relationship == null
-        ? await coordinator.register(draft.obligation)
-        : await coordinator.registerRecurringDocument(
-            obligation: draft.obligation,
-            relationship: draft.relationship!,
-            nextExpectedDocument: draft.nextExpectedDocument!,
-          );
-    if (!mounted) return;
-    if (result == DocumentaryObligationOutcome.conflict) {
+    late final DocumentaryObligationOutcome result;
+    try {
+      result = draft.relationship == null
+          ? await coordinator.register(draft.obligation)
+          : await coordinator.registerRecurringDocument(
+              obligation: draft.obligation,
+              relationship: draft.relationship!,
+              nextExpectedDocument: draft.nextExpectedDocument,
+            );
+    } catch (_) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Identità già presente con dati diversi.'),
-        ),
+        const SnackBar(content: Text('Salvataggio non riuscito. Riprova.')),
       );
+      return;
+    }
+    if (!mounted) return;
+    final errorMessage = switch (result) {
+      DocumentaryObligationOutcome.conflict =>
+        'Esiste già un documento con dati diversi.',
+      DocumentaryObligationOutcome.invalidState =>
+        'I dati del documento non sono coerenti.',
+      DocumentaryObligationOutcome.missing =>
+        'Il documento collegato non è più disponibile.',
+      DocumentaryObligationOutcome.applied ||
+      DocumentaryObligationOutcome.unchanged => null,
+    };
+    if (errorMessage != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(errorMessage)));
     }
     setState(() {});
   }
@@ -389,6 +406,12 @@ class _DocumentaryObligationEditorState
   String? recurringSubjectError;
   String? recurringPeriodicityError;
   String? stableRelationshipNameError;
+  String? titleError;
+  String? amountError;
+  String? providerError;
+  String? expectedMonthError;
+  String? expectedYearError;
+  String? expectedDocumentError;
   ExpenseRelationshipCycleLabelPolicy cycleLabelPolicy =
       ExpenseRelationshipCycleLabelPolicy.stableNameOnly;
   int? expectedMonth;
@@ -482,7 +505,17 @@ class _DocumentaryObligationEditorState
 
   void _save() {
     final parsed = double.tryParse(amount.text.replaceAll(',', '.'));
-    if (title.text.trim().isEmpty || parsed == null || parsed <= 0) return;
+    if (title.text.trim().isEmpty || parsed == null || parsed <= 0) {
+      setState(() {
+        titleError = title.text.trim().isEmpty
+            ? 'Inserisci il nome del documento'
+            : null;
+        amountError = parsed == null || parsed <= 0
+            ? 'Inserisci un importo maggiore di zero'
+            : null;
+      });
+      return;
+    }
     try {
       final token = DateTime.now().microsecondsSinceEpoch;
       ExpenseRelationship? relationship;
@@ -490,7 +523,10 @@ class _DocumentaryObligationEditorState
       String? linkedRelationshipId = relationshipId;
       int? cycleSequence;
       if (repeats) {
-        final year = int.tryParse(expectedYear.text.trim());
+        final yearText = expectedYear.text.trim();
+        final year = int.tryParse(yearText);
+        final hasExpectedMonth = expectedMonth != null;
+        final hasExpectedYear = yearText.isNotEmpty;
         final periodicity = relationshipId == null
             ? _selectedPeriodicity()
             : null;
@@ -514,9 +550,22 @@ class _DocumentaryObligationEditorState
           });
           return;
         }
-        if (year == null ||
-            expectedMonth == null ||
-            (relationshipId == null && provider.text.trim().isEmpty)) {
+        if (relationshipId == null && provider.text.trim().isEmpty) {
+          setState(() => providerError = 'Inserisci il fornitore');
+          return;
+        }
+        if (hasExpectedMonth != hasExpectedYear ||
+            (hasExpectedYear && year == null)) {
+          setState(() {
+            expectedMonthError = !hasExpectedMonth && hasExpectedYear
+                ? 'Scegli anche il mese'
+                : null;
+            expectedYearError = hasExpectedMonth && !hasExpectedYear
+                ? 'Inserisci anche l’anno'
+                : hasExpectedYear && year == null
+                ? 'Inserisci un anno valido'
+                : null;
+          });
           return;
         }
         relationship = relationshipId == null
@@ -572,8 +621,12 @@ class _DocumentaryObligationEditorState
                   item.status == ExpectedDocumentCycleStatus.expected,
             )
             .toList();
-        if (pendingExpected.isNotEmpty && expectedDocumentIdentity == null)
+        if (pendingExpected.isNotEmpty && expectedDocumentIdentity == null) {
+          setState(
+            () => expectedDocumentError = 'Scegli quale documento è arrivato',
+          );
           return;
+        }
         cycleSequence = pendingExpected.isNotEmpty
             ? pendingExpected
                   .firstWhere(
@@ -584,14 +637,16 @@ class _DocumentaryObligationEditorState
             ? 1
             : sequences.reduce((left, right) => left > right ? left : right) +
                   1;
-        nextExpectedDocument = ExpectedDocumentCycle(
-          relationshipId: linkedRelationshipId,
-          cycleSequence: cycleSequence + 1,
-          expectedPeriod: ExpectedDocumentPeriod(
-            year: year,
-            month: expectedMonth!,
-          ),
-        );
+        if (hasExpectedMonth && hasExpectedYear) {
+          nextExpectedDocument = ExpectedDocumentCycle(
+            relationshipId: linkedRelationshipId,
+            cycleSequence: cycleSequence + 1,
+            expectedPeriod: ExpectedDocumentPeriod(
+              year: year!,
+              month: expectedMonth!,
+            ),
+          );
+        }
       }
       Navigator.pop(
         context,
@@ -626,9 +681,9 @@ class _DocumentaryObligationEditorState
         ),
       );
     } catch (error) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('$error')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Controlla i dati inseriti e riprova.')),
+      );
     }
   }
 
@@ -661,9 +716,11 @@ class _DocumentaryObligationEditorState
                     TextField(
                       key: const ValueKey('documentary-title'),
                       controller: title,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Nome della bolletta o pagamento',
+                        errorText: titleError,
                       ),
+                      onChanged: (_) => setState(() => titleError = null),
                     ),
                     TextField(
                       key: const ValueKey('documentary-amount'),
@@ -671,9 +728,11 @@ class _DocumentaryObligationEditorState
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Quanto devi pagare?',
+                        errorText: amountError,
                       ),
+                      onChanged: (_) => setState(() => amountError = null),
                     ),
                     DropdownButtonFormField<FinanceSubject?>(
                       initialValue: holder,
@@ -897,8 +956,9 @@ class _DocumentaryObligationEditorState
                               ))
                         DropdownButtonFormField<String>(
                           initialValue: expectedDocumentIdentity,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Quale documento è arrivato?',
+                            errorText: expectedDocumentError,
                           ),
                           items: [
                             for (final item
@@ -922,8 +982,10 @@ class _DocumentaryObligationEditorState
                                 ),
                               ),
                           ],
-                          onChanged: (value) =>
-                              setState(() => expectedDocumentIdentity = value),
+                          onChanged: (value) => setState(() {
+                            expectedDocumentIdentity = value;
+                            expectedDocumentError = null;
+                          }),
                         ),
                       if (relationshipId == null)
                         TextField(
@@ -1018,9 +1080,12 @@ class _DocumentaryObligationEditorState
                         TextField(
                           key: const ValueKey('documentary-provider'),
                           controller: provider,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Ente o fornitore',
+                            errorText: providerError,
                           ),
+                          onChanged: (_) =>
+                              setState(() => providerError = null),
                         ),
                       DropdownButtonFormField<FinanceSubject>(
                         key: ValueKey(
@@ -1175,9 +1240,10 @@ class _DocumentaryObligationEditorState
                       DropdownButtonFormField<int>(
                         key: const ValueKey('documentary-expected-month'),
                         initialValue: expectedMonth,
-                        decoration: const InputDecoration(
-                          labelText: 'Mese in cui dovrebbe arrivare',
+                        decoration: InputDecoration(
+                          labelText: 'Mese prossimo documento (opzionale)',
                           hintText: 'Scegli il mese',
+                          errorText: expectedMonthError,
                         ),
                         items: [
                           for (var month = 1; month <= 12; month++)
@@ -1186,16 +1252,24 @@ class _DocumentaryObligationEditorState
                               child: Text(_monthName(month)),
                             ),
                         ],
-                        onChanged: (value) =>
-                            setState(() => expectedMonth = value),
+                        onChanged: (value) => setState(() {
+                          expectedMonth = value;
+                          expectedMonthError = null;
+                          expectedYearError = null;
+                        }),
                       ),
                       TextField(
                         key: const ValueKey('documentary-expected-year'),
                         controller: expectedYear,
                         keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Anno previsto',
+                        decoration: InputDecoration(
+                          labelText: 'Anno prossimo documento (opzionale)',
+                          errorText: expectedYearError,
                         ),
+                        onChanged: (_) => setState(() {
+                          expectedMonthError = null;
+                          expectedYearError = null;
+                        }),
                       ),
                     ],
                   ],

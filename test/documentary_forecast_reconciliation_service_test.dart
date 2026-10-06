@@ -7,6 +7,7 @@ import 'package:frododesk/models/documentary_obligation.dart';
 import 'package:frododesk/models/expense_relationship.dart';
 import 'package:frododesk/models/expected_expense_occurrence.dart';
 import 'package:frododesk/models/finance_balance.dart';
+import 'package:frododesk/models/finance_category_template.dart';
 import 'package:frododesk/models/finance_recurring_item.dart';
 import 'package:frododesk/models/finance_transaction.dart';
 import 'package:frododesk/stores/finance_store.dart';
