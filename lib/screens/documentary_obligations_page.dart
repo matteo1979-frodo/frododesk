@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../logic/finance/builders/documentary_obligation_preparation_builder.dart';
 import '../logic/finance/documentary_obligation_coordinator.dart';
 import '../models/documentary_obligation.dart';
 import '../models/expense_relationship.dart';
@@ -15,6 +16,8 @@ typedef DocumentaryPaymentLauncher =
       DocumentaryObligation obligation,
       DocumentaryInstallment installment,
     );
+
+enum _DocumentHolderProvenance { unset, relationshipSuggestion, user }
 
 class DocumentaryObligationsPage extends StatefulWidget {
   final FinanceStore financeStore;
@@ -378,6 +381,7 @@ class _DocumentaryObligationEditor extends StatefulWidget {
 class _DocumentaryObligationEditorState
     extends State<_DocumentaryObligationEditor> {
   static const int _customRecurrenceChoice = -1;
+  static const _preparationBuilder = DocumentaryObligationPreparationBuilder();
 
   final title = TextEditingController();
   final amount = TextEditingController();
@@ -397,8 +401,10 @@ class _DocumentaryObligationEditorState
   DateTime? relationshipCommercialEnd;
   final expectedYear = TextEditingController();
   FinanceSubject? holder;
+  _DocumentHolderProvenance holderProvenance = _DocumentHolderProvenance.unset;
   FinanceSubject? recurringSubject;
   String? relationshipId;
+  DocumentaryObligationPreparation? relationshipPreparation;
   String? expectedDocumentIdentity;
   bool repeats = false;
   int? recurringMonthsChoice;
@@ -460,6 +466,56 @@ class _DocumentaryObligationEditorState
       FinanceRecurringType.custom => 'Periodicità personalizzata',
       FinanceRecurringType.oneShot => 'Una sola volta',
     };
+  }
+
+  String _paymentMethodLabel(FinancePaymentMethod method) =>
+      method == FinancePaymentMethod.rid ? 'SDD / RID' : method.name;
+
+  void _selectRelationship(String? value) {
+    final wasSuggested =
+        holderProvenance == _DocumentHolderProvenance.relationshipSuggestion;
+    relationshipId = value;
+    expectedDocumentIdentity = null;
+    repeats = value != null;
+    expectedDocumentError = null;
+    if (value == null) {
+      recurringSubject = null;
+      relationshipPreparation = null;
+      if (wasSuggested) {
+        holder = null;
+        holderProvenance = _DocumentHolderProvenance.unset;
+      }
+    } else {
+      final relationship = widget
+          .financeStore
+          .expectedExpenseAggregate
+          .relationships
+          .firstWhere((item) => item.relationshipId == value);
+      relationshipPreparation = _preparationBuilder.build(
+        relationship: relationship,
+      );
+      recurringSubject = relationship.subject;
+      if (holderProvenance != _DocumentHolderProvenance.user) {
+        holder = relationshipPreparation!.suggestedDocumentHolder;
+        holderProvenance = _DocumentHolderProvenance.relationshipSuggestion;
+      }
+    }
+    recurringSubjectError = null;
+  }
+
+  void _selectExpectedDocument(String? value) {
+    expectedDocumentIdentity = value;
+    expectedDocumentError = null;
+    final preparation = relationshipPreparation;
+    if (preparation == null) return;
+    final expectedDocument = value == null
+        ? null
+        : widget.financeStore.documentaryObligationAggregate.expectedDocuments
+              .firstWhere((item) => item.identity == value);
+    relationshipPreparation = _preparationBuilder.build(
+      relationship: preparation.relationship,
+      expectedDocumentCycle: expectedDocument,
+    );
   }
 
   Future<void> _addOption() async {
@@ -735,6 +791,10 @@ class _DocumentaryObligationEditorState
                       onChanged: (_) => setState(() => amountError = null),
                     ),
                     DropdownButtonFormField<FinanceSubject?>(
+                      key: ValueKey(
+                        'documentary-holder-${holder?.name ?? 'none'}-'
+                        '${holderProvenance.name}',
+                      ),
                       initialValue: holder,
                       decoration: const InputDecoration(
                         labelText: 'A chi è intestato? (opzionale)',
@@ -757,7 +817,10 @@ class _DocumentaryObligationEditorState
                           child: Text('Alice'),
                         ),
                       ],
-                      onChanged: (value) => setState(() => holder = value),
+                      onChanged: (value) => setState(() {
+                        holder = value;
+                        holderProvenance = _DocumentHolderProvenance.user;
+                      }),
                     ),
                     TextField(
                       controller: reference,
@@ -902,7 +965,12 @@ class _DocumentaryObligationEditorState
                             in widget
                                 .financeStore
                                 .expectedExpenseAggregate
-                                .relationships)
+                                .relationships
+                                .where(
+                                  (item) =>
+                                      item.status ==
+                                      ExpenseRelationshipStatus.active,
+                                ))
                           DropdownMenuItem(
                             value: relationship.relationshipId,
                             child: Text(
@@ -910,25 +978,15 @@ class _DocumentaryObligationEditorState
                             ),
                           ),
                       ],
-                      onChanged: (value) => setState(() {
-                        relationshipId = value;
-                        expectedDocumentIdentity = null;
-                        repeats = value != null;
-                        if (value == null) {
-                          recurringSubject = null;
-                        } else {
-                          recurringSubject = widget
-                              .financeStore
-                              .expectedExpenseAggregate
-                              .relationships
-                              .firstWhere(
-                                (item) => item.relationshipId == value,
-                              )
-                              .subject;
-                        }
-                        recurringSubjectError = null;
-                      }),
+                      onChanged: (value) =>
+                          setState(() => _selectRelationship(value)),
                     ),
+                    if (relationshipPreparation != null)
+                      _RelationshipKnowledgeSummary(
+                        preparation: relationshipPreparation!,
+                        periodicityLabel: _periodicityLabel,
+                        paymentMethodLabel: _paymentMethodLabel,
+                      ),
                     SwitchListTile(
                       key: const ValueKey('documentary-repeats'),
                       contentPadding: EdgeInsets.zero,
@@ -938,8 +996,11 @@ class _DocumentaryObligationEditorState
                         'Ricordami quando dovrebbe arrivare il prossimo documento.',
                       ),
                       onChanged: (value) => setState(() {
-                        repeats = value;
-                        if (!value) relationshipId = null;
+                        if (!value && relationshipId != null) {
+                          _selectRelationship(null);
+                        } else {
+                          repeats = value;
+                        }
                       }),
                     ),
                     if (repeats) ...[
@@ -982,10 +1043,8 @@ class _DocumentaryObligationEditorState
                                 ),
                               ),
                           ],
-                          onChanged: (value) => setState(() {
-                            expectedDocumentIdentity = value;
-                            expectedDocumentError = null;
-                          }),
+                          onChanged: (value) =>
+                              setState(() => _selectExpectedDocument(value)),
                         ),
                       if (relationshipId == null)
                         TextField(
@@ -1332,6 +1391,74 @@ class _DocumentaryObligationEditorState
       ),
     ),
   );
+}
+
+class _RelationshipKnowledgeSummary extends StatelessWidget {
+  final DocumentaryObligationPreparation preparation;
+  final String Function(ExpenseRelationshipPeriodicity) periodicityLabel;
+  final String Function(FinancePaymentMethod) paymentMethodLabel;
+
+  const _RelationshipKnowledgeSummary({
+    required this.preparation,
+    required this.periodicityLabel,
+    required this.paymentMethodLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final payment = preparation.paymentConfiguration;
+    final term = preparation.commercialTerm;
+    final preference = preparation.manualPaymentPreference;
+    final expected = preparation.expectedDocumentCycle;
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Conoscenza della relazione',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+          const SizedBox(height: 8),
+          Text('${preparation.service} · ${preparation.provider}'),
+          Text('Soggetto normale: ${preparation.subject.name}'),
+          Text('Frequenza: ${periodicityLabel(preparation.periodicity)}'),
+          Text('Metodo previsto: ${paymentMethodLabel(payment.method)}'),
+          if (payment.expectedBalanceId != null)
+            Text('Disponibilità prevista: ${payment.expectedBalanceId}'),
+          Text('Esecuzione prevista: ${preparation.paymentExecutionMode.name}'),
+          if (preference != null)
+            Text('Giorno abituale: ${preference.preferredStartDayOfMonth}'),
+          if (term?.effectiveFrom != null)
+            Text('Decorrenza: ${_date(term!.effectiveFrom!)}'),
+          if (term?.commercialEnd != null)
+            Text('Fine commerciale: ${_date(term!.commercialEnd!)}'),
+          for (final identifier in preparation.identifiers)
+            Text(
+              '${identifier.namespace}: ${identifier.value}'
+              '${identifier.provenance == null ? '' : ' · ${identifier.provenance}'}',
+            ),
+          if (expected != null)
+            Text(
+              'Previsione collegata: ${_monthName(expected.expectedPeriod.month)} '
+              '${expected.expectedPeriod.year}',
+            ),
+          const SizedBox(height: 6),
+          Text(
+            'Questi dati restano proprietà della relazione e non diventano '
+            'automaticamente dati del nuovo documento.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 ThemeData _documentaryTheme(BuildContext context) {

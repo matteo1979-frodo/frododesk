@@ -22,6 +22,7 @@ import 'package:frododesk/models/finance_recurring_item.dart';
 import 'package:frododesk/models/finance_transaction.dart';
 import 'package:frododesk/models/future_expense_projection.dart';
 import 'package:frododesk/models/future_outflow_presentation.dart';
+import 'package:frododesk/models/manual_payment_preference.dart';
 import 'package:frododesk/models/projected_expense_cycle.dart';
 import 'package:frododesk/models/real_expense.dart';
 import 'package:frododesk/stores/expense_store.dart';
@@ -1877,14 +1878,251 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'existing relationship exposes stable knowledge and only suggests holder',
+      (tester) async {
+        final relationship = _preparedRelationship(
+          id: 'relationship-a',
+          service: 'Servizio famiglia',
+          provider: 'Fornitore acqua',
+          subject: FinanceSubject.chiara,
+        );
+        final before = relationship.toJson();
+        final finance = _uiFinanceStore(
+          aggregate: ExpectedExpenseAggregate(relationships: [relationship]),
+        );
+        await _openDocumentaryEditor(tester, finance);
+
+        await _selectExistingRelationship(
+          tester,
+          'Servizio famiglia · Fornitore acqua',
+        );
+
+        expect(find.text('Conoscenza della relazione'), findsOneWidget);
+        expect(find.text('Servizio famiglia · Fornitore acqua'), findsWidgets);
+        expect(find.text('Soggetto normale: chiara'), findsOneWidget);
+        expect(find.text('Frequenza: Ogni mese'), findsWidgets);
+        expect(find.text('Metodo previsto: SDD / RID'), findsOneWidget);
+        expect(
+          find.text('contratto: C-001 · documento originale'),
+          findsOneWidget,
+        );
+        expect(find.text('Decorrenza: 01/02/2026'), findsOneWidget);
+        expect(find.text('Fine commerciale: 31/01/2027'), findsOneWidget);
+        expect(
+          tester
+              .widget<DropdownButtonFormField<FinanceSubject?>>(
+                find.byType(DropdownButtonFormField<FinanceSubject?>),
+              )
+              .initialValue,
+          FinanceSubject.chiara,
+        );
+        expect(
+          tester
+              .widget<TextField>(
+                find.byKey(const ValueKey('documentary-title')),
+              )
+              .controller
+              ?.text,
+          isEmpty,
+        );
+        expect(
+          tester
+              .widget<TextField>(
+                find.byKey(const ValueKey('documentary-amount')),
+              )
+              .controller
+              ?.text,
+          isEmpty,
+        );
+        expect(relationship.toJson(), before);
+      },
+    );
+
+    testWidgets(
+      'relationship changes update only a still-derived holder suggestion',
+      (tester) async {
+        final first = _preparedRelationship(
+          id: 'relationship-a',
+          service: 'Servizio A',
+          provider: 'Fornitore A',
+          subject: FinanceSubject.chiara,
+        );
+        final second = _preparedRelationship(
+          id: 'relationship-b',
+          service: 'Servizio B',
+          provider: 'Fornitore B',
+          subject: FinanceSubject.matteo,
+        );
+        final finance = _uiFinanceStore(
+          aggregate: ExpectedExpenseAggregate(relationships: [first, second]),
+        );
+        await _openDocumentaryEditor(tester, finance);
+
+        await _selectExistingRelationship(tester, 'Servizio A · Fornitore A');
+        expect(_selectedDocumentHolder(tester), FinanceSubject.chiara);
+
+        await _selectExistingRelationship(tester, 'Servizio B · Fornitore B');
+        expect(_selectedDocumentHolder(tester), FinanceSubject.matteo);
+
+        await _selectDocumentHolder(tester, 'Alice');
+        await _selectExistingRelationship(tester, 'Servizio A · Fornitore A');
+        expect(_selectedDocumentHolder(tester), FinanceSubject.alice);
+
+        await _selectExistingRelationship(tester, 'Nessuna');
+        expect(_selectedDocumentHolder(tester), FinanceSubject.alice);
+      },
+    );
+
+    testWidgets(
+      'manual holder entered before relationship selection is preserved',
+      (tester) async {
+        final relationship = _preparedRelationship(
+          id: 'relationship-a',
+          service: 'Servizio A',
+          provider: 'Fornitore A',
+          subject: FinanceSubject.chiara,
+        );
+        final finance = _uiFinanceStore(
+          aggregate: ExpectedExpenseAggregate(relationships: [relationship]),
+        );
+        await _openDocumentaryEditor(tester, finance);
+
+        await _selectDocumentHolder(tester, 'Matteo');
+        await _selectExistingRelationship(tester, 'Servizio A · Fornitore A');
+
+        expect(_selectedDocumentHolder(tester), FinanceSubject.matteo);
+        expect(relationship.subject, FinanceSubject.chiara);
+      },
+    );
+
+    testWidgets(
+      'saving from relationship knowledge preserves authority and document facts',
+      (tester) async {
+        final relationship = _preparedRelationship(
+          id: 'relationship-a',
+          service: 'Servizio A',
+          provider: 'Fornitore assicurativo',
+          subject: FinanceSubject.chiara,
+        );
+        final before = relationship.toJson();
+        final previous = DocumentaryObligation(
+          obligationId: 'previous-document',
+          title: 'Documento precedente',
+          totalAmount: 99,
+          issuedAt: DateTime(2026, 1, 10),
+          components: [
+            DocumentaryEconomicComponent(
+              componentId: 'old-component',
+              label: 'Voce precedente',
+              classificationCode: 'old',
+              amount: 99,
+            ),
+          ],
+          relationshipId: relationship.relationshipId,
+          cycleSequence: 1,
+        );
+        final finance = _uiFinanceStore(
+          aggregate: ExpectedExpenseAggregate(relationships: [relationship]),
+          documentaryAggregate: DocumentaryObligationAggregate(
+            obligations: [previous],
+          ),
+        );
+        await _openDocumentaryEditor(tester, finance);
+        await tester.enterText(
+          find.byKey(const ValueKey('documentary-title')),
+          'Nuovo documento confermato',
+        );
+        await tester.enterText(
+          find.byKey(const ValueKey('documentary-amount')),
+          '42,50',
+        );
+        await _selectExistingRelationship(
+          tester,
+          'Servizio A · Fornitore assicurativo',
+        );
+        await _selectDocumentHolder(tester, 'Alice');
+
+        await _tapDocumentarySave(tester);
+
+        expect(
+          finance.expectedExpenseAggregate.relationships.single.toJson(),
+          before,
+        );
+        expect(finance.expectedExpenseAggregate.occurrences, isEmpty);
+        expect(
+          finance.documentaryObligationAggregate.expectedDocuments,
+          isEmpty,
+        );
+        final saved = finance.documentaryObligationAggregate.obligations
+            .firstWhere((item) => item.obligationId != previous.obligationId);
+        expect(saved.title, 'Nuovo documento confermato');
+        expect(saved.totalAmount, 42.5);
+        expect(saved.documentHolder, FinanceSubject.alice);
+        expect(saved.documentReference, isNull);
+        expect(saved.issuedAt, isNull);
+        expect(saved.receivedAt, isNull);
+        expect(saved.competencePeriod, isNull);
+        expect(saved.components, isEmpty);
+        expect(saved.options, isEmpty);
+        expect(saved.relationshipId, relationship.relationshipId);
+        expect(saved.cycleSequence, 2);
+      },
+    );
+
+    testWidgets('terminated relationships are not ordinary choices', (
+      tester,
+    ) async {
+      final active = _preparedRelationship(
+        id: 'active',
+        service: 'Servizio attivo',
+        provider: 'Fornitore',
+        subject: FinanceSubject.chiara,
+      );
+      final terminated = _preparedRelationship(
+        id: 'terminated',
+        service: 'Servizio terminato',
+        provider: 'Fornitore',
+        subject: FinanceSubject.matteo,
+        status: ExpenseRelationshipStatus.terminated,
+      );
+      final finance = _uiFinanceStore(
+        aggregate: ExpectedExpenseAggregate(
+          relationships: [active, terminated],
+        ),
+      );
+      await _openDocumentaryEditor(tester, finance);
+
+      final picker = find.text(
+        'È collegata a una spesa già ricorrente? (opzionale)',
+      );
+      await _revealEditorControl(tester, picker);
+      await tester.tap(
+        find
+            .ancestor(
+              of: picker,
+              matching: find.byType(DropdownButtonFormField<String?>),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Servizio attivo · Fornitore'), findsOneWidget);
+      expect(find.text('Servizio terminato · Fornitore'), findsNothing);
+    });
   });
 }
 
-FinanceStore _uiFinanceStore({ExpectedExpenseAggregate? aggregate}) {
+FinanceStore _uiFinanceStore({
+  ExpectedExpenseAggregate? aggregate,
+  DocumentaryObligationAggregate? documentaryAggregate,
+}) {
   String? expectedStored;
   String? documentaryStored;
   return FinanceStore(
     initialExpectedExpenseAggregate: aggregate,
+    initialDocumentaryObligationAggregate: documentaryAggregate,
     expectedExpensePersistence: ExpectedExpensePersistence(
       load: (_) async => expectedStored,
       saveVerified: (_, value) async {
@@ -1918,6 +2156,85 @@ Future<void> _openDocumentaryEditor(
   await tester.tap(find.text('Aggiungi'));
   await tester.pumpAndSettle();
 }
+
+Future<void> _selectExistingRelationship(
+  WidgetTester tester,
+  String optionLabel,
+) async {
+  final picker = find.text(
+    'È collegata a una spesa già ricorrente? (opzionale)',
+  );
+  await _revealEditorControl(tester, picker);
+  await tester.tap(
+    find
+        .ancestor(
+          of: picker,
+          matching: find.byType(DropdownButtonFormField<String?>),
+        )
+        .first,
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(optionLabel).last);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _selectDocumentHolder(
+  WidgetTester tester,
+  String optionLabel,
+) async {
+  final picker = find.text('A chi è intestato? (opzionale)');
+  await _revealEditorControl(tester, picker);
+  await tester.tap(
+    find
+        .ancestor(
+          of: picker,
+          matching: find.byType(DropdownButtonFormField<FinanceSubject?>),
+        )
+        .first,
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(optionLabel).last);
+  await tester.pumpAndSettle();
+}
+
+FinanceSubject? _selectedDocumentHolder(WidgetTester tester) => tester
+    .widget<DropdownButtonFormField<FinanceSubject?>>(
+      find.byType(DropdownButtonFormField<FinanceSubject?>),
+    )
+    .initialValue;
+
+ExpenseRelationship _preparedRelationship({
+  required String id,
+  required String service,
+  required String provider,
+  required FinanceSubject subject,
+  ExpenseRelationshipStatus status = ExpenseRelationshipStatus.active,
+}) => ExpenseRelationship(
+  relationshipId: id,
+  service: service,
+  provider: provider,
+  subject: subject,
+  status: status,
+  periodicity: ExpenseRelationshipPeriodicity(
+    type: FinanceRecurringType.monthly,
+  ),
+  paymentConfiguration: ExpenseRelationshipPaymentConfiguration(
+    method: FinancePaymentMethod.rid,
+  ),
+  paymentExecutionMode: PaymentExecutionMode.automatic,
+  manualPaymentPreference: ManualPaymentPreference(preferredStartDayOfMonth: 5),
+  identifiers: [
+    ExpenseRelationshipIdentifier(
+      namespace: 'contratto',
+      value: 'C-001',
+      provenance: 'documento originale',
+    ),
+  ],
+  commercialTerm: ExpenseRelationshipCommercialTerm(
+    effectiveFrom: DateTime(2026, 2, 1),
+    commercialEnd: DateTime(2027, 1, 31),
+  ),
+);
 
 Future<void> _fillRecurringDocument(
   WidgetTester tester, {
