@@ -1406,56 +1406,69 @@ class _RelationshipKnowledgeSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final payment = preparation.paymentConfiguration;
     final term = preparation.commercialTerm;
     final preference = preparation.manualPaymentPreference;
     final expected = preparation.expectedDocumentCycle;
     return Container(
+      key: const ValueKey('relationship-knowledge-summary'),
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.16),
+        color: colors.surfaceContainerHighest.withValues(alpha: 0.88),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+        border: Border.all(color: colors.outlineVariant),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Conoscenza della relazione',
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          const SizedBox(height: 8),
-          Text('${preparation.service} · ${preparation.provider}'),
-          Text('Soggetto normale: ${preparation.subject.name}'),
-          Text('Frequenza: ${periodicityLabel(preparation.periodicity)}'),
-          Text('Metodo previsto: ${paymentMethodLabel(payment.method)}'),
-          if (payment.expectedBalanceId != null)
-            Text('Disponibilità prevista: ${payment.expectedBalanceId}'),
-          Text('Esecuzione prevista: ${preparation.paymentExecutionMode.name}'),
-          if (preference != null)
-            Text('Giorno abituale: ${preference.preferredStartDayOfMonth}'),
-          if (term?.effectiveFrom != null)
-            Text('Decorrenza: ${_date(term!.effectiveFrom!)}'),
-          if (term?.commercialEnd != null)
-            Text('Fine commerciale: ${_date(term!.commercialEnd!)}'),
-          for (final identifier in preparation.identifiers)
+      child: DefaultTextStyle(
+        key: const ValueKey('relationship-knowledge-text-style'),
+        style: theme.textTheme.bodyMedium!.copyWith(color: colors.onSurface),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Text(
-              '${identifier.namespace}: ${identifier.value}'
-              '${identifier.provenance == null ? '' : ' · ${identifier.provenance}'}',
+              'Conoscenza della relazione',
+              style: theme.textTheme.titleSmall!.copyWith(
+                color: colors.onSurface,
+              ),
             ),
-          if (expected != null)
+            const SizedBox(height: 8),
+            Text('${preparation.service} · ${preparation.provider}'),
+            Text('Soggetto normale: ${preparation.subject.name}'),
+            Text('Frequenza: ${periodicityLabel(preparation.periodicity)}'),
+            Text('Metodo previsto: ${paymentMethodLabel(payment.method)}'),
+            if (payment.expectedBalanceId != null)
+              Text('Disponibilità prevista: ${payment.expectedBalanceId}'),
             Text(
-              'Previsione collegata: ${_monthName(expected.expectedPeriod.month)} '
-              '${expected.expectedPeriod.year}',
+              'Esecuzione prevista: ${preparation.paymentExecutionMode.name}',
             ),
-          const SizedBox(height: 6),
-          Text(
-            'Questi dati restano proprietà della relazione e non diventano '
-            'automaticamente dati del nuovo documento.',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ],
+            if (preference != null)
+              Text('Giorno abituale: ${preference.preferredStartDayOfMonth}'),
+            if (term?.effectiveFrom != null)
+              Text('Decorrenza: ${_date(term!.effectiveFrom!)}'),
+            if (term?.commercialEnd != null)
+              Text('Fine commerciale: ${_date(term!.commercialEnd!)}'),
+            for (final identifier in preparation.identifiers)
+              Text(
+                '${identifier.namespace}: ${identifier.value}'
+                '${identifier.provenance == null ? '' : ' · ${identifier.provenance}'}',
+              ),
+            if (expected != null)
+              Text(
+                'Previsione collegata: ${_monthName(expected.expectedPeriod.month)} '
+                '${expected.expectedPeriod.year}',
+              ),
+            const SizedBox(height: 6),
+            Text(
+              'Questi dati restano proprietà della relazione e non diventano '
+              'automaticamente dati del nuovo documento.',
+              style: theme.textTheme.bodySmall!.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1907,6 +1920,7 @@ class _RelationshipIdentifierDialogState
 class _OptionDialogState extends State<_OptionDialog> {
   final label = TextEditingController();
   final amount = TextEditingController();
+  String? amountError;
   DateTime? dueDate;
   final installments = <DocumentaryInstallment>[];
   @override
@@ -1916,10 +1930,31 @@ class _OptionDialogState extends State<_OptionDialog> {
     super.dispose();
   }
 
+  double? _parseAmount(String input) {
+    final compact = input.trim().replaceAll(RegExp(r'[\s\u00A0€]'), '');
+    if (RegExp(r'^\d+(?:[.,]\d+)?$').hasMatch(compact)) {
+      return double.tryParse(compact.replaceAll(',', '.'));
+    }
+    if (RegExp(r'^\d{1,3}(?:\.\d{3})+,\d+$').hasMatch(compact)) {
+      return double.tryParse(compact.replaceAll('.', '').replaceAll(',', '.'));
+    }
+    if (RegExp(r'^\d{1,3}(?:,\d{3})+\.\d+$').hasMatch(compact)) {
+      return double.tryParse(compact.replaceAll(',', ''));
+    }
+    return null;
+  }
+
   void _addInstallment() {
-    final parsed = double.tryParse(amount.text.replaceAll(',', '.'));
-    if (parsed == null || parsed <= 0 || dueDate == null) return;
+    final parsed = _parseAmount(amount.text);
+    if (parsed == null || parsed <= 0) {
+      setState(() {
+        amountError = 'Inserisci un importo valido maggiore di zero';
+      });
+      return;
+    }
+    if (dueDate == null) return;
     setState(() {
+      amountError = null;
       installments.add(
         DocumentaryInstallment(
           installmentId:
@@ -1941,19 +1976,24 @@ class _OptionDialogState extends State<_OptionDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
+            key: const ValueKey('documentary-option-label'),
             controller: label,
             decoration: const InputDecoration(
               labelText: 'Nome dell’alternativa',
             ),
           ),
           TextField(
+            key: const ValueKey('documentary-option-amount'),
             controller: amount,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Importo di questo pagamento',
+              errorText: amountError,
             ),
+            onChanged: (_) => setState(() => amountError = null),
           ),
           ListTile(
+            key: const ValueKey('documentary-option-due-date'),
             title: const Text('Quando scade?'),
             subtitle: Text(
               dueDate == null ? 'Scegli una data' : _date(dueDate!),
@@ -1969,6 +2009,7 @@ class _OptionDialogState extends State<_OptionDialog> {
             },
           ),
           OutlinedButton(
+            key: const ValueKey('documentary-option-add-installment'),
             onPressed: dueDate == null ? null : _addInstallment,
             child: const Text('Aggiungi questo pagamento'),
           ),
@@ -1985,6 +2026,7 @@ class _OptionDialogState extends State<_OptionDialog> {
         child: const Text('Annulla'),
       ),
       FilledButton(
+        key: const ValueKey('documentary-option-confirm'),
         onPressed: installments.isEmpty
             ? null
             : () => Navigator.pop(

@@ -1679,6 +1679,138 @@ void main() {
       expect(finance.documentaryObligationAggregate.obligations, isEmpty);
     });
 
+    testWidgets(
+      'payment amount already present survives date selection and is acquired',
+      (tester) async {
+        final finance = _uiFinanceStore();
+        await _openDocumentaryEditor(tester, finance);
+        await _openPaymentOptionDialog(tester);
+        await tester.enterText(
+          find.byKey(const ValueKey('documentary-option-label')),
+          'Addebito diretto SDD',
+        );
+        await tester.enterText(
+          find.byKey(const ValueKey('documentary-option-amount')),
+          '€ 67,13',
+        );
+
+        await _selectOptionDueDate(tester);
+
+        expect(
+          tester
+              .widget<TextField>(
+                find.byKey(const ValueKey('documentary-option-amount')),
+              )
+              .controller
+              ?.text,
+          '€ 67,13',
+        );
+        await tester.tap(
+          find.byKey(const ValueKey('documentary-option-add-installment')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.byKey(const ValueKey('documentary-option-confirm')),
+              )
+              .onPressed,
+          isNotNull,
+        );
+        expect(find.textContaining('€67,13'), findsOneWidget);
+        expect(
+          tester
+              .widget<OutlinedButton>(
+                find.byKey(
+                  const ValueKey('documentary-option-add-installment'),
+                ),
+              )
+              .onPressed,
+          isNull,
+        );
+
+        await tester.tap(
+          find.byKey(const ValueKey('documentary-option-confirm')),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Addebito diretto SDD'), findsOneWidget);
+        expect(find.text('1 pagamento'), findsOneWidget);
+      },
+    );
+
+    for (final amount in ['67,13', '67.13', '1.234,56', '1,234.56']) {
+      testWidgets('payment accepts supported decimal form "$amount"', (
+        tester,
+      ) async {
+        final finance = _uiFinanceStore();
+        await _openDocumentaryEditor(tester, finance);
+        await _openPaymentOptionDialog(tester);
+        await tester.enterText(
+          find.byKey(const ValueKey('documentary-option-label')),
+          'Pagamento',
+        );
+        await _selectOptionDueDate(tester);
+        await tester.enterText(
+          find.byKey(const ValueKey('documentary-option-amount')),
+          amount,
+        );
+
+        await tester.tap(
+          find.byKey(const ValueKey('documentary-option-add-installment')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Inserisci un importo valido maggiore di zero'),
+          findsNothing,
+        );
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.byKey(const ValueKey('documentary-option-confirm')),
+              )
+              .onPressed,
+          isNotNull,
+        );
+      });
+    }
+
+    testWidgets('invalid payment amount gives feedback and cannot confirm', (
+      tester,
+    ) async {
+      final finance = _uiFinanceStore();
+      await _openDocumentaryEditor(tester, finance);
+      await _openPaymentOptionDialog(tester);
+      await tester.enterText(
+        find.byKey(const ValueKey('documentary-option-label')),
+        'Pagamento',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('documentary-option-amount')),
+        'importo non valido',
+      );
+      await _selectOptionDueDate(tester);
+
+      await tester.tap(
+        find.byKey(const ValueKey('documentary-option-add-installment')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Inserisci un importo valido maggiore di zero'),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<FilledButton>(
+              find.byKey(const ValueKey('documentary-option-confirm')),
+            )
+            .onPressed,
+        isNull,
+      );
+    });
+
     testWidgets('new recurrence requires an explicit economic subject', (
       tester,
     ) async {
@@ -1910,6 +2042,25 @@ void main() {
         );
         expect(find.text('Decorrenza: 01/02/2026'), findsOneWidget);
         expect(find.text('Fine commerciale: 31/01/2027'), findsOneWidget);
+        final summary = find.byKey(
+          const ValueKey('relationship-knowledge-summary'),
+        );
+        final colors = Theme.of(tester.element(summary)).colorScheme;
+        final summaryContainer = tester.widget<Container>(summary);
+        final decoration = summaryContainer.decoration! as BoxDecoration;
+        expect(
+          decoration.color,
+          colors.surfaceContainerHighest.withValues(alpha: 0.88),
+        );
+        expect(
+          tester
+              .widget<DefaultTextStyle>(
+                find.byKey(const ValueKey('relationship-knowledge-text-style')),
+              )
+              .style
+              .color,
+          colors.onSurface,
+        );
         expect(
           tester
               .widget<DropdownButtonFormField<FinanceSubject?>>(
@@ -2154,6 +2305,22 @@ Future<void> _openDocumentaryEditor(
     MaterialApp(home: DocumentaryObligationsPage(financeStore: finance)),
   );
   await tester.tap(find.text('Aggiungi'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _openPaymentOptionDialog(WidgetTester tester) async {
+  final addOption = find.text('Aggiungi un’alternativa');
+  await _revealEditorControl(tester, addOption);
+  await tester.tap(addOption);
+  await tester.pumpAndSettle();
+  expect(find.text('Come puoi pagarla?'), findsWidgets);
+}
+
+Future<void> _selectOptionDueDate(WidgetTester tester) async {
+  await tester.tap(find.byKey(const ValueKey('documentary-option-due-date')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('15').last);
+  await tester.tap(find.text('OK'));
   await tester.pumpAndSettle();
 }
 
