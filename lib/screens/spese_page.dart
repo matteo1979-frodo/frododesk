@@ -1717,6 +1717,25 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
     }
 
     setState(() => isSubmitting = true);
+    var closesOnSuccess = false;
+    try {
+      await _submitWhileLocked(
+        operation: operation,
+        description: description,
+        onSuccessNavigation: () => closesOnSuccess = true,
+      );
+    } finally {
+      if (mounted && !closesOnSuccess) {
+        setState(() => isSubmitting = false);
+      }
+    }
+  }
+
+  Future<void> _submitWhileLocked({
+    required CompositeEconomicOperation operation,
+    required String description,
+    required VoidCallback onSuccessNavigation,
+  }) async {
     if (widget.editingExpenses != null) {
       final accessories = <AccessoryCostType, double>{};
       final bank = _parseOptionalAmount(bankCommissionController.text)!;
@@ -1744,16 +1763,27 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
                 : BalancePostingMode.affectsCurrentBalance,
           ),
         );
-      } finally {
-        if (mounted) setState(() => isSubmitting = false);
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Esito della correzione non verificabile. Controlla prima di riprovare.',
+            ),
+          ),
+        );
+        return;
       }
       if (!mounted) return;
       if (correction.isSuccess) {
-        Navigator.of(context).pop(true);
-        Navigator.of(context).pop(true);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Pagamento corretto.')));
+        final messenger = ScaffoldMessenger.of(context);
+        final navigator = Navigator.of(context);
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Pagamento corretto.')),
+        );
+        onSuccessNavigation();
+        navigator.pop(true);
+        navigator.pop(true);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1780,8 +1810,16 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
               : BalancePostingMode.affectsCurrentBalance,
         ),
       );
-    } finally {
-      if (mounted) setState(() => isSubmitting = false);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Esito della registrazione non verificabile. Controlla prima di riprovare.',
+          ),
+        ),
+      );
+      return;
     }
     if (!mounted) return;
 
@@ -1789,14 +1827,28 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
         result.status == CompositeEconomicOperationStatus.alreadyComplete) {
       if (selectedDocumentaryObligationId != null &&
           selectedDocumentaryInstallmentId != null) {
-        final outcome =
-            await DocumentaryObligationCoordinator(
-              financeStore: widget.financeStore,
-            ).markInstallmentFulfilled(
-              obligationId: selectedDocumentaryObligationId!,
-              installmentId: selectedDocumentaryInstallmentId!,
-              economicFactId: operation.main.economicFactId,
-            );
+        late final DocumentaryObligationOutcome outcome;
+        try {
+          outcome =
+              await DocumentaryObligationCoordinator(
+                financeStore: widget.financeStore,
+              ).markInstallmentFulfilled(
+                obligationId: selectedDocumentaryObligationId!,
+                installmentId: selectedDocumentaryInstallmentId!,
+                economicFactId: operation.main.economicFactId,
+              );
+        } catch (_) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Bolletta registrata, ma la scadenza documentale non è stata aggiornata. '
+                'Non ripetere il pagamento; riprova da questa schermata.',
+              ),
+            ),
+          );
+          return;
+        }
         if (!mounted) return;
         if (outcome != DocumentaryObligationOutcome.applied &&
             outcome != DocumentaryObligationOutcome.unchanged) {
@@ -1810,9 +1862,9 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
           return;
         }
       }
-      Navigator.of(context).pop();
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
+      final messenger = ScaffoldMessenger.of(context);
+      final navigator = Navigator.of(context);
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
             result.status == CompositeEconomicOperationStatus.completed
@@ -1821,6 +1873,9 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
           ),
         ),
       );
+      onSuccessNavigation();
+      navigator.pop();
+      navigator.pop();
       return;
     }
 
@@ -2082,9 +2137,10 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
                                     .documentaryObligationAggregate
                                     .obligations
                                     .where(
-                                      (item) => item
-                                          .operationalInstallments
-                                          .isNotEmpty,
+                                      (item) =>
+                                          item.operationalInstallments.isNotEmpty ||
+                                          item.obligationId ==
+                                              selectedDocumentaryObligationId,
                                     ))
                               DropdownMenuItem(
                                 value: obligation.obligationId,
@@ -2120,17 +2176,23 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
                             'Seleziona la scadenza pagata',
                           ),
                           items: [
-                            for (final installment
-                                in widget
-                                    .financeStore
-                                    .documentaryObligationAggregate
-                                    .obligations
-                                    .firstWhere(
-                                      (item) =>
-                                          item.obligationId ==
-                                          selectedDocumentaryObligationId,
-                                    )
-                                    .operationalInstallments)
+                            for (final installment in widget
+                                .financeStore
+                                .documentaryObligationAggregate
+                                .obligations
+                                .firstWhere(
+                                  (item) =>
+                                      item.obligationId ==
+                                      selectedDocumentaryObligationId,
+                                )
+                                .selectedOption!
+                                .installments
+                                .where(
+                                  (item) =>
+                                      !item.isFulfilled ||
+                                      item.installmentId ==
+                                          selectedDocumentaryInstallmentId,
+                                ))
                               DropdownMenuItem(
                                 value: installment.installmentId,
                                 child: Text(
@@ -2163,6 +2225,7 @@ class _UtilityBillFormPageState extends State<_UtilityBillFormPage> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
+                          key: const ValueKey('utility-bill-confirm'),
                           onPressed: isSubmitting ? null : _submit,
                           icon: const Icon(Icons.check_rounded),
                           label: Text(

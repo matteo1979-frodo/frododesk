@@ -3,8 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frododesk/logic/finance/composite_economic_operation_coordinator.dart';
+import 'package:frododesk/logic/finance/documentary_obligation_persistence.dart';
+import 'package:frododesk/logic/persistence_store.dart';
 import 'package:frododesk/models/economic_operation_metadata.dart';
 import 'package:frododesk/models/balance_posting_mode.dart';
+import 'package:frododesk/models/documentary_obligation.dart';
 import 'package:frododesk/models/finance_balance.dart';
 import 'package:frododesk/models/finance_recurring_item.dart';
 import 'package:frododesk/models/real_expense.dart';
@@ -127,6 +130,182 @@ void main() {
     expect(fixture.coordinator.calls, 1);
     expect(fixture.coordinator.operationIds.toSet(), hasLength(1));
   });
+
+  testWidgets(
+    'historical linked bill stays locked through documentary fulfillment',
+    (tester) async {
+      final writeStarted = Completer<void>();
+      final pendingWrite = Completer<PersistenceWriteVerification>();
+      String? writtenValue;
+      final fixture = await _Fixture.create(
+        obligation: _documentaryObligation(),
+        documentaryPersistence: DocumentaryObligationPersistence(
+          save: (_, value) {
+            writtenValue = value;
+            if (!writeStarted.isCompleted) writeStarted.complete();
+            return pendingWrite.future;
+          },
+        ),
+      );
+      await _pumpPage(tester, fixture);
+      await _openLinkedUtilityForm(tester);
+      await _fillLinkedUtilityForm(tester, bank: '1,80', historical: true);
+
+      await tester.tap(find.byKey(const ValueKey('utility-bill-confirm')));
+      await tester.pump();
+      await writeStarted.future;
+
+      final confirm = tester.widget<ElevatedButton>(
+        find.byKey(const ValueKey('utility-bill-confirm')),
+      );
+      expect(confirm.onPressed, isNull);
+      expect(find.text('Registrazione in corso...'), findsOneWidget);
+      await tester.tap(
+        find.byKey(const ValueKey('utility-bill-confirm')),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+      expect(fixture.coordinator.calls, 1);
+
+      pendingWrite.complete(
+        PersistenceWriteVerification(
+          backendAccepted: true,
+          readBack: writtenValue,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(fixture.coordinator.calls, 1);
+      final posting = fixture.coordinator.postings.single;
+      expect(
+        posting.balancePostingMode,
+        BalancePostingMode.alreadyIncludedInCurrentBalance,
+      );
+      expect(posting.operation.main.amount, 59.05);
+      expect(posting.operation.accessories.single.amount, 1.8);
+      expect(
+        posting.operation.accessories.single.operationMetadata.role,
+        OperationRole.accessory,
+      );
+      expect(
+        fixture
+            .financeStore
+            .documentaryObligationAggregate
+            .obligations
+            .single
+            .selectedOption!
+            .installments
+            .single
+            .fulfilledEconomicFactId,
+        posting.operation.main.economicFactId,
+      );
+      expect(find.text('Bolletta registrata.'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('economic exception is contained and keeps the form retryable', (
+    tester,
+  ) async {
+    final fixture = await _Fixture.create(
+      recordError: StateError('synthetic pre-commit failure'),
+    );
+    await _pumpPage(tester, fixture);
+    await _openUtilityForm(tester);
+    await _fillUtilityForm(tester, bank: '1,80');
+
+    await tester.tap(find.byKey(const ValueKey('utility-bill-confirm')));
+    await tester.pumpAndSettle();
+
+    expect(fixture.coordinator.calls, 1);
+    expect(
+      find.text(
+        'Esito della registrazione non verificabile. Controlla prima di riprovare.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Importo bolletta'), findsOneWidget);
+    expect(
+      tester
+          .widget<ElevatedButton>(
+            find.byKey(const ValueKey('utility-bill-confirm')),
+          )
+          .onPressed,
+      isNotNull,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'documentary exception reports partial success and retry is idempotent',
+    (tester) async {
+      var writes = 0;
+      final fixture = await _Fixture.create(
+        obligation: _documentaryObligation(),
+        idempotentRetries: true,
+        documentaryPersistence: DocumentaryObligationPersistence(
+          save: (_, value) async {
+            writes++;
+            if (writes == 1) throw StateError('synthetic documentary failure');
+            return PersistenceWriteVerification(
+              backendAccepted: true,
+              readBack: value,
+            );
+          },
+        ),
+      );
+      await _pumpPage(tester, fixture);
+      await _openLinkedUtilityForm(tester);
+      await _fillLinkedUtilityForm(tester, bank: '1,80', historical: true);
+
+      await tester.tap(find.byKey(const ValueKey('utility-bill-confirm')));
+      await tester.pumpAndSettle();
+
+      expect(fixture.coordinator.calls, 1);
+      expect(
+        find.textContaining(
+          'Bolletta registrata, ma la scadenza documentale non è stata aggiornata.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        fixture
+            .financeStore
+            .documentaryObligationAggregate
+            .obligations
+            .single
+            .operationalInstallments,
+        hasLength(1),
+      );
+      expect(
+        tester
+            .widget<ElevatedButton>(
+              find.byKey(const ValueKey('utility-bill-confirm')),
+            )
+            .onPressed,
+        isNotNull,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('utility-bill-confirm')));
+      await tester.pumpAndSettle();
+
+      expect(fixture.coordinator.calls, 2);
+      expect(fixture.coordinator.operationIds.toSet(), hasLength(1));
+      expect(writes, 2);
+      expect(
+        fixture
+            .financeStore
+            .documentaryObligationAggregate
+            .obligations
+            .single
+            .operationalInstallments,
+        isEmpty,
+      );
+      expect(find.text('Bolletta sintetica'), findsOneWidget);
+      expect(find.text('Importo bolletta'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   for (final status in [
     CompositeEconomicOperationStatus.failed,
@@ -387,6 +566,48 @@ Future<void> _openUtilityForm(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> _openLinkedUtilityForm(WidgetTester tester) async {
+  await tester.tap(find.text('Nuovo movimento'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Bolletta o pagamento'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Da scadenza salvata'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Bolletta sintetica'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Registra pagamento'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Conto test'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _fillLinkedUtilityForm(
+  WidgetTester tester, {
+  required String bank,
+  required bool historical,
+}) async {
+  await tester.enterText(_field('Commissione bancaria (facoltativa)'), bank);
+  await tester.tap(find.text('Scegli la data effettiva del pagamento'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('15').last);
+  await tester.tap(find.text('OK'));
+  await tester.pumpAndSettle();
+  await tester.tap(
+    find.byWidgetPredicate(
+      (widget) =>
+          widget is DropdownButtonFormField<String> &&
+          widget.decoration.labelText == 'Categoria principale',
+    ),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('Casa').last);
+  await tester.pumpAndSettle();
+  if (historical) {
+    await tester.tap(find.byKey(const ValueKey('historical-posting-choice')));
+    await tester.pump();
+  }
+}
+
 Future<void> _fillUtilityForm(
   WidgetTester tester, {
   String bank = '',
@@ -430,8 +651,16 @@ class _Fixture {
     CompositeEconomicOperationStatus status =
         CompositeEconomicOperationStatus.completed,
     Completer<CompositeEconomicOperationResult>? pending,
+    Object? recordError,
+    bool idempotentRetries = false,
+    DocumentaryObligation? obligation,
+    DocumentaryObligationPersistence? documentaryPersistence,
   }) async {
     final financeStore = FinanceStore(
+      documentaryObligationPersistence: documentaryPersistence,
+      initialDocumentaryObligationAggregate: obligation == null
+          ? null
+          : DocumentaryObligationAggregate(obligations: [obligation]),
       initialBalances: [
         FinanceBalance(
           personId: 'matteo',
@@ -462,6 +691,8 @@ class _Fixture {
         expenseStore: expenseStore,
         status: status,
         pending: pending,
+        recordError: recordError,
+        idempotentRetries: idempotentRetries,
       ),
     );
   }
@@ -470,6 +701,8 @@ class _Fixture {
 class _RecordingCoordinator extends CompositeEconomicOperationCoordinator {
   final CompositeEconomicOperationStatus status;
   final Completer<CompositeEconomicOperationResult>? pending;
+  final Object? recordError;
+  final bool idempotentRetries;
   final List<CompositeEconomicOperationPosting> postings = [];
 
   _RecordingCoordinator({
@@ -477,6 +710,8 @@ class _RecordingCoordinator extends CompositeEconomicOperationCoordinator {
     required super.expenseStore,
     required this.status,
     this.pending,
+    this.recordError,
+    this.idempotentRetries = false,
   });
 
   int get calls => postings.length;
@@ -489,7 +724,11 @@ class _RecordingCoordinator extends CompositeEconomicOperationCoordinator {
     CompositeEconomicOperationPosting posting,
   ) async {
     postings.add(posting);
+    if (recordError != null) throw recordError!;
     if (pending != null) return pending!.future;
+    if (idempotentRetries && postings.length > 1) {
+      return CompositeEconomicOperationResult.alreadyComplete();
+    }
     return switch (status) {
       CompositeEconomicOperationStatus.completed =>
         CompositeEconomicOperationResult.completed(),
@@ -508,3 +747,23 @@ class _RecordingCoordinator extends CompositeEconomicOperationCoordinator {
     };
   }
 }
+
+DocumentaryObligation _documentaryObligation() => DocumentaryObligation(
+  obligationId: 'document-test',
+  title: 'Bolletta sintetica',
+  totalAmount: 59.05,
+  documentHolder: FinanceSubject.matteo,
+  options: [
+    DocumentaryFulfillmentOption(
+      optionId: 'single',
+      label: 'Addebito diretto',
+      installments: [
+        DocumentaryInstallment(
+          installmentId: 'single-1',
+          amount: 59.05,
+          dueDate: DateTime(2026, 6, 26),
+        ),
+      ],
+    ),
+  ],
+);
